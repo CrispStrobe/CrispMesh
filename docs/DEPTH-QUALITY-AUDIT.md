@@ -5,6 +5,41 @@ perfect cameras and synthetic textured photographs. This is a concrete reason
 to change matching support geometry, rather than continue smoothing damaged
 meshes. It does not establish the cause of every error on real objects.
 
+## Error budget of the drill, 2026-10-10
+
+Own RGB, own SAM masks and own recovered cameras only; the scanner mesh is used
+for scoring and as an oracle in separate diagnostics, never as an input of a
+shipped run. The reference was aligned to our cameras by maximising
+multi-view photo-consistency of its shape (independent of any reconstruction);
+the earlier mesh-fitted alignments differed by about 1 % in scale and moved F1
+at 0.5 % by up to 0.06, more than most earlier measured improvements.
+
+| Test (evaluation only) | Result | Consequence |
+| --- | --- | --- |
+| Fusion + mesh from depths rendered from the scan, full coverage | F1 0.5 % ≈ 0.80; every seen part reconstructed, only the unseen underside missing | Fusion and meshing are sound; ≈ 0.8 is the ceiling of this view set |
+| Same, only where our depth maps have a value | 0.79 | Coverage is not the bottleneck |
+| Same, plus 0.15 % Gaussian noise, white or correlated over 4 px | no change | Noise of our size is harmless if it averages |
+| Our depths, pixels with true error > 1 % / 0.5 % / 0.3 % removed | 0.58 / 0.65 / 0.72 (ours 0.54) | The damage is the bulk 0.2–0.5 % error, not outliers |
+| Our accepted depths | median error 0.2 % of distance, half smooth (σ 8 px), half pixel noise; fallback pixels no worse | |
+| NCC peak with the scan's true shape as window, ±3 views | within 0.3 % for only ~50 % of pixels (±6 views, 6 best: ~60 %) | At 1280×1024 the photos limit per-pixel depth to ≈ 0.2 %; our matcher is near that limit |
+| Depth bias by brightness, saturation, slant | uniform +0.09 %, highlights least | Not specular; consistent with the residual reference scale, not a matcher fault |
+| Wider sources (`neighbours` 8–12, `minimum_angle` 9) | ±0.01 F1 | Not the lever |
+| Fixed truncation 3 → 24 voxels on the same depths | 0.516 → 0.579, mean error −22 % | Averaging was clipped: σ is ≈ 3 voxels, truncation was 3 voxels |
+
+Adopted: `truncation_noise=3` (see the crate README): the truncation follows
+the noise measured between the views' own depth maps. A fixed wide truncation
+smears the statues (Thai −0.06 at 12 voxels); the measured noise keeps them at
+3–5 voxels and gives the drill 8–14. Per-pixel down-weighting by the same noise
+estimate did not help (it ranks pixels only weakly).
+
+Not resolved, and not resolvable from these photos by matching changes: the
+drill's creases, vents and knurling (≈ 1 mm, ≈ 1.3 px). The next levers are the
+input (the YCB capture has 120 frames per ring, five rings and a DSLR set; we
+use 60 frames of one 1.3 MP ring) and, at most, multi-view photometric surface
+refinement. These tests also rule out a specular depth bias on the real drill
+and recovered-pose error as the main factor: the true shape is photo-consistent
+under our cameras (windowed NCC ≈ 0.87).
+
 ## Independent controls
 
 `crates/dense/tests/depth_geometry_audit.rs` constructs its own analytic scene.

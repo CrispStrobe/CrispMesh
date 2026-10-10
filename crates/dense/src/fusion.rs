@@ -52,6 +52,52 @@ struct FuseParams {
     free_weight: f32,
 }
 
+/// Depth noise measured from the depth maps themselves, no reference: every
+/// `stride`-th pixel is projected into its `voters`, and the robust spread
+/// (1.4826 x median absolute deviation, world units) of the differences to the
+/// depth interpolated there estimates that pixel's noise. Differences beyond `outlier`
+/// (relative) are another surface or an occlusion, not noise. Returns the
+/// median over pixels with at least two such differences, and their count.
+pub fn depth_noise(level: &[LevelView], depths: &[Plane<f32>], voters: &[Vec<usize>], stride: usize, outlier: f32) -> Option<(f64, usize)> {
+    let stride = stride.max(1);
+    let per_view: Vec<Vec<f64>> = crate::inputs::parallel_map(level.len(), |i| {
+        let (view, depth) = (&level[i], &depths[i]);
+        let mut spreads = Vec::new();
+        let mut differences: Vec<f32> = Vec::with_capacity(voters[i].len());
+        for y in (0..depth.height).step_by(stride) {
+            for x in (0..depth.width).step_by(stride) {
+                let d = depth.data[y * depth.width + x];
+                if d <= 0.0 {
+                    continue;
+                }
+                let world = view.unproject(x, y, d);
+                differences.clear();
+                for &j in &voters[i] {
+                    let (xy, z) = level[j].project(world);
+                    // Interpolated, so slanted surfaces do not read as noise; no sample across gaps or jumps.
+                    let other = interpolated_depth(&depths[j], xy, outlier * z, 0.0);
+                    if z > 0.0 && other > 0.0 && (other - z).abs() <= outlier * z {
+                        differences.push((other - z).abs());
+                    }
+                }
+                if differences.len() >= 2 {
+                    differences.sort_by(f32::total_cmp);
+                    let n = differences.len();
+                    let median = if n % 2 == 1 { differences[n / 2] } else { 0.5 * (differences[n / 2 - 1] + differences[n / 2]) };
+                    spreads.push(1.4826 * median as f64);
+                }
+            }
+        }
+        spreads
+    });
+    let mut all: Vec<f64> = per_view.into_iter().flatten().collect();
+    if all.len() < 100 {
+        return None;
+    }
+    let count = all.len();
+    Some((crate::inputs::median_f64(&mut all), count))
+}
+
 /// One view's vote for a point, as the kernel computes it: reference for tests.
 pub fn vote(view: &LevelView, depth: &Plane<f32>, point: [f32; 3], truncation: f32, behind: f32, config: &DenseConfig) -> (f32, f32) {
     let (xy, z) = view.project(point);
@@ -377,6 +423,45 @@ mod tests {
         let mut arc = ring(15.0, -50.0, 50.0, 25);
         arc.extend(ring(40.0, -50.0, 50.0, 24));
         assert!(partial_views(&arc, &[0.0; 3]));
+    }
+
+    /// The noise measured between views is near zero for exact depth and follows added noise:
+    /// the spread of differences between two independently noisy maps is about sqrt(2) sigma.
+    #[test]
+    fn depth_noise_measures_the_disagreement_between_views() {
+        let root = synthetic::temporary("noise", 24, 128).unwrap();
+        let overrides: Vec<String> = synthetic::SMALL.iter().map(|s| s.to_string()).collect();
+        let config = options::build(None, &overrides).unwrap();
+        let inputs = Inputs::load(&root.join("inputs"), &config).unwrap();
+        crate::storage::remove_dir_all(&root).unwrap();
+        let level = build_level(&inputs, 128);
+        let voters: Vec<Vec<usize>> = (0..inputs.count()).map(|i| inputs.neighbours(i, 6, &config).unwrap()).collect();
+        let exact: Vec<Plane<f32>> = level.iter().map(synthetic::sphere_depth).collect();
+        let (clean, samples) = depth_noise(&level, &exact, &voters, 1, 0.02).unwrap();
+        assert!(samples > 1000, "{samples}");
+        // Deterministic, roughly normal noise of relative sigma 0.002 (sum of 12 uniforms).
+        let sigma = 0.002f32;
+        let mut state = 12345u64;
+        let mut uniform = || {
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            (state >> 40) as f32 / (1u64 << 24) as f32
+        };
+        let noisy: Vec<Plane<f32>> = exact
+            .iter()
+            .map(|d| {
+                let mut d = d.clone();
+                for v in d.data.iter_mut().filter(|v| **v > 0.0) {
+                    let normal: f32 = (0..12).map(|_| uniform()).sum::<f32>() - 6.0;
+                    *v *= 1.0 + sigma * normal;
+                }
+                d
+            })
+            .collect();
+        let (measured, _) = depth_noise(&level, &noisy, &voters, 1, 0.02).unwrap();
+        let depth = 5.0; // the synthetic ring is 6 from the unit sphere: its front is about 5 away
+        let expected = std::f64::consts::SQRT_2 * sigma as f64 * depth;
+        assert!(clean < 0.15 * expected, "exact depths measured {clean}, expected near 0");
+        assert!((0.6 * expected..1.6 * expected).contains(&measured), "measured {measured}, expected about {expected}");
     }
 
     /// GPU fusion of exact sphere depth against the scalar votes (`CRISP3DS_GPU_TESTS=1`).

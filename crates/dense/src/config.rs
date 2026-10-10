@@ -51,6 +51,7 @@ pub struct DenseConfig {
     pub rim_fraction: f64,
     pub fusion_interpolate: bool,
     pub truncation_voxels: f64,
+    pub truncation_noise: f64,
     pub behind_voxels: f64,
     pub behind_weight: f64,
     pub free_weight: f64,
@@ -119,6 +120,7 @@ impl Default for DenseConfig {
             rim_fraction: 0.55,
             fusion_interpolate: false,
             truncation_voxels: 3.0,
+            truncation_noise: 3.0,
             behind_voxels: 12.0,
             behind_weight: 0.25,
             free_weight: 1.0,
@@ -163,13 +165,14 @@ impl DenseConfig {
 
 /// Settings this crate has and the Python reference does not. The reference is
 /// no longer extended; new behaviour is developed here.
-pub const NATIVE_ONLY: [&str; 16] = [
+pub const NATIVE_ONLY: [&str; 17] = [
     "coherent_band",
     "fallback_supported",
     "peak_min_margin",
     "native_level",
     "match_sharpening",
     "fusion_interpolate",
+    "truncation_noise",
     "slanted_refine",
     "slanted_iterations",
     "patchmatch",

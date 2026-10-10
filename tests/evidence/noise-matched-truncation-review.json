@@ -1,0 +1,188 @@
+{
+ "schema": "crisp3ds_noise_matched_truncation_v1",
+ "date": "2026-10-10",
+ "setting": {
+  "name": "truncation_noise",
+  "default": 3.0,
+  "rule": "truncation_voxels_effective = max(truncation_voxels, truncation_noise * sigma / voxel); behind_voxels raised to at least that",
+  "sigma": "median over every 2nd pixel of 1.4826 x median |interpolated depth in a voter view - projected depth|, differences beyond 2% excluded, at least two voters; measured from the run's own depth maps, no reference"
+ },
+ "reference_used_in_reconstruction": false,
+ "six_object_gate": {
+  "method": "each object's own photo-derived default-run depths reused (--reuse-depths); only fusion differs; scans scored post hoc by scan_evaluate.py",
+  "result": "PASS",
+  "worst_delta": -0.0013,
+  "objects": {
+   "bunny": {
+    "before": {
+     "all@0.005": 0.9031,
+     "all@0.01": 0.9374,
+     "all@0.02": 0.9543,
+     "above_margin@0.005": 0.9649,
+     "above_margin@0.01": 0.9949,
+     "above_margin@0.02": 0.9998
+    },
+    "after": {
+     "all@0.005": 0.9082,
+     "all@0.01": 0.9406,
+     "all@0.02": 0.9558,
+     "above_margin@0.005": 0.9681,
+     "above_margin@0.01": 0.9959,
+     "above_margin@0.02": 0.9999
+    },
+    "worst_delta": 0.0001,
+    "sigma_voxels": 1.465,
+    "truncation_voxels": 4.396
+   },
+   "armadillo": {
+    "before": {
+     "all@0.005": 0.9272,
+     "all@0.01": 0.9744,
+     "all@0.02": 0.9898,
+     "above_margin@0.005": 0.9518,
+     "above_margin@0.01": 0.9964,
+     "above_margin@0.02": 0.9999
+    },
+    "after": {
+     "all@0.005": 0.933,
+     "all@0.01": 0.9761,
+     "all@0.02": 0.9909,
+     "above_margin@0.005": 0.9564,
+     "above_margin@0.01": 0.9973,
+     "above_margin@0.02": 1.0
+    },
+    "worst_delta": 0.0001,
+    "sigma_voxels": 1.714,
+    "truncation_voxels": 5.142
+   },
+   "dragon": {
+    "before": {
+     "all@0.005": 0.8059,
+     "all@0.01": 0.933,
+     "all@0.02": 0.9819,
+     "above_margin@0.005": 0.8522,
+     "above_margin@0.01": 0.9658,
+     "above_margin@0.02": 0.995
+    },
+    "after": {
+     "all@0.005": 0.8067,
+     "all@0.01": 0.9339,
+     "all@0.02": 0.9826,
+     "above_margin@0.005": 0.8518,
+     "above_margin@0.01": 0.9658,
+     "above_margin@0.02": 0.9956
+    },
+    "worst_delta": -0.0004,
+    "sigma_voxels": 1.582,
+    "truncation_voxels": 4.745
+   },
+   "lucy": {
+    "before": {
+     "all@0.005": 0.8467,
+     "all@0.01": 0.9434,
+     "all@0.02": 0.967,
+     "above_margin@0.005": 0.8835,
+     "above_margin@0.01": 0.9844,
+     "above_margin@0.02": 0.9994
+    },
+    "after": {
+     "all@0.005": 0.8468,
+     "all@0.01": 0.9439,
+     "all@0.02": 0.9676,
+     "above_margin@0.005": 0.8826,
+     "above_margin@0.01": 0.9841,
+     "above_margin@0.02": 0.9993
+    },
+    "worst_delta": -0.0009,
+    "sigma_voxels": 1.099,
+    "truncation_voxels": 3.297
+   },
+   "thai_statue": {
+    "before": {
+     "all@0.005": 0.8825,
+     "all@0.01": 0.9322,
+     "all@0.02": 0.9517,
+     "above_margin@0.005": 0.9469,
+     "above_margin@0.01": 0.9954,
+     "above_margin@0.02": 1.0
+    },
+    "after": {
+     "all@0.005": 0.8825,
+     "all@0.01": 0.9322,
+     "all@0.02": 0.9517,
+     "above_margin@0.005": 0.9469,
+     "above_margin@0.01": 0.9954,
+     "above_margin@0.02": 1.0
+    },
+    "worst_delta": 0.0,
+    "sigma_voxels": 0.951,
+    "truncation_voxels": 3.0
+   },
+   "happy": {
+    "before": {
+     "all@0.005": 0.7932,
+     "all@0.01": 0.9088,
+     "all@0.02": 0.9724,
+     "above_margin@0.005": 0.8335,
+     "above_margin@0.01": 0.9418,
+     "above_margin@0.02": 0.9916
+    },
+    "after": {
+     "all@0.005": 0.7935,
+     "all@0.01": 0.9075,
+     "all@0.02": 0.9716,
+     "above_margin@0.005": 0.8344,
+     "above_margin@0.01": 0.9411,
+     "above_margin@0.02": 0.9912
+    },
+    "worst_delta": -0.0013,
+    "sigma_voxels": 1.164,
+    "truncation_voxels": 3.493
+   }
+  },
+  "paired_sheets_inspected": [
+   "bunny",
+   "dragon",
+   "happy (four views each, default vs truncation_noise=3)"
+  ]
+ },
+ "drill": {
+  "inputs": "own RGB, own SAM masks, own recovered cameras (repair-238/drill-inputs)",
+  "production_defaults_same_depths": {
+   "before": {
+    "f1_0.005": 0.3645,
+    "f1_0.01": 0.5768,
+    "f1_0.02": 0.7882,
+    "sym_mean": 0.01213,
+    "triangles": 984367
+   },
+   "after": {
+    "f1_0.005": 0.4888,
+    "f1_0.01": 0.7323,
+    "f1_0.02": 0.8736,
+    "sym_mean": 0.00926,
+    "triangles": 811138
+   },
+   "depth_noise": {
+    "behind_voxels": 13.55536030394584,
+    "samples": 273583,
+    "sigma": 0.00469844799041748,
+    "sigma_voxels": 4.518453434648613,
+    "truncation_voxels": 13.55536030394584
+   }
+  },
+  "evaluation": "scanner reference aligned by multi-view photo-consistency under our own cameras (independent of any reconstruction); thresholds fraction of reference diagonal",
+  "note": "depth maps byte-identical between before/after; visibly fewer pits and holes, surface still lumpy, creases/vents/knurling not recovered"
+ },
+ "disabled_control": "truncation_noise=0 reproduces the previous drill mesh byte for byte (sha256 9042fa37...)",
+ "checks": [
+  "203 dense lib tests with GPU (new: depth_noise_measures_the_disagreement_between_views)",
+  "cargo fmt, clippy -D warnings (default and capi)",
+  "threaded WebAssembly build",
+  "Studio JS 154 tests, Studio native-engine 32 tests"
+ ],
+ "not_checked": [
+  "browser execution and memory of the new default (one extra CPU pass over the depth maps; no new GPU buffers)",
+  "DTU / GSO objects"
+ ]
+}

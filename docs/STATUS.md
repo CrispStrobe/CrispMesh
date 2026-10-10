@@ -55,6 +55,21 @@ README.
   fusion and smoothing experiments are recorded in
   [bunny-head-detail-review.json](../tests/evidence/bunny-head-detail-review.json);
   none was adopted as a default.
+- Where the drill's error comes from (2026-10-10, own photo-derived inputs;
+  the scan only for scoring): fusion and meshing reconstruct every seen part
+  almost exactly from exact depths (the unseen underside is the remaining
+  loss), and dropping our depths where the true surface is not seen changes
+  little, so neither fusion, meshing nor coverage is the bottleneck. The depth
+  maps scatter about 0.2 % of the distance; with the true surface shape the
+  photo-consistency peak itself scatters as much, so at this resolution the
+  photos, not the matcher, set that limit. What was lost was averaging: a 3-voxel
+  truncation clipped depths that scatter by 3 voxels instead of averaging them.
+  Fusion now widens the truncation to three times the noise measured between
+  the views' own depth maps (`truncation_noise=3`): drill F1 at 0.5 % 0.36 →
+  0.49 with production defaults from the same depths, six-object gate passed
+  (worst change −0.0013). Creases, vents and knurling of about a millimetre
+  remain below what these photos resolve. See
+  [noise-matched-truncation-review.json](../tests/evidence/noise-matched-truncation-review.json).
 - At 10° steps (36 photos) results are almost as good as at 5°; at 15° steps
   low-texture objects fail camera recovery.
 

@@ -1704,6 +1704,22 @@ error does not improve. See the [distinct-mode review](../../tests/evidence/dist
 Scanner geometry and supplied poses were used only in separate posthoc
 diagnostics. No default or patent-clearance claim follows from these results.
 
+Noise-matched truncation (2026-10-10, default `truncation_noise=3`): before
+fusion, every second pixel of every depth map is projected into its
+`vote_neighbours`; the robust spread (1.4826 × median absolute difference to the
+depth interpolated there, differences beyond 2 % excluded) gives that pixel's
+noise, and the median over pixels the object's noise σ. The truncation becomes
+max(`truncation_voxels`, 3σ) and `behind_voxels` at least that; `result.json`
+records it under `depth_noise`. `truncation_noise=0` reproduces the fixed
+truncation byte for byte. Measured σ in voxels on the default runs: Thai statue
+0.95 (truncation stays 3), Lucy 1.10, Happy Buddha 1.16, Bunny 1.47, Dragon 1.58,
+Armadillo 1.71, YCB drill 2.8–4.5. Six objects from their own default depths:
+worst F1 change −0.0013 (Happy Buddha at 1 %), Bunny +0.005 and Armadillo +0.006
+at 0.5 %; a fixed 12-voxel truncation instead fails the gate (Thai −0.059), and
+k=4 fails on Dragon (−0.0033). Drill with production defaults, same depths:
+F1 at 0.5/1/2 % 0.364/0.577/0.788 → 0.489/0.732/0.874, mean error −24 %.
+Numbers and limits: [noise-matched-truncation-review.json](../../tests/evidence/noise-matched-truncation-review.json).
+
 Facial-detail experiments (2026-10-08): `slanted_refine=true` runs deterministic
 coordinate refinement independently at each pixel. `slanted_iterations` defaults
 to 6 (range 1–16). It reuses our plane scorer but does not borrow neighboring

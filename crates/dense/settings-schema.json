@@ -361,6 +361,13 @@
       "default": 3.0
     },
     {
+      "name": "truncation_noise",
+      "group": "Fusion",
+      "meaning": "Widen the truncation to this many times the depth noise measured between the views' own depth maps (never below truncation_voxels), so noisy depths are averaged instead of clipped; 0 keeps the fixed truncation",
+      "kind": "number",
+      "default": 3.0
+    },
+    {
       "name": "behind_voxels",
       "group": "Fusion",
       "meaning": "Depth of the weak inside vote behind a surface, voxels",

@@ -368,6 +368,31 @@ pub async fn run_fused(
     }
     let t = Instant::now();
     let rim = round_half_even(config.rim_fraction * DenseConfig::level(&config.windows, sizes.len() - 1) as f64) as usize;
+    // Noise-matched truncation: depths that disagree between views by more than the
+    // fixed band would be clipped, not averaged; widen the band to the measured noise.
+    let widened;
+    let config = if config.truncation_noise > 0.0 {
+        let voters: Vec<Vec<usize>> =
+            (0..count).map(|i| inputs.neighbours(i, config.vote_neighbours as usize, config)).collect::<anyhow::Result<_>>()?;
+        let mut adjusted = config.clone();
+        match crate::fusion::depth_noise(&level, &depths, &voters, 2, 0.02) {
+            Some((sigma, samples)) => {
+                let noise_voxels = sigma / state.hull.voxel;
+                adjusted.truncation_voxels = config.truncation_voxels.max(config.truncation_noise * noise_voxels);
+                adjusted.behind_voxels = config.behind_voxels.max(adjusted.truncation_voxels);
+                report["depth_noise"] = json!({
+                    "sigma": sigma, "sigma_voxels": noise_voxels, "samples": samples,
+                    "truncation_voxels": adjusted.truncation_voxels, "behind_voxels": adjusted.behind_voxels,
+                });
+            }
+            None => report["depth_noise"] = json!({"sigma": null, "truncation_voxels": config.truncation_voxels}),
+        }
+        control.log(format!("depth noise {}", report["depth_noise"]));
+        widened = adjusted;
+        &widened
+    } else {
+        config
+    };
     let mut fused: Fused = tsdf(gpu, &state.hull, &inputs.cameras, &level, &depths, rim, config).await?;
     if config.support_from_sparse {
         if let Some((measured, sparse)) = crate::fusion::support_from_sparse(&mut fused.support, &inputs.sparse) {
