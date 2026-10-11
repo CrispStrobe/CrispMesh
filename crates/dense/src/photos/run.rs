@@ -85,6 +85,40 @@ fn round_to(value: f64, digits: i32) -> f64 {
     (value * scale).round() / scale
 }
 
+/// The audit of one turn: the per-photo reasons (landmark support, reprojection) of its own photos only;
+/// the reasons about the whole solution stay.
+fn turn_audit(audit: &Value, own: &[String]) -> Value {
+    const SUPPORT: &str = "insufficient distinct landmark support per registered view";
+    const REPROJECTION: &str = "per-view reprojection exceeds declared bound";
+    let mut reasons: Vec<Value> = audit["reasons"]
+        .as_array()
+        .map(|list| list.iter().filter(|r| r.as_str() != Some(SUPPORT) && r.as_str() != Some(REPROJECTION)).cloned().collect())
+        .unwrap_or_default();
+    let policy = &audit["policy"];
+    let (fewest, largest) = (
+        policy["minimum_observations_per_view"].as_f64().unwrap_or(0.0),
+        policy["maximum_per_view_reprojection_p95_pixels"].as_f64().unwrap_or(f64::INFINITY),
+    );
+    let views = audit["per_view"].as_array().into_iter().flatten().filter(|v| own.iter().any(|n| v["name"] == n.as_str()));
+    for view in views {
+        // As in the audit: the count of observations in front of the camera.
+        let reason = if view["reprojection_pixels"]["count"].as_f64().unwrap_or(0.0) < fewest {
+            SUPPORT
+        } else if view["reprojection_pixels"]["p95"].as_f64().is_some_and(|p95| p95 > largest) {
+            REPROJECTION
+        } else {
+            continue;
+        };
+        if !reasons.iter().any(|r| r.as_str() == Some(reason)) {
+            reasons.push(json!(reason));
+        }
+    }
+    let mut out = audit.clone();
+    out["passed"] = json!(reasons.is_empty());
+    out["reasons"] = json!(reasons);
+    out
+}
+
 /// Audit, ring statistics and the gate decision; writes the three JSON files and returns the gates.
 fn judge(options: &Options, out: &Path, solution: &Solution, declared: Option<&Lens>) -> anyhow::Result<Value> {
     let sfm = out.join("sfm");
@@ -119,7 +153,7 @@ fn judge(options: &Options, out: &Path, solution: &Solution, declared: Option<&L
             if let Some(scaled) = statistics.get("optical_axis_miss_of_distance_percent").cloned() {
                 statistics["optical_axis_miss_percent"] = scaled;
             }
-            let mut audit = audit.clone();
+            let mut audit = turn_audit(&audit, &names[r * per..(r + 1) * per]);
             audit["input_images"] = json!(per);
             audit["registered_cameras"] = json!(own.len());
             audit["coverage"] = json!(own.len() as f64 / per as f64);

@@ -310,8 +310,18 @@ impl CameraProvider for Turntable {
             let (low, high) = (0.6 + 0.22 * r as f64 / rings as f64, 0.6 + 0.22 * (r + 1) as f64 / rings as f64);
             let solved =
                 run.internal("cameras", "turntable-solve", timeouts.sfm, low, high, "Recovering cameras (turntable solver)", 1, |_| {
-                    solver::solve(&own, &camera, &settings).map_err(|e| if rings == 1 { e } else { anyhow!("turn {}: {e}", r + 1) })
+                    Ok(solver::solve(&own, &camera, &settings))
                 })?;
+            let solved = match solved {
+                Ok(solved) => solved,
+                Err(e) if rings == 1 => return Err(e),
+                // A turn that cannot be solved on its own (a camera looking almost straight down) still has
+                // matches to the other turns: its photos are registered one by one when the turns are joined.
+                Err(e) => {
+                    run.warn(format!("turn {}: {e}; its photos are registered against the other turns instead", r + 1));
+                    solver::Solved::unsolved(per, &e.to_string())
+                }
+            };
             if rings == 1 {
                 matches = own;
             } else if options.keep_intermediates {

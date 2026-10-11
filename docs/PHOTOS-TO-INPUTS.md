@@ -32,7 +32,40 @@ cameras  contrast images -> CAMERA PROVIDER -> audit and ring gates
 Exit codes, gates, events (`masks` and `cameras` stages; `stage_started` now
 also names the `provider`), the cancel file, the free-space floor and the
 deadlines are those of the reference. Assumptions about the capture and the
-calibration file are the same (sections below).
+calibration file are the same (sections below), except that the native step
+also takes several turns (`--turntable-rings`, next section).
+
+### Taking the photos
+
+Measured on the YCB power drill (section "YCB power drill from the DSLR
+cameras" in [`OTHER-IMAGE-SETS.md`](OTHER-IMAGE-SETS.md)), in order of effect:
+
+1. **Pixels on the object.** The depth error of the matcher is at the limit
+   the photos allow, so it shrinks with the pixels per millimetre on the
+   object. The drill covering 2 % of a 1280 x 1024 photo (about 1.3 px/mm):
+   F1 at 0.5 % 0.49; the same turn at 4.3 px/mm: 0.69, median depth error
+   halved. Let the object fill most of the frame and keep the camera's full
+   resolution. Large photos are fine: the cameras are solved on copies scaled
+   to `--turntable-working-size` (2200 px) and the dense stage keeps only the
+   region around the object once the photos exceed 2 GiB of grey.
+2. **Several heights, rather than more photos per turn.** One turn leaves
+   whatever its camera cannot see (undersides of overhangs, the inside of a
+   handle). Five turns at elevations from about 8 to 85 degrees closed those
+   openings (genus 26 to 18, F1 0.69 to 0.72). Photograph each height as a
+   complete turn with the same number of photos (at least 8; 60 per turn
+   worked), keep the turns one after the other in file order, keep the lens
+   and focus, and pass `--turntable-rings N`. A camera looking almost straight
+   down is fine: its photos are registered one by one against the other turns
+   when its own turn does not form a clean ring.
+   This needs features: on the plain yellow mustard bottle the top-down turn
+   stayed biased, and one turn from the side gave a better mesh than five
+   (OTHER-IMAGE-SETS). Check a single side turn first on such objects.
+3. **Something on the turntable that turns with the object** (printed
+   pattern, newspaper, the marker mat) helps the camera solver with
+   `--turntable-region surface`; the backdrop and room must not move.
+
+The underside the object stands on is seen by no camera, whatever the heights;
+two captures of differently placed objects are not combined.
 
 ### Mask providers
 
@@ -248,7 +281,8 @@ on. Exit code 1 means a step failed (tool error, deadline, disk, cancel).
 - One turn of a turntable (or of the camera around the object), photographed
   by **one camera with a fixed lens and fixed focus**, 3 to 96 photos, all the
   same size. The file order (natural order: `x_2` before `x_10`) is the capture
-  order.
+  order. (The native step also takes several turns of equal length, up to 96
+  photos each: `--turntable-rings`.)
 - A **dark object on a light backdrop**. The coarse masks are a grey-level
   threshold and the hole cleanup only fills dark holes; a light object on a
   dark backdrop is not supported. If threshold masks cover more than 90% of

@@ -433,3 +433,38 @@ full-size depths does not help. The battery's underside stands on the glass and
 is seen by no camera. Dense stage: 50 s and 2.2 GB for 60 full-size photos,
 331 s and 5.4 GB for 300.
 
+
+## YCB mustard bottle from the DSLR cameras, 2026-10-11
+
+The same preparation as the drill (`006_mustard_bottle`, N1 to N5, 60 photos per
+camera, one common pinhole lens from each camera's own intrinsics; supplied
+poses, rig extrinsics, masks and depth unused, the Google scan used only for
+scoring). The masks are our background-contrast masks: they cut the yellow cap,
+the nozzle and parts of labels and lower body in steep views. The yellow sides
+have few features, so `--minimum-observations-per-view 15` was given (photos of
+the plain side have 16 to 18 points).
+
+All 300 photos registered and every gate passed. Turn 5 (almost straight down)
+triangulated no points of its own: it was warned about, and its photos were
+registered against turns 1 to 4 and put on the turntable motion (TURNTABLE-SOLVER,
+steps 5 and 6). Turn radius spreads were 1.0, 0.6, 1.4, 2.9 and 0.0 %. Production
+dense defaults; scores use the scan fitted to each mesh by ICP:
+
+| Run | F1 0.5 / 1 / 2 % | mean / diag. | genus |
+|---|---|---|---|
+| N3, 60 photos, one turn | 0.725 / 0.889 / 0.950 | 0.0054 | 14 |
+| N1 to N5, 300 photos | 0.480 / 0.739 / 0.875 | 0.0089 | 96 |
+
+On this object, adding heights makes the result worse. Both meshes lose the cap
+and nozzle (masks), and the five-turn one is wrinkled. Depth rendered from the
+scan under our cameras (evaluation only) shows each turn's depth bias: turns 1 to
+4 are within 0.2 %, but turn 5 is +1.5 to +1.7 %. Compared with the supplied rig
+(evaluation only), our camera 5 is about 4.5 % too far from camera 3. The same
+check on the drill gives 0.2 %. Neither a focal correction of the top camera nor
+matching across non-neighbouring turns removed the bias. Our best guess is that
+the turn is weakly tied to the others: turns 3–4 share a median of 24 matches per
+photo pair and turns 4–5 share 36, against 58 and 71 on the drill. Short dense
+baselines between nearly top-down views are the other candidate. The cause has
+not been established. Subsets with the same cameras: turn 3 alone 0.46 / 0.82 /
+0.95, turns 2 to 4 0.49 / 0.82 / 0.96, turns 1 to 4 0.54 / 0.83 / 0.93.
+Earlier result on this bottle (NP3, 1280 x 1024): 0.18 / 0.39 / 0.66.

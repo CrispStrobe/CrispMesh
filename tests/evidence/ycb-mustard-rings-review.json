@@ -1,0 +1,129 @@
+{
+ "title": "Multi-turn turntable solver robustness: YCB mustard bottle and drill regression, 2026-10-11",
+ "inputs": "YCB 006_mustard_bottle and 035_power_drill rgb_highres, cameras N1-N5, 60 photos each (6 degree steps), undistorted and resampled into one common pinhole lens from each camera's own intrinsics. Supplied poses, rig extrinsics, masks and depth not used for reconstruction; Google 64k scan only for scoring.",
+ "changes": {
+  "unsolved_turn": "with --turntable-rings > 1 a turn whose own solve fails is warned about and registered against the other turns",
+  "turntable_model": "resected turns put onto one camera turned about the shared axis (axis from the sound turns' rotations, axis point by exact pairwise least squares); photos >3 degrees off take their angle from neighbours",
+  "constrained_adjustment": "those turns keep their turntable motion in the joint bundle adjustment (fixed camera 6 parameters + one angle per photo); captures without such a turn use the unchanged adjustment",
+  "deadlines": "default deadlines multiplied by the number of turns; given deadlines kept",
+  "per_turn_audit": "per-photo audit reasons recomputed from each turn's own photos"
+ },
+ "mustard": {
+  "masks": "own background-contrast masks (cut cap, nozzle and parts of labels/lower body in steep views)",
+  "override": "--minimum-observations-per-view 15",
+  "registered": "300/300, all gates passed",
+  "reprojection_px_median": 0.72,
+  "reprojection_px_p95": 2.544,
+  "turn_radius_spread_percent": [
+   1.0,
+   0.6,
+   1.4,
+   2.9,
+   0.0
+  ],
+  "turn_5": "no points triangulated from its own matches; registered against turns 1-4 and put on the turntable motion",
+  "scores_icp_fit_each_mesh": [
+   {
+    "run": "N3, 60 photos, one turn",
+    "f1": [
+     0.7254,
+     0.8892,
+     0.9499
+    ],
+    "mean": 0.00544,
+    "genus": 14,
+    "mesh_sha256": "f56ef55c13ec3ba36cdfe02fb7fac96fe03f720764e6bf678d900fdbc60082ab"
+   },
+   {
+    "run": "N1-N5, 300 photos, --turntable-rings 5",
+    "f1": [
+     0.4795,
+     0.7392,
+     0.8749
+    ],
+    "mean": 0.00894,
+    "genus": 96,
+    "mesh_sha256": "adb318c34a3d69cb376388cb91c8bad9ed7b751adbee72436b12f97f74b75507"
+   }
+  ],
+  "subsets_same_cameras_fixed_fit": {
+   "turn_3": [
+    0.462,
+    0.824,
+    0.946
+   ],
+   "turns_2_4": [
+    0.489,
+    0.815,
+    0.955
+   ],
+   "turns_1_4": [
+    0.544,
+    0.832,
+    0.93
+   ]
+  },
+  "depth_bias_vs_scan_rendered_depth_percent": {
+   "turns_1_4": "within +-0.2",
+   "turn_5": "+1.5 to +1.7"
+  },
+  "rig_check_evaluation_only": "distance camera 5 to camera 3 about 4.5 % too long (drill 0.2 %)",
+  "tried_without_effect": [
+   "matching across non-neighbouring turns (bias +1.57 %)",
+   "top-camera focal correction (bias +1.48 %)",
+   "axis tilt search to 90 degrees"
+  ],
+  "cause": "not established; candidates weak cross-turn ties (median matches 24 for turns 3-4, 36 for 4-5; drill 58, 71) or short dense baselines between top-down views",
+  "previous_np3_1280": [
+   0.18,
+   0.39,
+   0.66
+  ]
+ },
+ "drill_regression": {
+  "before": {
+   "f1_photo_fit": [
+    0.7235,
+    0.8551,
+    0.9374
+   ],
+   "f1_icp_fit_0.5": 0.8033,
+   "genus": 18
+  },
+  "after": {
+   "f1_photo_fit": [
+    0.7196,
+    0.8468,
+    0.9336
+   ],
+   "f1_icp_fit": [
+    0.7984,
+    0.8901,
+    0.9392
+   ],
+   "genus": 31,
+   "mesh_sha256": "d86b2d11ce88bf6edd67280da04dbbe563afbf63a56e7161566842091a5afca2"
+  },
+  "rig_check_evaluation_only": "distances to camera 3 for cameras 1,2,4,5: 0.9991/1.0009/1.0043/0.9979",
+  "turn_depth_bias_percent": [
+   -0.001,
+   -0.011,
+   -0.002,
+   -0.026,
+   0.047
+  ],
+  "note": "differences within the alignment uncertainty of earlier runs"
+ },
+ "single_turn_identity": "2136 x 1424 drill N3 capture, background masks: ce9e637 binary and this one write the same 387 files, 382 byte-identical, the other five differ only in output paths and timings; dense stage unchanged",
+ "checks": [
+  "210 dense library tests (release, Metal)",
+  "cargo fmt --check",
+  "clippy -D warnings all-targets default, capi, sam-onnx",
+  "threaded WASM build"
+ ],
+ "not_done": [
+  "Studio JS tests (no Studio change)",
+  "browser execution of the multi-turn front end",
+  "six-object gate (dense stage unchanged)"
+ ]
+}

@@ -9,10 +9,10 @@ use anyhow::bail;
 use serde_json::{json, Value};
 
 use crate::inputs::median_f64;
-use crate::photos::markers::linalg::{add, apply, dot, mul, norm, rodrigues, scale, sub, transpose, unit, Camera, M3, V3};
+use crate::photos::markers::linalg::{add, apply, cross, dot, mul, norm, rodrigues, scale, sub, transpose, unit, Camera, M3, V3};
 use crate::photos::solution::{Landmark, Lens, Solution, View};
 
-use super::adjust::{adjust, residuals, Observation};
+use super::adjust::{adjust, adjust_turns, residuals, Observation, Turn};
 use super::geometry::{essential_of, sampson, triangulate, P2};
 
 /// `(first photo, second photo, [(feature in first, feature in second)])`.
@@ -182,6 +182,21 @@ pub struct Solved {
     /// `(photo, point, feature)`.
     pub observations: Vec<(usize, usize, u32)>,
     pub report: Value,
+}
+
+impl Solved {
+    /// A turn without its own solution: `per` cameras at one point, so no plausible ring; `join` registers
+    /// its photos one by one.
+    pub fn unsolved(per: usize, reason: &str) -> Self {
+        let identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+        Solved {
+            rotations: vec![identity; per],
+            translations: vec![[0.0; 3]; per],
+            points: Vec::new(),
+            observations: Vec::new(),
+            report: json!({"unsolved": reason}),
+        }
+    }
 }
 
 /// Solves the cameras of `matches` for a lens `camera`. The frame is the first camera's; the
@@ -372,7 +387,8 @@ pub fn solve(matches: &Matches, camera: &Camera, settings: &Settings) -> anyhow:
         total += step;
     }
 
-    let (tracks, mut errors, rounds, first_tracks) = refine(matches, &normalised, &mut rotations, &mut translations, focal)?;
+    let (tracks, mut errors, rounds, first_tracks) =
+        refine(matches, &normalised, &mut rotations, &mut translations, focal, &mut Vec::new())?;
     let mut sorted = errors.clone();
     sorted.sort_by(f64::total_cmp);
     let report = json!({
@@ -396,6 +412,7 @@ fn refine(
     rotations: &mut Vec<M3>,
     translations: &mut Vec<V3>,
     focal: f64,
+    turns: &mut Vec<Turn>,
 ) -> anyhow::Result<(Tracks, Vec<f64>, Vec<Value>, (usize, usize, usize))> {
     // Tracks, then adjustment rounds: once more tracks with the adjusted poses, then twice without the far observations.
     let mut tracks = build(matches, normalised, rotations, translations, focal, 4.0);
@@ -408,7 +425,11 @@ fn refine(
         }
         let observations: Vec<Observation> =
             tracks.observations.iter().map(|&(v, p, f)| Observation { camera: v, point: p, target: normalised[v][f as usize] }).collect();
-        let (before, after) = adjust(rotations, translations, &mut tracks.points, &observations, focal, 40);
+        let (before, after) = if turns.is_empty() {
+            adjust(rotations, translations, &mut tracks.points, &observations, focal, 40)
+        } else {
+            adjust_turns(rotations, translations, &mut tracks.points, &observations, focal, 40, turns)
+        };
         let (r, _) = residuals(rotations, translations, &tracks.points, &observations, focal);
         errors = r.iter().map(|d| d[0].hypot(d[1])).collect();
         let median = median_f64(&mut errors.clone());
@@ -762,7 +783,7 @@ pub fn join(matches: &Matches, camera: &Camera, rings: &[Solved]) -> anyhow::Res
         let subset_normalised: Vec<Vec<P2>> = placed.iter().map(|&v| normalised[v].clone()).collect();
         let mut subset_rotations: Vec<M3> = placed.iter().map(|&v| rotations[v]).collect();
         let mut subset_translations: Vec<V3> = placed.iter().map(|&v| translations[v]).collect();
-        let (tracks, ..) = refine(&subset, &subset_normalised, &mut subset_rotations, &mut subset_translations, focal)?;
+        let (tracks, ..) = refine(&subset, &subset_normalised, &mut subset_rotations, &mut subset_translations, focal, &mut Vec::new())?;
         for (k, &v) in placed.iter().enumerate() {
             (rotations[v], translations[v]) = (subset_rotations[k], subset_translations[k]);
         }
@@ -819,17 +840,164 @@ pub fn join(matches: &Matches, camera: &Camera, rings: &[Solved]) -> anyhow::Res
         }
         resected.push(json!({"round": round, "registered": found.len(), "fewest_agreeing_points": fewest, "left": failed.len()}));
     }
-    let (tracks, mut errors, rounds, first_tracks) = refine(matches, &normalised, &mut rotations, &mut translations, focal)?;
+    // A resected turn rests on few points per photo, and a few of them land far off; a turn seen almost
+    // along the axis also drifts in a free adjustment, its photos barely telling its radius from its height.
+    // The turntable fixes what they may be: one camera, turned about the axis the plausible turns share.
+    // Such a turn is put onto that motion and adjusted as it: its fixed camera and one angle per photo.
+    let mut models = Vec::new();
+    let mut turned = Vec::new();
+    let placed: Vec<usize> = (0..rings.len()).filter(|&r| sound[r]).collect();
+    if resected.iter().any(|r| r["registered"].as_u64().unwrap_or(0) > 0) && sound[0] {
+        if let Some((axis, through)) = shared_axis(&placed, per, &rotations, &translations) {
+            for r in (0..rings.len()).filter(|&r| !sound[r]) {
+                let (rs, ts) = (&mut rotations[r * per..(r + 1) * per], &mut translations[r * per..(r + 1) * per]);
+                if let Some((mut model, off)) = onto_turntable(axis, through, rs, ts) {
+                    model.cameras = (r * per..(r + 1) * per).collect();
+                    models.push(model);
+                    turned.push(json!({"ring": r + 1, "photos_off_the_turntable_motion": off}));
+                }
+            }
+        }
+    }
+    let (tracks, mut errors, rounds, first_tracks) = refine(matches, &normalised, &mut rotations, &mut translations, focal, &mut models)?;
     let mut sorted = errors.clone();
     sorted.sort_by(f64::total_cmp);
     let report = json!({
         "rings": rings.iter().map(|r| r.report.clone()).collect::<Vec<_>>(), "photos": count, "placements": placements,
-        "sound_rings": sound, "resected": resected,
+        "sound_rings": sound, "resected": resected, "turned_onto_axis": turned,
         "first_tracks": {"verified_matches": first_tracks.0, "points": first_tracks.1, "observations": first_tracks.2},
         "adjustments": rounds, "points": tracks.points.len(), "observations": tracks.observations.len(),
         "reprojection_px": {"median": median_f64(&mut errors), "p95": crate::inputs::percentile_sorted_f64(&sorted, 95.0)},
     });
     Ok(Solved { rotations, translations, points: tracks.points, observations: tracks.observations, report })
+}
+
+/// The angle of `turn` about `axis`, assuming it is (close to) a rotation about it.
+fn angle_about(axis: V3, turn: &M3) -> f64 {
+    let across = unit(cross(axis, if axis[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] }));
+    let moved = apply(turn, across);
+    dot(moved, cross(axis, across)).atan2(dot(moved, across))
+}
+
+/// The turntable axis in the joined frame (direction, a point on it), from the placed turns: the
+/// object turns about it between any two photos of one turn, and their camera centres circle it.
+fn shared_axis(placed: &[usize], per: usize, rotations: &[M3], translations: &[V3]) -> Option<(V3, V3)> {
+    let mut sum = [0.0; 3];
+    for &r in placed {
+        let first = &rotations[r * per];
+        for k in 1..per {
+            // World to camera: R_k = R_fixed Turn_k, so first^T R_k turns about the axis.
+            let w = super::geometry::rotation_vector(&mul(&transpose(first), &rotations[r * per + k]));
+            if norm(w) < 20f64.to_radians() || norm(w) > 160f64.to_radians() {
+                continue;
+            }
+            let w = unit(w);
+            sum = if dot(w, sum) < 0.0 { sub(sum, w) } else { add(sum, w) };
+        }
+    }
+    if norm(sum) < 1e-9 {
+        return None;
+    }
+    let axis = unit(sum);
+    // A point p on the axis: two photos j, k of one turn have centres with c_k - p = Q (c_j - p), Q the
+    // turn between them (R_k^T R_j), so (I - Q) p = c_k - Q c_j; least squares over all pairs with the first photo,
+    // pinned along the axis at the mean centre.
+    let centre = |v: usize| scale(apply(&transpose(&rotations[v]), translations[v]), -1.0);
+    let (mut normal, mut right) = (vec![vec![0.0; 3]; 3], vec![0.0; 3]);
+    let mut mean = [0.0; 3];
+    for &r in placed {
+        let (j, first) = (r * per, &rotations[r * per]);
+        for k in r * per..(r + 1) * per {
+            mean = add(mean, scale(centre(k), 1.0 / (placed.len() * per) as f64));
+            let q = mul(&transpose(&rotations[k]), first);
+            let rows: [V3; 3] = std::array::from_fn(|a| std::array::from_fn(|b| if a == b { 1.0 } else { 0.0 } - q[a][b]));
+            let value = sub(centre(k), apply(&q, centre(j)));
+            for a in 0..3 {
+                for b in 0..3 {
+                    normal[a][b] += (0..3).map(|i| rows[i][a] * rows[i][b]).sum::<f64>();
+                }
+                right[a] += (0..3).map(|i| rows[i][a] * value[i]).sum::<f64>();
+            }
+        }
+    }
+    let along = dot(axis, mean) * per as f64;
+    for a in 0..3 {
+        for b in 0..3 {
+            normal[a][b] += per as f64 * axis[a] * axis[b];
+        }
+        right[a] += along * axis[a];
+    }
+    let p = crate::photos::markers::linalg::solve(normal, right)?;
+    Some((axis, [p[0], p[1], p[2]]))
+}
+
+/// Replaces the cameras of one turn by one fixed camera turned about `axis` through `through`: the
+/// reference is the photo whose motion to the others is most nearly a turn about the axis; every photo's
+/// angle comes from its own rotation, or for photos far from a turn about the axis (over 3 degrees), from
+/// its neighbours. Returns the turn's motion (cameras numbered from 0) and how many photos were that far
+/// off, or `None` when the turn was left as it was.
+fn onto_turntable(axis: V3, through: V3, rotations: &mut [M3], translations: &mut [V3]) -> Option<(Turn, usize)> {
+    let per = rotations.len();
+    let off = |j: usize, k: usize| -> (f64, f64) {
+        let turn = mul(&transpose(&rotations[j]), &rotations[k]);
+        let angle = angle_about(axis, &turn);
+        (angle, crate::photos::markers::linalg::rotation_angle_deg(&turn, &rodrigues(scale(axis, angle))))
+    };
+    let reference =
+        (0..per).map(|j| (median_f64(&mut (0..per).map(|k| off(j, k).1).collect::<Vec<_>>()), j)).min_by(|a, b| a.0.total_cmp(&b.0))?.1;
+    let found: Vec<(f64, f64)> = (0..per).map(|k| off(reference, k)).collect();
+    let good: Vec<usize> = (0..per).filter(|&k| found[k].1 <= 3.0).collect();
+    if good.len() * 2 < per {
+        return None;
+    }
+    // Angles unwrapped along the capture order from the reference, the far-off ones interpolated.
+    let tau = 2.0 * std::f64::consts::PI;
+    let mut angles = vec![f64::NAN; per];
+    for &k in &good {
+        angles[k] = found[k].0;
+    }
+    let order: Vec<usize> = (0..per).map(|i| (reference + i) % per).collect();
+    let mut last = 0.0;
+    for &k in &order {
+        if angles[k].is_finite() {
+            angles[k] += tau * ((last - angles[k]) / tau).round();
+            last = angles[k];
+        }
+    }
+    for i in 0..per {
+        let k = order[i];
+        if angles[k].is_finite() {
+            continue;
+        }
+        let before = (0..i).rev().map(|b| order[b]).find(|&b| angles[b].is_finite());
+        let after = (i + 1..per).map(|a| order[a]).find(|&a| angles[a].is_finite());
+        let position = |k: usize| (k + per - reference) % per;
+        angles[k] = match (before, after) {
+            (Some(b), Some(a)) => {
+                let f = (position(k) - position(b)) as f64 / (position(a) - position(b)) as f64;
+                angles[b] + f * (angles[a] - angles[b])
+            }
+            (Some(b), None) => angles[b] + (angles[b] - angles[reference]) / position(b).max(1) as f64 * (position(k) - position(b)) as f64,
+            _ => return None,
+        };
+    }
+    // The fixed camera: the reference's rotation, and the centre every photo puts it at once turned back.
+    let fixed = rotations[reference];
+    let mut parts: [Vec<f64>; 3] = Default::default();
+    for &k in &good {
+        let centre = scale(apply(&transpose(&rotations[k]), translations[k]), -1.0);
+        let back = add(apply(&rodrigues(scale(axis, angles[k])), sub(centre, through)), through);
+        for (a, part) in parts.iter_mut().enumerate() {
+            part.push(back[a]);
+        }
+    }
+    let centre = [median_f64(&mut parts[0]), median_f64(&mut parts[1]), median_f64(&mut parts[2])];
+    let turn =
+        Turn { cameras: (0..per).collect(), axis, through, rotation: fixed, translation: scale(apply(&fixed, centre), -1.0), angles };
+    for k in 0..per {
+        (rotations[k], translations[k]) = turn.pose(k);
+    }
+    Some((turn, per - good.len()))
 }
 
 /// The neutral solution of a solved capture; `names[i]` is the photo of camera `i`.
@@ -959,6 +1127,34 @@ mod tests {
     }
 
     #[test]
+    fn a_turn_is_put_back_onto_the_turntable_motion() {
+        let (_, _, rotations, translations) = capture_tilt(24, 1.0, 20.0);
+        let centre = |r: &M3, t: V3| scale(apply(&transpose(r), t), -1.0);
+        let (axis, through) = shared_axis(&[0], 24, &rotations, &translations).unwrap();
+        // True cameras stay where they are.
+        let (mut r, mut t) = (rotations.clone(), translations.clone());
+        assert_eq!(onto_turntable(axis, through, &mut r, &mut t).map(|m| m.1), Some(0));
+        for k in 0..24 {
+            assert!(
+                rotation_angle_deg(&r[k], &rotations[k]) < 1e-4
+                    && norm(sub(centre(&r[k], t[k]), centre(&rotations[k], translations[k]))) < 1e-7
+            );
+        }
+        // Three photos far off, the others slightly: all of them come back close to the truth.
+        for k in 0..24 {
+            let (wrong, shift) = if [3, 4, 17].contains(&k) { (12.0f64, 0.3) } else { (0.2, 0.004) };
+            let w = [(k as f64 * 1.3).sin(), (k as f64 * 0.7).cos(), 0.5];
+            r[k] = mul(&rodrigues(scale(unit(w), wrong.to_radians())), &rotations[k]);
+            t[k] = add(translations[k], scale(unit([w[2], w[0], w[1]]), shift));
+        }
+        assert_eq!(onto_turntable(axis, through, &mut r, &mut t).map(|m| m.1), Some(3));
+        for k in 0..24 {
+            assert!(rotation_angle_deg(&r[k], &rotations[k]) < 1.0, "photo {k}");
+            assert!(norm(sub(centre(&r[k], t[k]), centre(&rotations[k], translations[k]))) < 0.03, "photo {k}");
+        }
+    }
+
+    #[test]
     fn two_turns_at_different_heights_are_joined_into_one_frame() {
         // Ring B: the same turntable seen by a second camera raised by 25 degrees about the object.
         let (a, camera, rotations, translations) = capture_tilt(24, 1.0, 20.0);
@@ -1030,6 +1226,17 @@ mod tests {
             "{}",
             rescued.report
         );
+        let factor = size(&truth_t) / (0..48).map(|v| norm(relative(&rescued.rotations, &rescued.translations, v).1)).sum::<f64>();
+        for v in 0..48 {
+            let (r_true, t_true) = relative(&truth_r, &truth_t, v);
+            let (r_found, t_found) = relative(&rescued.rotations, &rescued.translations, v);
+            assert!(rotation_angle_deg(&r_found, &r_true) < 0.01, "view {v}");
+            assert!(norm(sub(scale(t_found, factor), t_true)) < 1e-3, "view {v}");
+        }
+        // So is a turn without any solution of its own.
+        let unsolved = Solved::unsolved(24, "no points");
+        assert!(!sound_ring(&unsolved));
+        let rescued = join(&all, &camera, &[solved[0].clone_parts(), unsolved]).unwrap();
         let factor = size(&truth_t) / (0..48).map(|v| norm(relative(&rescued.rotations, &rescued.translations, v).1)).sum::<f64>();
         for v in 0..48 {
             let (r_true, t_true) = relative(&truth_r, &truth_t, v);

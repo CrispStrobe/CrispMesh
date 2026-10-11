@@ -550,6 +550,9 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         working_size: integer("turntable-working-size")?.clamp(0, 100_000) as usize,
         rings: integer("turntable-rings")?.clamp(1, 16) as usize,
     };
+    // The default deadlines are for one turn; several turns have that many times the photos. Given ones are kept.
+    let turns = turntable.rings as u64;
+    let deadline = |name: &str| -> anyhow::Result<u64> { Ok(seconds(name)? * if text(name).is_some() { 1 } else { turns }) };
     let markers = MarkersOptions {
         mat: pick("markers-mat", "CRISP3DS_MARKERS_MAT").map(|p| absolute(&p)),
         minimum_per_photo: integer("markers-minimum")?.clamp(1, 1000) as usize,
@@ -636,11 +639,11 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         open_turn: switch("open-turn"),
         random_seed: integer("random-seed")?,
         timeouts: Timeouts {
-            small: seconds("small-step-timeout")?,
-            sam: seconds("sam-timeout")?,
-            features: seconds("features-timeout")?,
-            matching: seconds("matching-timeout")?,
-            sfm: seconds("sfm-timeout")?,
+            small: deadline("small-step-timeout")?,
+            sam: deadline("sam-timeout")?,
+            features: deadline("features-timeout")?,
+            matching: deadline("matching-timeout")?,
+            sfm: deadline("sfm-timeout")?,
         },
         gates: Gates {
             minimum_registered_fraction: number("minimum-registered-fraction")?,
@@ -794,6 +797,9 @@ pub(crate) mod tests {
             (Some("otsu"), Some(0.999))
         );
         assert_eq!(record["timeouts"]["sfm"], 900);
+        // Default deadlines grow with the turns; a given one is kept.
+        let turns = resolve(&arguments(&folder, &["--turntable-rings", "3", "--sfm-timeout", "100"]), &none).unwrap();
+        assert_eq!((turns.timeouts.sam, turns.timeouts.small, turns.timeouts.sfm), (5400, 1800, 100));
         crate::photos::fs::create_dir_all(folder.join("given")).unwrap();
         let given = folder.join("given").to_string_lossy().to_string();
         let variables = |name: &str| match name {

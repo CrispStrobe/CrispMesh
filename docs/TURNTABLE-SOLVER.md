@@ -248,10 +248,32 @@ cameras at several heights. The photo limit becomes 96 per turn.
    share the most points (a turntable seen from above is a plane, where the
    linear transform fails), refined by Gauss-Newton with a shrinking inlier
    bound. A photo needs 20 points within 3 px.
-5. All matches, those across turns included, become tracks; one bundle
-   adjustment with every pose free.
+5. A turn registered photo by photo rests on few points per photo, and a turn
+   seen almost along the axis also drifts in a free adjustment: its photos
+   barely tell its radius from its height. The turntable fixes what such a turn
+   may be: one camera, turned about the axis the plausible turns share. The axis
+   direction comes from the turns' rotations, a point on it exactly from pairs
+   of photos of one turn (c_k - p = Q (c_j - p), Q the turn between them). The
+   turn's photos are put onto that motion: the reference is the photo whose
+   motion to the others is most nearly a turn about the axis, every photo keeps
+   its angle about the axis (photos more than 3 degrees from such a turn take it
+   from their neighbours), and the fixed camera's centre is the median of the
+   centres turned back.
+6. All matches, those across turns included, become tracks; one bundle
+   adjustment, every pose free except those of the turns from step 5, which keep
+   their turntable motion: their fixed camera (six parameters) and one angle per
+   photo are adjusted with the rest, the axis held. Captures without such a turn
+   use the plain adjustment unchanged.
 
-The ring gates apply to each turn separately. For the optical-axis gate the miss
+A turn whose own solution fails (no points triangulated; on the mustard bottle
+the camera almost straight down) no longer stops the run: it is warned about and
+its photos are registered against the other turns. Default deadlines are
+multiplied by the number of turns (given ones are kept): SAM on 300 photos of
+4272 x 2848 needs more than the 30 minutes of one turn.
+
+The ring gates apply to each turn separately, and so does the camera audit's
+per-photo part (landmark support, reprojection): a photo with too little support
+fails its own turn, not every turn. For the optical-axis gate the miss
 is compared with the distance along the optical axis to the ring axis instead of
 the ring radius, which is small for a camera looking down along the axis (one
 turn only: unchanged). The SAM prompt box is the union of the coarse masks of
@@ -271,7 +293,19 @@ SAM about 30 min for 300 photos), peak memory 3.4 GB.
 Synthetic tests: two turns 25 degrees apart joined to the truth (0.01 degree,
 1e-3 relative translation) with one wrong match in ten, the same with one turn's
 own solution deliberately broken (registered photo by photo), a resection with
-one wrong match in four, and from points on one plane with a nearby start.
+one wrong match in four, and from points on one plane with a nearby start. Put back onto the turntable motion: a turn whose
+true cameras are unchanged (below 1e-4 degree), and three photos 12 degrees off
+returned to within 1 degree; the constrained adjustment returns a disturbed turn
+to the truth.
+
+With steps 5 and 6 the drill's five turns are unchanged in quality: F1 0.720 /
+0.847 / 0.934 (photo-consistency fit; before 0.724 / 0.855 / 0.937), 0.798 at
+0.5 % with mesh ICP (before 0.803). Camera distances to camera 3 agree with the
+supplied rig (evaluation only) within 0.5 %, and every turn's depth bias is
+within 0.05 %. On the YCB mustard bottle the cameras solve (300 of 300), but
+the top-down turn keeps a +1.5 % depth bias (OTHER-IMAGE-SETS). One turn: the
+same scene files, byte for byte, as before these steps (2136 x 1424 drill
+capture).
 
 ## Experimental moving support region
 

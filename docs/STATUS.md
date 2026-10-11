@@ -35,7 +35,7 @@ README.
 | --- | --- |
 | Google Scanned Objects renders (72 photos) | rhino 0.867, cereal box 0.833 at 0.5 % with threshold masks; light-coloured objects need better masks (Mario 0.71 → 0.83 with exact masks) |
 | DTU historical dense-stage diagnostics (49 views, supplied masks; supplied or COLMAP poses) | 1.03–1.31 mm mean of accuracy and completeness on scans 63 and 65; these are not photo-only pipeline results |
-| YCB turntable | cracker box 0.45 at 0.5 %; smooth objects (mustard bottle) refused by the camera gates |
+| YCB turntable | cracker box 0.45 at 0.5 %; mustard bottle from the DSLR photos 0.73 at 0.5 % with one turn, 0.48 with five (top-down turn biased) |
 
 ## Findings worth knowing
 
@@ -83,6 +83,15 @@ README.
   [ycb-drill-dslr-rings-review.json](../tests/evidence/ycb-drill-dslr-rings-review.json)
   and the turntable solver document. Capture advice that follows: fill the frame
   with the object and add camera heights rather than more photos per turn.
+- Several turns are more robust and do not always help (2026-10-11). A turn
+  whose own solution fails no longer stops the run: its photos are registered
+  against the other turns and kept on the turntable motion through the bundle
+  adjustment. Default deadlines scale with the number of turns, and each turn's
+  photos are audited on their own. The YCB mustard bottle's five DSLR heights
+  register 300 of 300, but the top-down turn's depths are 1.5 % too far and the
+  mesh (F1 at 0.5 % 0.48) is worse than one side turn (0.73). The drill's
+  five turns are unchanged (0.72), and single-turn captures are byte-identical.
+  See [ycb-mustard-rings-review.json](../tests/evidence/ycb-mustard-rings-review.json).
 - At 10° steps (36 photos) results are almost as good as at 5°; at 15° steps
   low-texture objects fail camera recovery.
 

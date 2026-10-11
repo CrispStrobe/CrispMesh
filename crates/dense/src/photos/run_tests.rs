@@ -240,3 +240,26 @@ fn alicevision_lists_views_when_installed() {
     assert_eq!(calibrated["intrinsics"][0]["locked"], "true");
     std::fs::remove_dir_all(&root).unwrap();
 }
+
+#[test]
+fn a_turn_is_judged_by_its_own_photos() {
+    let view = |name: &str, count: usize, p95: f64| json!({"name": name, "reprojection_pixels": {"count": count, "p95": p95}});
+    let audit = json!({
+        "passed": false,
+        "reasons": ["insufficient distinct landmark support per registered view", "landmark behind camera"],
+        "policy": {"minimum_observations_per_view": 20, "maximum_per_view_reprojection_p95_pixels": 4.0},
+        "per_view": [view("capture_0000.png", 200, 1.0), view("capture_0001.png", 12, 1.0),
+                     view("capture_0002.png", 200, 1.0), view("capture_0003.png", 200, 6.0)],
+    });
+    let names: Vec<String> = (0..4).map(capture_name).collect();
+    let first = turn_audit(&audit, &names[0..2]);
+    assert_eq!(first["reasons"], json!(["landmark behind camera", "insufficient distinct landmark support per registered view"]));
+    let second = turn_audit(&audit, &names[2..4]);
+    assert_eq!(second["reasons"], json!(["landmark behind camera", "per-view reprojection exceeds declared bound"]));
+    let clean = turn_audit(
+        &json!({"passed": false, "reasons": ["insufficient distinct landmark support per registered view"],
+                                   "policy": audit["policy"], "per_view": audit["per_view"]}),
+        &names[2..3],
+    );
+    assert_eq!((clean["passed"].as_bool(), clean["reasons"].as_array().map(Vec::len)), (Some(true), Some(0)));
+}
