@@ -70,6 +70,19 @@ README.
   (worst change −0.0013). Creases, vents and knurling of about a millimetre
   remain below what these photos resolve. See
   [noise-matched-truncation-review.json](../tests/evidence/noise-matched-truncation-review.json).
+- The drill's limit was the photos, and better photos fix most of it (2026-10-11).
+  The same pipeline on the YCB capture's DSLR photos (4272 x 2848, 3.3 times the
+  pixels per millimetre) scores F1 at 0.5 % 0.69 instead of 0.49 with mean error
+  0.0053 instead of 0.0093; with all five DSLR camera heights (300 photos, new
+  `--turntable-rings 5`) the openings under the motor housing and along the handle
+  close and F1 at 0.5 % reaches 0.72 (scan aligned by photo-consistency; 0.80 with
+  mesh ICP). Surfaces stay mildly lumpy and vents, knurling and lettering are not
+  recovered. Large photos needed a camera-solver working resolution
+  (`--turntable-working-size`, 2200 px) and bounded grey-image memory; captures up
+  to 2200 px are unchanged byte for byte. See
+  [ycb-drill-dslr-rings-review.json](../tests/evidence/ycb-drill-dslr-rings-review.json)
+  and the turntable solver document. Capture advice that follows: fill the frame
+  with the object and add camera heights rather than more photos per turn.
 - At 10° steps (36 photos) results are almost as good as at 5°; at 15° steps
   low-texture objects fail camera recovery.
 

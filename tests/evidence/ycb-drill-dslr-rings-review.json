@@ -1,0 +1,41 @@
+{
+  "schema": "crisp3ds_evidence_v1",
+  "date": "2026-10-11",
+  "title": "YCB power drill from DSLR photos: resolution and several camera heights",
+  "question": "Is the drill limited by the photos rather than the algorithm, and do more pixels per millimetre and more camera heights fix it?",
+  "data": {
+    "source": "YCB object and model set, 035_power_drill, berkeley_rgb_highres (DSLR N1-N5, 120 angles, 4272 x 2848) and berkeley_rgbd (NP1-NP5, 1280 x 1024); CC BY 4.0, Calli et al.",
+    "used_as_inputs": "photos every 6 degrees (60 per camera) and each camera's lens intrinsics N*_rgb_K / N*_rgb_d only",
+    "not_used_as_inputs": "supplied poses, rig extrinsics (H_*_from_NP5), dataset masks, depth, scanner mesh",
+    "five_camera_preparation": "every camera undistorted with its own calibration into one common pinhole lens (largest focal length 3808.56 px, centred principal point)",
+    "masks": "our own SAM 2.1 masks (--masks sam --sam-prompt-mask background --sam-candidates several); five-camera runs import the same own masks to skip recomputation",
+    "cameras": "our own turntable solver with --turntable-region surface",
+    "evaluation_reference": "Google 64k scan, posthoc only; aligned to each run's camera frame (1) by photo-consistency of the scan under our cameras, refined from (2) a proper-similarity trimmed ICP to the mesh; both reported"
+  },
+  "code_changes": {
+    "turntable_working_size": "--turntable-working-size N (default 2200): features and camera solve on photos scaled to that longest side; lens and observations scaled back. Photos up to 2200 px unchanged: cameras.json, sparse_points.npy and every scene file byte-identical to the previous binary (efbd600 front end, sha256 ba66c832...) on a 2136 x 1424 capture",
+    "turntable_rings": "--turntable-rings N: per-turn solve; turns with plausible rings joined by RANSAC similarity on linked points; other turns registered photo by photo (DLT and nearby-camera starts, Gauss-Newton with shrinking inlier bound) in rounds; one joint bundle adjustment. Cross-turn matches only between features that turn with the object. Per-turn ring gates; optical-axis miss against the viewing distance for multi-turn captures. SAM prompt box per turn. Photo limit 96 per turn (SAM and cleanup limits 1536)",
+    "dense_gray_budget": "whole grey photos kept until mask repair only while they take at most 2 GiB; otherwise canvas plus a quarter canvas. Byte-identical meshes on both paths (sha256 3e9e0143... at 2136 x 1424, 8330004e... at 4272 x 2848); full-size peak memory 3.9 -> 2.2 GB"
+  },
+  "results": [
+    {"run": "NP3, 60 photos, 1280 x 1024, own cameras (current input)", "f1_photo_fit": [0.4888, 0.7323, 0.8736], "mean_photo_fit": 0.00926, "f1_icp_fit": [0.5231, 0.7561, 0.8784], "mean_icp_fit": 0.00874, "genus": 66, "mesh_sha256": "d859199d6307f0119c9accd72ce00f60376ccfdebb0b4e5fbb79d5e171abce11"},
+    {"run": "N3, 60 photos, 2136 x 1424, own cameras", "f1_photo_fit": [0.603, 0.7569, 0.8524], "mean_photo_fit": 0.00872, "f1_icp_fit": [0.6103, 0.7667, 0.8568], "mean_icp_fit": 0.00861, "genus": 65, "mesh_sha256_prefix": "3e9e01430ad8"},
+    {"run": "N3, 60 photos, 4272 x 2848, own cameras through the working resolution", "f1_photo_fit": [0.6867, 0.8525, 0.9552], "mean_photo_fit": 0.00534, "f1_icp_fit": [0.7655, 0.8907, 0.9551], "mean_icp_fit": 0.00463, "genus": 26, "triangles": 570460, "registered": "60/60", "reprojection_px_median": 0.673, "depth_median_abs_rel": 0.00143, "depth_frac_gt_1pct": 0.0218, "dense_seconds": 47.7, "mesh_sha256": "fcbc6832b2e8b28f58912368be50ed1f7f74fee5ea3d941b005e06bab4d69c24"},
+    {"run": "N1-N5, 300 photos, 4272 x 2848, --turntable-rings 5", "f1_photo_fit": [0.7235, 0.8551, 0.9374], "mean_photo_fit": 0.00523, "f1_icp_fit": [0.8033, 0.8952, 0.943], "mean_icp_fit": 0.00439, "genus": 18, "triangles": 698291, "registered": "300/300", "reprojection_px_median": 0.728, "reprojection_px_p95": 2.625, "turn_radius_spread_percent": [0.79, 0.9, 0.62, 1.68, 2.09], "placed_by_similarity": {"turn_2": 423, "turn_3": 347, "turn_4": 247}, "turn_5": "own solution not a ring (radius spread 15 %); registered photo by photo in two rounds (47, 13)", "depth_median_abs_rel": 0.00123, "dense_seconds": 330.7, "dense_peak_rss_gb": 5.36, "mesh_sha256": "5214b2062c9c75e0663c2ccf62315c3d2bc4d04ab94d66ab14b32c54d0efbe16"}
+  ],
+  "controls": {
+    "half_size_cameras_scaled_to_full_size": "F1 0.6765/0.8821/0.9543 (photo fit of the half-size frame): the native full-size cameras give the same result",
+    "fusion_grid_on_identical_full_size_depths": {"grid_400": 0.6765, "grid_600": 0.6671, "grid_800": 0.6684, "note": "F1 at 0.5 %; finer grids add noise and holes (genus 26 -> 68 -> 202) and no visible relief"},
+    "chuck_masks": "SAM still drops the black chuck in some steep views; the dense mask repair restores it when other heights keep it in the hull (mask-repair sheet inspected)"
+  },
+  "sheet": {"path": "tests/evidence/ycb-drill-dslr-rings.png", "sha256": "62e428375dc592bf4909651f805ffae6e75ddd4cbafdcb2f3d665bb4dcc6e534", "content": "scan (evaluation only, CC BY 4.0) and three reconstructions in the scan's frame from five fixed directions", "inspected": true},
+  "checks": ["207 dense library tests with GPU", "cargo fmt", "clippy -D warnings default, capi and sam-onnx", "threaded WASM build", "Studio JS 154", "Studio native-engine 32", "photo front end byte identity below the working size", "dense byte identity on both grey-memory paths"],
+  "limits": [
+    "One object, one capture rig; the gain from resolution is expected wherever depth noise is at the photo limit, not shown on other objects here.",
+    "Surfaces remain mildly lumpy; vents, knurling and lettering (about 1 mm) are not recovered.",
+    "Scores depend on the scan alignment: the two fits differ by up to 0.08 F1 at 0.5 %.",
+    "Five-camera turns at 2 % precision are slightly below one turn's: the newly seen sides are noisier.",
+    "The six-object dense gate was not rerun: dense defaults are unchanged, and those captures (73 photos of 1749 x 1155, about 0.6 GB of grey) take the unchanged paths of the working resolution and grey budget; byte identity was verified on drill captures, not rerun on the six objects.",
+    "No browser execution of the multi-turn front end; 300 full-size photos need about 5.4 GB in the native dense stage."
+  ]
+}

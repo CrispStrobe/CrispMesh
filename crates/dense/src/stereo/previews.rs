@@ -38,18 +38,8 @@ pub fn colour_sheet(
 ) -> anyhow::Result<()> {
     let mut tiles: Vec<(Vec<u8>, usize)> = Vec::new();
     for &i in picks {
-        let gray = &inputs.gray[i];
-        let (w, h) = (gray.width, gray.height);
-        let mut rgb: Vec<[f32; 3]> = gray.data.iter().map(|&g| [g.clamp(0.0, 1.4) / 1.4; 3]).collect();
-        for (mask, colour) in layers(i) {
-            for (pixel, &m) in rgb.iter_mut().zip(&mask.data) {
-                if m != 0 {
-                    for c in 0..3 {
-                        pixel[c] = 0.3 * pixel[c] + 0.7 * colour[c];
-                    }
-                }
-            }
-        }
+        let (w, h) = (inputs.masks[i].width, inputs.masks[i].height);
+        let layers = layers(i);
         let b = inputs.boxes[i];
         let (x0, y0) = (b[0].max(0) as usize, b[1].max(0) as usize);
         let (x1, y1) = ((b[2].min(w as i64)).max(0) as usize, (b[3].min(h as i64)).max(0) as usize);
@@ -57,7 +47,17 @@ pub fn colour_sheet(
         let mut crop = Vec::with_capacity(cw * ch * 3);
         for y in y0..y0 + ch {
             for x in x0..x0 + cw {
-                crop.extend(rgb[y.min(h - 1) * w + x.min(w - 1)].map(|v| (255.0 * v) as u8));
+                let (x, y) = (x.min(w - 1), y.min(h - 1));
+                let g = inputs.gray_at(i, x, y).unwrap_or(0.0);
+                let mut pixel = [g.clamp(0.0, 1.4) / 1.4; 3];
+                for (mask, colour) in &layers {
+                    if mask.data[y * w + x] != 0 {
+                        for c in 0..3 {
+                            pixel[c] = 0.3 * pixel[c] + 0.7 * colour[c];
+                        }
+                    }
+                }
+                crop.extend(pixel.map(|v| (255.0 * v) as u8));
             }
         }
         let th = tile_height(cw, ch, 600);

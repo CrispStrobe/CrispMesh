@@ -100,10 +100,45 @@ fn judge(options: &Options, out: &Path, solution: &Solution, declared: Option<&L
     };
     let audit = audit_solution(solution, &policy)?;
     util::write_json(&sfm.join("camera-audit.json"), &audit, 1)?;
-    let ring = ring_statistics(&scene_cameras(solution)?, gates.duplicate_step_deg);
-    util::write_json(&sfm.join("ring-sanity.json"), &ring, 1)?;
     let limits = gates.to_json();
-    let (passed, reasons) = decide_gates(&audit, &ring, &limits);
+    let cameras = scene_cameras(solution)?;
+    let rings = if options.cameras == super::options::CameraChoice::Turntable { options.turntable.rings } else { 1 };
+    let (ring, passed, reasons) = if rings > 1 {
+        // Several turns: every turn is one ring of its own, judged as a capture of that many photos.
+        let per = options.photo_count / rings;
+        let (mut all, mut passed, mut reasons) = (Vec::new(), true, Vec::new());
+        for r in 0..rings {
+            let own: Vec<_> = cameras
+                .iter()
+                .filter(|c| c.index / per == r)
+                .map(|c| super::ring::SceneCamera { index: c.index - r * per, ..c.clone() })
+                .collect();
+            let mut statistics = ring_statistics(&own, gates.duplicate_step_deg);
+            // Turns at several heights include steep ones, whose ring radius is small: there the optical
+            // axis gate compares the miss with the viewing distance (equal to the radius for level cameras).
+            if let Some(scaled) = statistics.get("optical_axis_miss_of_distance_percent").cloned() {
+                statistics["optical_axis_miss_percent"] = scaled;
+            }
+            let mut audit = audit.clone();
+            audit["input_images"] = json!(per);
+            audit["registered_cameras"] = json!(own.len());
+            audit["coverage"] = json!(own.len() as f64 / per as f64);
+            let (ok, why) = decide_gates(&audit, &statistics, &limits);
+            passed &= ok;
+            reasons.extend(why.into_iter().map(|reason| format!("turn {}: {reason}", r + 1)));
+            all.push(statistics);
+        }
+        reasons.sort();
+        reasons.dedup();
+        let mut ring = all[0].clone();
+        ring["rings"] = json!(all);
+        (ring, passed, reasons)
+    } else {
+        let ring = ring_statistics(&cameras, gates.duplicate_step_deg);
+        let (passed, reasons) = decide_gates(&audit, &ring, &limits);
+        (ring, passed, reasons)
+    };
+    util::write_json(&sfm.join("ring-sanity.json"), &ring, 1)?;
     let worst = audit["per_view"]
         .as_array()
         .into_iter()

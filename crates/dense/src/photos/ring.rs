@@ -195,7 +195,7 @@ pub fn ring_statistics(cameras: &[SceneCamera], duplicate_step_deg: f64) -> Valu
     circular.push(360.0);
     let largest_gap = circular.windows(2).map(|w| w[1] - w[0]).fold(f64::NEG_INFINITY, f64::max);
     let centre = [0, 1, 2].map(|axis| mean[axis] + middle[0] * basis[0][axis] + middle[1] * basis[1][axis]);
-    let (mut miss, mut outward) = (Vec::with_capacity(count), 0);
+    let (mut miss, mut outward, mut miss_of_distance) = (Vec::with_capacity(count), 0, Vec::with_capacity(count));
     for camera in &cameras {
         let mut inward = sub(centre, camera.centre);
         let along = dot(inward, normal);
@@ -206,6 +206,13 @@ pub fn ring_statistics(cameras: &[SceneCamera], duplicate_step_deg: f64) -> Valu
         let length = norm(across);
         let offset = if length > 1e-9 { dot(inward, across).abs() / length.max(1e-9) } else { norm(inward) };
         miss.push(offset / radius * 100.0);
+        // The same miss over the distance along the optical axis to where it passes the ring axis: the
+        // ring's radius is small for cameras looking down along the axis, the distance to the object is not.
+        let w = sub(camera.centre, centre);
+        let (b, d, e) = (dot(forward, normal), dot(forward, w), dot(normal, w));
+        let denominator = 1.0 - b * b;
+        let reach = if denominator > 1e-9 { ((b * e - d) / denominator).abs() } else { norm(w) };
+        miss_of_distance.push(offset / reach.max(1e-12) * 100.0);
         outward += (dot(forward, inward) <= 0.0) as usize;
     }
     let pairs: Vec<[usize; 2]> =
@@ -220,6 +227,7 @@ pub fn ring_statistics(cameras: &[SceneCamera], duplicate_step_deg: f64) -> Valu
         "step_deg_per_capture": summary(&steps),
         "reversed_steps": steps.iter().filter(|&&s| s < -duplicate_step_deg).count(),
         "duplicate_pose_pairs": pairs, "optical_axis_miss_percent": summary(&miss), "cameras_looking_outward": outward,
+        "optical_axis_miss_of_distance_percent": summary(&miss_of_distance),
     })
 }
 
@@ -385,6 +393,33 @@ pub(crate) mod tests {
         assert_eq!(ring["cameras_looking_outward"], 0);
         assert_eq!((ring["reversed_steps"].as_u64(), ring["duplicate_pose_pairs"].as_array().unwrap().len()), (Some(0), 0));
         assert_eq!(decide_gates(&good_audit(), &ring, &limits()), (true, vec![]));
+    }
+
+    #[test]
+    fn steep_ring_miss_is_also_measured_against_the_viewing_distance() {
+        // Cameras almost straight above the axis (radius 0.2 at height 2), all aimed 0.1 beside it.
+        let target = [0.1, 0.0, 0.0];
+        let cameras: Vec<SceneCamera> = arange(0.0, 360.0, 10.0)
+            .iter()
+            .enumerate()
+            .map(|(n, angle)| {
+                let angle = angle.to_radians();
+                let centre = [0.2 * angle.sin(), 2.0, 0.2 * angle.cos()];
+                let to = sub(target, centre);
+                let forward = to.map(|v| v / norm(to));
+                let right = cross([0.0, 1.0, 0.0], forward);
+                let right = right.map(|v| v / norm(right));
+                SceneCamera { index: n, name: format!("capture_{n:04}.png"), rotation: [right, cross(forward, right), forward], centre }
+            })
+            .collect();
+        let ring = ring_statistics(&cameras, 0.5);
+        // Against the radius the aim looks far off; against the distance to the axis it is about 5 %.
+        assert!(ring["optical_axis_miss_percent"]["max"].as_f64().unwrap() > 40.0, "{ring}");
+        let scaled = ring["optical_axis_miss_of_distance_percent"]["max"].as_f64().unwrap();
+        assert!((4.0..6.0).contains(&scaled), "{scaled}");
+        // Level cameras aimed at the axis miss it by nothing either way.
+        let level = ring_statistics(&orbit(&arange(0.0, 360.0, 10.0), None), 0.5);
+        assert!(level["optical_axis_miss_of_distance_percent"]["max"].as_f64().unwrap() < 1e-6);
     }
 
     #[test]

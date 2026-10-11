@@ -108,8 +108,8 @@ pub fn run(
         }
     }
     paths.sort();
-    if !(1..=255).contains(&paths.len()) {
-        bail!("requires 1..255 RGB photos");
+    if !(1..=crate::photos::MOST_PHOTOS).contains(&paths.len()) {
+        bail!("requires 1..{} RGB photos", crate::photos::MOST_PHOTOS);
     }
     let mask_path = |photo: &Path| masks.join(format!("{}.png", file_name(photo)));
     let sealed: Vec<_> = paths.iter().cloned().chain(paths.iter().map(|p| mask_path(p))).collect();

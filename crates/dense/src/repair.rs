@@ -220,9 +220,11 @@ pub async fn repair_masks_with(
         covers.push(coverer.cover(&list, &inputs.cameras[n], inputs.masks[n].width, inputs.masks[n].height).await?);
     }
     let repaired: Vec<(Plane<u8>, f64)> = parallel_map(inputs.count(), |n| {
-        let (mask, gray, cover) = (&inputs.masks[n], &inputs.gray[n], &covers[n]);
+        let (mask, cover) = (&inputs.masks[n], &covers[n]);
+        // Outside the grey plane (photos loaded as canvas crops) a pixel counts as not dark.
+        let gray = |p: usize| inputs.gray_at(n, p % mask.width, p / mask.width);
         let (near, far) = (dilate(mask, near_ring), dilate(mask, far_ring));
-        let mut ring: Vec<f32> = (0..mask.data.len()).filter(|&p| far.data[p] != 0 && near.data[p] == 0).map(|p| gray.data[p]).collect();
+        let mut ring: Vec<f32> = (0..mask.data.len()).filter(|&p| far.data[p] != 0 && near.data[p] == 0).filter_map(gray).collect();
         // torch.median: the lower of the two middle values.
         let backdrop = if ring.is_empty() {
             f32::NAN
@@ -235,7 +237,7 @@ pub async fn repair_masks_with(
         let (mut added, mut before) = (0usize, 0usize);
         for p in 0..mask.data.len() {
             before += mask.data[p] as usize;
-            if cover.data[p] != 0 && gray.data[p] < threshold && mask.data[p] == 0 {
+            if cover.data[p] != 0 && mask.data[p] == 0 && gray(p).is_some_and(|g| g < threshold) {
                 out.data[p] = 1;
                 added += 1;
             }

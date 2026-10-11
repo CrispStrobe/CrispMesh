@@ -182,6 +182,9 @@ and their backdrop is dark.
 
 ## Limits and open points
 
+- **Turns of equal length.** `--turntable-rings` needs every turn complete and
+  with the same number of photos; a turn's photos must not be shuffled with
+  another's.
 - **Turntables only.** A camera walking around an object at rest does not
   repeat one motion; that needs registration photo by photo, which is not
   written.
@@ -203,6 +206,72 @@ and their backdrop is dark.
   1749 x 1155 with four threads here. Matching compares all descriptors of a
   pair: 1 to 11 s for 292 pairs.
 - Not tried: steps larger than 15 degrees, a strongly tilted axis.
+
+## Large photos and several turns (2026-10-11)
+
+**Working resolution.** `--turntable-working-size N` (default 2200): when the
+longest photo side is larger, features are found and the cameras solved on
+photos scaled to that side (area-filtered grey, nearest-neighbour masks), and
+the lens and the observations are scaled back afterwards; the poses do not
+change. The solver's bounds are in pixels (the 2 px support of the plane fit,
+Sampson cut-offs, Huber at 1 px), so without this they tighten with every
+megapixel: the YCB drill's DSLR photos (4272 x 2848) were refused with 14.6 %
+plane support where the same photos at half size passed. With it they register
+60 of 60 (median reprojection 0.67 px at full size), and the dense result equals
+the earlier half-size-camera control. Photos at most 2200 px wide are not
+touched: cameras and scene are byte-identical to the previous binary on a
+2136 x 1424 capture. `0` keeps the old behaviour.
+
+**Several turns.** `--turntable-rings N`: the photos are N complete turns of
+equal length, one after the other, for example the same turntable seen by
+cameras at several heights. The photo limit becomes 96 per turn.
+
+1. Every turn is matched within itself as before. Across neighbouring turns only
+   features that turn with the object are matched (inside the mask, or matched
+   with motion within their own turn): cameras at different heights see the
+   still surroundings alike at every angle, and those matches made the phase
+   search and the links meaningless. The photo of the next turn at the same
+   angle is found by probing two photos half a turn apart against all photos of
+   the next turn; each photo is then matched with that one and its two
+   neighbours.
+2. Every turn is solved on its own. With `--turntable-region surface` a turn
+   whose turntable plane cannot be fitted (seen edge-on from a level camera) is
+   searched from its matches instead, with a warning.
+3. A turn whose own cameras form a plausible ring (radius spread and distance
+   from the plane within 5 %, measured like the ring gates) is placed in the
+   first such turn's frame by a similarity, fitted with RANSAC to the points its
+   solution shares with the turns already placed.
+4. The photos of the other turns are registered one by one against the tracks
+   of all photos registered so far, in rounds (so later photos also use earlier
+   photos of their own turn): pose from the linked points, starting from the
+   direct linear transform and from the poses of the registered cameras that
+   share the most points (a turntable seen from above is a plane, where the
+   linear transform fails), refined by Gauss-Newton with a shrinking inlier
+   bound. A photo needs 20 points within 3 px.
+5. All matches, those across turns included, become tracks; one bundle
+   adjustment with every pose free.
+
+The ring gates apply to each turn separately. For the optical-axis gate the miss
+is compared with the distance along the optical axis to the ring axis instead of
+the ring radius, which is small for a camera looking down along the axis (one
+turn only: unchanged). The SAM prompt box is the union of the coarse masks of
+each turn, not of all photos.
+
+On the YCB power drill's five DSLR cameras (60 photos each, 6 degree steps,
+resampled into one common pinhole lens from each camera's own calibration; no
+supplied poses, rig extrinsics or masks): turns 1 to 4 (elevations about 8, 36,
+58 and 76 degrees) solved as clean rings and joined with 423, 347 and 247
+agreeing points; turn 5 (almost straight down) solved as a distorted ring (radius
+spread 15 %) and was registered photo by photo in two rounds (47, then 13
+photos). 300 of 300 registered, median reprojection 0.73 px (p95 2.6 px) at
+4272 x 2848, radius spreads 0.6 to 2.1 %, angular gaps 6.3 to 6.6 degrees.
+Front end 8.5 min from cached matches (features and matching about 10 min more,
+SAM about 30 min for 300 photos), peak memory 3.4 GB.
+
+Synthetic tests: two turns 25 degrees apart joined to the truth (0.01 degree,
+1e-3 relative translation) with one wrong match in ten, the same with one turn's
+own solution deliberately broken (registered photo by photo), a resection with
+one wrong match in four, and from points on one plane with a nearby start.
 
 ## Experimental moving support region
 

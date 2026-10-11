@@ -404,3 +404,32 @@ include many outliers. Cycle-confirmed training matches do not improve the
 full foreground holdout and were not adopted. Photo-only mask grouping is now
 available in the camera diagnostic. See the
 [depth failure evidence](../tests/evidence/drill-depth-failure-diagnostic.json).
+
+## YCB power drill from the DSLR cameras, 2026-10-11
+
+The YCB archive `035_power_drill_berkeley_rgb_highres.tgz` holds five Canon DSLR
+cameras (N1 to N5, elevations about 8 to 85 degrees) at 120 turntable angles,
+4272 x 2848; the RGB-D archive holds the 1280 x 1024 cameras NP1 to NP5 we used
+before (NP3, 60 photos). Only the photos and each camera's lens intrinsics were
+used; the archives' poses, rig extrinsics and masks stay unopened for
+reconstruction, and the Google scan is used only for scoring. Photos every 6
+degrees (60 per camera), undistorted with the camera's own calibration; for five
+cameras resampled into one common pinhole lens. Our SAM masks and our cameras.
+
+| Same pipeline, production defaults | F1 0.5 / 1 / 2 % (photo-consistency fit) | mean / diag. | F1 0.5 % (mesh ICP fit) | genus |
+|---|---|---|---|---|
+| NP3, 60 photos, 1280 x 1024 (current) | 0.489 / 0.732 / 0.874 | 0.0093 | 0.523 | 66 |
+| N3, 60 photos, half size | 0.603 / 0.757 / 0.852 | 0.0087 | 0.610 | 65 |
+| N3, 60 photos, full size | 0.687 / 0.853 / 0.955 | 0.0053 | 0.766 | 26 |
+| N1 to N5, 300 photos, full size | 0.724 / 0.855 / 0.937 | 0.0052 | 0.803 | 18 |
+
+Median depth error falls from 0.29 % (NP3) to 0.14 % (N3 full size); depths
+more than 1 % off from 13 % to 2 %. Both scan fits rank the runs alike; their
+difference (up to 0.08 at 0.5 %) is the alignment uncertainty. Five heights
+close the large openings under the motor housing and along the handle (sheet in
+the evidence record); their precision at 2 % is a little lower than one turn's,
+the newly seen sides being noisier. A finer fusion grid (600, 800) on the same
+full-size depths does not help. The battery's underside stands on the glass and
+is seen by no camera. Dense stage: 50 s and 2.2 GB for 60 full-size photos,
+331 s and 5.4 GB for 300.
+

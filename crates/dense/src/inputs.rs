@@ -270,27 +270,13 @@ fn load_mask(path: &Path) -> anyhow::Result<Plane<u8>> {
     Ok(Plane { width, height, data: luma.into_iter().map(|v| (v > 127) as u8).collect() })
 }
 
-struct Loaded {
-    gray: Plane<f32>,
-    mask: Plane<u8>,
-    bounds: [i64; 4],
-}
-
-fn load_view(row: &ViewRow, percentiles: &[f64]) -> anyhow::Result<Loaded> {
-    let rgb = load_rgb(Path::new(&row.image))?;
+/// The mask of a view and the bounds of its object pixels `[x0, y0, x1, y1]` (inclusive).
+fn load_view_mask(row: &ViewRow) -> anyhow::Result<(Plane<u8>, [i64; 4])> {
     let mask = load_mask(Path::new(&row.mask))?;
-    let (width, height) = (rgb.width() as usize, rgb.height() as usize);
-    if (mask.width, mask.height) != (width, height) || !mask.data.iter().any(|&m| m != 0) {
-        bail!("mask must be nonempty and match its image: {}", row.name);
-    }
-    // rgb.mean(2) / 255 on float32: the channel sum is exact, then two divisions.
-    let mut gray: Vec<f32> = rgb.pixels().map(|p| (p.0[0] as f32 + p.0[1] as f32 + p.0[2] as f32) / 3.0 / 255.0).collect();
     let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
-    let mut inside = Vec::new();
-    for y in 0..height {
-        for x in 0..width {
-            if mask.data[y * width + x] != 0 {
-                inside.push(gray[y * width + x]);
+    for y in 0..mask.height {
+        for x in 0..mask.width {
+            if mask.data[y * mask.width + x] != 0 {
                 x0 = x0.min(x as i64);
                 x1 = x1.max(x as i64);
                 y0 = y0.min(y as i64);
@@ -298,16 +284,41 @@ fn load_view(row: &ViewRow, percentiles: &[f64]) -> anyhow::Result<Loaded> {
             }
         }
     }
+    if x1 < x0 {
+        bail!("mask must be nonempty and match its image: {}", row.name);
+    }
+    Ok((mask, [x0, y0, x1, y1]))
+}
+
+/// The grey plane of a view, stretched by the object's grey percentiles; only the part inside `keep`
+/// (`[x0, y0, x1, y1)` in photo pixels, clamped to the photo) when given. Returns the plane and its origin.
+fn load_view_gray(row: &ViewRow, mask: &Plane<u8>, percentiles: &[f64], keep: Option<[i64; 4]>) -> anyhow::Result<(Plane<f32>, [i64; 2])> {
+    let rgb = load_rgb(Path::new(&row.image))?;
+    let (width, height) = (rgb.width() as usize, rgb.height() as usize);
+    if (mask.width, mask.height) != (width, height) {
+        bail!("mask must be nonempty and match its image: {}", row.name);
+    }
+    // rgb.mean(2) / 255 on float32: the channel sum is exact, then two divisions.
+    let grey = |p: &image::Rgb<u8>| (p.0[0] as f32 + p.0[1] as f32 + p.0[2] as f32) / 3.0 / 255.0;
+    let mut inside: Vec<f32> = rgb.pixels().zip(&mask.data).filter(|(_, &m)| m != 0).map(|(p, _)| grey(p)).collect();
     inside.sort_unstable_by(f32::total_cmp);
     let lo = percentile_sorted_f32(&inside, percentiles[0]);
     let hi = percentile_sorted_f32(&inside, percentiles[1]);
     // NumPy 1.x casts both float64 scalars to float32 before the array arithmetic.
     let (low, range) = (lo as f32, (hi - lo).max(1e-6) as f32);
-    for value in &mut gray {
-        *value = (*value - low) / range;
+    let [x0, y0, x1, y1] = keep.unwrap_or([0, 0, width as i64, height as i64]);
+    let (x0, y0) = (x0.clamp(0, width as i64) as usize, y0.clamp(0, height as i64) as usize);
+    let (x1, y1) = (x1.clamp(x0 as i64, width as i64) as usize, y1.clamp(y0 as i64, height as i64) as usize);
+    let mut data = Vec::with_capacity((x1 - x0) * (y1 - y0));
+    for y in y0..y1 {
+        data.extend((x0..x1).map(|x| (grey(rgb.get_pixel(x as u32, y as u32)) - low) / range));
     }
-    Ok(Loaded { gray: Plane { width, height, data: gray }, mask, bounds: [x0, y0, x1, y1] })
+    Ok((Plane { width: x1 - x0, height: y1 - y0, data }, [x0 as i64, y0 as i64]))
 }
+
+/// Whole grey photos are kept until the masks are repaired as long as they take at most this much
+/// memory; beyond it (many or very large photos) each keeps its canvas and a quarter canvas around it.
+const WHOLE_GRAY_BUDGET: usize = 2 << 30;
 
 /// Camera rows of an inputs directory with absolute image and mask paths (relative ones resolve to the directory).
 pub fn load_views(directory: &Path) -> anyhow::Result<Vec<ViewRow>> {
@@ -351,16 +362,13 @@ impl Inputs {
 
         let files: Vec<PathBuf> = rows.iter().flat_map(|r| [PathBuf::from(&r.image), PathBuf::from(&r.mask)]).collect();
         let held = hold_for_pool(&files)?;
-        let loaded: Vec<anyhow::Result<Loaded>> = parallel_map(rows.len(), |n| load_view(&rows[n], &config.stretch_percentiles));
-        release(held);
-        let (mut gray, mut masks, mut boxes) = (Vec::new(), Vec::new(), Vec::new());
+        let loaded: Vec<anyhow::Result<(Plane<u8>, [i64; 4])>> = parallel_map(rows.len(), |n| load_view_mask(&rows[n]));
+        let (mut masks, mut boxes) = (Vec::new(), Vec::new());
         let pad = config.crop_padding;
         for view in loaded {
-            let view = view?;
-            let [x0, y0, x1, y1] = view.bounds;
+            let (mask, [x0, y0, x1, y1]) = view?;
             boxes.push([x0 - pad, y0 - pad, x1 + pad + 1, y1 + pad + 1]);
-            gray.push(view.gray);
-            masks.push(view.mask);
+            masks.push(mask);
         }
         // One common canvas for every view, centred on each mask box.
         let mut cw = boxes.iter().map(|b| b[2] - b[0]).max().unwrap();
@@ -370,6 +378,18 @@ impl Inputs {
         for b in &mut boxes {
             let (x, y) = ((b[0] + b[2] - cw).div_euclid(2), (b[1] + b[3] - ch).div_euclid(2));
             *b = [x, y, x + cw, y + ch];
+        }
+        let whole: usize = masks.iter().map(|m| m.width * m.height * std::mem::size_of::<f32>()).sum();
+        let (mx, my) = (cw / 4, ch / 4);
+        let keep = |n: usize| (whole > WHOLE_GRAY_BUDGET).then(|| [boxes[n][0] - mx, boxes[n][1] - my, boxes[n][2] + mx, boxes[n][3] + my]);
+        let grays: Vec<anyhow::Result<(Plane<f32>, [i64; 2])>> =
+            parallel_map(rows.len(), |n| load_view_gray(&rows[n], &masks[n], &config.stretch_percentiles, keep(n)));
+        release(held);
+        let (mut gray, mut gray_origin) = (Vec::new(), Vec::new());
+        for view in grays {
+            let (plane, origin) = view?;
+            gray.push(plane);
+            gray_origin.push(origin);
         }
 
         // Viewing directions from the median sparse point, in float64 like NumPy.
@@ -394,7 +414,6 @@ impl Inputs {
             .iter()
             .map(|a| rays.iter().map(|b| (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos().to_degrees()).collect())
             .collect();
-        let gray_origin = vec![[0, 0]; gray.len()];
         Ok(Inputs { rows, cameras, gray, gray_origin, masks, boxes, longest: cw.max(ch), sparse, angles, repair_loose })
     }
 
@@ -404,20 +423,34 @@ impl Inputs {
     /// whole photos, must have run before.
     pub fn crop_gray(&mut self) {
         for n in 0..self.gray.len() {
-            let (plane, b) = (&self.gray[n], self.boxes[n]);
-            if self.gray_origin[n] != [0, 0] {
+            let b = self.boxes[n];
+            let (width, height) = (self.masks[n].width as i64, self.masks[n].height as i64);
+            let (x0, y0) = (b[0].clamp(0, width), b[1].clamp(0, height));
+            let (x1, y1) = (b[2].clamp(0, width), b[3].clamp(0, height));
+            let [ox, oy] = self.gray_origin[n];
+            let plane = &self.gray[n];
+            if [ox, oy] == [x0, y0] && plane.width as i64 == (x1 - x0).max(0) && plane.height as i64 == (y1 - y0).max(0) {
                 continue;
             }
-            let (x0, y0) = (b[0].clamp(0, plane.width as i64) as usize, b[1].clamp(0, plane.height as i64) as usize);
-            let (x1, y1) = (b[2].clamp(0, plane.width as i64) as usize, b[3].clamp(0, plane.height as i64) as usize);
-            let (width, height) = (x1.saturating_sub(x0), y1.saturating_sub(y0));
-            let mut data = Vec::with_capacity(width * height);
-            for y in y0..y0 + height {
-                data.extend_from_slice(&plane.data[y * plane.width + x0..y * plane.width + x0 + width]);
+            // The plane holds at least the canvas part of the photo (whole, or loaded with a margin).
+            let (w, h) = ((x1 - x0).max(0) as usize, (y1 - y0).max(0) as usize);
+            let mut data = Vec::with_capacity(w * h);
+            for y in 0..h {
+                let start = (y0 - oy + y as i64) as usize * plane.width + (x0 - ox) as usize;
+                data.extend_from_slice(&plane.data[start..start + w]);
             }
-            self.gray[n] = Plane { width, height, data };
-            self.gray_origin[n] = [x0 as i64, y0 as i64];
+            self.gray[n] = Plane { width: w, height: h, data };
+            self.gray_origin[n] = [x0, y0];
         }
+    }
+
+    /// The stretched grey value of a photo pixel, `None` where the grey plane holds no data.
+    pub fn gray_at(&self, view: usize, x: usize, y: usize) -> Option<f32> {
+        let [ox, oy] = self.gray_origin[view];
+        let (gx, gy) = (x as i64 - ox, y as i64 - oy);
+        let plane = &self.gray[view];
+        (gx >= 0 && gy >= 0 && (gx as usize) < plane.width && (gy as usize) < plane.height)
+            .then(|| plane.data[gy as usize * plane.width + gx as usize])
     }
 
     pub fn count(&self) -> usize {

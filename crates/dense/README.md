@@ -1720,6 +1720,18 @@ k=4 fails on Dragon (−0.0033). Drill with production defaults, same depths:
 F1 at 0.5/1/2 % 0.364/0.577/0.788 → 0.489/0.732/0.874, mean error −24 %.
 Numbers and limits: [noise-matched-truncation-review.json](../../tests/evidence/noise-matched-truncation-review.json).
 
+Large captures (2026-10-11): when the whole grey photos would take more than
+2 GiB (`WHOLE_GRAY_BUDGET` in `inputs.rs`), the masks are read first, the
+common canvas is computed from them, and each grey photo is loaded as its canvas
+plus a quarter canvas around it; mask repair treats pixels outside that as not
+dark. Below the budget nothing changes. Both paths reproduce earlier meshes byte
+for byte (YCB drill DSLR, 60 photos at 2136 x 1424 under and at 4272 x 2848
+over the budget); the full-size run's peak memory fell from 3.9 to 2.2 GB, and
+300 photos at 4272 x 2848 run in 5.4 GB (331 s). A finer grid does not help
+these depths: grid 600 and 800 on identical full-size drill depths score F1 at
+0.5 % 0.667/0.668 against 0.677 for 400, with more noise and holes (genus 68 and
+202 against 26); the depth noise, about 2.3 voxels at grid 400, limits detail.
+
 Facial-detail experiments (2026-10-08): `slanted_refine=true` runs deterministic
 coordinate refinement independently at each pixel. `slanted_iterations` defaults
 to 6 (range 1–16). It reuses our plane scorer but does not borrow neighboring

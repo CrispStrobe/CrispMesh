@@ -170,6 +170,10 @@ pub struct TurntableOptions {
     pub matches: Option<PathBuf>,
     /// Include moving turntable features while retaining object-only scene bounds.
     pub surface: bool,
+    /// Longest side, in pixels, of the photos the cameras are solved on (0: the photo resolution).
+    pub working_size: usize,
+    /// The photos are this many complete turns of equal length, one after the other (camera heights).
+    pub rings: usize,
 }
 
 /// Options of the `markers` camera provider.
@@ -320,6 +324,10 @@ cameras, colmap provider:
 cameras, turntable provider (our own solver for ordered turntable photos; docs/TURNTABLE-SOLVER.md):
   --turntable-features N (6000)   most features kept per photo
   --turntable-span N (4)          every photo is matched with this many successors
+  --turntable-working-size N (2200)   features are found on photos scaled to this longest side when larger;
+                                  the cameras are scaled back to the photos (0: the photo resolution)
+  --turntable-rings N (1)         the photos are N complete turns of equal length one after the other (cameras at
+                                  several heights): every turn is solved, then all are joined and adjusted together
 cameras, markers provider (a printed mat under the object; docs/MARKER-MAT.md):
   --markers-mat FILE              description of the printed mat, as `crisp3ds-dense mat` writes it [CRISP3DS_MARKERS_MAT]
   --markers-minimum N (5)         a photo with fewer decoded markers gets no pose
@@ -443,8 +451,11 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         bail!("--photos must be a directory");
     }
     let photo_count = list_photos(&photos)?.len();
-    if !(3..=96).contains(&photo_count) {
-        bail!("found {photo_count} photos ({}); the camera audit supports 3 to 96", PHOTO_SUFFIXES.join(", "));
+    // Up to 96 photos per turn (several turns with --turntable-rings).
+    let turns = integer("turntable-rings")?.clamp(1, 16) as usize;
+    if !(3..=96 * turns).contains(&photo_count) {
+        let most = 96 * turns;
+        bail!("found {photo_count} photos ({}); the camera audit supports 3 to {most}", PHOTO_SUFFIXES.join(", "));
     }
     let stop_after_masks = match text("stop-after").as_deref() {
         None => false,
@@ -536,6 +547,8 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         span: integer("turntable-span")?.clamp(1, 32) as usize,
         matches: text("turntable-matches").map(|p| absolute(&p)),
         surface: word("turntable-region") == "surface",
+        working_size: integer("turntable-working-size")?.clamp(0, 100_000) as usize,
+        rings: integer("turntable-rings")?.clamp(1, 16) as usize,
     };
     let markers = MarkersOptions {
         mat: pick("markers-mat", "CRISP3DS_MARKERS_MAT").map(|p| absolute(&p)),
@@ -689,7 +702,7 @@ impl Options {
                 "sensor_database": av.sensor_database, "memory_gib": av.memory_gib, "initial_field_of_view": av.initial_field_of_view,
                 "describer_types": av.describer_types, "describer_preset": av.describer_preset, "matching_method": av.matching_method,
                 "sfm_option": av.sfm_option},
-            "turntable": {"features": self.turntable.features, "span": self.turntable.span, "matches": self.turntable.matches, "surface": self.turntable.surface},
+            "turntable": {"features": self.turntable.features, "span": self.turntable.span, "matches": self.turntable.matches, "surface": self.turntable.surface, "working_size": self.turntable.working_size, "rings": self.turntable.rings},
             "open_turn": self.open_turn,
             "markers": {"mat": self.markers.mat, "minimum_per_photo": self.markers.minimum_per_photo, "aspect": self.markers.aspect,
                         "aspect_auto": self.markers.aspect_auto},
