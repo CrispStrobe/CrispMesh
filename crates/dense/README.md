@@ -1765,7 +1765,14 @@ fraction, 77–86 % against 94–98 %, was too thin a margin). With no settings 
 drill and mustard runs give the same meshes byte for byte as with the settings
 spelled out. Two objects is the evidence; a finely textured object photographed
 from several heights may lose relief and can be run with `silhouette_first=0`.
-Not run in a browser.
+In a browser (threaded build, 2 threads, Chrome with WebGPU, M1), the dense
+stages on the drill's five turns reduced to 100 views of 2136 × 1424: 218 s and
+2.44 GiB of WebAssembly memory with silhouette first (closed, genus 1) against
+141 s and 2.28 GiB without (open, genus 7); natively 133 s against 85 s. The
+scores match the native ones within 0.002. At that size the two modes score
+alike (0.79 / 0.88 / 0.97 against 0.79 / 0.87 / 0.98) and differ in the mesh:
+a hole in the motor housing and pits without, closed and smooth with. The
+photos stage for several turns has not been run in a browser.
 See [silhouette-first-review.json](../../tests/evidence/silhouette-first-review.json).
 
 Large captures (2026-10-11): when the whole grey photos would take more than

@@ -101,12 +101,67 @@
   "mask growth with a 15-pixel closing (drill 0.767/0.896/0.992: fills concave silhouette corners)"
  ],
  "checks": "215 library tests and 3 geometry audit tests with Metal, rustfmt, clippy for native all-targets with and without capi, threaded WebAssembly build. The wasm32 clippy run reports two findings in src/gpu/mod.rs, which this change does not touch.",
- "limits": "Two multi-height objects. Sheets inspected for both (smooth, closed; no fine relief). A finely textured multi-height capture was not available and may lose relief. No browser run; native peak resident 5.3-6.6 GB on 300 DSLR photos; run time about doubles (588 s mustard, 734 s drill against 365 s). No patent review of these steps; no third-party code.",
+ "limits": "Two multi-height objects. Sheets inspected for both (smooth, closed; no fine relief). A finely textured multi-height capture was not available and may lose relief. Browser: dense stages only, on a reduced scene; the multi-turn photos stage has not been run in a browser, and the full 300-photo DSLR scene (native peak resident 5.3-6.6 GB) does not fit a browser. Run time grows by about half to double. No patent review of these steps; no third-party code.",
  "automatic": {
   "camera_sets_checked": 36,
   "qualify": "mustard and drill five-turn captures and two four-turn subsets (elevations 10-84 degrees)",
   "do_not_qualify": "3DLF single rings (2-3 degrees), Google Scanned Objects renders (20), YCB single turns (52-59), DTU arcs (34-81, one-sided), a three-turn subset 36-79",
   "no_settings_runs": "drill and mustard with no settings give meshes byte-identical to the runs with the settings spelled out (sha256 4b8a1a0c..., e352ef0a...)",
   "single_turn_byte_identity": "six 3DLF objects, fusion and mesh from their own default depths: all six meshes byte-identical to before"
+ },
+ "browser": {
+  "scene": "the drill's five turns, every third view at half size: 100 views of 2136x1424, same own masks and cameras; dense stages from the inputs folder (photos stage not run in the browser)",
+  "setup": "threaded WebAssembly build, 2 threads, headless Chrome with WebGPU on an Apple M1, one run each; memory is the WebAssembly linear-memory high-water mark, not browser or GPU memory",
+  "silhouette_first_automatic": {
+   "seconds": 218.3,
+   "peak_wasm_bytes": 2438332416,
+   "closed": true,
+   "genus": 1,
+   "f1": [
+    0.7886,
+    0.8824,
+    0.9652
+   ],
+   "mean": 0.00422
+  },
+  "silhouette_first_0": {
+   "seconds": 141.1,
+   "peak_wasm_bytes": 2276982784,
+   "closed": false,
+   "genus": 7,
+   "f1": [
+    0.7877,
+    0.8701,
+    0.9779
+   ],
+   "mean": 0.00407
+  },
+  "native_same_scene": {
+   "automatic": {
+    "seconds": 133.0,
+    "peak_resident_bytes": 2367127552,
+    "closed": true,
+    "genus": 1,
+    "f1": [
+     0.789,
+     0.8831,
+     0.967
+    ],
+    "mean": 0.0042
+   },
+   "off": {
+    "seconds": 84.9,
+    "peak_resident_bytes": 1512570880,
+    "closed": false,
+    "genus": 10,
+    "f1": [
+     0.7873,
+     0.8702,
+     0.978
+    ],
+    "mean": 0.00407
+   }
+  },
+  "reading": "at this size the scores of the two modes are within the fit; the rendered meshes differ: off has a hole in the motor housing and pits, silhouette first is closed and smooth. Browser and native meshes are not byte-identical and score within 0.002 of each other."
  }
 }

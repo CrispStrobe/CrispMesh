@@ -108,7 +108,10 @@ README.
   (default 2) applies the three steps only when the cameras look at the object
   from several heights all the way round; every single-ring and one-sided
   capture checked (36 camera sets) is left as it was, byte for byte. It costs
-  about twice the time on those captures and has not been run in a browser.
+  half as much time again to twice the time on those captures. In a browser
+  the dense stages ran on a reduced drill scene (100 views): 218 s and
+  2.44 GiB of WebAssembly memory against 141 s and 2.28 GiB without, closed
+  against open; the photos stage for several turns is not yet run there.
   See [silhouette-first-review.json](../tests/evidence/silhouette-first-review.json).
 - At 10° steps (36 photos) results are almost as good as at 5°; at 15° steps
   low-texture objects fail camera recovery.
