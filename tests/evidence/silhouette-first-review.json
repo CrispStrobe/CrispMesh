@@ -1,0 +1,104 @@
+{
+ "title": "Silhouette first for multi-height turntable captures: cross-direction depth check, mask growth, gated hull correction, 2026-10-12",
+ "inputs": "YCB 006_mustard_bottle and 035_power_drill rgb_highres, cameras N1-N5, 60 photos each, own lens-undistorted photos, own masks (mustard: background contrast; drill: own SAM), own recovered cameras (turntable solver, --turntable-rings 5). Supplied poses, rig extrinsics, masks and depth not used. Google scans only for scoring, each mesh with its own ICP similarity fit (differences of a few hundredths at 0.5 % are within the fit).",
+ "settings": {
+  "cross_check": "false by default; tolerance 0.004, votes 2, directions 20-80 degrees, up to 16 views",
+  "mask_grow": "false by default; first pass over all but the finest level, masks-grown written, run restarted from them; mask_grow_close 2",
+  "mesh_hull_correction": "0 by default (off); sigma in voxels; mesh_hull_correction_gate 1"
+ },
+ "command_settings": "mask_grow=true cross_check=true mesh_hull_correction=4 mesh_hull_overshoot=false mesh_open_unseen=false",
+ "results_f1_at_0.5_1_2_percent": {
+  "mustard_defaults": {
+   "f1": [
+    0.4795,
+    0.7392,
+    0.8749
+   ],
+   "mean": 0.00894,
+   "genus": 96
+  },
+  "mustard_silhouette_only_original_masks": {
+   "f1": [
+    0.683,
+    0.827,
+    0.974
+   ],
+   "note": "hull thickness / length 0.925 / 0.995 of the scan"
+  },
+  "mustard_silhouette_first": {
+   "f1": [
+    0.766,
+    0.9177,
+    0.9965
+   ],
+   "mean": 0.00372,
+   "closed": true,
+   "genus": 0,
+   "seconds": 588,
+   "mask_added_fraction_median": 0.0079,
+   "cross_check_kept": 0.77,
+   "mesh_sha256": "e352ef0a6f49ad332dd268d06708b8adcd73b642c431e778bed64e4fb306ed55"
+  },
+  "drill_defaults": {
+   "f1": [
+    0.7984,
+    0.8901,
+    0.9392
+   ],
+   "mean": 0.00451,
+   "closed": false,
+   "genus": 31,
+   "seconds": 365,
+   "mesh_sha256": "d86b2d11ce88bf6edd67280da04dbbe563afbf63a56e7161566842091a5afca2"
+  },
+  "drill_silhouette_first": {
+   "f1": [
+    0.8177,
+    0.9205,
+    0.998
+   ],
+   "mean": 0.00325,
+   "closed": true,
+   "genus": 1,
+   "seconds": 734,
+   "mask_added_fraction_median": 0.0091,
+   "cross_check_kept": 0.868,
+   "mesh_sha256": "4b8a1a0c06cf2786638dba6a3b626032cab76cbdb698f34adad9bd6c43c589dc"
+  }
+ },
+ "single_turn_objects": {
+  "note": "six 3DLF objects from their own default depths, fusion and mesh only, scans post hoc",
+  "cross_check_only_worst_delta": -0.0097,
+  "cross_check_only_failing": [
+   "lucy",
+   "thai_statue"
+  ],
+  "cross_check_with_correction_delta_at_0.5_percent": {
+   "bunny": -0.175,
+   "armadillo": -0.194,
+   "dragon": -0.269,
+   "lucy": -0.202,
+   "thai_statue": -0.358,
+   "happy": -0.121
+  },
+  "cross_check_kept_fraction": {
+   "bunny": 0.98,
+   "armadillo": 0.966,
+   "dragon": 0.938,
+   "lucy": 0.956,
+   "thai_statue": 0.973,
+   "happy": 0.938
+  },
+  "conclusion": "not a default; no automatic choice (kept fraction 0.86 against 0.94 is too thin a margin on eight captures; hull overshoot does not separate the cases)"
+ },
+ "defaults_unchanged": "drill default mesh sha256 equals the one recorded on 2026-10-11; Bunny and Lucy fusion-only meshes byte-identical before and after",
+ "rejected": [
+  "hard or soft carve margin (depth carves only beyond a fixed distance)",
+  "cross-checked depth as the surface (mustard 0.71/0.88/0.96, lumpy)",
+  "correction without the scatter gate (mustard lumpy at sigma 2, gouged at sigma 8)",
+  "mask growth after matching without matching again (mustard 0.44/0.75/0.97): the depth search is bounded by the hull of the tight masks",
+  "mask growth with a 15-pixel closing (drill 0.767/0.896/0.992: fills concave silhouette corners)"
+ ],
+ "checks": "214 library tests and 3 geometry audit tests with Metal, rustfmt, clippy for native all-targets with and without capi, threaded WebAssembly build. The wasm32 clippy run reports two findings in src/gpu/mod.rs, which this change does not touch.",
+ "limits": "Two objects. Sheets inspected for both (smooth, closed; no fine relief). The six-object adoption gate was not passed and nothing is adopted as a default. No browser run, no memory measurement beyond native peak resident 5.3-5.7 GB. mask_grow about doubles the matching time of the coarser levels. No patent review of these steps; no third-party code."
+}

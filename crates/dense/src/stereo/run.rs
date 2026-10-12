@@ -206,6 +206,71 @@ impl Files {
     }
 }
 
+/// `mask_grow`: a first pass over all but the finest level. Depths that views from other directions
+/// confirm are surface points; where they land outside a mask, the mask left out part of the object
+/// (pale parts on a pale backdrop). The grown masks are written to `masks-grown`; the run then starts
+/// again from them, because a hull carved from masks that cut the object bounds the depth search wrongly.
+async fn grow_masks(
+    arguments: &Arguments,
+    config: &DenseConfig,
+    gpu: &Gpu,
+    events: &EventLog,
+    control: &Control,
+    inputs: &mut Inputs,
+) -> anyhow::Result<Value> {
+    let t = Instant::now();
+    let output = &arguments.output;
+    let scratch = output.join("mask-grow");
+    crate::storage::create_dir(&scratch)?;
+    let mut voxel = None;
+    let mut state = build_hull(gpu, inputs, config, &mut voxel).await?;
+    if config.repair_masks {
+        for _ in 0..config.repair_rounds {
+            control.check()?;
+            repair_masks_with(gpu, inputs, &state, config, &|| control.check()).await?;
+            state = build_hull(gpu, inputs, config, &mut voxel).await?;
+        }
+    }
+    inputs.crop_gray();
+    let sizes = crate::stereo::level::with_native_level(level_sizes(&config.sizes, inputs.longest), inputs.longest, config.native_level);
+    let coarse = &sizes[..sizes.len().saturating_sub(1).max(1)];
+    let count = inputs.count();
+    let picks = [count / 7, (count / 2).saturating_sub(3), (4 * count) / 5];
+    let previews = Previews { directory: None, events, config, hand_over: false };
+    let mut report = json!({"levels": []});
+    let (level, depths) = {
+        let context =
+            LevelContext { gpu, inputs, state: &state, config, output: &scratch, events, previews: &previews, picks: &picks, control };
+        match_levels(&context, coarse, &mut report).await?
+    };
+    control.check()?;
+    let (checked, kept) = crate::fusion::cross_checked(
+        &level,
+        &depths,
+        &inputs.angles,
+        (20.0, 80.0),
+        16,
+        config.cross_check_tolerance as f32,
+        config.cross_check_votes as usize,
+    );
+    let (grown, added) = crate::fusion::grown_masks(&level, &checked, &inputs.cameras, &inputs.masks, 3, config.mask_grow_close as usize);
+    crate::storage::create_dir(output.join("masks-grown"))?;
+    let written: Vec<anyhow::Result<()>> = parallel_map(count, |n| {
+        let pixels: Vec<u8> = grown[n].data.iter().map(|&m| m * 255).collect();
+        crate::storage::save_png(
+            output.join("masks-grown").join(format!("{}.png", inputs.rows[n].name)),
+            grown[n].width,
+            grown[n].height,
+            1,
+            &pixels,
+        )
+    });
+    written.into_iter().collect::<anyhow::Result<()>>()?;
+    Ok(json!({
+        "level_size": coarse.last(), "confirmed_fraction": kept, "added_fraction_median": added, "seconds": t.elapsed().as_secs_f64(),
+    }))
+}
+
 /// [`run_with`] that also returns the fused volume, in the form `volume.npz`
 /// would give it back, and writes only the files `files` asks for. Depth maps
 /// are released as soon as fusion and their file are done.
@@ -232,6 +297,11 @@ pub async fn run_fused(
     });
     let t = Instant::now();
     let mut inputs = Inputs::load(&arguments.inputs, config)?;
+    if config.mask_grow {
+        report["mask_grow"] = grow_masks(arguments, config, gpu, events, control, &mut inputs).await?;
+        control.log(format!("mask grow {}", report["mask_grow"]));
+        inputs = Inputs::load_with_masks(&arguments.inputs, config, Some(&output.join("masks-grown")))?;
+    }
     let count = inputs.count();
     report["views"] = json!(count);
     report["load_seconds"] = json!(t.elapsed().as_secs_f64());
@@ -349,7 +419,7 @@ pub async fn run_fused(
         report["level_checks"] = json!(levels);
         return finish(report, output, started).map(|report| (report, None));
     }
-    let (mut level, depths) = match &arguments.reuse_depths {
+    let (mut level, mut depths) = match &arguments.reuse_depths {
         Some(path) => (build_level(&inputs, *sizes.last().unwrap()), read_depths(path, count)?),
         None => {
             if config.fused_passes != 0 {
@@ -361,6 +431,24 @@ pub async fn run_fused(
         }
     };
 
+    // Depths confirmed across directions.
+    if config.cross_check {
+        let t = Instant::now();
+        let (checked, kept) = crate::fusion::cross_checked(
+            &level,
+            &depths,
+            &inputs.angles,
+            (20.0, 80.0),
+            16,
+            config.cross_check_tolerance as f32,
+            config.cross_check_votes as usize,
+        );
+        depths = checked;
+        report["cross_check"] = json!({"kept_fraction": kept, "seconds": t.elapsed().as_secs_f64()});
+        control.log(format!("cross check {}", report["cross_check"]));
+        events.metric("cross_check_kept_fraction", kept)?;
+        control.check()?;
+    }
     // Fusion reads masks, cameras and depth; the grey images are done.
     inputs.gray = Vec::new();
     for view in &mut level {

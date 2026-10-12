@@ -122,6 +122,15 @@ pub fn validate(c: &DenseConfig) -> anyhow::Result<()> {
     need((0..=3).contains(&c.fused_passes) && (2..=32).contains(&c.fused_band), "invalid fused pass values")?;
     need((0.0..=3.0).contains(&c.rim_fraction) && c.truncation_voxels >= 1.0, "invalid fusion values")?;
     need((0.0..=10.0).contains(&c.truncation_noise), "truncation_noise must be in 0..10")?;
+    need(
+        c.cross_check_tolerance > 0.0 && c.cross_check_tolerance <= 0.05 && (1..=16).contains(&c.cross_check_votes),
+        "invalid cross_check values",
+    )?;
+    need((0..=200).contains(&c.mask_grow_close), "mask_grow_close must be 0..200")?;
+    need(
+        (0.0..=32.0).contains(&c.mesh_hull_correction) && (0.0..=10.0).contains(&c.mesh_hull_correction_gate),
+        "invalid mesh_hull_correction values",
+    )?;
     need(c.behind_voxels >= c.truncation_voxels && (0.0..=1.0).contains(&c.behind_weight), "invalid inside vote")?;
     need(0.0 < c.free_weight && c.free_weight <= 1.0, "free_weight must be in (0,1]")?;
     need(c.mesh_smooth > 0.0 && c.mesh_confidence_cap > 0.0 && (0..=100).contains(&c.mesh_taubin_cycles), "invalid mesh values")?;

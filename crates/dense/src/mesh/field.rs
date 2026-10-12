@@ -298,10 +298,57 @@ pub fn field(volume: &Volume, config: &DenseConfig, check: &dyn Fn() -> Result<(
     // unobserved hull voxels; what stays unfilled keeps the prior. A filled voxel never drops
     // below the prior (`max(value, prior)` in the reference; each voxel is filled at most
     // once, so `value` still holds its prior when it is filled).
-    let mut filled = vec![false; hull_count];
+    // Silhouette first (`mesh_hull_correction`): the hull is the surface, and depth only moves it inward, by the
+    // confidence-weighted offset between the measured distance and the prior averaged over a neighbourhood,
+    // less `mesh_hull_correction_gate` times the local scatter of those offsets. Averaging removes the depth
+    // noise that the maximum below would turn into pits; the scatter term leaves the hull alone where the
+    // depths disagree among themselves. Offsets count where both distances are inside the truncation band.
+    let mut corrected: Option<Vec<bool>> = None;
+    if config.mesh_hull_correction > 0.0 {
+        let (band, gate) = (0.9f32, config.mesh_hull_correction_gate as f32);
+        let mut offset = vec![0f32; total_voxels];
+        let mut support = vec![0f32; total_voxels];
+        let mut square = vec![0f32; if gate > 0.0 { total_voxels } else { 0 }];
+        for (i, &p) in place.iter().enumerate() {
+            if observed[i] {
+                let measured = volume.total[i] / volume.weight[i].max(1e-6);
+                let prior = value[p as usize];
+                if measured.abs() < band && prior.abs() < band {
+                    let difference = measured - prior;
+                    offset[p as usize] = difference * confidence[i];
+                    support[p as usize] = confidence[i];
+                    if gate > 0.0 {
+                        square[p as usize] = difference * difference * confidence[i];
+                    }
+                }
+            }
+        }
+        check()?;
+        gaussian_filter(&mut offset, dims, config.mesh_hull_correction);
+        gaussian_filter(&mut support, dims, config.mesh_hull_correction);
+        if gate > 0.0 {
+            check()?;
+            gaussian_filter(&mut square, dims, config.mesh_hull_correction);
+        }
+        let mut reached = vec![false; hull_count];
+        for (i, &p) in place.iter().enumerate() {
+            let p = p as usize;
+            if support[p] > 0.02 {
+                let mean = offset[p] / support[p];
+                let scatter = if gate > 0.0 { (square[p] / support[p] - mean * mean).max(0.0).sqrt() } else { 0.0 };
+                value[p] = (value[p] + (mean - gate * scatter).max(0.0)).clamp(-1.0, 1.0);
+                reached[i] = true;
+            }
+        }
+        corrected = Some(reached);
+    }
+    let mut filled = corrected.clone().unwrap_or_else(|| vec![false; hull_count]);
     let mut work = vec![0f32; total_voxels];
     let mut numerator = vec![0f32; hull_count];
     for &sigma in std::iter::once(&config.mesh_smooth).chain(&config.mesh_fill_sigmas) {
+        if corrected.is_some() {
+            break;
+        }
         work.fill(0.0);
         for (i, &p) in place.iter().enumerate() {
             work[p as usize] = weighted(i);
@@ -398,4 +445,56 @@ pub fn field(volume: &Volume, config: &DenseConfig, check: &dyn Fn() -> Result<(
         gaussian_filter(&mut value, dims, config.mesh_final_smooth);
     }
     Ok(Field { value, known, dims, report })
+}
+
+#[cfg(test)]
+mod correction_tests {
+    use super::*;
+
+    /// A hull box whose +x face stands two voxels outside the measured surface.
+    fn volume(noise: f32) -> Volume {
+        let mut index = Vec::new();
+        let (mut total, mut weight) = (Vec::new(), Vec::new());
+        for x in 6u16..18 {
+            for y in 4u16..20 {
+                for z in 4u16..20 {
+                    index.push([x, y, z]);
+                    // Measured near the +x face only, away from the other faces.
+                    let seen = x >= 12 && (8..16).contains(&y) && (8..16).contains(&z);
+                    let sign = if (x + y + z) % 2 == 0 { 1.0 } else { -1.0 };
+                    let distance = ((f32::from(x) + 0.5 - 16.0) / 3.0 + noise * sign).clamp(-1.0, 1.0);
+                    weight.push(if seen { 4.0 } else { 0.0 });
+                    total.push(if seen { 4.0 * distance } else { 0.0 });
+                }
+            }
+        }
+        Volume {
+            shape: [24, 24, 24],
+            index,
+            total,
+            weight,
+            origin: Array::new(&[3], Data::F32(vec![0.0; 3])),
+            voxel: 1.0,
+            truncation: 3.0,
+            support: None,
+            partial_views: false,
+        }
+    }
+
+    fn at(field: &Field, x: usize) -> f32 {
+        field.value[((x + PAD) * field.dims[1] + 12 + PAD) * field.dims[2] + 12 + PAD]
+    }
+
+    /// The correction moves the hull face inward to the measured surface when the depths agree, and
+    /// leaves the hull where they scatter by more than they shift it.
+    #[test]
+    fn hull_correction_follows_agreeing_depths_and_ignores_scattered_ones() {
+        let mut config = DenseConfig { mesh_hull_overshoot: false, mesh_final_smooth: 0.0, ..DenseConfig::default() };
+        config.mesh_hull_correction = 2.0;
+        let clean = field(&volume(0.0), &config, &|| Ok(())).unwrap();
+        // Hull boundary at x = 18, surface at x = 16: the voxel centred at 16.5 is outside, the one at 15.5 inside.
+        assert!(at(&clean, 16) > 0.0 && at(&clean, 15) < 0.0, "{} {}", at(&clean, 16), at(&clean, 15));
+        let scattered = field(&volume(1.0), &config, &|| Ok(())).unwrap();
+        assert!(at(&scattered, 16) < 0.0 && at(&scattered, 17) < 0.0, "{} {}", at(&scattered, 16), at(&scattered, 17));
+    }
 }

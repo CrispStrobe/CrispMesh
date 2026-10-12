@@ -469,6 +469,55 @@
       "default": true
     },
     {
+      "name": "cross_check",
+      "group": "Fusion",
+      "meaning": "Keep a depth only where at least cross_check_votes views from clearly different directions (20 to 80 degrees away) see the same surface point; drops depth that only neighbouring views agree on",
+      "kind": "boolean",
+      "default": false
+    },
+    {
+      "name": "cross_check_tolerance",
+      "group": "Fusion",
+      "meaning": "Relative depth difference within which another direction confirms a depth (cross_check)",
+      "kind": "number",
+      "default": 0.004
+    },
+    {
+      "name": "cross_check_votes",
+      "group": "Fusion",
+      "meaning": "Confirming directions a depth needs (cross_check)",
+      "kind": "integer",
+      "default": 2
+    },
+    {
+      "name": "mask_grow",
+      "group": "Hull",
+      "meaning": "A first pass over the coarser levels: where depths confirmed from other directions (cross_check_tolerance, cross_check_votes) land outside a mask, the mask is grown (closed and filled), and the run starts again from the grown masks; recovers object parts the masks left out, such as pale parts on a pale backdrop",
+      "kind": "boolean",
+      "default": false
+    },
+    {
+      "name": "mask_grow_close",
+      "group": "Hull",
+      "meaning": "Extra closing radius of the added mask area beyond the spacing of the depth points, pixels; large values fill concave corners of the silhouette (mask_grow)",
+      "kind": "integer",
+      "default": 2
+    },
+    {
+      "name": "mesh_hull_correction",
+      "group": "Surface",
+      "meaning": "Silhouette first: the surface is the silhouette hull, moved inward by the depth evidence averaged over this many voxels (Gaussian sigma); 0 uses the fused depth surface as before",
+      "kind": "number",
+      "default": 0.0
+    },
+    {
+      "name": "mesh_hull_correction_gate",
+      "group": "Surface",
+      "meaning": "The hull is moved inward only by the averaged offset minus this many times the local scatter of the offsets, so depth that disagrees with itself leaves the silhouette as it is (mesh_hull_correction)",
+      "kind": "number",
+      "default": 1.0
+    },
+    {
       "name": "mesh_base_margin",
       "group": "Surface",
       "meaning": "Voxels kept below that level",

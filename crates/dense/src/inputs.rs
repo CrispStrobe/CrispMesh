@@ -337,7 +337,17 @@ pub fn load_views(directory: &Path) -> anyhow::Result<Vec<ViewRow>> {
 
 impl Inputs {
     pub fn load(directory: &Path, config: &DenseConfig) -> anyhow::Result<Self> {
-        let rows = load_views(directory)?;
+        Self::load_with_masks(directory, config, None)
+    }
+
+    /// [`Inputs::load`] with the masks read from `masks/<view name>.png` instead of the files the views name.
+    pub fn load_with_masks(directory: &Path, config: &DenseConfig, masks: Option<&Path>) -> anyhow::Result<Self> {
+        let mut rows = load_views(directory)?;
+        if let Some(masks) = masks {
+            for row in &mut rows {
+                row.mask = masks.join(format!("{}.png", row.name)).to_string_lossy().to_string();
+            }
+        }
         if (rows.len() as i64) < config.neighbours + 1 {
             bail!("fewer views than neighbours + 1");
         }

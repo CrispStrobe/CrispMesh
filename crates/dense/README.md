@@ -1720,6 +1720,38 @@ k=4 fails on Dragon (−0.0033). Drill with production defaults, same depths:
 F1 at 0.5/1/2 % 0.364/0.577/0.788 → 0.489/0.732/0.874, mean error −24 %.
 Numbers and limits: [noise-matched-truncation-review.json](../../tests/evidence/noise-matched-truncation-review.json).
 
+Silhouette first (2026-10-12, opt-in, defaults unchanged and byte-identical): for
+captures from several camera heights, where the silhouette hull is already close
+to the object and the depth is noisy. Three settings, usable separately:
+
+- `cross_check=true`: after matching, a depth stays only where at least
+  `cross_check_votes` (2) of up to 16 views whose direction is 20° to 80° away see
+  the same surface point within `cross_check_tolerance` (0.004, relative depth).
+  Neighbouring views share their errors; views from other directions do not.
+  `result.json` records the kept fraction under `cross_check`: 94–98 % on the six
+  3DLF objects, 86 % on the YCB drill, 77 % on the mustard bottle.
+- `mask_grow=true`: a first pass over all but the finest level; where confirmed
+  depths land outside a mask, the mask left out part of the object (the mustard
+  bottle's pale label on the pale backdrop made the hull 7.5 % too thin). The
+  grown masks are written to `stereo/masks-grown` and the run starts again from
+  them, because the depth search is bounded by the hull. Costs that first pass
+  (160–320 s on 300 DSLR photos).
+- `mesh_hull_correction=4` (Gaussian sigma in voxels; 0 = off): the surface is the
+  silhouette hull, moved inward by the averaged offset between the fused depth
+  and the hull, less `mesh_hull_correction_gate` (1) times the local scatter of
+  those offsets. Depth that disagrees with itself leaves the hull as it is.
+
+Five DSLR heights, 300 photos, one command each (with `mesh_hull_overshoot=false
+mesh_open_unseen=false`), scan fitted to each mesh by ICP, F1 at 0.5/1/2 %:
+drill 0.798/0.890/0.939 (open, genus 31) → 0.818/0.921/0.998 (closed, genus 1),
+mean error −28 %; mustard bottle 0.480/0.739/0.875 (genus 96) →
+0.766/0.918/0.997 (closed, genus 0). The meshes are smooth; fine relief (vents,
+knurling) is not recovered. Not for single-turn captures: there the hull is
+loose and the depth good, and on the six 3DLF objects the correction loses 0.12
+to 0.37 F1 at 0.5 % and the cross-check alone up to 0.010 (Lucy, Thai statue).
+No automatic choice is made. Not run in a browser.
+See [silhouette-first-review.json](../../tests/evidence/silhouette-first-review.json).
+
 Large captures (2026-10-11): when the whole grey photos would take more than
 2 GiB (`WHOLE_GRAY_BUDGET` in `inputs.rs`), the masks are read first, the
 common canvas is computed from them, and each grey photo is loaded as its canvas

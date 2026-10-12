@@ -468,3 +468,35 @@ baselines between nearly top-down views are the other candidate. The cause has
 not been established. Subsets with the same cameras: turn 3 alone 0.46 / 0.82 /
 0.95, turns 2 to 4 0.49 / 0.82 / 0.96, turns 1 to 4 0.54 / 0.83 / 0.93.
 Earlier result on this bottle (NP3, 1280 x 1024): 0.18 / 0.39 / 0.66.
+
+### Silhouette first, 2026-10-12
+
+A silhouette-only mesh of the five turns (`mesh_minimum_weight=1000000`, closed)
+already scored 0.683 / 0.827 / 0.974, better than the depth mesh, but its
+thickness was 7.5 % too small against its length. A hull cannot be thinner than
+the object unless masks cut into it: depth points confirmed from other
+directions fell up to 30 % outside the original masks in turns 3 and 4 and up
+to 14 % outside the repaired ones. The background-contrast masks leave out the
+pale label, and mask repair only adds pixels darker than the backdrop. Because
+the depth search is bounded by the hull, the depths were wrong as well, which
+adds to the top-turn bias described above.
+
+With `mask_grow=true cross_check=true mesh_hull_correction=4
+mesh_hull_overshoot=false mesh_open_unseen=false` (see the crate README), the
+same 300 photos and cameras, one command:
+
+| Run | F1 0.5 / 1 / 2 % | mean / diag. | mesh |
+|---|---|---|---|
+| mustard, defaults | 0.480 / 0.739 / 0.875 | 0.0089 | genus 96 |
+| mustard, silhouette first | 0.766 / 0.918 / 0.997 | 0.0037 | closed, genus 0 |
+| drill, defaults | 0.798 / 0.890 / 0.939 | 0.0045 | open, genus 31 |
+| drill, silhouette first | 0.818 / 0.921 / 0.998 | 0.0033 | closed, genus 1 |
+
+Each mesh has its own ICP fit of the scan, so differences of a few hundredths
+at 0.5 % are within the fit. The rendered meshes are smooth and closed; the
+mustard shows its cap and a shallow label panel, the drill no vents or
+knurling. The top turn keeps 28 % of its depths in the cross-check, the side
+turns 55 to 85 %. Run time 588 s (mustard) and 734 s (drill) against 365 s for
+the drill by default. Rejected on the way: depth carving only beyond a fixed
+margin, cross-checked depth as the surface itself (lumpy), and growing the
+masks after matching without matching again (0.44 at 0.5 %).

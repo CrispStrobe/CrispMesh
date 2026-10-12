@@ -74,6 +74,13 @@ pub struct DenseConfig {
     pub mesh_hull_overshoot: bool,
     pub inspection_sheets: bool,
     pub mesh_open_unseen: bool,
+    pub cross_check: bool,
+    pub cross_check_tolerance: f64,
+    pub cross_check_votes: i64,
+    pub mask_grow: bool,
+    pub mask_grow_close: i64,
+    pub mesh_hull_correction: f64,
+    pub mesh_hull_correction_gate: f64,
     pub mesh_base_margin: f64,
 }
 
@@ -143,6 +150,13 @@ impl Default for DenseConfig {
             mesh_hull_overshoot: true,
             inspection_sheets: true,
             mesh_open_unseen: true,
+            cross_check: false,
+            cross_check_tolerance: 0.004,
+            cross_check_votes: 2,
+            mask_grow: false,
+            mask_grow_close: 2,
+            mesh_hull_correction: 0.0,
+            mesh_hull_correction_gate: 1.0,
             mesh_base_margin: 1.0,
         }
     }
@@ -165,7 +179,7 @@ impl DenseConfig {
 
 /// Settings this crate has and the Python reference does not. The reference is
 /// no longer extended; new behaviour is developed here.
-pub const NATIVE_ONLY: [&str; 17] = [
+pub const NATIVE_ONLY: [&str; 24] = [
     "coherent_band",
     "fallback_supported",
     "peak_min_margin",
@@ -183,6 +197,13 @@ pub const NATIVE_ONLY: [&str; 17] = [
     "mesh_hull_overshoot",
     "inspection_sheets",
     "mesh_open_unseen",
+    "cross_check",
+    "cross_check_tolerance",
+    "cross_check_votes",
+    "mask_grow",
+    "mask_grow_close",
+    "mesh_hull_correction",
+    "mesh_hull_correction_gate",
 ];
 
 /// Name, group, meaning, kind and default of every setting, as JSON

@@ -98,6 +98,176 @@ pub fn depth_noise(level: &[LevelView], depths: &[Plane<f32>], voters: &[Vec<usi
     Some((crate::inputs::median_f64(&mut all), count))
 }
 
+/// Depths confirmed across directions: a pixel stays when at least `votes` of up to `targets` views whose
+/// direction differs by `minimum..=maximum` degrees (spread evenly over that range) see the same surface
+/// point within `tolerance` (relative depth). Views that see another surface there do not count either way.
+/// Returns the filtered maps and the kept fraction of the valid pixels.
+pub fn cross_checked(
+    level: &[LevelView],
+    depths: &[Plane<f32>],
+    angles: &[Vec<f64>],
+    (minimum, maximum): (f64, f64),
+    targets: usize,
+    tolerance: f32,
+    votes: usize,
+) -> (Vec<Plane<f32>>, f64) {
+    let checked: Vec<(Plane<f32>, usize, usize)> = crate::inputs::parallel_map(level.len(), |i| {
+        let mut order: Vec<usize> = (0..level.len()).filter(|&j| j != i && minimum <= angles[i][j] && angles[i][j] <= maximum).collect();
+        order.sort_by(|&a, &b| angles[i][a].total_cmp(&angles[i][b]).then(a.cmp(&b)));
+        if order.len() > targets && targets > 1 {
+            order = (0..targets).map(|k| order[k * (order.len() - 1) / (targets - 1)]).collect();
+        }
+        let (view, depth) = (&level[i], &depths[i]);
+        let mut out = Plane { width: depth.width, height: depth.height, data: depth.data.clone() };
+        let (mut valid, mut kept) = (0usize, 0usize);
+        for y in 0..depth.height {
+            for x in 0..depth.width {
+                let d = depth.data[y * depth.width + x];
+                if d <= 0.0 {
+                    continue;
+                }
+                valid += 1;
+                let world = view.unproject(x, y, d);
+                let mut agreeing = 0;
+                for &j in &order {
+                    let (xy, z) = level[j].project(world);
+                    if z <= 0.0 {
+                        continue;
+                    }
+                    let (px, py) = (xy[0].round_ties_even(), xy[1].round_ties_even());
+                    if !(px >= 0.0 && py >= 0.0 && px < depths[j].width as f32 && py < depths[j].height as f32) {
+                        continue;
+                    }
+                    let nearest = depths[j].at(px as usize, py as usize);
+                    let other = interpolated_depth(&depths[j], xy, tolerance * z, nearest);
+                    if other > 0.0 && (other - z).abs() <= tolerance * z {
+                        agreeing += 1;
+                        if agreeing >= votes {
+                            break;
+                        }
+                    }
+                }
+                if agreeing >= votes {
+                    kept += 1;
+                } else {
+                    out.data[y * depth.width + x] = 0.0;
+                }
+            }
+        }
+        (out, valid, kept)
+    });
+    let (valid, kept) = checked.iter().fold((0usize, 0usize), |(v, k), c| (v + c.1, k + c.2));
+    (checked.into_iter().map(|c| c.0).collect(), kept as f64 / valid.max(1) as f64)
+}
+
+/// Masks grown by the depths: every `stride`-th depth pixel (or fewer) of every view is a surface point; where the
+/// points land in another view, dilated by the stride and closed by `close` pixels, is object there too.
+/// Holes of the union are filled. Returns the masks and the median added fraction of the mask area.
+pub fn grown_masks(
+    level: &[LevelView],
+    depths: &[Plane<f32>],
+    cameras: &[Camera],
+    masks: &[Plane<u8>],
+    stride: usize,
+    close: usize,
+) -> (Vec<Plane<u8>>, f64) {
+    // At most about four million points: every one is projected into every view.
+    let valid: usize = depths.iter().map(|d| d.data.iter().filter(|&&v| v > 0.0).count()).sum();
+    let stride = stride.max(1).max((valid as f64 / 4e6).sqrt().ceil() as usize);
+    let points: Vec<[f32; 3]> = crate::inputs::parallel_map(level.len(), |i| {
+        let (view, depth) = (&level[i], &depths[i]);
+        let mut points = Vec::new();
+        for y in (0..depth.height).step_by(stride) {
+            for x in (0..depth.width).step_by(stride) {
+                let d = depth.data[y * depth.width + x];
+                if d > 0.0 {
+                    points.push(view.unproject(x, y, d));
+                }
+            }
+        }
+        points
+    })
+    .into_iter()
+    .flatten()
+    .collect();
+    let grown: Vec<(Plane<u8>, f64)> = crate::inputs::parallel_map(masks.len(), |n| {
+        let (mask, camera) = (&masks[n], &cameras[n]);
+        let (w, h) = (mask.width, mask.height);
+        let mut landed = Plane { width: w, height: h, data: vec![0u8; w * h] };
+        // The level may be smaller than the photo: one level pixel covers this many mask pixels.
+        let scale = (camera.k[0] / level[n].camera.k[0]).max(1.0);
+        for &point in &points {
+            let p = camera.to_camera(point);
+            if p[2] <= 0.0 {
+                continue;
+            }
+            let (x, y) = ((p[0] / p[2] * camera.k[0] + camera.k[2] - 0.5).round(), (p[1] / p[2] * camera.k[1] + camera.k[3] - 0.5).round());
+            if x >= 0.0 && y >= 0.0 && x < w as f32 && y < h as f32 {
+                landed.data[y as usize * w + x as usize] = 1;
+            }
+        }
+        // Points are `stride` level pixels apart: closing over that distance joins them. One level pixel is
+        // then taken off, so that a fringe of slightly misplaced points along an intact mask adds nothing
+        // and only solid regions do.
+        let reach = (stride as f32 * scale).ceil() as usize + close;
+        let closed = crate::hull::erode(&crate::hull::dilate(&landed, reach), reach + scale.ceil() as usize);
+        let mut out = mask.clone();
+        for (o, &c) in out.data.iter_mut().zip(&closed.data) {
+            *o |= c;
+        }
+        fill_holes(&mut out);
+        let (before, after) = (mask.data.iter().filter(|&&m| m != 0).count(), out.data.iter().filter(|&&m| m != 0).count());
+        (out, (after - before) as f64 / before.max(1) as f64)
+    });
+    let mut added: Vec<f64> = grown.iter().map(|g| g.1).collect();
+    let median = if added.is_empty() { 0.0 } else { crate::inputs::median_f64(&mut added) };
+    (grown.into_iter().map(|g| g.0).collect(), median)
+}
+
+/// Sets every background pixel that is not connected to the image border.
+fn fill_holes(mask: &mut Plane<u8>) {
+    let (w, h) = (mask.width, mask.height);
+    if w == 0 || h == 0 {
+        return;
+    }
+    let mut outside = vec![false; w * h];
+    let mut stack: Vec<usize> = Vec::new();
+    let seed = |p: usize, outside: &mut Vec<bool>, stack: &mut Vec<usize>| {
+        if mask.data[p] == 0 && !outside[p] {
+            outside[p] = true;
+            stack.push(p);
+        }
+    };
+    for x in 0..w {
+        seed(x, &mut outside, &mut stack);
+        seed((h - 1) * w + x, &mut outside, &mut stack);
+    }
+    for y in 0..h {
+        seed(y * w, &mut outside, &mut stack);
+        seed(y * w + w - 1, &mut outside, &mut stack);
+    }
+    while let Some(p) = stack.pop() {
+        let (x, y) = (p % w, p / w);
+        if x > 0 {
+            seed(p - 1, &mut outside, &mut stack);
+        }
+        if x + 1 < w {
+            seed(p + 1, &mut outside, &mut stack);
+        }
+        if y > 0 {
+            seed(p - w, &mut outside, &mut stack);
+        }
+        if y + 1 < h {
+            seed(p + w, &mut outside, &mut stack);
+        }
+    }
+    for (m, &o) in mask.data.iter_mut().zip(&outside) {
+        if !o {
+            *m = 1;
+        }
+    }
+}
+
 /// One view's vote for a point, as the kernel computes it: reference for tests.
 pub fn vote(view: &LevelView, depth: &Plane<f32>, point: [f32; 3], truncation: f32, behind: f32, config: &DenseConfig) -> (f32, f32) {
     let (xy, z) = view.project(point);
@@ -553,6 +723,77 @@ mod tests {
         assert_eq!(support_from_sparse(&mut kept, &points(9.0)[..100]), None);
         let mut none = Support { height: None, ..support };
         assert_eq!(support_from_sparse(&mut none, &points(9.0)), None);
+    }
+}
+
+#[cfg(test)]
+mod cross_tests {
+    use super::*;
+    use crate::inputs::Inputs;
+    use crate::stereo::level::build_level;
+    use crate::stereo::{options, synthetic};
+
+    fn scene() -> (Inputs, Vec<LevelView>, Vec<Plane<f32>>) {
+        let root = synthetic::temporary("cross", 24, 128).unwrap();
+        let overrides: Vec<String> = synthetic::SMALL.iter().map(|s| s.to_string()).collect();
+        let config = options::build(None, &overrides).unwrap();
+        let inputs = Inputs::load(&root.join("inputs"), &config).unwrap();
+        crate::storage::remove_dir_all(&root).unwrap();
+        let level = build_level(&inputs, 128);
+        let exact = level.iter().map(synthetic::sphere_depth).collect();
+        (inputs, level, exact)
+    }
+
+    /// Exact depths confirm each other; one view whose depths are 2 % off is confirmed by none and
+    /// loses its depths, while the others keep theirs.
+    #[test]
+    fn cross_check_keeps_agreeing_depths_and_empties_a_view_that_disagrees() {
+        let (inputs, level, exact) = scene();
+        let valid = |d: &Plane<f32>| d.data.iter().filter(|&&v| v > 0.0).count();
+        let (checked, kept) = cross_checked(&level, &exact, &inputs.angles, (20.0, 80.0), 16, 0.004, 2);
+        assert!(kept > 0.85, "{kept}");
+        assert!(checked.iter().zip(&exact).all(|(c, e)| c.data.iter().zip(&e.data).all(|(&c, &e)| c == e || c == 0.0)));
+        let mut wrong = exact.clone();
+        wrong[5].data.iter_mut().for_each(|v| *v *= 1.02);
+        let (checked, _) = cross_checked(&level, &wrong, &inputs.angles, (20.0, 80.0), 16, 0.004, 2);
+        assert!(valid(&checked[5]) * 20 < valid(&exact[5]), "{} of {}", valid(&checked[5]), valid(&exact[5]));
+        assert!(valid(&checked[12]) * 10 > valid(&exact[12]) * 8);
+    }
+
+    /// A mask that lost a third of the object gets it back from the depths of the other views; intact
+    /// masks hardly change.
+    #[test]
+    fn masks_grow_back_where_confirmed_depths_land() {
+        let (inputs, level, exact) = scene();
+        let area = |m: &Plane<u8>| m.data.iter().filter(|&&v| v != 0).count();
+        let mut masks = inputs.masks.clone();
+        let (w, whole) = (masks[3].width, area(&masks[3]));
+        let columns: Vec<usize> = (0..masks[3].data.len()).filter(|&p| masks[3].data[p] != 0).map(|p| p % w).collect();
+        let cut = columns.iter().min().unwrap() + (columns.iter().max().unwrap() - columns.iter().min().unwrap()) / 3;
+        for p in 0..masks[3].data.len() {
+            if p % w < cut {
+                masks[3].data[p] = 0;
+            }
+        }
+        assert!(area(&masks[3]) * 10 < whole * 9);
+        let mut depths = exact.clone();
+        depths[3].data.fill(0.0);
+        let (grown, _) = grown_masks(&level, &depths, &inputs.cameras, &masks, 2, 4);
+        let back = area(&grown[3]) as f64 / whole as f64;
+        assert!((0.90..1.03).contains(&back), "{back}");
+        let other = area(&grown[10]) as f64 / area(&inputs.masks[10]) as f64;
+        assert!((1.0..1.01).contains(&other), "{other}");
+    }
+
+    #[test]
+    fn holes_are_filled_and_the_outside_is_not() {
+        let mut mask = Plane { width: 5, height: 5, data: vec![0u8; 25] };
+        for p in [6, 7, 8, 11, 13, 16, 17, 18] {
+            mask.data[p] = 1;
+        }
+        fill_holes(&mut mask);
+        assert_eq!(mask.data[12], 1);
+        assert_eq!(mask.data.iter().filter(|&&v| v != 0).count(), 9);
     }
 }
 
