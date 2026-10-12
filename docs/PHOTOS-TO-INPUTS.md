@@ -58,13 +58,13 @@ cameras" in [`OTHER-IMAGE-SETS.md`](OTHER-IMAGE-SETS.md)), in order of effect:
    down is fine: its photos are registered one by one against the other turns
    when its own turn does not form a clean ring.
    This needs features: on the plain yellow mustard bottle the top-down turn
-   stayed biased, and with the default settings one turn from the side gave a
-   better mesh than five (OTHER-IMAGE-SETS). For several heights, and
-   especially for plain or partly pale objects, try the silhouette-first
-   settings `mask_grow=true cross_check=true mesh_hull_correction=4
-   mesh_hull_overshoot=false mesh_open_unseen=false` (crate README): smooth
-   closed meshes on the mustard bottle and the drill, less fine relief. They
-   are not for a single turn.
+   stayed biased. With three or more heights reaching from near the table to
+   steeply above, the dense stage treats the silhouette as the surface and
+   lets depth only correct it (`silhouette_first`, crate README): smooth
+   closed meshes on the mustard bottle and the drill, at about twice the
+   time and with less fine relief. `silhouette_first=0` gives the earlier
+   behaviour, which on the mustard bottle was worse than one side turn
+   (OTHER-IMAGE-SETS).
 3. **Something on the turntable that turns with the object** (printed
    pattern, newspaper, the marker mat) helps the camera solver with
    `--turntable-region surface`; the backdrop and room must not move.

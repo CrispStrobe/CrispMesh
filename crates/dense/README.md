@@ -1720,9 +1720,20 @@ k=4 fails on Dragon (−0.0033). Drill with production defaults, same depths:
 F1 at 0.5/1/2 % 0.364/0.577/0.788 → 0.489/0.732/0.874, mean error −24 %.
 Numbers and limits: [noise-matched-truncation-review.json](../../tests/evidence/noise-matched-truncation-review.json).
 
-Silhouette first (2026-10-12, opt-in, defaults unchanged and byte-identical): for
-captures from several camera heights, where the silhouette hull is already close
-to the object and the depth is noisy. Three settings, usable separately:
+Silhouette first (2026-10-12): for captures from several camera heights, where
+the silhouette hull is already close to the object and the depth is noisy.
+`silhouette_first` is 0 (never), 1 (always) or 2 (default: when the cameras look
+at the object from several heights all the way round). The test takes the point
+nearest to all optical axes and the normal of the camera centres' plane: seen
+from that point the cameras' elevations must reach down to 25°, span at least 40°
+(5th to 95th percentile) with every third of the span holding a tenth of the
+views, and leave no 30° sector around the axis empty. Of 36 camera sets checked,
+only the four- and five-height turntable captures qualify; every single ring
+(3DLF 2–3°, Google Scanned Objects 20°, YCB 52–59°) and the DTU arcs (34–81°, one
+side) do not, and their results are byte-identical to before. When it applies,
+the three steps below run with their defaults (correction width 4) and the mesh
+is closed (no hull overshoot, no open unseen surface); `result.json` records
+`silhouette_first`. The steps can also be set separately:
 
 - `cross_check=true`: after matching, a depth stays only where at least
   `cross_check_votes` (2) of up to 16 views whose direction is 20° to 80° away see
@@ -1748,8 +1759,13 @@ mean error −28 %; mustard bottle 0.480/0.739/0.875 (genus 96) →
 0.766/0.918/0.997 (closed, genus 0). The meshes are smooth; fine relief (vents,
 knurling) is not recovered. Not for single-turn captures: there the hull is
 loose and the depth good, and on the six 3DLF objects the correction loses 0.12
-to 0.37 F1 at 0.5 % and the cross-check alone up to 0.010 (Lucy, Thai statue).
-No automatic choice is made. Not run in a browser.
+to 0.37 F1 at 0.5 % and the cross-check alone up to 0.010 (Lucy, Thai statue);
+hence the test on the camera heights and not on the depth (the confirmed
+fraction, 77–86 % against 94–98 %, was too thin a margin). With no settings the
+drill and mustard runs give the same meshes byte for byte as with the settings
+spelled out. Two objects is the evidence; a finely textured object photographed
+from several heights may lose relief and can be run with `silhouette_first=0`.
+Not run in a browser.
 See [silhouette-first-review.json](../../tests/evidence/silhouette-first-review.json).
 
 Large captures (2026-10-11): when the whole grey photos would take more than

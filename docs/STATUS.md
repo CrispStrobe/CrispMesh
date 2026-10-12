@@ -35,7 +35,7 @@ README.
 | --- | --- |
 | Google Scanned Objects renders (72 photos) | rhino 0.867, cereal box 0.833 at 0.5 % with threshold masks; light-coloured objects need better masks (Mario 0.71 → 0.83 with exact masks) |
 | DTU historical dense-stage diagnostics (49 views, supplied masks; supplied or COLMAP poses) | 1.03–1.31 mm mean of accuracy and completeness on scans 63 and 65; these are not photo-only pipeline results |
-| YCB turntable | cracker box 0.45 at 0.5 %; mustard bottle from the DSLR photos 0.73 at 0.5 % with one turn, 0.48 with five by default, 0.77 with five and the opt-in silhouette-first settings |
+| YCB turntable | cracker box 0.45 at 0.5 %; mustard bottle from the DSLR photos 0.73 at 0.5 % with one turn, 0.48 with five before, 0.77 with five now (silhouette first) |
 
 ## Findings worth knowing
 
@@ -92,7 +92,7 @@ README.
   mesh (F1 at 0.5 % 0.48) is worse than one side turn (0.73). The drill's
   five turns are unchanged (0.72), and single-turn captures are byte-identical.
   See [ycb-mustard-rings-review.json](../tests/evidence/ycb-mustard-rings-review.json).
-- Silhouette first for several camera heights (2026-10-12, opt-in). With five
+- Silhouette first for several camera heights (2026-10-12). With five
   heights the silhouette hull is already close to the object, and noisy depth
   mostly digs pits into it. Three settings: depths count only where views from
   clearly different directions confirm them (`cross_check`), masks are grown
@@ -104,8 +104,11 @@ README.
   F1 at 0.5 / 1 / 2 %: mustard 0.48 / 0.74 / 0.87 → 0.77 / 0.92 / 1.00, drill
   0.80 / 0.89 / 0.94 → 0.82 / 0.92 / 1.00, both closed and smooth, fine relief
   still missing. Single-turn captures need the depth as the surface (the six
-  3DLF objects lose 0.12 to 0.37 with the correction), so nothing is switched
-  on by default and defaults are byte-identical. Not yet run in a browser.
+  3DLF objects lose 0.12 to 0.37 with the correction), so `silhouette_first`
+  (default 2) applies the three steps only when the cameras look at the object
+  from several heights all the way round; every single-ring and one-sided
+  capture checked (36 camera sets) is left as it was, byte for byte. It costs
+  about twice the time on those captures and has not been run in a browser.
   See [silhouette-first-review.json](../tests/evidence/silhouette-first-review.json).
 - At 10° steps (36 photos) results are almost as good as at 5°; at 15° steps
   low-texture objects fail camera recovery.

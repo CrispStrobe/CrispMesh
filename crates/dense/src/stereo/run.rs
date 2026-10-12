@@ -43,10 +43,10 @@ pub fn write_volume(
     truncation: f64,
     support: Option<&Support>,
 ) -> anyhow::Result<()> {
-    write_volume_with(path, compress, hull, indices, total, weight, truncation, support, false)
+    write_volume_with(path, compress, hull, indices, total, weight, truncation, support, false, false)
 }
 
-/// [`write_volume`] with the `partial_views` member (written only when true).
+/// [`write_volume`] with the `partial_views` and `silhouette_first` members (each written only when true).
 #[allow(clippy::too_many_arguments)]
 pub fn write_volume_with(
     path: &Path,
@@ -58,6 +58,7 @@ pub fn write_volume_with(
     truncation: f64,
     support: Option<&Support>,
     partial_views: bool,
+    silhouette_first: bool,
 ) -> anyhow::Result<()> {
     let f32s = |values: &[f32]| Array::new(&[values.len()], Data::F32(values.to_vec()));
     let index = index_array(hull, indices);
@@ -82,6 +83,9 @@ pub fn write_volume_with(
     let partial = Array::scalar_f32(1.0);
     if partial_views {
         arrays.push(("partial_views", &partial));
+    }
+    if silhouette_first {
+        arrays.push(("silhouette_first", &partial));
     }
     npz::write(path, &arrays, compress)
 }
@@ -297,6 +301,21 @@ pub async fn run_fused(
     });
     let t = Instant::now();
     let mut inputs = Inputs::load(&arguments.inputs, config)?;
+    // Silhouette first: asked for, or left to the capture (cameras at several heights).
+    let silhouette_first =
+        config.silhouette_first == 1 || (config.silhouette_first == 2 && crate::fusion::several_heights(&inputs.cameras));
+    report["silhouette_first"] = json!(silhouette_first);
+    let chosen;
+    let config = if silhouette_first {
+        let mut adjusted = config.clone();
+        adjusted.cross_check = true;
+        adjusted.mask_grow = true;
+        chosen = adjusted;
+        control.log("silhouette first: cameras at several heights, or asked for");
+        &chosen
+    } else {
+        config
+    };
     if config.mask_grow {
         report["mask_grow"] = grow_masks(arguments, config, gpu, events, control, &mut inputs).await?;
         control.log(format!("mask grow {}", report["mask_grow"]));
@@ -482,6 +501,7 @@ pub async fn run_fused(
         config
     };
     let mut fused: Fused = tsdf(gpu, &state.hull, &inputs.cameras, &level, &depths, rim, config).await?;
+    fused.silhouette_first = silhouette_first;
     if config.support_from_sparse {
         if let Some((measured, sparse)) = crate::fusion::support_from_sparse(&mut fused.support, &inputs.sparse) {
             report["support"] = json!({"measured_level": measured, "sparse_level": sparse, "raised_voxels": ((measured - sparse) / state.hull.voxel as f32).max(0.0)});
@@ -520,6 +540,7 @@ pub async fn run_fused(
             fused.truncation,
             Some(&fused.support),
             fused.partial_views,
+            fused.silhouette_first,
         )?;
     }
     report["partial_views"] = json!(fused.partial_views);

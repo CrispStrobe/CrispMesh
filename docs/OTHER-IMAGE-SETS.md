@@ -481,15 +481,16 @@ pale label, and mask repair only adds pixels darker than the backdrop. Because
 the depth search is bounded by the hull, the depths were wrong as well, which
 adds to the top-turn bias described above.
 
-With `mask_grow=true cross_check=true mesh_hull_correction=4
-mesh_hull_overshoot=false mesh_open_unseen=false` (see the crate README), the
-same 300 photos and cameras, one command:
+With silhouette first (`mask_grow`, `cross_check`, `mesh_hull_correction=4` and a
+closed mesh; see the crate README), which the default `silhouette_first=2` now
+applies by itself to captures from several heights, the same 300 photos and
+cameras, one command with no settings ("before" is `silhouette_first=0`):
 
 | Run | F1 0.5 / 1 / 2 % | mean / diag. | mesh |
 |---|---|---|---|
-| mustard, defaults | 0.480 / 0.739 / 0.875 | 0.0089 | genus 96 |
+| mustard, before | 0.480 / 0.739 / 0.875 | 0.0089 | genus 96 |
 | mustard, silhouette first | 0.766 / 0.918 / 0.997 | 0.0037 | closed, genus 0 |
-| drill, defaults | 0.798 / 0.890 / 0.939 | 0.0045 | open, genus 31 |
+| drill, before | 0.798 / 0.890 / 0.939 | 0.0045 | open, genus 31 |
 | drill, silhouette first | 0.818 / 0.921 / 0.998 | 0.0033 | closed, genus 1 |
 
 Each mesh has its own ICP fit of the scan, so differences of a few hundredths

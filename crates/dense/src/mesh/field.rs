@@ -39,6 +39,8 @@ pub struct Volume {
     pub support: Option<Support>,
     /// The views do not go around the object; see `fusion::partial_views`.
     pub partial_views: bool,
+    /// The stereo stage treated the silhouette hull as the surface (`silhouette_first`).
+    pub silhouette_first: bool,
 }
 
 /// Preview volumes handed from the stereo stage to the preview mesher of the same run, by the path
@@ -88,6 +90,7 @@ impl Volume {
             truncation: self.truncation.max(self.voxel * factor as f64),
             support: self.support,
             partial_views: self.partial_views,
+            silhouette_first: self.silhouette_first,
         }
     }
 
@@ -120,6 +123,7 @@ impl Volume {
             truncation: f64::from(truncation as f32),
             support,
             partial_views: false,
+            silhouette_first: false,
         }
     }
 
@@ -143,6 +147,7 @@ impl Volume {
             truncation: f64::from(fused.truncation as f32),
             support,
             partial_views: fused.partial_views,
+            silhouette_first: fused.silhouette_first,
         }
     }
 
@@ -193,6 +198,7 @@ impl Volume {
             truncation: npz.get("truncation")?.scalar()?,
             support,
             partial_views: npz.contains("partial_views") && npz.get("partial_views")?.scalar()? > 0.5,
+            silhouette_first: npz.contains("silhouette_first") && npz.get("silhouette_first")?.scalar()? > 0.5,
         })
     }
 }
@@ -263,7 +269,17 @@ pub fn field(volume: &Volume, config: &DenseConfig, check: &dyn Fn() -> Result<(
     // hull boundary of the measured zero-crossings near it. The hull is wider than the object by the mask
     // tolerance and by what the ring of views cannot carve; where nothing is measured, the surface
     // is placed that far inside the hull instead of on it.
-    let overshoot = if config.mesh_hull_overshoot {
+    // Silhouette first, decided by the stereo stage or asked for: the hull correction below with its
+    // default width, and no hull moved inward or left open where nothing is measured.
+    let silhouette_first = volume.silhouette_first || config.silhouette_first == 1;
+    let correction = if config.mesh_hull_correction > 0.0 {
+        config.mesh_hull_correction
+    } else if silhouette_first {
+        4.0
+    } else {
+        0.0
+    };
+    let overshoot = if config.mesh_hull_overshoot && !silhouette_first {
         let reach = (truncation - 0.5) as f32;
         let mut depths: Vec<f32> = place
             .iter()
@@ -304,7 +320,7 @@ pub fn field(volume: &Volume, config: &DenseConfig, check: &dyn Fn() -> Result<(
     // noise that the maximum below would turn into pits; the scatter term leaves the hull alone where the
     // depths disagree among themselves. Offsets count where both distances are inside the truncation band.
     let mut corrected: Option<Vec<bool>> = None;
-    if config.mesh_hull_correction > 0.0 {
+    if correction > 0.0 {
         let (band, gate) = (0.9f32, config.mesh_hull_correction_gate as f32);
         let mut offset = vec![0f32; total_voxels];
         let mut support = vec![0f32; total_voxels];
@@ -324,11 +340,11 @@ pub fn field(volume: &Volume, config: &DenseConfig, check: &dyn Fn() -> Result<(
             }
         }
         check()?;
-        gaussian_filter(&mut offset, dims, config.mesh_hull_correction);
-        gaussian_filter(&mut support, dims, config.mesh_hull_correction);
+        gaussian_filter(&mut offset, dims, correction);
+        gaussian_filter(&mut support, dims, correction);
         if gate > 0.0 {
             check()?;
-            gaussian_filter(&mut square, dims, config.mesh_hull_correction);
+            gaussian_filter(&mut square, dims, correction);
         }
         let mut reached = vec![false; hull_count];
         for (i, &p) in place.iter().enumerate() {
@@ -373,7 +389,7 @@ pub fn field(volume: &Volume, config: &DenseConfig, check: &dyn Fn() -> Result<(
             }
         }
     }
-    let mut known = (volume.partial_views && config.mesh_open_unseen).then(|| {
+    let mut known = (volume.partial_views && config.mesh_open_unseen && !silhouette_first).then(|| {
         let mut known = vec![false; total_voxels];
         for (i, &p) in place.iter().enumerate() {
             known[p as usize] = observed[i] || filled[i];
@@ -478,6 +494,7 @@ mod correction_tests {
             truncation: 3.0,
             support: None,
             partial_views: false,
+            silhouette_first: false,
         }
     }
 

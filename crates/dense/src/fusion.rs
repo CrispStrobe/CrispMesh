@@ -34,6 +34,8 @@ pub struct Fused {
     pub support: Support,
     /// The views do not go around the object (`partial_views`).
     pub partial_views: bool,
+    /// The run treated the silhouette hull as the surface (`silhouette_first`); the surface stage follows.
+    pub silhouette_first: bool,
 }
 
 #[repr(C)]
@@ -442,7 +444,15 @@ pub async fn tsdf(
     }
     let sampled = indices.len().div_ceil(7).max(1) as f64;
     let partial = partial_views(cameras, &centroid.map(|v| (v / sampled) as f32));
-    Ok(Fused { indices, total, weight, truncation, support: Support { point: middle, down, height }, partial_views: partial })
+    Ok(Fused {
+        indices,
+        total,
+        weight,
+        truncation,
+        support: Support { point: middle, down, height },
+        partial_views: partial,
+        silhouette_first: false,
+    })
 }
 
 /// Whether the views leave part of the object unseen: the directions from the object to the cameras,
@@ -461,6 +471,93 @@ pub fn partial_views(cameras: &[Camera], centre: &[f32; 3]) -> bool {
     }
     let count = cameras.len().max(1) as f64;
     (sum[0] * sum[0] + sum[1] * sum[1] + sum[2] * sum[2]).sqrt() / count > 0.6
+}
+
+/// Whether the cameras look at the object from several heights all the way round, so that the silhouette
+/// hull is close to the object everywhere but underneath. The point the cameras look at is the one nearest
+/// to all optical axes; the axis is the normal of the plane of the camera centres (up, for a turntable).
+/// Elevations of the cameras seen from that point must reach down to 25 degrees, span
+/// at least 40 degrees (5th to 95th percentile) with each third of the span holding a tenth of the views,
+/// and leave no 30-degree sector around the axis empty. One turn has no span; five turns from 8 to 85
+/// degrees span about 75; views from one side (a cap around its own normal) do not reach down.
+pub fn several_heights(cameras: &[Camera]) -> bool {
+    if cameras.len() < 12 {
+        return false;
+    }
+    let centres: Vec<[f64; 3]> = cameras.iter().map(|c| c.centre().map(f64::from)).collect();
+    // Nearest point to all optical axes: sum (I - d d^T) (p - c) = 0.
+    let (mut m, mut rhs) = ([[0.0f64; 3]; 3], [0.0f64; 3]);
+    for (camera, c) in cameras.iter().zip(&centres) {
+        let d = camera.rotation[2].map(f64::from);
+        for i in 0..3 {
+            for j in 0..3 {
+                let entry = if i == j { 1.0 } else { 0.0 } - d[i] * d[j];
+                m[i][j] += entry;
+                rhs[i] += entry * c[j];
+            }
+        }
+    }
+    let det = |a: &[[f64; 3]; 3]| {
+        a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0])
+            + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0])
+    };
+    let whole = det(&m);
+    if whole.abs() < 1e-9 {
+        return false;
+    }
+    let mut target = [0.0f64; 3];
+    for (k, slot) in target.iter_mut().enumerate() {
+        let mut replaced = m;
+        for (row, value) in replaced.iter_mut().zip(&rhs) {
+            row[k] = *value;
+        }
+        *slot = det(&replaced) / whole;
+    }
+    let unit = |v: [f64; 3]| {
+        let n = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-12);
+        v.map(|x| x / n)
+    };
+    let directions: Vec<[f64; 3]> = centres.iter().map(|c| unit([c[0] - target[0], c[1] - target[1], c[2] - target[2]])).collect();
+    let dot = |a: [f64; 3], b: [f64; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    // The axis is the normal of the camera centres' plane (a ring level with the object has no mean
+    // direction), pointing to the cameras' side.
+    let count = centres.len() as f64;
+    let middle = [0, 1, 2].map(|a| centres.iter().map(|c| c[a]).sum::<f64>() / count);
+    let mut scatter = [[0.0f64; 3]; 3];
+    for c in &centres {
+        let d = [0, 1, 2].map(|a| c[a] - middle[a]);
+        for i in 0..3 {
+            for j in 0..3 {
+                scatter[i][j] += d[i] * d[j];
+            }
+        }
+    }
+    let mut axis = crate::repair::smallest_eigenvector(scatter);
+    if directions.iter().map(|&d| dot(d, axis)).sum::<f64>() < 0.0 {
+        axis = axis.map(|v| -v);
+    }
+    let cross = |a: [f64; 3], b: [f64; 3]| [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    let u = unit(cross(axis, if axis[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] }));
+    let v = cross(axis, u);
+    let mut sectors = [false; 12];
+    for &d in &directions {
+        sectors[((dot(d, v).atan2(dot(d, u)).to_degrees() + 180.0) / 30.0).floor().clamp(0.0, 11.0) as usize] = true;
+    }
+    if sectors.contains(&false) {
+        return false;
+    }
+    let mut elevations: Vec<f64> = directions.iter().map(|&d| dot(d, axis).clamp(-1.0, 1.0).asin().to_degrees()).collect();
+    elevations.sort_by(f64::total_cmp);
+    let at = |q: f64| elevations[(q * (elevations.len() - 1) as f64).round() as usize];
+    let (low, high) = (at(0.05), at(0.95));
+    let span = high - low;
+    if span < 40.0 || low > 25.0 {
+        return false;
+    }
+    (0..3).all(|third| {
+        let (from, to) = (low + span * third as f64 / 3.0, low + span * (third + 1) as f64 / 3.0);
+        elevations.iter().filter(|&&e| e >= from - 1e-9 && e <= to + 1e-9).count() * 10 >= elevations.len()
+    })
 }
 
 /// What the hull below a support height says about whether the object stands on anything.
@@ -727,14 +824,51 @@ mod tests {
 }
 
 #[cfg(test)]
+mod height_tests {
+    use super::*;
+
+    /// A camera on a sphere of radius 5 looking at the origin.
+    fn looking_in(elevation: f32, azimuth: f32) -> Camera {
+        let (e, a) = (elevation.to_radians(), azimuth.to_radians());
+        let centre = [5.0 * e.cos() * a.cos(), 5.0 * e.cos() * a.sin(), 5.0 * e.sin()];
+        let forward = centre.map(|v| -v / 5.0);
+        let right = [-a.sin(), a.cos(), 0.0];
+        let up = [
+            forward[1] * right[2] - forward[2] * right[1],
+            forward[2] * right[0] - forward[0] * right[2],
+            forward[0] * right[1] - forward[1] * right[0],
+        ];
+        let rotation = [right, up, forward];
+        let translation = [0, 1, 2].map(|r| -(rotation[r][0] * centre[0] + rotation[r][1] * centre[1] + rotation[r][2] * centre[2]));
+        Camera { rotation, translation, k: [1.0; 4] }
+    }
+
+    #[test]
+    fn several_heights_needs_a_wide_and_filled_span_of_elevations() {
+        let turns = |elevations: &[f32]| -> Vec<Camera> {
+            elevations.iter().flat_map(|&e| (0..36).map(move |n| looking_in(e, n as f32 * 10.0))).collect()
+        };
+        assert!(!several_heights(&turns(&[15.0])));
+        assert!(!several_heights(&turns(&[10.0, 30.0])));
+        // Two far-apart heights leave the middle of the span empty.
+        assert!(!several_heights(&turns(&[10.0, 70.0])));
+        assert!(several_heights(&turns(&[10.0, 35.0, 60.0])));
+        assert!(several_heights(&turns(&[8.0, 25.0, 45.0, 65.0, 85.0])));
+        // Three heights over a third of a turn (views from one side) do not go round the object.
+        let arc: Vec<Camera> = [10.0f32, 35.0, 60.0].iter().flat_map(|&e| (0..36).map(move |n| looking_in(e, n as f32 * 3.0))).collect();
+        assert!(!several_heights(&arc));
+    }
+}
+
+#[cfg(test)]
 mod cross_tests {
     use super::*;
     use crate::inputs::Inputs;
     use crate::stereo::level::build_level;
     use crate::stereo::{options, synthetic};
 
-    fn scene() -> (Inputs, Vec<LevelView>, Vec<Plane<f32>>) {
-        let root = synthetic::temporary("cross", 24, 128).unwrap();
+    fn scene(name: &str) -> (Inputs, Vec<LevelView>, Vec<Plane<f32>>) {
+        let root = synthetic::temporary(name, 24, 128).unwrap();
         let overrides: Vec<String> = synthetic::SMALL.iter().map(|s| s.to_string()).collect();
         let config = options::build(None, &overrides).unwrap();
         let inputs = Inputs::load(&root.join("inputs"), &config).unwrap();
@@ -748,7 +882,7 @@ mod cross_tests {
     /// loses its depths, while the others keep theirs.
     #[test]
     fn cross_check_keeps_agreeing_depths_and_empties_a_view_that_disagrees() {
-        let (inputs, level, exact) = scene();
+        let (inputs, level, exact) = scene("cross-check");
         let valid = |d: &Plane<f32>| d.data.iter().filter(|&&v| v > 0.0).count();
         let (checked, kept) = cross_checked(&level, &exact, &inputs.angles, (20.0, 80.0), 16, 0.004, 2);
         assert!(kept > 0.85, "{kept}");
@@ -764,7 +898,7 @@ mod cross_tests {
     /// masks hardly change.
     #[test]
     fn masks_grow_back_where_confirmed_depths_land() {
-        let (inputs, level, exact) = scene();
+        let (inputs, level, exact) = scene("cross-grow");
         let area = |m: &Plane<u8>| m.data.iter().filter(|&&v| v != 0).count();
         let mut masks = inputs.masks.clone();
         let (w, whole) = (masks[3].width, area(&masks[3]));
