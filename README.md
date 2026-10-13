@@ -230,7 +230,10 @@ Run the OpenCV CTests first to generate the fixture. The browser script runs the
 The pipeline is modular: masks, cameras and undistortion are provider-based
 stages in front of one native dense reconstruction, so each platform uses the
 providers it can run. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for
-the plan and [`docs/STATUS.md`](docs/STATUS.md) for what is in progress.
+the plan, [`docs/STATUS.md`](docs/STATUS.md) for what is in progress and
+[`docs/SURFACE-METHODS.md`](docs/SURFACE-METHODS.md) for the current comparison of
+surface methods (ours, Gaussian splatting, neural surfaces, classical
+pipelines) and what we build next.
 Older planning documents (`docs/PLAN.md`, `docs/SOTA-ROADMAP.md`) describe the
 earlier C++-core route.
 

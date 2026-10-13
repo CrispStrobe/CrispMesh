@@ -1,8 +1,10 @@
 # Status
 
-State of Crisp3DS / CrispMesh on 2026-10-08. The plan of record is
+State of Crisp3DS (the engine) and CrispMesh (the app, called Crisp 3D Studio
+until 2026-10-13) on 2026-10-13. The plan of record is
 [ARCHITECTURE.md](ARCHITECTURE.md); measurements and settings are in the
-[crate README](../crates/dense/README.md).
+[crate README](../crates/dense/README.md); the current comparison of surface
+methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md).
 
 ## What works
 
@@ -121,6 +123,17 @@ README.
 
 ## In progress
 
+- **Surface quality on captures from several heights** (2026-10-13). Like for
+  like on the same masks and hull, fused depth is worth 0.12 F1 at 0.5 % on the
+  textured drill and nothing on the plain mustard bottle, at several times the
+  run time of the silhouette alone. A prototype that refines the hull mesh
+  directly against the photos, without depth maps, is our best drill result
+  (0.86 / 0.97 / 1.00) and needs a strict acceptance test not to harm plain
+  surfaces. Gaussian splatting (Brush) renders held-out photos sharply from our
+  cameras and gives a less accurate surface than our meshes. Reference runs of
+  2D Gaussian splatting and a NeuS variant on a GPU are under way.
+  [Measurements, comparison with other pipelines and plan](SURFACE-METHODS.md).
+
 - **Photo-textured GLB**: opt-in `run --texture` and standalone `texture`
   command, also offered in Studio for built-in engines. An embedded UV atlas
   uses the pipeline's own recovered cameras, photos and masks; unseen regions
@@ -163,6 +176,10 @@ README.
   kept for inspection.
 - Interiors a single ring of cameras never sees (mugs, shoes) are capped.
 - Thin, low-texture parts and very smooth objects remain hard.
+- Plain single-colour surfaces give photo-based depth nothing to agree on:
+  there the silhouette from several camera heights is the best surface we have.
+- The multi-height photos stage needs about 13 MB of WebAssembly memory per
+  photo in a browser; 300 photos work at 1424 x 949 and not at 2136 x 1424.
 - The marker mat has not been tested with a real print.
 - Builds have been run on Apple hardware only (desktop app, iOS simulator,
   browser); Windows, Linux and Android builds are tested in CI only, and no
