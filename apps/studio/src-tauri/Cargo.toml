@@ -2,7 +2,7 @@
 name = "crisp3ds-studio"
 version = "0.2.0"
 license = "AGPL-3.0-only"
-description = "Crisp 3D Studio: watch a photo-to-STL reconstruction step by step"
+description = "CrispMesh: watch a photo-to-STL reconstruction step by step"
 authors = ["Crisp3DS contributors"]
 edition = "2021"
 rust-version = "1.77.2"

@@ -1,6 +1,6 @@
 name: testflight
 
-# Crisp 3D Studio for internal TestFlight: the iOS app and the sandboxed Mac App Store
+# CrispMesh for internal TestFlight: the iOS app and the sandboxed Mac App Store
 # variant, signed for distribution, checked by Apple, and uploaded only when asked to.
 #
 #   dry_run=true (default)  build, sign, verify the signature, validate with Apple
@@ -89,7 +89,7 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           echo "VERSION=$version" >> "$GITHUB_ENV"
-          echo "Crisp 3D Studio $version, build $BUILD_NUMBER"
+          echo "CrispMesh $version, build $BUILD_NUMBER"
       - name: Signing material (keychain, profile, API key)
         env:
           P12: ${{ secrets.DIST_CERT_P12_BASE64 }}
@@ -232,7 +232,7 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           echo "VERSION=$version" >> "$GITHUB_ENV"
-          echo "Crisp 3D Studio $version, build $BUILD_NUMBER"
+          echo "CrispMesh $version, build $BUILD_NUMBER"
       # One keychain for the whole job, on the search list: the bundler signs the app and
       # productbuild signs the package with identities from it. The bundler gets no
       # certificate of its own (two keychains with the same identity make codesign refuse).

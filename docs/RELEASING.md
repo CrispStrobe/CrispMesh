@@ -133,7 +133,7 @@ user and are not redistributed by these releases, except as names in
 
 ## App Store and TestFlight
 
-Crisp 3D Studio is in App Store Connect as "Crisp 3D Studio",
+CrispMesh is in App Store Connect as "CrispMesh",
 bundle identifier `com.crispstrobe.crisp3ds`, for iOS and macOS. Builds go to
 **internal TestFlight testing only**; nothing has been submitted for review
 and there is no store listing beyond the name. How the account signs and

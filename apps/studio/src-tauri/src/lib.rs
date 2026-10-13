@@ -1,4 +1,4 @@
-//! Crisp 3D Studio as an app.
+//! CrispMesh as an app.
 //!
 //! Three ways to get a reconstruction, in the order the app prefers them:
 //!
@@ -213,7 +213,7 @@ async fn native_health(app: AppHandle) -> Result<Value, String> {
             // Phones have no folder dialog of the app's own: files come in through the system's picker.
             "imports": cfg!(any(target_os = "ios", target_os = "android")),
             "note": if cfg!(target_os = "ios") {
-                serde_json::json!("Photos get in and models get out through the Files app: under On My iPhone (or iPad), Crisp 3D Studio has a folder \"data\" for a folder of photos and the lens calibration, and a folder \"runs\" where each run leaves its STL.")
+                serde_json::json!("Photos get in and models get out through the Files app: under On My iPhone (or iPad), CrispMesh has a folder \"data\" for a folder of photos and the lens calibration, and a folder \"runs\" where each run leaves its STL.")
             } else {
                 Value::Null
             },
@@ -647,7 +647,7 @@ pub fn run() {
         check_tool
     ]);
 
-    let app = builder.build(tauri::generate_context!()).expect("error while building Crisp 3D Studio");
+    let app = builder.build(tauri::generate_context!()).expect("error while building CrispMesh");
     app.run(|_handle, _event| {
         if let tauri::RunEvent::Exit = _event {
             // Runs of the built-in engine are asked to stop and given a moment; whatever is

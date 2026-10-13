@@ -72,7 +72,7 @@ const DEMO_BUNDLE = "demo/";
 function Footer() {
   return (
     <footer class="footer">
-      <span>Crisp 3D Studio is free software under AGPL-3.0-only.</span>
+      <span>CrispMesh is free software under AGPL-3.0-only.</span>
       <a href="#/notices">Licenses and third-party notices</a>
     </footer>
   );
@@ -185,7 +185,7 @@ export function App() {
   else if (route.screen === "notices") title = "Licenses";
   else if (route.screen === "examples") title = "Example objects";
   useEffect(() => {
-    document.title = title === "Studio" ? "Crisp 3D Studio" : `${title} - Crisp 3D Studio`;
+    document.title = title === "Studio" ? "CrispMesh" : `${title} - CrispMesh`;
   }, [title]);
 
   return (
@@ -194,10 +194,10 @@ export function App() {
         Skip to content
       </a>
       <header class="topbar">
-        <a class="brand" href="#/" aria-label="Crisp 3D Studio, connection">
+        <a class="brand" href="#/" aria-label="CrispMesh, connection">
           <Icon name="cube" size={20} />
           <span>
-            Crisp 3D <strong>Studio</strong>
+            Crisp<strong>Mesh</strong>
           </span>
         </a>
         <nav class="topnav" aria-label="Main">

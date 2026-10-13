@@ -289,8 +289,8 @@ jobs:
             macOS)
               cp "$bundle"/dmg/*.dmg "$out/$base.dmg"
               # tar keeps the bundle's symlinks, permissions and signature intact.
-              tar -C "$bundle/macos" -czf "$out/$base.app.tar.gz" "Crisp 3D Studio.app"
-              codesign --display --verbose=2 "$bundle/macos/Crisp 3D Studio.app" 2>&1 | grep -E 'Signature|Authority|TeamIdentifier' || true
+              tar -C "$bundle/macos" -czf "$out/$base.app.tar.gz" "CrispMesh.app"
+              codesign --display --verbose=2 "$bundle/macos/CrispMesh.app" 2>&1 | grep -E 'Signature|Authority|TeamIdentifier' || true
               ;;
             Windows)
               cp "$bundle"/nsis/*-setup.exe "$out/$base-setup.exe"
@@ -533,7 +533,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release create "$TAG" release/* --draft --prerelease --verify-tag \
-            --title "Crisp 3D Studio $VERSION" --notes-file notes.md --generate-notes
+            --title "CrispMesh $VERSION" --notes-file notes.md --generate-notes
       - name: Nothing was released
         if: needs.meta.outputs.tag == '' || env.DRY_RUN == 'true'
         run: echo "No release was created (dry run, or not a tag). The files are in the release-all artifact." >> "$GITHUB_STEP_SUMMARY"

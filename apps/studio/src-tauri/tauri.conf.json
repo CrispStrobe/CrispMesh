@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Crisp 3D Studio",
+  "productName": "CrispMesh",
   "mainBinaryName": "crisp3ds-studio",
   "version": "0.2.0",
   "identifier": "com.crispstrobe.crisp3ds",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Crisp 3D Studio",
+        "title": "CrispMesh",
         "width": 1320,
         "height": 880,
         "minWidth": 360,

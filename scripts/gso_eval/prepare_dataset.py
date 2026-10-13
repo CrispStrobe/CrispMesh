@@ -103,7 +103,7 @@ front of a light backdrop and is seen from one ring of 72 cameras 20 degrees abo
 steps), through a real lens model (the 3DLF apiCAM PRO lens with its radial distortion), at
 1749 x 1155 pixels, with one light that keeps its place relative to the camera, a cast shadow,
 1 px Gaussian blur and mild noise. Rendered by `crisp3ds-dense render` of
-[Crisp 3D Studio](https://github.com/CrispStrobe/crisp3ds), which uses them as downloadable
+[CrispMesh](https://github.com/CrispStrobe/crisp3ds), which uses them as downloadable
 example objects.
 
 | Object | Title | Source model | Photos | Size |

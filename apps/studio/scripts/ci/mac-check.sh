@@ -19,7 +19,7 @@ STUDIO=$(cd "$HERE/../.." && pwd)
 BUNDLE=com.crispstrobe.crisp3ds
 mkdir -p "$OUT"
 WORK=$(mktemp -d)
-APP="$WORK/Crisp 3D Studio.app"
+APP="$WORK/CrispMesh.app"
 mkdir -p "$APP/Contents/MacOS"
 cp "$BINARY" "$APP/Contents/MacOS/crisp3ds-studio"
 cat > "$APP/Contents/Info.plist" <<EOF
@@ -28,7 +28,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>$BUNDLE</string>
 <key>CFBundleExecutable</key><string>crisp3ds-studio</string>
-<key>CFBundleName</key><string>Crisp 3D Studio</string>
+<key>CFBundleName</key><string>CrispMesh</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleVersion</key><string>1</string>
 <key>NSHighResolutionCapable</key><true/>

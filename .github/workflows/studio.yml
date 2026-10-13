@@ -1,6 +1,6 @@
 name: studio
 
-# Crisp 3D Studio (apps/studio): the web front end and its Tauri 2 shell.
+# CrispMesh (apps/studio): the web front end and its Tauri 2 shell.
 #
 #   web      typecheck, unit tests and the static bundle (artifact). Built with
 #            relative asset URLs, so it can be served from any path. The bundle

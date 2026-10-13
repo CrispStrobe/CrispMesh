@@ -1,4 +1,4 @@
-**Crisp 3D Studio {VERSION}, a prerelease. Read this before installing.**
+**CrispMesh {VERSION}, a prerelease. Read this before installing.**
 
 Turntable photos to a closed, printable surface (STL), on your own computer, phone or
 browser. No cloud, no upload, and since this release no external program is needed.
@@ -25,7 +25,7 @@ Four objects of the 3DLF-Scan set (73 photos each, Apple M1, the default command
 
 ### Known limits
 
-- **Unsigned builds.** Nothing here is signed with a developer certificate or notarised. macOS (ad-hoc signature only) will refuse to open the app until you allow it under System Settings > Privacy & Security, or remove the quarantine flag (`xattr -dr com.apple.quarantine "Crisp 3D Studio.app"`). Windows SmartScreen will warn about the installer. The Android file is a debug build signed with a throwaway debug key; the iOS file runs in the simulator only (the iOS and macOS apps are in internal TestFlight testing, not in the stores).
+- **Unsigned builds.** Nothing here is signed with a developer certificate or notarised. macOS (ad-hoc signature only) will refuse to open the app until you allow it under System Settings > Privacy & Security, or remove the quarantine flag (`xattr -dr com.apple.quarantine "CrispMesh.app"`). Windows SmartScreen will warn about the installer. The Android file is a debug build signed with a throwaway debug key; the iOS file runs in the simulator only (the iOS and macOS apps are in internal TestFlight testing, not in the stores).
 - **Turntable captures only**: one turn of ordered photos at one elevation, with a lens calibration. Twelve photos with unknown poses are not enough.
 - Thin parts (horn tips, wings) come out short or are lost; surfaces no photo sees follow the silhouettes.
 - The meshes have no physical scale, except with the marker mat.

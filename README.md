@@ -2,7 +2,7 @@
 
 Photos of an object in, a closed printable mesh out. Crisp3DS turns turntable
 photos into a watertight STL with one native program (Rust and WebGPU) that
-runs on desktop GPUs, in the browser and inside **Crisp 3D Studio**, the app
+runs on desktop GPUs, in the browser and inside **CrispMesh**, the app
 for macOS, Windows, Linux, iOS and Android.
 
 [![dense pipeline](https://github.com/CrispStrobe/crisp3ds/actions/workflows/dense-pipeline.yml/badge.svg)](https://github.com/CrispStrobe/crisp3ds/actions/workflows/dense-pipeline.yml)
@@ -15,7 +15,7 @@ for macOS, Windows, Linux, iOS and Android.
 | --- | --- | --- |
 | **Native pipeline**: photos to a closed STL, masks, cameras, GPU dense stages | [`crates/dense/`](crates/dense/README.md) | The primary implementation; one command, no Python, no external program; Metal, Vulkan, DirectX 12, WebGPU; library API and C interface |
 | **In the browser**: the same pipeline as WebAssembly and WebGPU | [`crates/dense/web/`](crates/dense/README.md), live at [crispstrobe.github.io/crisp3ds](https://crispstrobe.github.io/crisp3ds/) | From photos or prepared inputs, threaded where the page allows; nothing is uploaded |
-| **Crisp 3D Studio**: the app, one code base for desktop, phone and web | [`apps/studio/`](apps/studio/README.md) | Reconstructs in-process from photos, live progress and diagnostics, example objects; release [v0.2.0](https://github.com/CrispStrobe/crisp3ds/releases/tag/v0.2.0) and internal TestFlight builds ([releasing](docs/RELEASING.md)) |
+| **CrispMesh**: the app, one code base for desktop, phone and web | [`apps/studio/`](apps/studio/README.md) | Reconstructs in-process from photos, live progress and diagnostics, example objects; release [v0.2.0](https://github.com/CrispStrobe/crisp3ds/releases/tag/v0.2.0) and internal TestFlight builds ([releasing](docs/RELEASING.md)) |
 | **Engine contract**: event log, artifacts, replay bundles, HTTP engine | [`docs/ENGINE-CONTRACT.md`](docs/ENGINE-CONTRACT.md) | Shared by the native engine, the browser engine and the Python reference |
 | **Python reference pipeline** and evaluation tools | [`scripts/turntable_mesh/`](scripts/turntable_mesh/README.md) | What the native crate was ported from; no longer extended. The scanner evaluator and test-scene tools stay in Python |
 | **Core**: C++20 library and CLI for projects, calibration, marker boards | [`core/`](core/README.md) | Builds and tests on macOS, Linux, Windows |

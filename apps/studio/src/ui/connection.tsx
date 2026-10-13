@@ -93,7 +93,7 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
       <h1>Photos to a printable model</h1>
       {browser !== null && localEngine === null ? (
         <p class="lead">
-          Crisp 3D Studio turns photos of an object on a turntable into a closed surface you can print (STL), and shows the
+          CrispMesh turns photos of an object on a turntable into a closed surface you can print (STL), and shows the
           surface getting better step by step. It computes right here, in this browser, on this device's graphics processor:
           nothing is uploaded and nothing needs to be installed.
         </p>
