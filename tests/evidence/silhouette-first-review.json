@@ -100,8 +100,8 @@
   "mask growth after matching without matching again (mustard 0.44/0.75/0.97): the depth search is bounded by the hull of the tight masks",
   "mask growth with a 15-pixel closing (drill 0.767/0.896/0.992: fills concave silhouette corners)"
  ],
- "checks": "215 library tests and 3 geometry audit tests with Metal, rustfmt, clippy for native all-targets with and without capi, threaded WebAssembly build. The wasm32 clippy run reports two findings in src/gpu/mod.rs, which this change does not touch.",
- "limits": "Two multi-height objects. Sheets inspected for both (smooth, closed; no fine relief). A finely textured multi-height capture was not available and may lose relief. Browser: dense stages only, on a reduced scene; the multi-turn photos stage has not been run in a browser, and the full 300-photo DSLR scene (native peak resident 5.3-6.6 GB) does not fit a browser. Run time grows by about half to double. No patent review of these steps; no third-party code.",
+ "checks": "215 library tests and 3 geometry audit tests with Metal, rustfmt, clippy for native all-targets with and without capi, threaded WebAssembly build. The wasm32 clippy run reports two findings in src/gpu/mod.rs that predate this work.",
+ "limits": "Two multi-height objects. Sheets inspected for both (smooth, closed; no fine relief). A finely textured multi-height capture was not available and may lose relief. Browser: one complete run from photos, at 1424x949; 300 photos of 2136x1424 exceed the browser's memory in the photos stage's heap (not addressed), and the full 4272x2848 set was not tried. Run time grows by about half to double. No patent review of these steps; no third-party code.",
  "automatic": {
   "camera_sets_checked": 36,
   "qualify": "mustard and drill five-turn captures and two four-turn subsets (elevations 10-84 degrees)",
@@ -163,5 +163,62 @@
    }
   },
   "reading": "at this size the scores of the two modes are within the fit; the rendered meshes differ: off has a hole in the motor housing and pits, silhouette first is closed and smooth. Browser and native meshes are not byte-identical and score within 0.002 of each other."
+ },
+ "browser_from_photos": {
+  "date": "2026-10-13",
+  "setup": "threaded WebAssembly build, 2 threads, headless Chrome with WebGPU, Apple M1 under memory pressure from other work (swap in use); one run each; memory is the WebAssembly linear-memory high-water mark",
+  "photos": "the drill's five turns, all 300 photos, own masks imported, --turntable-region surface --turntable-rings 5; lens scaled with the photos",
+  "third_size_1424x949": {
+   "result": "complete",
+   "seconds": 760.4,
+   "stages_seconds": {
+    "masks": 23,
+    "cameras": 574,
+    "stereo": 156,
+    "mesh_and_check": 6
+   },
+   "peak_wasm_bytes": 3222208512,
+   "registered": "300/300, gates passed",
+   "turn_sums_degrees": [
+    354.0,
+    383.3,
+    359.6,
+    359.6,
+    358.8
+   ],
+   "silhouette_first": true,
+   "closed": true,
+   "genus": 0,
+   "f1": [
+    0.7424,
+    0.8811,
+    0.9959
+   ],
+   "mean": 0.00404
+  },
+  "half_size_2136x1424": {
+   "result": "photos stage complete (cameras in about 960 s), dense stage out of memory while loading the grey images",
+   "note": "the photos stage leaves the WebAssembly heap at 3.64 GiB (about 13 MB per photo, twice the native peak of 1.8 GB); natively the same photos give 0.802/0.897/0.998, closed, genus 0, cameras about 20 min, dense 219 s, 3.3 GB"
+  },
+  "thirty_photos_per_turn": "native: all 150 register but turn 1 fails the landmark gate and two turns close at 329 and 349 degrees; 12-degree steps are too coarse for this object",
+  "fixes": {
+   "scene_files": "the scene's images leave WebAssembly memory as they are written (removeFile binding, wrapper takes them on progress events, the scene step reports every 2 % of its own work); before, 300 half-size photos ran out of memory while the scene was written",
+   "gpu_buffers": "in a browser the first pass's storage buffers are destroyed before the run proper (Gpu::track / release_tracked; natively a dropped buffer is freed at once and nothing is tracked)",
+   "two_levels": "with two pyramid levels or fewer the first pass uses all of them; a first pass on the single 256-pixel level lost the WebGPU device on a 300-view scene (cause of that loss not established; the same level passes inside a normal run)"
+  },
+  "dense_only_300_views_1068x712": {
+   "silhouette_first": {
+    "seconds": 124.7,
+    "peak_wasm_bytes": 2078670848,
+    "closed": true,
+    "genus": 1
+   },
+   "off": {
+    "seconds": 65.5,
+    "peak_wasm_bytes": 1717633024,
+    "closed": false,
+    "genus": 134
+   }
+  }
  }
 }

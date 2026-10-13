@@ -1771,8 +1771,17 @@ stages on the drill's five turns reduced to 100 views of 2136 × 1424: 218 s and
 141 s and 2.28 GiB without (open, genus 7); natively 133 s against 85 s. The
 scores match the native ones within 0.002. At that size the two modes score
 alike (0.79 / 0.88 / 0.97 against 0.79 / 0.87 / 0.98) and differ in the mesh:
-a hole in the motor housing and pits without, closed and smooth with. The
-photos stage for several turns has not been run in a browser.
+a hole in the motor housing and pits without, closed and smooth with.
+From photos in the browser (2026-10-13): all 300 photos of the five turns at
+1424 × 949 with imported own masks run through to a closed mesh (genus 0,
+0.742 / 0.881 / 0.996) in 760 s (cameras 574 s, dense stages 162 s) with
+3.2 GiB of WebAssembly memory. Three things had to change for that: the
+scene's images now leave WebAssembly memory as they are written, the first
+pass's GPU buffers are destroyed before the run proper (a browser frees a
+dropped buffer only at its next garbage collection), and with two pyramid
+levels or fewer the first pass uses all of them. At 2136 × 1424 the photos
+stage completes, but its heap (about 13 MB per photo, twice the native peak)
+leaves no room for the dense stage; that is open.
 See [silhouette-first-review.json](../../tests/evidence/silhouette-first-review.json).
 
 Large captures (2026-10-11): when the whole grey photos would take more than

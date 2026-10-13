@@ -61,14 +61,20 @@ struct Ticker<'a> {
     low: f64,
     high: f64,
     last: f64,
+    /// Completion of this step at the last event.
+    step: f64,
     message: &'a str,
 }
 
 impl Ticker<'_> {
+    /// An event when the stage advanced by 5 %, or this step by 2 % of its own work: a host that
+    /// takes files over as a step writes them (the scene, in a browser) hears from it often enough.
     fn tick(&mut self, completion: f64) {
-        let fraction = ((self.low + (self.high - self.low) * completion.clamp(0.0, 1.0)) * 100.0).round() / 100.0;
-        if fraction >= self.last + 0.05 {
+        let completion = completion.clamp(0.0, 1.0);
+        let fraction = ((self.low + (self.high - self.low) * completion) * 100.0).round() / 100.0;
+        if fraction >= self.last + 0.05 || completion >= self.step + 0.02 {
             self.last = fraction;
+            self.step = completion;
             let _ = self.events.progress(fraction, self.message);
         }
     }
@@ -264,7 +270,7 @@ impl Run<'_> {
             .collect();
         environment.extend(step.environment.iter().cloned());
         let staged = self.events.stage(stage);
-        let mut ticker = Ticker { events: &staged, low, high, last: low, message };
+        let mut ticker = Ticker { events: &staged, low, high, last: low, step: 0.0, message };
         let outcome = bounded(&step.command, &log, Duration::from_secs(timeout), &environment, directory, &mut || {
             if let Some(counter) = counter {
                 ticker.tick(counter());
@@ -303,7 +309,7 @@ impl Run<'_> {
         let log = self.begin(stage, name, low, message)?;
         let started = Instant::now();
         let staged = self.events.stage(stage);
-        let mut ticker = Ticker { events: &staged, low, high, last: low, message };
+        let mut ticker = Ticker { events: &staged, low, high, last: low, step: 0.0, message };
         let (cancel, cancel_file) = (self.cancel.clone(), self.cancel_file.clone());
         let result = work(&mut |done| {
             if cancel.as_ref().is_some_and(|flag| flag.load(Ordering::Relaxed)) || cancel_file.stored() {

@@ -46,6 +46,8 @@ pub struct Gpu {
     /// Natively each dispatch is submitted at once, inside its error scope, as before.
     #[cfg(target_arch = "wasm32")]
     pending: std::sync::Mutex<(Option<wgpu::CommandEncoder>, usize)>,
+    /// Storage buffers made since [`Gpu::track`], for [`Gpu::release_tracked`].
+    tracked: std::sync::Mutex<Option<Vec<wgpu::Buffer>>>,
 }
 
 impl Gpu {
@@ -96,7 +98,37 @@ impl Gpu {
             uncaptured,
             #[cfg(target_arch = "wasm32")]
             pending: std::sync::Mutex::new((None, 0)),
+            tracked: std::sync::Mutex::new(None),
         })
+    }
+
+    /// From here on the storage buffers this device makes are remembered, until [`Gpu::release_tracked`].
+    /// Only in a browser: there a dropped buffer keeps its memory until the garbage collector runs,
+    /// which GPU memory does not trigger, so remembering costs nothing. Natively a dropped buffer is
+    /// freed at once, and remembering would keep every buffer of the pass alive.
+    pub fn track(&self) {
+        if cfg!(target_arch = "wasm32") {
+            *self.tracked.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(Vec::new());
+        }
+    }
+
+    /// Frees the memory of every storage buffer made since [`Gpu::track`]. For a pass whose results
+    /// have all been read back and whose buffers are not used again: a second pass would otherwise
+    /// allocate next to the first one's buffers in a browser.
+    pub fn release_tracked(&self) {
+        self.flush();
+        if let Some(buffers) = self.tracked.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).take() {
+            for buffer in buffers {
+                buffer.destroy();
+            }
+        }
+    }
+
+    fn remember(&self, buffer: wgpu::Buffer) -> wgpu::Buffer {
+        if let Some(buffers) = self.tracked.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).as_mut() {
+            buffers.push(buffer.clone());
+        }
+        buffer
     }
 
     pub fn describe(&self) -> String {
@@ -121,21 +153,21 @@ impl Gpu {
             // Zero-sized bindings are invalid; keep one word.
             return self.zeroed(label, 4);
         }
-        self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        self.remember(self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(label),
             contents: bytes,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
-        })
+        }))
     }
 
     /// Zero-initialised storage buffer of `bytes` bytes (rounded up to 4).
     pub fn zeroed(&self, label: &str, bytes: u64) -> wgpu::Buffer {
-        self.device.create_buffer(&wgpu::BufferDescriptor {
+        self.remember(self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
             size: bytes.max(4).div_ceil(4) * 4,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
-        })
+        }))
     }
 
     pub fn uniform<T: Pod>(&self, label: &str, value: &T) -> wgpu::Buffer {

@@ -235,9 +235,12 @@ async fn grow_masks(
             state = build_hull(gpu, inputs, config, &mut voxel).await?;
         }
     }
+    control.log(format!("mask grow: hull {} voxels", state.hull.indices().len()));
     inputs.crop_gray();
     let sizes = crate::stereo::level::with_native_level(level_sizes(&config.sizes, inputs.longest), inputs.longest, config.native_level);
-    let coarse = &sizes[..sizes.len().saturating_sub(1).max(1)];
+    // All but the finest level; with two levels or fewer, all of them (one coarse level alone says little).
+    let coarse = if sizes.len() > 2 { &sizes[..sizes.len() - 1] } else { &sizes[..] };
+    control.log(format!("mask grow: levels {coarse:?} of {sizes:?}"));
     let count = inputs.count();
     let picks = [count / 7, (count / 2).saturating_sub(3), (4 * count) / 5];
     let previews = Previews { directory: None, events, config, hand_over: false };
@@ -247,6 +250,7 @@ async fn grow_masks(
             LevelContext { gpu, inputs, state: &state, config, output: &scratch, events, previews: &previews, picks: &picks, control };
         match_levels(&context, coarse, &mut report).await?
     };
+    control.log(format!("mask grow: matched {} views", depths.len()));
     control.check()?;
     let (checked, kept) = crate::fusion::cross_checked(
         &level,
@@ -257,6 +261,7 @@ async fn grow_masks(
         config.cross_check_tolerance as f32,
         config.cross_check_votes as usize,
     );
+    control.log(format!("mask grow: confirmed {kept:.3}"));
     let (grown, added) = crate::fusion::grown_masks(&level, &checked, &inputs.cameras, &inputs.masks, 3, config.mask_grow_close as usize);
     crate::storage::create_dir(output.join("masks-grown"))?;
     let written: Vec<anyhow::Result<()>> = parallel_map(count, |n| {
@@ -317,7 +322,11 @@ pub async fn run_fused(
         config
     };
     if config.mask_grow {
-        report["mask_grow"] = grow_masks(arguments, config, gpu, events, control, &mut inputs).await?;
+        // The first pass's GPU buffers are freed before the run proper allocates its own.
+        gpu.track();
+        let grown = grow_masks(arguments, config, gpu, events, control, &mut inputs).await;
+        gpu.release_tracked();
+        report["mask_grow"] = grown?;
         control.log(format!("mask grow {}", report["mask_grow"]));
         inputs = Inputs::load_with_masks(&arguments.inputs, config, Some(&output.join("masks-grown")))?;
     }

@@ -133,6 +133,12 @@ pub fn set_file_lister(lister: Option<js_sys::Function>) {
     }));
 }
 
+/// Removes one file of the tree (a file the host has taken over and now supplies through the file source).
+#[wasm_bindgen(js_name = removeFile)]
+pub fn remove_file(path: &str) {
+    let _ = storage::remove_file(path);
+}
+
 /// Removes a directory of the tree with everything in it.
 #[wasm_bindgen(js_name = removeTree)]
 pub fn remove_tree(directory: &str) {

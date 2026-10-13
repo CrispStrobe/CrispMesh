@@ -188,13 +188,28 @@ function startFromPhotos(root, photos, calibration, options, onEvent) {
   // side, like the inputs of a run from an inputs directory: the dense stages then start with
   // the engine's memory nearly empty instead of holding the scene behind their own buffers.
   const scene = `${root}/run/frontend/inputs`;
-  const relay = (event) => {
-    if (event.type === "stage_finished" && event.stage === "cameras") {
-      const files = new Map();
-      for (const [path] of JSON.parse(engine.listFiles(scene))) files.set(path.slice(scene.length + 1), engine.getFile(path));
-      engine.removeTree(scene);
+  // The images of the scene leave as they are written (the photos stage reports after every view),
+  // so a scene of many photos never stands in WebAssembly memory as a whole; the engine reads them
+  // back through the file source when it needs them.
+  const files = new Map();
+  const take = (everything) => {
+    for (const [path] of JSON.parse(engine.listFiles(scene))) {
+      const name = path.slice(scene.length + 1);
+      if (!everything && !name.endsWith(".png")) continue;
+      files.set(name, engine.getFile(path));
+      engine.removeFile(path);
+    }
+    if (files.size && !sources.has(`${scene}/`)) {
       sources.set(`${scene}/`, files);
       listed.add(`${scene}/`);
+    }
+  };
+  let scene_done = false;
+  const relay = (event) => {
+    if (!scene_done && event.stage === "cameras") {
+      scene_done = event.type === "stage_finished";
+      take(scene_done);
+      if (scene_done) engine.removeTree(scene);
     }
     onEvent?.(event);
   };

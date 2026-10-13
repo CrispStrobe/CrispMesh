@@ -111,7 +111,10 @@ README.
   half as much time again to twice the time on those captures. In a browser
   the dense stages ran on a reduced drill scene (100 views): 218 s and
   2.44 GiB of WebAssembly memory against 141 s and 2.28 GiB without, closed
-  against open; the photos stage for several turns is not yet run there.
+  against open. From photos, the five turns (300 photos at 1424 × 949) run
+  through in a browser in 760 s with 3.2 GiB to a closed mesh (0.74 / 0.88 /
+  1.00); at 2136 × 1424 the photos stage's memory leaves no room for the
+  dense stage.
   See [silhouette-first-review.json](../tests/evidence/silhouette-first-review.json).
 - At 10° steps (36 photos) results are almost as good as at 5°; at 15° steps
   low-texture objects fail camera recovery.
