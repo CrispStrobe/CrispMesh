@@ -131,8 +131,11 @@ README.
   automatic for these captures): drill 0.82 / 0.92 / 1.00 → 0.86 / 0.98 / 1.00
   with no settings, the mustard bottle unchanged within the fit thanks to a
   distinct-peak acceptance test. Gaussian splatting (Brush) renders held-out photos sharply from our
-  cameras and gives a less accurate surface than our meshes. Reference runs of
-  2D Gaussian splatting and a NeuS variant on a GPU are under way.
+  cameras and gives a less accurate surface than our meshes. Reference runs on
+  a GPU (2D Gaussian splatting with gsplat, NeuS-facto in SDFStudio) score
+  like ours (drill 0.88 and 0.89 at 0.5 % against our 0.86) and look far
+  better: the neural surface shows vents, ridges and seams that our meshes
+  lack. A surface optimised as a whole is the quality target from here.
   [Measurements, comparison with other pipelines and plan](SURFACE-METHODS.md).
 
 - **Photo-textured GLB**: opt-in `run --texture` and standalone `texture`

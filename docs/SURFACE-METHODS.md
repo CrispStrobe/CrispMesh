@@ -94,11 +94,31 @@ Plain splatting optimises appearance; nothing in it asks for one continuous surf
 
 ### Reference runs on a GPU
 
-Two published surface methods on both captures (half-size crops, all 300 views), run on a rented GPU:
-2D Gaussian splatting with [gsplat](https://github.com/nerfstudio-project/gsplat) (Apache-2.0, v1.5.3,
-our training loop after its reference trainer, masks as transparency) and NeuS-facto in
-[hummat/sdfstudio](https://github.com/hummat/sdfstudio) (Apache-2.0, commit `12a3f75`, foreground-mask
-loss). Results: see below once measured.
+Two published surface methods on both captures (crops around the object at half size, 544 x 576 and
+432 x 704 pixels, all 300 views, our masks and cameras), run on a rented Tesla T4:
+
+- 2D Gaussian splatting with [gsplat](https://github.com/nerfstudio-project/gsplat) (Apache-2.0, v1.5.3):
+  our training loop after its reference trainer, 30 000 steps, masks as transparency, initialised from
+  our silhouette mesh, every tenth view held out; mesh from its median depths by plain voxel fusion (512
+  cubed) and marching cubes.
+- NeuS-facto in [hummat/sdfstudio](https://github.com/hummat/sdfstudio) (Apache-2.0, commit `12a3f75`),
+  20 000 steps, foreground-mask loss, pure-PyTorch hash grid (no tiny-cuda-nn); mesh by its marching cubes
+  at 1024 cubed.
+
+| | Drill | mean | Mustard | mean | time per object |
+| --- | --- | --- | --- | --- | --- |
+| Ours, no settings (photos at full size) | 0.857 / 0.977 / 0.999 | 0.0026 | 0.737 / 0.913 / 0.995 | 0.0039 | 10 to 12 min, Apple M1 |
+| 2D Gaussian splatting | 0.881 / 0.947 / 0.992 | 0.0026 | 0.791 / 0.899 / 0.969 | 0.0041 | 15 to 21 min training, T4 |
+| NeuS-facto | 0.892 / 0.964 / 0.992 | 0.0024 | 0.789 / 0.909 / 0.980 | 0.0036 | 118 min training, T4 |
+
+The scores are close; the meshes are not. Rendered side by side, NeuS-facto is in a different class: one
+clean surface with the drill's vents, chuck ridges, trigger and housing seams, and a smooth, correctly
+shaped bottle. 2D splatting shows the same relief with a rougher skin. Ours has the right overall shape
+and none of that relief. F1 at 0.5 % of the diagonal (about 1.4 mm on the drill) does not measure it.
+Two weaknesses of the reference methods show as well: the printed label of the bottle comes out as
+shallow relief (lettering embossed into the surface, appearance mistaken for shape), and the underside
+no camera saw is rough or open, where our flat base is clean. Held-out views of the splats: 25.7 and
+24.3 dB inside the mask.
 
 ## How established pipelines differ
 
@@ -124,11 +144,16 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
 ## Plan
 
 1. **Done: photometric refinement as a pipeline stage** (Rust, CPU), automatic when the silhouette
-   comes first. Open: sharing the decoded photos with the earlier stages, a browser run, and whether it
-   helps single-turn captures when forced on (six-object gate).
+   comes first. Forced on for single-turn captures it fails the six-object gate (Dragon and Happy Buddha
+   lose 0.016 at 0.5 %, Lucy gains 0.012), so it stays off there. Open: sharing the decoded photos with
+   the earlier stages, a browser run.
 2. **Silhouette-only mode** that skips the main matching: with the refinement after it, the fast path
    to the same result on captures from several heights (about 3 to 4 minutes instead of 10 to 12).
-3. **Reference numbers** from the two GPU methods decide whether a signed-distance or splat
-   optimiser is worth porting to WebGPU.
+3. **A surface optimised as a whole is the quality target.** NeuS-facto shows what these photos
+   contain; nothing in our pipeline reaches that relief. Candidates for our stack (Rust, WebGPU): a
+   signed-distance grid optimised by re-rendering (slow on a T4 in pure PyTorch: two hours; hash-grid
+   CUDA code is minutes, and a dense grid inside our hull is the WebGPU-friendly form), or 2D splats
+   (20 minutes on a T4, a rasteriser with gradients to write). Both are per-scan optimisers, not
+   models to download. To decide: time and memory of each on Apple and browser GPUs.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel
    averaging for single-turn captures.

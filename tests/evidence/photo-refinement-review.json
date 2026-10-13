@@ -157,5 +157,61 @@
  "cost": "search 3 s per round on 300 views (Apple M1, 4 threads); reading 300 photos of 4272x2848 again 70-90 s; peak resident 5.8-6.8 GB in the whole run",
  "defaults": "photo_refine=2 applies only when the silhouette comes first (cameras at several heights); Bunny and Lucy fusion-only meshes byte-identical to before",
  "checks": "217 library tests (an inflated sphere mesh is pulled onto the photographed sphere; welding), rustfmt, clippy native with and without capi, threaded WebAssembly build",
- "limits": "Two objects. Fine relief is still missing. The mustard bottle gains nothing and loses 0.03 at 0.5 % within the fit. Not run in a browser; the photos are read a second time. Forced on for single-turn captures it has not passed the six-object gate. No third-party code; not patent clearance."
+ "limits": "Two objects. Fine relief is still missing. The mustard bottle gains nothing and loses 0.03 at 0.5 % within the fit. Not run in a browser; the photos are read a second time. Forced on for single-turn captures it has not passed the six-object gate. No third-party code; not patent clearance.",
+ "single_turn_forced_on": {
+  "note": "six 3DLF objects, fusion from their own default depths, photo_refine=1 (both directions)",
+  "delta_f1_all_0.5_percent": {
+   "bunny": -0.0001,
+   "armadillo": -0.0025,
+   "dragon": -0.0159,
+   "lucy": 0.0118,
+   "thai_statue": -0.0015,
+   "happy": -0.0164
+  },
+  "gate": "FAIL (worst -0.0164); the default stays 2"
+ },
+ "reference_methods_same_captures": {
+  "data": "crops at half size (drill 544x576, mustard 432x704), 300 views, our masks and cameras; Tesla T4",
+  "2dgs_gsplat_1.5.3_30000_steps": {
+   "drill": [
+    0.8808,
+    0.9473,
+    0.9919
+   ],
+   "drill_mean": 0.00259,
+   "mustard": [
+    0.7914,
+    0.899,
+    0.969
+   ],
+   "mustard_mean": 0.00405,
+   "train_seconds": [
+    1241,
+    910
+   ],
+   "heldout_psnr_in_mask": [
+    25.7,
+    24.3
+   ]
+  },
+  "neus_facto_sdfstudio_12a3f75_20000_steps": {
+   "drill": [
+    0.8917,
+    0.9642,
+    0.9923
+   ],
+   "drill_mean": 0.0024,
+   "mustard": [
+    0.7894,
+    0.9094,
+    0.9803
+   ],
+   "mustard_mean": 0.00359,
+   "train_seconds": [
+    7081,
+    7069
+   ]
+  },
+  "reading": "scores close to ours; rendered, the neural surface shows relief (vents, chuck ridges, seams) that ours lacks; printed labels become shallow relief; undersides rough"
+ }
 }
