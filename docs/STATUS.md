@@ -126,10 +126,11 @@ README.
 - **Surface quality on captures from several heights** (2026-10-13). Like for
   like on the same masks and hull, fused depth is worth 0.12 F1 at 0.5 % on the
   textured drill and nothing on the plain mustard bottle, at several times the
-  run time of the silhouette alone. A prototype that refines the hull mesh
-  directly against the photos, without depth maps, is our best drill result
-  (0.86 / 0.97 / 1.00) and needs a strict acceptance test not to harm plain
-  surfaces. Gaussian splatting (Brush) renders held-out photos sharply from our
+  run time of the silhouette alone. Refining the mesh directly against the
+  photos, without depth maps, is now a pipeline stage (`photo_refine`,
+  automatic for these captures): drill 0.82 / 0.92 / 1.00 → 0.86 / 0.98 / 1.00
+  with no settings, the mustard bottle unchanged within the fit thanks to a
+  distinct-peak acceptance test. Gaussian splatting (Brush) renders held-out photos sharply from our
   cameras and gives a less accurate surface than our meshes. Reference runs of
   2D Gaussian splatting and a NeuS variant on a GPU are under way.
   [Measurements, comparison with other pipelines and plan](SURFACE-METHODS.md).

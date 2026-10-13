@@ -1784,6 +1784,28 @@ stage completes, but its heap (about 13 MB per photo, twice the native peak)
 leaves no room for the dense stage; that is open.
 See [silhouette-first-review.json](../../tests/evidence/silhouette-first-review.json).
 
+Photometric refinement (2026-10-13, `photo_refine`: 0 never, 1 always, 2 when the
+silhouette comes first; default 2): after the surface stage the mesh is refined
+against the photos without depth maps. 120 000 anchor vertices search along
+their normal (17 offsets within 6, then 3, then 1.5 edge lengths) for the
+position where a 5 × 5 patch on the mesh's tangent plane correlates best between
+the most frontal view that sees the vertex and up to five views 8° to 35° away;
+visibility comes from the mesh. An offset counts when its mean correlation is
+at least 0.55, stands `photo_refine_peak` (0.15) above the median over the
+offsets, and beats staying by 0.08; plain surfaces, which agree at every
+offset, are left alone. The accepted offsets are spread over the mesh by 200
+averaging steps and applied along the normals (inward only when the silhouette
+comes first), followed by two Taubin cycles. `mesh/mesh-unrefined.stl` keeps the
+mesh before it, `mesh/refine.json` the counts; `crisp3ds-dense refine --inputs DIR
+--mesh STL --output STL` runs it alone. Five heights, no settings: drill
+0.818/0.921/0.998 → 0.857/0.977/0.999 (mean error −19 %), mustard
+0.766/0.918/0.997 → 0.737/0.913/0.995 (within the fit; the plain bottle gains
+nothing from photos). The search takes 3 s per round on 300 views; reading the
+photos again 70–90 s. Single-turn captures are byte-identical by default.
+Without the distinct-peak test the mustard bottle is over-carved
+(0.707/0.896/0.998). See [SURFACE-METHODS.md](../../docs/SURFACE-METHODS.md) and
+[photo-refinement-review.json](../../tests/evidence/photo-refinement-review.json).
+
 Large captures (2026-10-11): when the whole grey photos would take more than
 2 GiB (`WHOLE_GRAY_BUDGET` in `inputs.rs`), the masks are read first, the
 common canvas is computed from them, and each grey photo is loaded as its canvas

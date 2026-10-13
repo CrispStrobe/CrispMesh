@@ -1,0 +1,161 @@
+{
+ "title": "Photometric mesh refinement without depth maps (photo_refine), 2026-10-13",
+ "inputs": "YCB power drill and mustard bottle, 300 DSLR photos each from five heights, own masks and own recovered cameras; scans only for scoring, each mesh with its own ICP similarity fit (a few hundredths at 0.5 % are within the fit).",
+ "method": "anchor vertices search along the smoothed mesh normal; 5x5 patch on the tangent plane, 1.2 reduced pixels apart in the reference view; reference = most frontal view that sees the vertex (point z-buffer of the mesh), up to five views 8-35 degrees away; score = mean normalised cross-correlation with the reference patch; acceptance: score >= 0.55, >= photo_refine_peak (0.15) above the median over 17 offsets, >= 0.08 above staying, not at the end of the range; offsets spread by 200 averaging steps weighted by score; inward only when the silhouette comes first; two Taubin cycles per round; rounds of 6, 3, 1.5 edge lengths",
+ "f1_at_0.5_1_2_percent": {
+  "drill": {
+   "silhouette_only": [
+    0.697,
+    0.871,
+    0.991
+   ],
+   "hull_corrected_by_depth": [
+    0.8177,
+    0.9205,
+    0.998
+   ],
+   "refined_from_silhouette": [
+    0.8666,
+    0.9624,
+    0.998
+   ],
+   "pipeline_default_refined": [
+    0.8569,
+    0.9773,
+    0.999
+   ],
+   "mean": {
+    "silhouette_only": 0.00456,
+    "hull_corrected_by_depth": 0.00325,
+    "refined_from_silhouette": 0.00268,
+    "pipeline_default_refined": 0.00262
+   },
+   "mesh_sha256": "7b315bd06ae8f9e2686819e53d573c626157c5166bda92c5370306858fc80486",
+   "closed": true,
+   "genus": 1,
+   "run_seconds": 749
+  },
+  "mustard": {
+   "silhouette_only": [
+    0.7941,
+    0.9103,
+    0.9992
+   ],
+   "hull_corrected_by_depth": [
+    0.766,
+    0.9177,
+    0.9965
+   ],
+   "refined_from_silhouette": [
+    0.7558,
+    0.9091,
+    0.9994
+   ],
+   "pipeline_default_refined": [
+    0.7365,
+    0.9131,
+    0.995
+   ],
+   "mean": {
+    "silhouette_only": 0.00365,
+    "hull_corrected_by_depth": 0.00372,
+    "refined_from_silhouette": 0.0038,
+    "pipeline_default_refined": 0.00394
+   },
+   "mesh_sha256": "ee0ebca036e7dd19dee210cde152ea2711cbe8452cb32ece759ae9fbfd54742b",
+   "closed": true,
+   "genus": 0,
+   "run_seconds": 575
+  }
+ },
+ "acceptance_sweep_numpy_prototype_from_silhouette": {
+  "score_only": {
+   "drill": [
+    0.842,
+    0.968,
+    0.999
+   ],
+   "mustard": [
+    0.707,
+    0.896,
+    0.998
+   ]
+  },
+  "peak_0.15": {
+   "drill": [
+    0.86,
+    0.965,
+    0.996
+   ],
+   "mustard": [
+    0.752,
+    0.909,
+    0.999
+   ]
+  },
+  "contrast_4": {
+   "drill": [
+    0.811,
+    0.966,
+    0.999
+   ],
+   "mustard": [
+    0.73,
+    0.921,
+    0.991
+   ]
+  },
+  "scatter_gate_1": {
+   "drill": [
+    0.771,
+    0.924,
+    0.994
+   ],
+   "mustard": [
+    0.775,
+    0.919,
+    1.0
+   ]
+  },
+  "all_three": {
+   "drill": [
+    0.716,
+    0.88,
+    0.991
+   ],
+   "mustard": [
+    0.798,
+    0.913,
+    1.0
+   ]
+  },
+  "peak_0.25": {
+   "drill": [
+    0.784,
+    0.956,
+    0.996
+   ],
+   "mustard": [
+    0.76,
+    0.912,
+    1.0
+   ]
+  },
+  "peak_0.15_gate_0.5": {
+   "drill": [
+    0.762,
+    0.926,
+    0.994
+   ],
+   "mustard": [
+    0.765,
+    0.915,
+    1.0
+   ]
+  }
+ },
+ "cost": "search 3 s per round on 300 views (Apple M1, 4 threads); reading 300 photos of 4272x2848 again 70-90 s; peak resident 5.8-6.8 GB in the whole run",
+ "defaults": "photo_refine=2 applies only when the silhouette comes first (cameras at several heights); Bunny and Lucy fusion-only meshes byte-identical to before",
+ "checks": "217 library tests (an inflated sphere mesh is pulled onto the photographed sphere; welding), rustfmt, clippy native with and without capi, threaded WebAssembly build",
+ "limits": "Two objects. Fine relief is still missing. The mustard bottle gains nothing and loses 0.03 at 0.5 % within the fit. Not run in a browser; the photos are read a second time. Forced on for single-turn captures it has not passed the six-object gate. No third-party code; not patent clearance."
+}

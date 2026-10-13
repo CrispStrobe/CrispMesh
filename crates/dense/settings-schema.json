@@ -525,6 +525,20 @@
       "default": 2
     },
     {
+      "name": "photo_refine",
+      "group": "Surface",
+      "meaning": "Refine the final mesh against the photos, without depth maps: vertices move along their normals to where the photos that see them agree, only where that agreement has a distinct peak, spread as a smooth field: 0 never, 1 always, 2 when the silhouette comes first (inward only there)",
+      "kind": "integer",
+      "default": 2
+    },
+    {
+      "name": "photo_refine_peak",
+      "group": "Surface",
+      "meaning": "How far the best photo agreement must stand above the median over the tried positions for a vertex to move (photo_refine); higher leaves plain surfaces alone more strictly",
+      "kind": "number",
+      "default": 0.15
+    },
+    {
       "name": "mesh_base_margin",
       "group": "Surface",
       "meaning": "Voxels kept below that level",

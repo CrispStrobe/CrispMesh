@@ -128,6 +128,7 @@ pub fn validate(c: &DenseConfig) -> anyhow::Result<()> {
     )?;
     need((0..=200).contains(&c.mask_grow_close), "mask_grow_close must be 0..200")?;
     need((0..=2).contains(&c.silhouette_first), "silhouette_first must be 0, 1 or 2")?;
+    need((0..=2).contains(&c.photo_refine) && (0.0..=1.0).contains(&c.photo_refine_peak), "invalid photo_refine values")?;
     need(
         (0.0..=32.0).contains(&c.mesh_hull_correction) && (0.0..=10.0).contains(&c.mesh_hull_correction_gate),
         "invalid mesh_hull_correction values",

@@ -82,6 +82,8 @@ pub struct DenseConfig {
     pub mesh_hull_correction: f64,
     pub mesh_hull_correction_gate: f64,
     pub silhouette_first: i64,
+    pub photo_refine: i64,
+    pub photo_refine_peak: f64,
     pub mesh_base_margin: f64,
 }
 
@@ -159,6 +161,8 @@ impl Default for DenseConfig {
             mesh_hull_correction: 0.0,
             mesh_hull_correction_gate: 1.0,
             silhouette_first: 2,
+            photo_refine: 2,
+            photo_refine_peak: 0.15,
             mesh_base_margin: 1.0,
         }
     }
@@ -181,7 +185,7 @@ impl DenseConfig {
 
 /// Settings this crate has and the Python reference does not. The reference is
 /// no longer extended; new behaviour is developed here.
-pub const NATIVE_ONLY: [&str; 25] = [
+pub const NATIVE_ONLY: [&str; 27] = [
     "coherent_band",
     "fallback_supported",
     "peak_min_margin",
@@ -207,6 +211,8 @@ pub const NATIVE_ONLY: [&str; 25] = [
     "mesh_hull_correction",
     "mesh_hull_correction_gate",
     "silhouette_first",
+    "photo_refine",
+    "photo_refine_peak",
 ];
 
 /// Name, group, meaning, kind and default of every setting, as JSON

@@ -71,7 +71,7 @@ pub fn largest_component_with(vertices: &[Vertex], faces: &[Face]) -> Result<(Co
 }
 
 /// Distinct neighbours of every vertex in compressed rows: `(start, neighbour)`.
-fn adjacency(vertex_count: usize, faces: &[Face]) -> (Vec<usize>, Vec<u32>) {
+pub(crate) fn adjacency(vertex_count: usize, faces: &[Face]) -> (Vec<usize>, Vec<u32>) {
     let mut start = vec![0usize; vertex_count + 1];
     for face in faces {
         for &v in face {

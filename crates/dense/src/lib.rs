@@ -20,6 +20,7 @@ pub mod mesh;
 pub mod npz;
 // Its providers that start external programs are left out of a browser build (see photos/mod.rs).
 pub mod photos;
+pub mod refine;
 pub mod render;
 pub mod repair;
 pub mod run;

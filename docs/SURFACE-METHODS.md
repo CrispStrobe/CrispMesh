@@ -27,15 +27,16 @@ Reading:
 - The silhouette alone needs no matching at all (hull and mask repair about 75 s, mesh 2 s on 300
   DSLR photos), against 8.5 to 10.5 minutes with depth. A mode that stops there does not exist yet.
 
-### The photometric refinement prototype
+### Photometric refinement
 
-Not in the pipeline; a NumPy script outside the repository. Anchor vertices of the hull mesh search
+First a NumPy prototype outside the repository, now a pipeline stage (`photo_refine`, `crisp3ds-dense refine`;
+see the crate README). Anchor vertices of the hull mesh search
 along their normal for the offset at which the photos agree: a 5 x 5 patch on the mesh's tangent
 plane is projected into the most frontal view that sees the vertex and into up to five views 8 to
 35 degrees away; the score is the mean normalised cross-correlation with the reference patch.
 Visibility comes from the mesh. Accepted offsets are spread over the mesh as a smooth field (weighted
 diffusion), the mesh moves inward only, and the search repeats with a smaller range (6, 3, 1.5
-voxels). About 100 s for the three rounds on 300 half-size photos.
+voxels). About 100 s for the three rounds on 300 half-size photos in NumPy; 3 s per round natively.
 
 Acceptance decides everything. Without any test beyond a score threshold the drill reaches
 0.842 / 0.968 / 0.999 and the mustard drops to 0.707 / 0.896 / 0.998 (over-carved sides, broken cap).
@@ -54,6 +55,24 @@ test keeps the gain at a small cost on the plain object. Points in between (a pe
 without helping the mustard, whose variants all lie within the fit of each other. Rendered, the
 distinct-peak result is clean and slimmer than the hull on the drill and is the hull with two or three
 small dents on the mustard.
+
+### As a pipeline stage
+
+`photo_refine` (0 never, 1 always, 2 when the silhouette comes first: the default) runs after the surface
+stage on `mesh/mesh.stl`, keeps the mesh before it as `mesh-unrefined.stl` and writes `refine.json`.
+Distinct-peak acceptance (`photo_refine_peak`, 0.15), 120 000 anchors, six views per anchor, three rounds,
+inward only when the silhouette comes first. Photos are cropped to the mesh's projection and reduced so
+that the object is at most about 1100 pixels across.
+
+| One command, no settings, 300 photos | Before refinement | After | mesh |
+| --- | --- | --- | --- |
+| Drill | 0.818 / 0.921 / 0.998, mean 0.0033 | 0.857 / 0.977 / 0.999, mean 0.0026 | closed, genus 1 |
+| Mustard | 0.766 / 0.918 / 0.997, mean 0.0037 | 0.737 / 0.913 / 0.995, mean 0.0039 | closed, genus 0 |
+
+From the bare silhouette mesh the stage gives 0.867 / 0.962 / 0.998 (drill) and 0.756 / 0.909 / 0.999
+(mustard): the fused depth before it is not needed for this result. The three rounds take 9 s on 300 views;
+reading the 300 photos again takes 70 to 90 s (they are not yet shared with the earlier stages). Single-turn
+captures are untouched by the default (Bunny and Lucy byte-identical). Not run in a browser.
 
 ## Other methods on the same captures
 
@@ -104,10 +123,11 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
 
 ## Plan
 
-1. **Photometric refinement of the hull as a pipeline stage** (Rust, WebGPU), with the distinct-peak
-   acceptance, behind a setting; gates: no loss on the mustard bottle beyond the fit, the drill's gain
-   kept, six single-turn objects unchanged (it starts from their fused mesh there, not from a hull).
-2. **Silhouette-only mode** that skips the main matching: the fast path, and the base of 1.
+1. **Done: photometric refinement as a pipeline stage** (Rust, CPU), automatic when the silhouette
+   comes first. Open: sharing the decoded photos with the earlier stages, a browser run, and whether it
+   helps single-turn captures when forced on (six-object gate).
+2. **Silhouette-only mode** that skips the main matching: with the refinement after it, the fast path
+   to the same result on captures from several heights (about 3 to 4 minutes instead of 10 to 12).
 3. **Reference numbers** from the two GPU methods decide whether a signed-distance or splat
    optimiser is worth porting to WebGPU.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel

@@ -711,10 +711,29 @@ async fn stages(
     let command = ["crisp3ds-dense", "mesh", "--volume", &text(&volume)].map(String::from).to_vec();
     let threads = options.threads.max(1);
     let stage = driver.begin("mesh", command, Some(900.0))?;
+    // The silhouette came first when the stereo stage says so (it knows the cameras) or the setting asks for it.
+    let silhouette_first = fused.as_ref().map_or(config.silhouette_first == 1, |volume| volume.silhouette_first);
     let result = match fused {
         Some(fused) => crate::mesh::run_volume(fused, &output.join("mesh"), config, 1, &stage.events, None, threads, &stage.control),
         None => crate::mesh::run_with(&volume, &output.join("mesh"), config, 1, &stage.events, None, threads, &stage.control),
     };
+    // Refinement against the photos, part of the surface stage: inward only from a silhouette hull.
+    let result = result.and_then(|report| {
+        if config.photo_refine == 1 || (config.photo_refine == 2 && silhouette_first) {
+            let refine =
+                crate::refine::Options { peak: config.photo_refine_peak as f32, inward_only: silhouette_first, ..Default::default() };
+            let refined = crate::refine::run_in_place(&inputs, &output.join("mesh"), &refine, &|| stage.control.check())?;
+            stage.control.log(format!("photo refinement {refined}"));
+            let path = output.join("mesh/mesh.stl");
+            stage.events.artifact(
+                "final_mesh",
+                &crate::storage::canonicalize(&path).unwrap_or(path),
+                "Final surface, refined against the photos",
+                json!({"triangles": report.triangles}),
+            )?;
+        }
+        Ok(report)
+    });
     if let Ok(report) = &result {
         stage.control.log(serde_json::to_string_pretty(report)?);
     }

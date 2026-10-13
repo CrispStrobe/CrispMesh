@@ -40,9 +40,10 @@ fn main() -> ExitCode {
             println!("crisp3ds-dense {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
-        Some(name @ ("stereo" | "inputs" | "check" | "run" | "synthetic" | "inspect" | "texture")) => {
+        Some(name @ ("stereo" | "inputs" | "check" | "run" | "synthetic" | "inspect" | "texture" | "refine")) => {
             let result = match name {
                 "texture" => crisp3ds_dense::texture::main(&arguments[1..]),
+                "refine" => crisp3ds_dense::refine::main(&arguments[1..]),
                 "stereo" => crisp3ds_dense::stereo::main(&arguments[1..]),
                 "check" => crisp3ds_dense::check::main(&arguments[1..]),
                 "run" => crisp3ds_dense::run::main(&arguments[1..]),
