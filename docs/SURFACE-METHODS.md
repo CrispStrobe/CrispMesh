@@ -153,10 +153,13 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
    contain; nothing in our pipeline reaches that relief. Both kinds (a signed-distance surface optimised by
    re-rendering, and 2D splats) are per-scan optimisers, not models to download; both are wanted, on WebGPU and
    on MLX, natively. First step: the reference model ported to MLX as a prototype
-   ([scripts/neural_surface](../scripts/neural_surface/README.md)). Started from our silhouette hull with the
-   original NeuS sampler, it reaches 0.755 / 0.928 / 0.999 on the drill after 2 000 of 20 000 steps (about
-   70 minutes on an M1) and looks like the reference with less fine relief so far. About 6 times slower per
-   step than the reference on a T4; the speedups are next (smaller network, fewer rendered samples, fewer steps
-   from the hull start, gradients by hand), each a switch checked against the reference at equal steps.
+   ([scripts/neural_surface](../scripts/neural_surface/README.md)), started from our silhouette hull with the
+   original NeuS sampler limited to a band around the hull, and a smaller network (2 x 64). After the whole
+   schedule (20 000 steps, 3.9 h on an M1) the drill scores 0.944 / 0.979 / 0.995 (mean 0.0017) against the
+   reference's 0.892 / 0.964 / 0.992 (0.0024), and side by side it shows the same relief. Second step: the
+   same model on WebGPU in the engine (`crisp3ds-dense surface`, [crate README](../crates/dense/README.md)),
+   with hand-written backward kernels checked against the prototype number for number, 0.25 s per step on the
+   M1 (MLX 0.6 s). Next: the native whole-schedule result, then the mustard bottle, then a pipeline stage that
+   starts from the scene directly, then 2D splats.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel
    averaging for single-turn captures.

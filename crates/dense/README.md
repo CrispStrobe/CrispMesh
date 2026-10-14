@@ -67,6 +67,7 @@ described in [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 | `src/inputs.rs` | Inputs directory as `Stereo.__init__` prepares it |
 | `src/hull.rs`, `src/repair.rs`, `src/fusion.rs`, `src/stereo/` | Ports of `multiscale_stereo.py` |
 | `src/photos/` | From photos to the scene: mask and camera providers, gates, undistortion (port of `photos_to_inputs.py`) |
+| `src/surface/` | Neural surface trained by re-rendering the photos (port of `scripts/neural_surface/neus_facto_mlx.py`), experimental |
 | `tools/colmap_pycolmap.py` | Stand-in for the `colmap` executable through the PyCOLMAP wheel (development aid) |
 | `src/main.rs` | `crisp3ds-dense <stage>` command line |
 
@@ -1259,6 +1260,42 @@ A later native run of the whole pipeline on the Bunny without live previews
 repair with its hulls 6.0, level 256 4.5, level 512 first pass 10.0, second pass
 3.1, level 876 10.3, fusion 0.8, writing the files 7.3, the rest of the stereo
 stage (sheets) 0.8, surface 4.8, check 2.4.
+
+## Neural surface: `crisp3ds-dense surface`
+
+Status: experimental, not part of `run`. A signed-distance network trained by rendering the photos, the
+NeuS-facto model of the MLX prototype [`scripts/neural_surface`](../../scripts/neural_surface/README.md)
+written for WebGPU: hash grid (16 levels), geometry and colour networks (2 x 64 each, weight normalisation),
+NeuS opacities, the original NeuS sampler limited to a band around our silhouette hull, a start fitted to the
+hull's distance, Adam with warm-up and cosine schedule, mesh by marching cubes on the network's zero surface.
+
+```
+crisp3ds-dense surface PACK OUT [steps=20000 stop=0 rays=1024 parts=4 hull=600 band=0.05 snapshot=0 mesh=512 seed=0 ...]
+```
+
+`PACK` is what `scripts/neural_surface/pack_scene.py` writes from a scene (cropped photos and masks, cameras,
+hull points and normals). Every setting is the prototype's default.
+
+There is no automatic differentiation: each kernel (`src/shaders/surface_*.wgsl`) has a hand-written backward
+kernel. The distance's gradient, which the normals, the NeuS cosine and the eikonal term need, comes from
+forward tangents: each sample travels as four rows, its value and the derivatives along x, y and z. A linear
+layer maps all four alike (the bias only the value), so forward and backward passes are plain matrix products,
+and the second derivatives of the eikonal term follow from the activations' backward rule. The hash table's
+gradient is added with compare-and-swap. Dispatches are recorded into one command encoder and submitted 32 at a
+time (`Gpu::set_batching`, off for every other stage).
+
+Tests against the prototype (`CRISP3DS_GPU_TESTS=1`, `CRISP3DS_SURFACE_FIXTURE` from
+`scripts/neural_surface/export_fixture.py`, `CRISP3DS_SURFACE_PACK` for the hull grid): per-sample distances,
+gradients, features and colours within 1e-6, the losses and the gradient of every parameter within 1e-5
+(relative to the largest value), two training steps in two parts with Adam with no entry off by more than 5 %
+of the largest change, the hull grid within 1.2e-7, the sampler's edges within 5.5e-4 (5.5e-3 with the band;
+float rounding moves a quantile at sharpness 512). The matrix product is checked against a CPU product and
+timed. `CRISP3DS_GPU_PROFILE=1` waits for each dispatch and reports the time per kernel.
+
+Drill, 300 photos at 544 x 576, Apple M1: 0.25 s per step against 0.6 s for the MLX prototype, 1.0 GB
+resident. After 2 000 steps two seeds give 0.687 / 0.912 / 0.992 and 0.835 / 0.968 / 0.993 (F1 at 0.5 / 1 /
+2 % of the diagonal, scan evaluation only); the prototype's one run gave 0.848 / 0.976 / 0.998. At this point
+of the schedule runs differ that much from one seed to the next.
 
 ## Portability
 

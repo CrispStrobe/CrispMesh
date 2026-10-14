@@ -28,8 +28,9 @@ pub const ROW: u32 = ROW_GROUPS * WORKGROUP;
 
 /// Commands recorded per submit in a browser (see `Gpu::pending`). `CRISP3DS_GPU_BATCH` is not
 /// read: a browser has no environment; change it here to measure.
-#[cfg(target_arch = "wasm32")]
 const BATCH: usize = usize::MAX;
+/// Commands per submit with native batching: enough to amortise a submit, few enough to keep the GPU busy.
+const NATIVE_BATCH: usize = 32;
 
 pub struct Gpu {
     pub device: wgpu::Device,
@@ -44,8 +45,11 @@ pub struct Gpu {
     /// the GPU process there (one per dispatch made 12 700 of them in the Bunny's stereo stage),
     /// while holding everything until the readback leaves the GPU idle as the work is recorded.
     /// Natively each dispatch is submitted at once, inside its error scope, as before.
-    #[cfg(target_arch = "wasm32")]
     pending: std::sync::Mutex<(Option<wgpu::CommandEncoder>, usize)>,
+    /// Natively: record into `pending` as in a browser ([`Gpu::set_batching`]).
+    batching: std::sync::atomic::AtomicBool,
+    /// Natively with `CRISP3DS_GPU_PROFILE=1`: seconds and dispatches per kernel (each dispatch waited for).
+    profile: Option<std::sync::Mutex<std::collections::BTreeMap<String, (f64, u64)>>>,
     /// Storage buffers made since [`Gpu::track`], for [`Gpu::release_tracked`].
     tracked: std::sync::Mutex<Option<Vec<wgpu::Buffer>>>,
 }
@@ -96,8 +100,10 @@ impl Gpu {
             limits,
             peak: std::sync::atomic::AtomicU64::new(0),
             uncaptured,
-            #[cfg(target_arch = "wasm32")]
             pending: std::sync::Mutex::new((None, 0)),
+            batching: std::sync::atomic::AtomicBool::new(false),
+            profile: (!cfg!(target_arch = "wasm32") && std::env::var("CRISP3DS_GPU_PROFILE").is_ok_and(|v| v == "1"))
+                .then(|| std::sync::Mutex::new(Default::default())),
             tracked: std::sync::Mutex::new(None),
         })
     }
@@ -188,37 +194,45 @@ impl Gpu {
         self.record(|encoder| encoder.clear_buffer(buffer, 0, None));
     }
 
-    /// Records into the pending encoder (browser) or submits at once (native).
+    /// Natively, dispatches are submitted one by one by default. With batching on they are recorded into one
+    /// encoder and submitted [`NATIVE_BATCH`] at a time and before every write and readback, as in a browser: for
+    /// many small dispatches (the neural surface's ~400 per step) the per-submit cost dominates otherwise.
+    /// Validation errors of the recorded commands then surface at the next readback, not at the dispatch.
+    pub fn set_batching(&self, on: bool) {
+        self.flush();
+        self.batching.store(on, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    fn batched(&self) -> bool {
+        cfg!(target_arch = "wasm32") || self.batching.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Records into the pending encoder (browser, or native batching) or submits at once (native).
     fn record(&self, commands: impl FnOnce(&mut wgpu::CommandEncoder)) {
-        #[cfg(target_arch = "wasm32")]
-        {
+        if self.batched() {
             let mut pending = self.pending.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
             commands(pending.0.get_or_insert_with(|| self.device.create_command_encoder(&Default::default())));
             pending.1 += 1;
-            if pending.1 >= BATCH {
+            let limit = if cfg!(target_arch = "wasm32") { BATCH } else { NATIVE_BATCH };
+            if pending.1 >= limit {
                 pending.1 = 0;
                 if let Some(encoder) = pending.0.take() {
                     self.queue.submit([encoder.finish()]);
                 }
             }
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
+        } else {
             let mut encoder = self.device.create_command_encoder(&Default::default());
             commands(&mut encoder);
             self.queue.submit([encoder.finish()]);
         }
     }
 
-    /// Submits what was recorded (nothing to do natively).
+    /// Submits what was recorded (nothing to do without batching).
     pub fn flush(&self) {
-        #[cfg(target_arch = "wasm32")]
-        {
-            let mut pending = self.pending.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-            pending.1 = 0;
-            if let Some(encoder) = pending.0.take() {
-                self.queue.submit([encoder.finish()]);
-            }
+        let mut pending = self.pending.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        pending.1 = 0;
+        if let Some(encoder) = pending.0.take() {
+            self.queue.submit([encoder.finish()]);
         }
     }
 
@@ -249,6 +263,7 @@ impl Gpu {
         };
         #[cfg(not(target_arch = "wasm32"))]
         let index = {
+            self.flush();
             let mut encoder = self.device.create_command_encoder(&Default::default());
             if bytes > 0 {
                 encoder.copy_buffer_to_buffer(buffer, 0, &staging, 0, padded);
@@ -310,6 +325,15 @@ impl Gpu {
         if count == 0 {
             return Ok(());
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        let started = web_time::Instant::now();
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.profile.is_some() {
+            self.flush();
+            let _ = self.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None });
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        let started = if self.profile.is_some() { web_time::Instant::now() } else { started };
         for buffer in buffers {
             self.peak.fetch_max(buffer.size(), std::sync::atomic::Ordering::Relaxed);
         }
@@ -342,7 +366,26 @@ impl Gpu {
         if let Some(error) = scope.pop().await {
             return Err(anyhow!("kernel {}: {error}", kernel.label));
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(profile) = &self.profile {
+            self.flush();
+            let _ = self.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None });
+            let elapsed = started.elapsed().as_secs_f64();
+            let mut table = profile.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            let entry = table.entry(kernel.label.clone()).or_default();
+            entry.0 += elapsed;
+            entry.1 += 1;
+        }
         Ok(())
+    }
+
+    /// Seconds and dispatches per kernel since the last report (`CRISP3DS_GPU_PROFILE=1`, native), slowest first.
+    pub fn profile_report(&self) -> Option<String> {
+        let profile = self.profile.as_ref()?;
+        let mut table = profile.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut rows: Vec<_> = std::mem::take(&mut *table).into_iter().collect();
+        rows.sort_by(|a, b| b.1 .0.total_cmp(&a.1 .0));
+        Some(rows.iter().map(|(name, (seconds, n))| format!("{name} {seconds:.3}s/{n}")).collect::<Vec<_>>().join(", "))
     }
 }
 
@@ -425,7 +468,7 @@ pub fn tests_enabled() -> bool {
 mod tests {
     use wgpu::naga;
 
-    const SHADERS: [(&str, &str); 10] = [
+    const SHADERS: [(&str, &str); 28] = [
         ("carve", include_str!("../shaders/carve.wgsl")),
         ("cover", include_str!("../shaders/cover.wgsl")),
         ("fuse", include_str!("../shaders/fuse.wgsl")),
@@ -436,6 +479,24 @@ mod tests {
         ("peak", include_str!("../shaders/peak.wgsl")),
         ("patchmatch", include_str!("../shaders/patchmatch.wgsl")),
         ("slanted", include_str!("../shaders/slanted.wgsl")),
+        ("surface_matmul", include_str!("../shaders/surface_matmul.wgsl")),
+        ("surface_encode", include_str!("../shaders/surface_encode.wgsl")),
+        ("surface_encode_backward", include_str!("../shaders/surface_encode_backward.wgsl")),
+        ("surface_activate", include_str!("../shaders/surface_activate.wgsl")),
+        ("surface_activate_backward", include_str!("../shaders/surface_activate_backward.wgsl")),
+        ("surface_colour_input", include_str!("../shaders/surface_colour_input.wgsl")),
+        ("surface_combine", include_str!("../shaders/surface_combine.wgsl")),
+        ("surface_render", include_str!("../shaders/surface_render.wgsl")),
+        ("surface_reduce", include_str!("../shaders/surface_reduce.wgsl")),
+        ("surface_bias_grad", include_str!("../shaders/surface_bias_grad.wgsl")),
+        ("surface_variance_grad", include_str!("../shaders/surface_variance_grad.wgsl")),
+        ("surface_normalise", include_str!("../shaders/surface_normalise.wgsl")),
+        ("surface_normalise_backward", include_str!("../shaders/surface_normalise_backward.wgsl")),
+        ("surface_adam", include_str!("../shaders/surface_adam.wgsl")),
+        ("surface_band", include_str!("../shaders/surface_band.wgsl")),
+        ("surface_coarse", include_str!("../shaders/surface_coarse.wgsl")),
+        ("surface_round", include_str!("../shaders/surface_round.wgsl")),
+        ("surface_fit", include_str!("../shaders/surface_fit.wgsl")),
     ];
 
     /// Every kernel parses and validates without a GPU, uses plain WebGPU
@@ -443,6 +504,8 @@ mod tests {
     #[test]
     fn kernels_are_valid_webgpu() {
         for (name, source) in SHADERS {
+            // The surface's matrix product is generated per mode from its template.
+            let source = if name == "surface_matmul" { crate::surface::matmul_source(0) } else { source.to_string() };
             let source = format!("const ROW: u32 = {}u;\n{source}", super::ROW);
             let module = naga::front::wgsl::parse_str(&source).unwrap_or_else(|e| panic!("{name}: {}", e.emit_to_string(&source)));
             let mut validator = naga::valid::Validator::new(naga::valid::ValidationFlags::all(), naga::valid::Capabilities::empty());

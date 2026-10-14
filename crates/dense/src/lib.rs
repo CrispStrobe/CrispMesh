@@ -28,4 +28,5 @@ pub mod scene;
 pub mod stereo;
 pub mod stl;
 pub mod storage;
+pub mod surface;
 pub mod texture;
