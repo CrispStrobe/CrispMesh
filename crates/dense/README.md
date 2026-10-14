@@ -1311,7 +1311,9 @@ resident; the whole schedule in 95 minutes (the prototype 3.9 h, the reference 1
 | 20 000 | 0.932 / 0.976 / 0.995, 0.0019 | 0.944 / 0.979 / 0.995, 0.0017 |
 
 The reference NeuS-facto run: 0.892 / 0.964 / 0.992, 0.0024. Rendered side by side the three final meshes show
-the same relief. Runs differ from one seed to the next: after 2 000 steps two seeds gave 0.687 / 0.912 / 0.992 and
+the same relief. Mustard bottle, straight from its inputs directory (no pack): 0.795 / 0.907 / 0.965, 0.0038, against
+the reference's 0.789 / 0.909 / 0.980, 0.0036; side by side the same shape, both with the printed label as false
+relief, the cap a little softer here. Runs differ from one seed to the next: after 2 000 steps two seeds gave 0.687 / 0.912 / 0.992 and
 0.835 / 0.968 / 0.993 here.
 
 ## 2D Gaussian splats: `crisp3ds-dense splats`
