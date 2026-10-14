@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let q = vec4<f32>(splats[p + 3u], splats[p + 4u], splats[p + 5u], splats[p + 6u]);
     let qn = q / length(q);
     let rot = rotation(qn);
-    let rs_c = R * mat3x3<f32>(rot[0] * s.x, rot[1] * s.y, rot[2] * s.z);
+    let rs_c = R * mat3x3<f32>(rot[0] * s.x, rot[1] * s.y, rot[2]);
     let k = camera.intrinsics;
     let kmat = mat3x3<f32>(vec3<f32>(k.x, 0.0, 0.0), vec3<f32>(0.0, k.y, 0.0), vec3<f32>(k.z, k.w, 1.0));
     let m0 = kmat * rs_c[0];
@@ -94,10 +94,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dw2 = rt * drs2;
     var dmean = rt * dmean_c;
     // rs[:, j] = rot[:, j] s_j.
-    let ds = vec3<f32>(dot(rot[0], dw0), dot(rot[1], dw1), dot(rot[2], dw2)) * s;
+    // The third scale does not enter the projection (see splat_project).
+    let ds = vec3<f32>(dot(rot[0], dw0) * s.x, dot(rot[1], dw1) * s.y, 0.0);
     let dR0 = dw0 * s.x;
     let dR1 = dw1 * s.y;
-    let dR2 = dw2 * s.z;
+    let dR2 = dw2;
     // dR[i][j] = column j, row i.
     let r00 = dR0.x; let r10 = dR0.y; let r20 = dR0.z;
     let r01 = dR1.x; let r11 = dR1.y; let r21 = dR1.z;

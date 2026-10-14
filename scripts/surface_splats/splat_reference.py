@@ -46,7 +46,9 @@ def project(means, quats, scales, viewmat, K, width, height, near=0.2, far=1e10)
     """gsplat's 2DGS projection for one camera: radii, means2d, depths, ray transforms (rows), normals (camera)."""
     R, t = viewmat[:3, :3], viewmat[:3, 3]
     means_c = means @ R.T + t
-    RS = rotation(quats) * scales[:, None, :]
+    # gsplat's CUDA projection (which training uses) takes the third scale as 1, so the normal is a unit vector; its
+    # PyTorch reference keeps the scale there.
+    RS = rotation(quats) * torch.cat([scales[:, :2], torch.ones_like(scales[:, 2:])], -1)[:, None, :]
     RS_c = R[None] @ RS
     normals = RS_c[..., 2]
     cos = -(normals * means_c).sum(-1, keepdim=True)

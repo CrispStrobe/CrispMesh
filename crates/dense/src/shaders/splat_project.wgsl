@@ -77,7 +77,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mean_c = R * mean + t;
     let s = exp(vec3<f32>(splats[p + 7u], splats[p + 8u], splats[p + 9u]));
     let rs = rotation(vec4<f32>(splats[p + 3u], splats[p + 4u], splats[p + 5u], splats[p + 6u]));
-    let rs_c = R * mat3x3<f32>(rs[0] * s.x, rs[1] * s.y, rs[2] * s.z);
+    // The third column unscaled (gsplat's CUDA projection): the normal is a unit vector.
+    let rs_c = R * mat3x3<f32>(rs[0] * s.x, rs[1] * s.y, rs[2]);
     var normal = rs_c[2];
     if (-dot(normal, mean_c) <= 0.0) { normal = -normal; }
     // T = K [RS_c[:, 0], RS_c[:, 1], mean_c]; M = T^T, so the rows of M are the columns of T.
