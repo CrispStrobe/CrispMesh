@@ -4,7 +4,8 @@
 // fall to 1e-4. One workgroup per tile; invocation t owns the pixels t, t + 64, t + 128, t + 192 of the tile (one
 // column, four rows), each per-pixel quantity a vec4 over these four.
 // Per pixel out (stride 16): colour sum (3), alpha, normal sum (3, camera), depth sum, distortion, median depth,
-// final transmittance, last intersection + 1, intersection of the median (+ 1, 0 none), unused (3).
+// final transmittance, last intersection + 1, intersection of the median (+ 1, 0 none), the distortion's backward
+// total sum_j vis_j (d_j W_j - D_j) (W, D: opacity and depth sums up to and with j), unused (2).
 
 struct Params { width: u32, height: u32, tiles_x: u32, pad: u32 }
 
@@ -58,6 +59,8 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
     var median = vec4<f32>(0.0);
     var median_index = vec4<u32>(0u);
     var last = vec4<u32>(0u);
+    var weight_sum = vec4<f32>(0.0);
+    var distort_total = vec4<f32>(0.0);
 
     let batches = (end - start + 63u) / 64u;
     for (var b = 0u; b < batches; b++) {
@@ -114,6 +117,8 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
             nz += vis * n.z;
             distort += 2.0 * (vis * c.w * (1.0 - T) - vis * depth_sum);
             depth_sum += vis * c.w;
+            weight_sum += vis;
+            distort_total += vis * (c.w * weight_sum - depth_sum);
             let at = vec4<u32>(first + j + 1u);
             let below_half = use_ & (T > vec4<f32>(0.5));
             median = select(median, vec4<f32>(c.w), below_half);
@@ -140,5 +145,6 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
         pixels[o + 10u] = T[k];
         pixels[o + 11u] = bitcast<f32>(last[k]);
         pixels[o + 12u] = bitcast<f32>(median_index[k]);
+        pixels[o + 13u] = distort_total[k];
     }
 }

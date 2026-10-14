@@ -332,10 +332,10 @@ pub async fn raster_backward(
 ) -> Result<()> {
     let (tiles_x, tiles_y) = camera.tiles();
     let uniform = gpu.uniform("splat raster backward", &Quad { a: camera.width, b: camera.height, c: tiles_x, d: 0 });
-    gpu.run(
+    gpu.run_groups(
         &kernels.raster_backward,
         &[&uniform, &frame.ranges, &frame.tile_sort.values[frame.pairs], &frame.projected, &frame.pixels, dpixels, grads],
-        (tiles_x * tiles_y) as u64 * crate::gpu::WORKGROUP as u64,
+        (tiles_x * tiles_y) as u64,
     )
     .await
 }

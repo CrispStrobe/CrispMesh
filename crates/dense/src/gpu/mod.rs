@@ -319,6 +319,11 @@ impl Gpu {
         Ok(Kernel { label: label.to_string(), pipeline })
     }
 
+    /// Runs `kernel` as `groups` workgroups (of whatever size it declares), buffers bound as in [`Gpu::run`].
+    pub async fn run_groups(&self, kernel: &Kernel, buffers: &[&wgpu::Buffer], groups: u64) -> anyhow::Result<()> {
+        self.run(kernel, buffers, groups * WORKGROUP as u64).await
+    }
+
     /// Runs `kernel` for at least `count` invocations with buffers bound at
     /// group 0, bindings 0, 1, 2, ... Kernels must ignore indices `>= count`.
     pub async fn run(&self, kernel: &Kernel, buffers: &[&wgpu::Buffer], count: u64) -> anyhow::Result<()> {
@@ -538,7 +543,10 @@ mod tests {
             assert!(!module.entry_points.is_empty(), "{name} has no entry point");
             for entry in &module.entry_points {
                 assert_eq!(entry.stage, naga::ShaderStage::Compute, "{name}");
-                assert_eq!(entry.workgroup_size, [super::WORKGROUP, 1, 1], "{name}");
+                // The splats' backward rasterizer runs one splat per invocation in workgroups of 32 (one SIMD group on
+                // Apple GPUs), dispatched with `run_groups`.
+                let size = if name == "splat_raster_backward" { 32 } else { super::WORKGROUP };
+                assert_eq!(entry.workgroup_size, [size, 1, 1], "{name}");
             }
         }
     }
