@@ -30,9 +30,11 @@ var<workgroup> batch_v: array<vec3<f32>, 64>;
 var<workgroup> batch_w: array<vec3<f32>, 64>;
 var<workgroup> batch_colour: array<vec4<f32>, 64>;
 var<workgroup> batch_normal: array<vec3<f32>, 64>;
-// contributions[part * 64 + invocation] for the splat being processed, then the batch's sums[splat * PARTS + part].
+// contributions[invocation * PARTS + part] for the splat being processed (consecutive parts per invocation, so the
+// summing invocations read consecutive words), then the batch's sums[splat * PARTS + part].
 var<workgroup> contributions: array<f32, 1216>;
 var<workgroup> sums: array<f32, 1216>;
+var<workgroup> furthest: atomic<u32>;
 
 fn read3(base: u32) -> vec3<f32> {
     return vec3<f32>(projected[base], projected[base + 1u], projected[base + 2u]);
@@ -65,7 +67,7 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
     let py = vec4<f32>(ys) + 0.5;
     let inside = vec4<bool>(x < params.width) & (ys < vec4<u32>(params.height));
     let start = ranges[tile * 2u];
-    let end = ranges[tile * 2u + 1u];
+    let full_end = ranges[tile * 2u + 1u];
 
     // Per-pixel state from the forward pass and the image gradients, as vec4 over the four pixels.
     var T_final = vec4<f32>(1.0);
@@ -100,6 +102,11 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
         ddistort[k] = dpixels[p * DIN + 7u];
         dmedian[k] = dpixels[p * DIN + 8u];
     }
+    // Splats behind every pixel's last one contribute nothing: start at the furthest last one of the tile.
+    if (t == 0u) { atomicStore(&furthest, 0u); }
+    workgroupBarrier();
+    atomicMax(&furthest, max(max(bin_final.x, bin_final.y), max(bin_final.z, bin_final.w)));
+    let end = min(full_end, workgroupUniformLoad(&furthest));
     var T = T_final;
     var buffer_r = vec4<f32>(0.0);
     var buffer_g = vec4<f32>(0.0);
@@ -111,7 +118,8 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
     var accum_w_buffer = accum_w;
     var distort_buffer = vec4<f32>(0.0);
 
-    let batches = (end - start + 63u) / 64u;
+    var batches = 0u;
+    if (end > start) { batches = (end - start + 63u) / 64u; }
     for (var b = 0u; b < batches; b++) {
         workgroupBarrier();
         // Batch b holds the splats [last - 63, last] of what is left, the furthest at slot 0.
@@ -195,25 +203,25 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
             let v_y = select(vec4<f32>(0.0), v_G * -vis * 2.0 * dy, use_2d);
             let v_opacity = select(vec4<f32>(0.0), vis * v_alpha, unclipped);
 
-            contributions[0u * 64u + t] = component(fac * dr);
-            contributions[1u * 64u + t] = component(fac * dg);
-            contributions[2u * 64u + t] = component(fac * db);
-            contributions[3u * 64u + t] = component(d_depth);
-            contributions[4u * 64u + t] = component(fac * dnx);
-            contributions[5u * 64u + t] = component(fac * dny);
-            contributions[6u * 64u + t] = component(fac * dnz);
-            contributions[7u * 64u + t] = component(-hux);
-            contributions[8u * 64u + t] = component(-huy);
-            contributions[9u * 64u + t] = component(-huz);
-            contributions[10u * 64u + t] = component(-hvx);
-            contributions[11u * 64u + t] = component(-hvy);
-            contributions[12u * 64u + t] = component(-hvz);
-            contributions[13u * 64u + t] = component(px * hux + py * hvx);
-            contributions[14u * 64u + t] = component(px * huy + py * hvy);
-            contributions[15u * 64u + t] = component(px * huz + py * hvz);
-            contributions[16u * 64u + t] = component(v_x);
-            contributions[17u * 64u + t] = component(v_y);
-            contributions[18u * 64u + t] = component(v_opacity);
+            contributions[t * PARTS + 0u] = component(fac * dr);
+            contributions[t * PARTS + 1u] = component(fac * dg);
+            contributions[t * PARTS + 2u] = component(fac * db);
+            contributions[t * PARTS + 3u] = component(d_depth);
+            contributions[t * PARTS + 4u] = component(fac * dnx);
+            contributions[t * PARTS + 5u] = component(fac * dny);
+            contributions[t * PARTS + 6u] = component(fac * dnz);
+            contributions[t * PARTS + 7u] = component(-hux);
+            contributions[t * PARTS + 8u] = component(-huy);
+            contributions[t * PARTS + 9u] = component(-huz);
+            contributions[t * PARTS + 10u] = component(-hvx);
+            contributions[t * PARTS + 11u] = component(-hvy);
+            contributions[t * PARTS + 12u] = component(-hvz);
+            contributions[t * PARTS + 13u] = component(px * hux + py * hvx);
+            contributions[t * PARTS + 14u] = component(px * huy + py * hvy);
+            contributions[t * PARTS + 15u] = component(px * huz + py * hvz);
+            contributions[t * PARTS + 16u] = component(v_x);
+            contributions[t * PARTS + 17u] = component(v_y);
+            contributions[t * PARTS + 18u] = component(v_opacity);
 
             // What lies behind, for the splats in front.
             buffer_r += colour.x * fac;
@@ -229,7 +237,7 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
             workgroupBarrier();
             if (t < PARTS) {
                 var total = 0.0;
-                for (var k = 0u; k < 64u; k++) { total += contributions[t * 64u + k]; }
+                for (var k = 0u; k < 64u; k++) { total += contributions[k * PARTS + t]; }
                 sums[j * PARTS + t] = total;
             }
             workgroupBarrier();

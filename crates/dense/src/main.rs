@@ -40,8 +40,9 @@ fn main() -> ExitCode {
             println!("crisp3ds-dense {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
-        Some(name @ ("stereo" | "inputs" | "check" | "run" | "synthetic" | "inspect" | "texture" | "refine" | "surface")) => {
+        Some(name @ ("stereo" | "inputs" | "check" | "run" | "synthetic" | "inspect" | "texture" | "refine" | "surface" | "splats")) => {
             let result = match name {
+                "splats" => crisp3ds_dense::splats::train::main(&arguments[1..]),
                 "surface" => crisp3ds_dense::surface::train::main(&arguments[1..]),
                 "texture" => crisp3ds_dense::texture::main(&arguments[1..]),
                 "refine" => crisp3ds_dense::refine::main(&arguments[1..]),
@@ -61,7 +62,7 @@ fn main() -> ExitCode {
             }
         }
         _ => {
-            eprintln!("usage: crisp3ds-dense <run|photos|mat|render|inputs|stereo|mesh|texture|refine|surface|check|inspect|synthetic|settings|defaults|--version> ...   (see crates/dense/README.md)");
+            eprintln!("usage: crisp3ds-dense <run|photos|mat|render|inputs|stereo|mesh|texture|refine|surface|splats|check|inspect|synthetic|settings|defaults|--version> ...   (see crates/dense/README.md)");
             ExitCode::from(2)
         }
     }

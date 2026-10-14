@@ -15,6 +15,7 @@ use crate::gpu::{Gpu, Kernel};
 
 #[cfg(test)]
 mod tests;
+pub mod train;
 
 /// Floats per projected splat (see `splat_project.wgsl`).
 pub const PROJECTED: u32 = 24;
@@ -121,6 +122,8 @@ struct Quad {
 pub struct Kernels {
     project: Kernel,
     scan: Kernel,
+    scan_blocks: Kernel,
+    scan_add: Kernel,
     radix_count: Kernel,
     radix_scatter: Kernel,
     iota: Kernel,
@@ -144,6 +147,8 @@ impl Kernels {
         Ok(Kernels {
             project: gpu.kernel("splat_project", include_str!("../shaders/splat_project.wgsl"), "main").await?,
             scan: gpu.kernel("splat_scan", include_str!("../shaders/splat_scan.wgsl"), "main").await?,
+            scan_blocks: gpu.kernel("splat_scan_blocks", include_str!("../shaders/splat_scan_blocks.wgsl"), "main").await?,
+            scan_add: gpu.kernel("splat_scan_add", include_str!("../shaders/splat_scan_add.wgsl"), "main").await?,
             radix_count: gpu.kernel("splat_radix_count", include_str!("../shaders/splat_radix_count.wgsl"), "main").await?,
             radix_scatter: gpu.kernel("splat_radix_scatter", include_str!("../shaders/splat_radix_scatter.wgsl"), "main").await?,
             iota: gpu.kernel("splat_iota", include_str!("../shaders/splat_iota.wgsl"), "main").await?,
@@ -170,6 +175,8 @@ pub struct SortBuffers {
     pub values: [wgpu::Buffer; 2],
     histogram: wgpu::Buffer,
     total: wgpu::Buffer,
+    /// Block totals of the scans (of the histogram and of `capacity` values).
+    sums: wgpu::Buffer,
     capacity: u32,
 }
 
@@ -182,15 +189,21 @@ impl SortBuffers {
             values: [gpu.zeroed("sort values a", words), gpu.zeroed("sort values b", words)],
             histogram: gpu.zeroed("sort histogram", capacity.div_ceil(1024) as u64 * 16 * 4),
             total: gpu.zeroed("sort total", 4),
+            sums: gpu.zeroed("sort scan sums", (capacity.div_ceil(1024) * 16).div_ceil(1024).max(capacity.div_ceil(1024)) as u64 * 4 + 4),
             capacity,
         }
     }
 }
 
-/// Exclusive prefix sum of the first `count` values in place; the sum lands in `total[0]`.
-async fn scan(gpu: &Gpu, kernels: &Kernels, values: &wgpu::Buffer, total: &wgpu::Buffer, count: u32) -> Result<()> {
-    let uniform = gpu.uniform("splat scan", &Quad { a: count, b: 0, c: 0, d: 0 });
-    gpu.run(&kernels.scan, &[&uniform, values, total], crate::gpu::WORKGROUP as u64).await
+/// Exclusive prefix sum of the first `count` values in place (blocks of 1024 in parallel, then their totals, then
+/// the offsets); the sum lands in `total[0]`. `sums` holds at least count / 1024 + 1 values.
+async fn scan(gpu: &Gpu, kernels: &Kernels, values: &wgpu::Buffer, sums: &wgpu::Buffer, total: &wgpu::Buffer, count: u32) -> Result<()> {
+    let blocks = count.div_ceil(1024).max(1);
+    let uniform = gpu.uniform("splat scan", &Quad { a: count, b: blocks, c: 0, d: 0 });
+    gpu.run(&kernels.scan_blocks, &[&uniform, values, sums], blocks as u64 * crate::gpu::WORKGROUP as u64).await?;
+    let uniform_sums = gpu.uniform("splat scan sums", &Quad { a: blocks, b: 0, c: 0, d: 0 });
+    gpu.run(&kernels.scan, &[&uniform_sums, sums, total], crate::gpu::WORKGROUP as u64).await?;
+    gpu.run(&kernels.scan_add, &[&uniform, values, sums], count as u64).await
 }
 
 /// Stable radix sort of `count` keys (their low `bits` bits) with their values, starting in buffers [0]; returns the
@@ -206,7 +219,7 @@ pub async fn radix_sort(gpu: &Gpu, kernels: &Kernels, sort: &SortBuffers, count:
         let uniform = gpu.uniform("splat radix", &Quad { a: count, b: pass * 4, c: blocks, d: 0 });
         let groups = blocks as u64 * crate::gpu::WORKGROUP as u64;
         gpu.run(&kernels.radix_count, &[&uniform, &sort.keys[current], &sort.histogram], groups).await?;
-        scan(gpu, kernels, &sort.histogram, &sort.total, blocks * 16).await?;
+        scan(gpu, kernels, &sort.histogram, &sort.sums, &sort.total, blocks * 16).await?;
         gpu.run(
             &kernels.radix_scatter,
             &[&uniform, &sort.keys[current], &sort.values[current], &sort.histogram, &sort.keys[1 - current], &sort.values[1 - current]],
@@ -279,7 +292,7 @@ pub async fn render(gpu: &Gpu, kernels: &Kernels, splats: &Splats, camera: &Came
     frame.order = radix_sort(gpu, kernels, &frame.depth_sort, n, 32).await?;
     let order = &frame.depth_sort.values[frame.order];
     gpu.run(&kernels.gather, &[&count, order, &frame.projected, &frame.counts], n as u64).await?;
-    scan(gpu, kernels, &frame.counts, &frame.tile_sort.total, n).await?;
+    scan(gpu, kernels, &frame.counts, &frame.depth_sort.sums, &frame.tile_sort.total, n).await?;
     let total: Vec<u32> = gpu.read(&frame.tile_sort.total, 1).await?;
     let intersections = total[0];
     if intersections > frame.tile_sort.capacity {

@@ -468,7 +468,7 @@ pub fn tests_enabled() -> bool {
 mod tests {
     use wgpu::naga;
 
-    const SHADERS: [(&str, &str); 46] = [
+    const SHADERS: [(&str, &str); 51] = [
         ("carve", include_str!("../shaders/carve.wgsl")),
         ("cover", include_str!("../shaders/cover.wgsl")),
         ("fuse", include_str!("../shaders/fuse.wgsl")),
@@ -499,6 +499,8 @@ mod tests {
         ("surface_fit", include_str!("../shaders/surface_fit.wgsl")),
         ("splat_project", include_str!("../shaders/splat_project.wgsl")),
         ("splat_scan", include_str!("../shaders/splat_scan.wgsl")),
+        ("splat_scan_blocks", include_str!("../shaders/splat_scan_blocks.wgsl")),
+        ("splat_scan_add", include_str!("../shaders/splat_scan_add.wgsl")),
         ("splat_radix_count", include_str!("../shaders/splat_radix_count.wgsl")),
         ("splat_radix_scatter", include_str!("../shaders/splat_radix_scatter.wgsl")),
         ("splat_iota", include_str!("../shaders/splat_iota.wgsl")),
@@ -515,6 +517,9 @@ mod tests {
         ("splat_loss_grad", include_str!("../shaders/splat_loss_grad.wgsl")),
         ("splat_surface_backward", include_str!("../shaders/splat_surface_backward.wgsl")),
         ("splat_median_grad", include_str!("../shaders/splat_median_grad.wgsl")),
+        ("splat_adam", include_str!("../shaders/splat_adam.wgsl")),
+        ("splat_densify_stats", include_str!("../shaders/splat_densify_stats.wgsl")),
+        ("splat_fuse", include_str!("../shaders/splat_fuse.wgsl")),
     ];
 
     /// Every kernel parses and validates without a GPU, uses plain WebGPU

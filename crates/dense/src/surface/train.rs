@@ -388,6 +388,49 @@ impl Tree {
     }
 }
 
+impl Tree {
+    /// The `k` nearest points' squared distances, nearest first (the query point itself included if it is one).
+    pub(crate) fn nearest_k(&self, q: [f64; 3], k: usize) -> Vec<f64> {
+        #[allow(clippy::too_many_arguments)]
+        fn search(
+            tree: &Tree,
+            range: &[u32],
+            depth: usize,
+            q: &[f64; 3],
+            offsets: &mut [f64; 3],
+            region: f64,
+            best: &mut Vec<f64>,
+            k: usize,
+        ) {
+            if range.is_empty() {
+                return;
+            }
+            let middle = range.len() / 2;
+            let p = tree.points[range[middle] as usize];
+            let d2 = (0..3).map(|i| (p[i] - q[i]) * (p[i] - q[i])).sum::<f64>();
+            if best.len() < k || d2 < best[best.len() - 1] {
+                let at = best.partition_point(|b| *b <= d2);
+                best.insert(at, d2);
+                best.truncate(k);
+            }
+            let axis = depth % 3;
+            let delta = q[axis] - p[axis];
+            let (near, far) = if delta < 0.0 { (&range[..middle], &range[middle + 1..]) } else { (&range[middle + 1..], &range[..middle]) };
+            search(tree, near, depth + 1, q, offsets, region, best, k);
+            let old = offsets[axis];
+            let far_region = region - old * old + delta * delta;
+            if best.len() < k || far_region < best[best.len() - 1] {
+                offsets[axis] = delta;
+                search(tree, far, depth + 1, q, offsets, far_region, best, k);
+                offsets[axis] = old;
+            }
+        }
+        let mut best = Vec::with_capacity(k + 1);
+        search(self, &self.order, 0, &q, &mut [0.0; 3], 0.0, &mut best, k);
+        best
+    }
+}
+
 /// Signed distance to the hull on a resolution^3 grid over [-1, 1]^3 (index (x r + y) r + z), outside positive:
 /// distance to the nearest hull point, signed by its normal, smoothed with a Gaussian of 0.7 cells.
 pub fn hull_grid(scene: &Scene, resolution: usize) -> Vec<f32> {
