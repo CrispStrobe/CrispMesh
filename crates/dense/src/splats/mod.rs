@@ -67,7 +67,7 @@ pub fn pack(means: &[f32], quats: &[f32], scales: &[f32], opacities: &[f32], sh:
 
 impl Splats {
     pub fn new(gpu: &Gpu, rows: &[f32]) -> Result<Self> {
-        ensure!(rows.len() % PARAMS as usize == 0, "splat rows must have {PARAMS} floats");
+        ensure!(rows.len().is_multiple_of(PARAMS as usize), "splat rows must have {PARAMS} floats");
         Ok(Splats { count: (rows.len() / PARAMS as usize) as u32, params: gpu.upload("splats", rows) })
     }
 }
@@ -328,6 +328,7 @@ pub async fn raster_backward(
 }
 
 /// Adds the parameters' gradients (`out`, [`PARAMS`] floats per splat) from the projected values' gradients `grads`.
+#[allow(clippy::too_many_arguments)]
 pub async fn project_backward(
     gpu: &Gpu,
     kernels: &Kernels,
