@@ -30,19 +30,29 @@ SNAPSHOT=1000 python neus_facto_mlx.py PACK OUT
 ## MLX pitfall
 
 `mx.value_and_grad(f)` where `f` returns a tuple (a scalar loss and further outputs): gradients of an *outer*
-differentiation through the further outputs are zero (MLX 0.31.1 and 0.32.3; the documentation does not say so).
-Computing the distance and its gradient that way made the whole surface training wrong: the colour and opacity
-terms received no gradient through the distance. Two correct forms: a forward pass plus `mx.grad` (default), or one
-`mx.vjp` call (`GRADIENT=vjp`). `mlx_aux_repro2.py` shows the zero gradient, `mlx_vjp_check.py` the one-pass form.
+differentiation through the further outputs are zero (MLX 0.31.1 and 0.32.3). This is not a faulty operation: MLX
+wraps every output after the loss in `stop_gradient` (`value_and_grad` in `mlx/transforms.cpp`) so that it needs a
+cotangent for the loss only, and that `stop_gradient` stays in the graph; the documentation does not mention the
+consequence for nested differentiation. Computing the distance and its gradient that way made the whole surface
+training wrong: the colour and opacity terms received no gradient through the distance. Two correct forms: one
+`mx.vjp` call (`GRADIENT=vjp`, the default, one pass) or a forward pass plus `mx.grad` (`GRADIENT=separate`).
+`mlx_aux_repro2.py` shows the zero gradient, `mlx_vjp_check.py` the one-pass form.
 
 ## Results so far (power drill, 300 photos, own cameras and masks)
 
-F1 at 0.5 / 1 / 2 % of the scan's diagonal, each mesh with its own similarity fit to the scan (evaluation only):
+F1 at 0.5 / 1 / 2 % of the scan's diagonal, each mesh with its own similarity fit to the scan (evaluation only).
+Trials stop at step 2 000 of the 20 000-step schedule; meshes at 256 cubed. Time on an Apple M1, including the
+hull fit; one job at a time.
 
-| | F1 | |
-| --- | --- | --- |
-| Reference NeuS-facto, 20 000 steps (Tesla T4, 118 min) | 0.892 / 0.964 / 0.992 | |
-| This port, hull start, `SAMPLER=neus`, step 2 000 (Apple M1, about 70 min) | 0.755 / 0.928 / 0.999 | mesh at 256 cubed |
-| Same, own `cache` sampler, step 2 000 | 0.224 / 0.510 / 0.794 | sharpness held at 33: rejected |
+| Setting | Step 2 000 | s/step | Time |
+| --- | --- | --- | --- |
+| Reference NeuS-facto, 20 000 steps (Tesla T4) | 0.892 / 0.964 / 0.992 (final) | 0.35 | 118 min |
+| Reference width (256), two-pass gradient, whole ray, 128 samples | 0.755 / 0.928 / 0.999 | 2.3 | 80 min |
+| Width 64, one-pass gradient | 0.815 / 0.966 / 0.997 | 0.85 | 31 min |
+| ... and 48 of the 128 samples rendered (learned sharpness) | 0.253 / 0.488 / 0.798 | 0.55 | rejected |
+| ... and 48 rendered, drawn at sharpness 512 | 0.655 / 0.892 / 0.979 | | rejected |
+| Width 64, one-pass gradient, hull band 0.05, 32 + 4 x 8 samples (default) | 0.848 / 0.976 / 0.998 | 0.60 | 22 min |
+| Own `cache` sampler (reference width) | 0.224 / 0.510 / 0.794 | | rejected |
 
-About 2 s per step on an M1 at 2.1 GiB GPU memory, against 0.35 s per step for the reference on a T4.
+At step 2 000 the meshes have the drill's shape and some relief (vent grid, trigger, seams), clearly less than
+the reference's after 20 000 steps. Splitting the batch into parts to bound memory costs no time.

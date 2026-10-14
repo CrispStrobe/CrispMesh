@@ -8,17 +8,23 @@ colour network 2 x 256 on (position, direction frequencies (4), normal, features
 annealing (50 000 steps) and a learned sharpness (starting at exp(3)), analytic gradients, L1 colour against the photo
 with a black background, eikonal 0.1, mask cross-entropy 0.1, Adam 5e-4 with 500 warm-up steps and a cosine to 5 %.
 
-Different (each a switch; the defaults are the setup that matched the reference best so far):
-  HULL=600     start: the geometry network is first fitted to our silhouette hull's distance (0: sphere of radius 0.5)
-  SAMPLER=neus samples per ray as in the original NeuS (64 even, four rounds of 16 at sharpness 64..512, all 128
-               rendered); `cache` = own two-round sampler from a coarse distance grid (held sharpness at the grid's
-               resolution: rejected)
+Different (each a switch; the defaults are the setup that matched the reference best so far, drill at step 2 000):
+  HULL=600       start: the geometry network is first fitted to our silhouette hull's distance (0: sphere of radius 0.5)
+  HULL_BAND=0.05 rays sampled only within this distance of the hull (scene units; the hull bounds the object), and the
+                 mesh is cut there too (0: the whole ray inside the unit sphere)
+  SAMPLER=neus   samples per ray as in the original NeuS: NEUS_COARSE (32) even, then four rounds of NEUS_ROUND (8) at
+                 sharpness 64..512, all rendered (NeuS: 64 and 16 over the whole ray). `cache` = own sampler from a
+                 coarse distance grid: rejected (sharpness held at the grid's resolution)
+  RENDER=0       render all samples. N = only N drawn from the weights (at RENDER_SHARPNESS, default the learned one):
+                 rejected, worse surface either way
+  WIDTH=64 GEO=64 network width and geometry features (reference 256 / 256: slower, no better)
+  GRADIENT=vjp   value and input gradient in one pass; `separate` = two passes
   RAYS=1024 PARTS=4  rays per step, processed in parts to bound memory (reference: 2048 rays, 48 samples each)
-  GRADIENT=separate  value and input gradient in two passes; `vjp` = one pass
-  MEMORY_GIB=2  MLX memory ceiling; buffer cache 256 MB
+  MEMORY_GIB=2   MLX memory ceiling; buffer cache 256 MB
+The reference's own setup: HULL=0 HULL_BAND=0 WIDTH=256 GEO=256 RAYS=2048 (and its proposal sampler, not ported).
 
 usage: neus_facto_mlx.py PACK OUT_DIR   (PACK from pack_scene.py)
-env: STEPS (20000) SNAPSHOT (0: none; else mesh + checkpoint every N steps; a run resumes from its checkpoint)
+env: STEPS (20000; the schedule's length) STOP (0; end early on that schedule) SNAPSHOT (0: none; else mesh + checkpoint every N steps; a run resumes from its checkpoint)
      MESH (512) VIEW_STEP (1) SEED (0)"""
 import json, math, os, sys, time
 from pathlib import Path
@@ -33,10 +39,10 @@ from mlx.utils import tree_unflatten
 
 pack, out = Path(sys.argv[1]), Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
 STEPS = int(os.environ.get('STEPS', 20000)); RAYS = int(os.environ.get('RAYS', 1024)); PARTS = int(os.environ.get('PARTS', 4)); VIEW_STEP = int(os.environ.get('VIEW_STEP', 1))
-HULL = int(os.environ.get('HULL', 600)); SAMPLER = os.environ.get('SAMPLER', 'neus'); GRADIENT = os.environ.get('GRADIENT', 'separate'); FLOOR = float(os.environ.get('FLOOR', 0.05)); FLOOR_STEPS = int(os.environ.get('FLOOR_STEPS', 0))
-MESH = int(os.environ.get('MESH', 512)); SEED = int(os.environ.get('SEED', 0)); SNAPSHOT = int(os.environ.get('SNAPSHOT', 0))
+HULL = int(os.environ.get('HULL', 600)); SAMPLER = os.environ.get('SAMPLER', 'neus'); RENDER = int(os.environ.get('RENDER', 0)); HULL_BAND = float(os.environ.get('HULL_BAND', 0.05)); NEUS_COARSE = int(os.environ.get('NEUS_COARSE', 32)); NEUS_ROUND = int(os.environ.get('NEUS_ROUND', 8)); RENDER_SHARPNESS = float(os.environ.get('RENDER_SHARPNESS', 0)); GRADIENT = os.environ.get('GRADIENT', 'vjp'); FLOOR = float(os.environ.get('FLOOR', 0.05)); FLOOR_STEPS = int(os.environ.get('FLOOR_STEPS', 0))
+STOP = int(os.environ.get('STOP', 0)); LOG_EVERY = int(os.environ.get('LOG_EVERY', 100)); MESH = int(os.environ.get('MESH', 512)); SEED = int(os.environ.get('SEED', 0)); SNAPSHOT = int(os.environ.get('SNAPSHOT', 0))
 LEVELS, TABLE, FEATURES, BASE, FINEST = 16, 1 << 19, 2, 16, 2048
-HIDDEN, GEO, SAMPLES, COARSE, MIDDLE, CACHE = 256, 256, 48, 128, 40, 128
+HIDDEN, GEO = int(os.environ.get('WIDTH', 64)), int(os.environ.get('GEO', 64)); SAMPLES, COARSE, MIDDLE, CACHE = 48, 128, 40, 128
 EIKONAL, MASK, ANNEAL_END, WARM_UP, LR, LR_END = 0.1, 0.1, 50000, 500, 5e-4, 0.05
 rng = np.random.default_rng(SEED); mx.random.seed(SEED)
 # Keep the footprint small on a shared 16 GB machine: no large buffer cache, and a hard ceiling on GPU memory.
@@ -217,7 +223,9 @@ def sample_neus(field, o, d):
     b = (o * d).sum(-1); c = (o * o).sum(-1) - 1.0; root = mx.sqrt(mx.maximum(b * b - c, 1e-6))
     near, far = mx.maximum(-b - root, 0.05), mx.maximum(-b + root, 0.06)
     n = o.shape[0]
-    z = near[:, None] + (far - near)[:, None] * (mx.arange(64) + mx.random.uniform(shape=(n, 1))) / 64
+    if HULL_BAND:
+        near, far = band_limits(o, d, near, far)
+    z = near[:, None] + (far - near)[:, None] * (mx.arange(NEUS_COARSE) + mx.random.uniform(shape=(n, 1))) / NEUS_COARSE
     value = field.distance((o[:, None, :] + z[..., None] * d[:, None, :]).reshape(-1, 3)).reshape(n, -1)
     for i in range(4):
         mid = 0.5 * (value[:, :-1] + value[:, 1:]); dist = z[:, 1:] - z[:, :-1]
@@ -229,7 +237,7 @@ def sample_neus(field, o, d):
         weights = alpha * mx.cumprod(mx.concatenate([mx.ones((n, 1)), 1.0 - alpha + 1e-7], 1), axis=1)[:, :-1]
         pdf = (weights + 1e-5) / (weights + 1e-5).sum(1, keepdims=True)
         cdf = mx.concatenate([mx.zeros((n, 1)), mx.cumsum(pdf, axis=1)], 1)
-        u = mx.broadcast_to(mx.linspace(1 / 32, 1 - 1 / 32, 16)[None, :], (n, 16))
+        u = mx.broadcast_to(mx.linspace(0.5 / NEUS_ROUND, 1 - 0.5 / NEUS_ROUND, NEUS_ROUND)[None, :], (n, NEUS_ROUND))
         index = mx.clip((u[:, :, None] >= cdf[:, None, :]).sum(-1) - 1, 0, pdf.shape[1] - 1)
         c0, c1 = mx.take_along_axis(cdf, index, axis=1), mx.take_along_axis(cdf, index + 1, axis=1)
         z0, z1 = mx.take_along_axis(z, index, axis=1), mx.take_along_axis(z, index + 1, axis=1)
@@ -237,7 +245,13 @@ def sample_neus(field, o, d):
         new_value = field.distance((o[:, None, :] + new[..., None] * d[:, None, :]).reshape(-1, 3)).reshape(n, -1)
         z = mx.concatenate([z, new], 1); value = mx.concatenate([value, new_value], 1)
         order = mx.argsort(z, axis=1); z = mx.take_along_axis(z, order, axis=1); value = mx.take_along_axis(value, order, axis=1)
-    return mx.stop_gradient(mx.concatenate([z, far[:, None]], 1))
+    edges = mx.concatenate([z, far[:, None]], 1)
+    if RENDER:
+        # Render only RENDER samples, drawn from the surface's weights at its learned sharpness over the 128 (as the
+        # reference renders 48 samples drawn from its proposals). The distance at the far end is taken as the last one.
+        value = mx.concatenate([value, value[:, -1:]], 1)
+        edges = edges_from(edges, interval_weights(value, RENDER_SHARPNESS or field.sharpness()), RENDER, 0.02)
+    return mx.stop_gradient(edges)
 
 
 def render(field, o, d, edges, anneal):
@@ -267,7 +281,10 @@ def save_mesh(field, path, resolution):
     axis = np.linspace(-1, 1, resolution, dtype=np.float32); values = np.zeros((resolution,) * 3, np.float32)
     for n in range(resolution):
         plane = np.stack(np.meshgrid(axis[n:n + 1], axis, axis, indexing='ij'), -1).reshape(-1, 3)
-        values[n] = np.array(field.distance(mx.array(plane))).reshape(resolution, resolution)
+        value = field.distance(mx.array(plane))
+        if HULL_BAND:
+            value = mx.maximum(value, trilinear(hull_grid(), mx.array(plane)) - HULL_BAND)
+        values[n] = np.array(value).reshape(resolution, resolution)
     if not (values.min() < 0 < values.max()):
         return 0
     vertices, faces, _, _ = measure.marching_cubes(values, 0.0, spacing=(2.0 / (resolution - 1),) * 3)
@@ -282,15 +299,39 @@ field = Field(); mx.eval(field.parameters())
 log(f'{sum(v.size for _, v in tree_flatten(field.parameters())) / 1e6:.1f} M parameters')
 
 
+HULL_GRID = None
+
+
+def hull_grid():
+    """Signed distance to our silhouette hull on a 160-cubed grid over [-1, 1]^3 (outside positive)."""
+    global HULL_GRID
+    if HULL_GRID is None:
+        from scipy.spatial import cKDTree
+        from scipy.ndimage import gaussian_filter
+        points = (np.load(pack / 'hull_points.npy').astype(np.float64) - centre) * unit; normals = np.load(pack / 'hull_normals.npy').astype(np.float64)
+        r = 160; axis = np.linspace(-1, 1, r); nodes = np.stack(np.meshgrid(axis, axis, axis, indexing='ij'), -1).reshape(-1, 3)
+        distance, nearest = cKDTree(points).query(nodes, workers=-1)
+        sign = np.sign(np.einsum('ij,ij->i', nodes - points[nearest], normals[nearest]))
+        HULL_GRID = mx.array(gaussian_filter((distance * np.where(sign == 0, 1, sign)).reshape(r, r, r), 0.7).astype(np.float32))
+    return HULL_GRID
+
+
+def band_limits(o, d, near, far):
+    """Narrow [near, far] of each ray to the part within HULL_BAND of the hull (empty rays get an empty segment)."""
+    t = near[:, None] + (far - near)[:, None] * mx.linspace(0, 1, 257)[None, :]
+    inside = trilinear(hull_grid(), o[:, None, :] + t[..., None] * d[:, None, :]) < HULL_BAND
+    any_inside = inside.any(1); idx = mx.arange(257)[None, :]
+    first = mx.min(mx.where(inside, idx, 257), 1); last = mx.max(mx.where(inside, idx, -1), 1)
+    step = (far - near) / 256
+    new_near = mx.where(any_inside, near + mx.maximum(first - 1, 0) * step, far)
+    new_far = mx.where(any_inside, near + mx.minimum(last + 1, 256) * step, far + 1e-4)
+    return new_near, new_far
+
+
 def fit_hull(field, steps):
     """Start on our silhouette hull instead of a sphere: the geometry network is fitted to the hull's signed distance."""
-    from scipy.spatial import cKDTree
-    from scipy.ndimage import gaussian_filter
-    points = (np.load(pack / 'hull_points.npy').astype(np.float64) - centre) * unit; normals = np.load(pack / 'hull_normals.npy').astype(np.float64)
-    r = 160; axis = np.linspace(-1, 1, r); nodes = np.stack(np.meshgrid(axis, axis, axis, indexing='ij'), -1).reshape(-1, 3)
-    distance, nearest = cKDTree(points).query(nodes, workers=-1)
-    sign = np.sign(np.einsum('ij,ij->i', nodes - points[nearest], normals[nearest]))
-    grid = mx.array(gaussian_filter((distance * np.where(sign == 0, 1, sign)).reshape(r, r, r), 0.7).astype(np.float32))
+    points = (np.load(pack / 'hull_points.npy').astype(np.float64) - centre) * unit
+    grid = hull_grid()
     fitter = optim.Adam(learning_rate=1e-3, eps=1e-15)
 
     def loss(p, target):
@@ -313,7 +354,7 @@ if (out / 'checkpoint.safetensors').exists():
     field.update(tree_unflatten(list(saved.items()))); mx.eval(field.parameters()); log(f'resumed after step {first_step - 1} (optimiser moments restart)')
 if HULL and first_step == 0:
     fit_hull(field, HULL); log(f'hull mesh: {save_mesh(field, out / "mesh-hull.stl", 256)} triangles')
-for step in range(first_step, STEPS):
+for step in range(first_step, STOP or STEPS):
     factor = step / WARM_UP if step < WARM_UP else (math.cos(math.pi * (step - WARM_UP) / (STEPS - WARM_UP)) + 1.0) * 0.5 * (1 - LR_END) + LR_END
     optimizer.learning_rate = LR * factor
     anneal = min(1.0, step / ANNEAL_END)
@@ -331,7 +372,7 @@ for step in range(first_step, STEPS):
         mx.eval(total, loss)
     optimizer.update(field, total)
     mx.eval(field.parameters(), optimizer.state, loss)
-    if step % 100 == 0 or step == STEPS - 1:
+    if step % LOG_EVERY == 0 or step == STEPS - 1:
         row = [float(loss)] + [float(x) for x in parts] + [float(field.sharpness())]; history.append([step] + row)
         log(f'step {step}: loss {row[0]:.4f} colour {row[1]:.4f} eikonal {row[2]:.4f} mask {row[3]:.4f} sharpness {row[4]:.0f} peak {mx.get_peak_memory() / 2 ** 30:.1f} GiB')
     low_disk = step % 100 == 0 and shutil.disk_usage('/System/Volumes/Data').free < 8.8 * 2 ** 30
@@ -341,7 +382,7 @@ for step in range(first_step, STEPS):
     if low_disk:
         log('stopped: less than 8.8 GiB free on the disk; run again to resume'); sys.exit(3)
 train_seconds = time.time() - T0
-triangles = save_mesh(field, out / 'mesh.stl', MESH)
+triangles = save_mesh(field, out / 'mesh.stl', MESH if not STOP else 256)
 (out / 'summary.json').write_text(json.dumps({'steps': STEPS, 'rays': RAYS, 'views': V, 'train_seconds': train_seconds, 'seconds': time.time() - T0,
                                                'triangles': triangles, 'peak_memory_gib': mx.get_peak_memory() / 2 ** 30, 'history': history}, indent=1))
 log(f'done: {triangles} triangles, training {train_seconds:.0f}s')
