@@ -94,6 +94,7 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
         var colour = vec3<f32>(0.0);
         var depth = 0.0;
         var normal = vec3<f32>(0.0);
+        var reach = vec2<f32>(0.0);
         if (live) {
             g = values[index];
             let base = g * STRIDE;
@@ -105,6 +106,8 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
             normal = read3(base + 12u);
             colour = read3(base + 15u);
             opacity = projected[base + 18u];
+            // Beyond the projected radius (3.33 extents) alpha stays below 1/255; one pixel of margin.
+            reach = vec2<f32>(projected[base + 19u], projected[base + 20u]) + 1.0;
         }
         var d_colour = vec3<f32>(0.0);
         var d_depth = 0.0;
@@ -121,9 +124,10 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
                 let y = ty * 16u + k / 16u;
                 let p = y * params.width + x;
                 let at = index + 1u;
-                if (x < params.width && y < params.height && at <= bitcast<u32>(pixels[p * OUT + 11u])) {
-                    let px = f32(x) + 0.5;
-                    let py = f32(y) + 0.5;
+                let px = f32(x) + 0.5;
+                let py = f32(y) + 0.5;
+                let near = abs(px - xy.x) <= reach.x && abs(py - xy.y) <= reach.y;
+                if (near && x < params.width && y < params.height && at <= bitcast<u32>(pixels[p * OUT + 11u])) {
                     let h_u = px * w - u;
                     let h_v = py * w - v;
                     let c = cross(h_u, h_v);
