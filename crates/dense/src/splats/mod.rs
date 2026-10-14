@@ -28,31 +28,47 @@ pub const TILE: u32 = 16;
 /// Spherical-harmonics coefficients per splat (degree 3) times 3 colours.
 pub const SH: u32 = 48;
 
-/// The trainable splats: positions, rotations (w, x, y, z), log scales, logit opacities, SH coefficients.
+/// Floats per splat of the trainable parameters: mean (3), quaternion w, x, y, z (4), log scales (3), logit
+/// opacity, spherical harmonics (16 x 3, the first three the constant term), unused. Gradients and Adam moments use
+/// the same layout, so one kernel updates everything and densification copies whole rows.
+pub const PARAMS: u32 = 60;
+/// Columns of each parameter group in a row of [`PARAMS`].
+pub const MEAN: usize = 0;
+pub const QUAT: usize = 3;
+pub const SCALE: usize = 7;
+pub const OPACITY: usize = 10;
+pub const SH0: usize = 11;
+pub const SHN: usize = 14;
+
+/// The trainable splats.
 pub struct Splats {
     pub count: u32,
-    pub means: wgpu::Buffer,
-    pub quats: wgpu::Buffer,
-    pub scales: wgpu::Buffer,
-    pub opacities: wgpu::Buffer,
-    pub sh: wgpu::Buffer,
+    pub params: wgpu::Buffer,
+}
+
+/// One row of [`PARAMS`] per splat from separate arrays (SH: 16 x 3 per splat).
+pub fn pack(means: &[f32], quats: &[f32], scales: &[f32], opacities: &[f32], sh: &[f32]) -> Result<Vec<f32>> {
+    let count = opacities.len();
+    ensure!(
+        means.len() == count * 3 && quats.len() == count * 4 && scales.len() == count * 3 && sh.len() == count * SH as usize,
+        "splat arrays differ in length"
+    );
+    let mut rows = vec![0f32; count * PARAMS as usize];
+    for g in 0..count {
+        let row = &mut rows[g * PARAMS as usize..(g + 1) * PARAMS as usize];
+        row[MEAN..MEAN + 3].copy_from_slice(&means[g * 3..g * 3 + 3]);
+        row[QUAT..QUAT + 4].copy_from_slice(&quats[g * 4..g * 4 + 4]);
+        row[SCALE..SCALE + 3].copy_from_slice(&scales[g * 3..g * 3 + 3]);
+        row[OPACITY] = opacities[g];
+        row[SH0..SH0 + SH as usize].copy_from_slice(&sh[g * SH as usize..(g + 1) * SH as usize]);
+    }
+    Ok(rows)
 }
 
 impl Splats {
-    pub fn new(gpu: &Gpu, means: &[f32], quats: &[f32], scales: &[f32], opacities: &[f32], sh: &[f32]) -> Result<Self> {
-        let count = opacities.len();
-        ensure!(
-            means.len() == count * 3 && quats.len() == count * 4 && scales.len() == count * 3 && sh.len() == count * SH as usize,
-            "splat arrays differ in length"
-        );
-        Ok(Splats {
-            count: count as u32,
-            means: gpu.upload("splat means", means),
-            quats: gpu.upload("splat quats", quats),
-            scales: gpu.upload("splat scales", scales),
-            opacities: gpu.upload("splat opacities", opacities),
-            sh: gpu.upload("splat sh", sh),
-        })
+    pub fn new(gpu: &Gpu, rows: &[f32]) -> Result<Self> {
+        ensure!(rows.len() % PARAMS as usize == 0, "splat rows must have {PARAMS} floats");
+        Ok(Splats { count: (rows.len() / PARAMS as usize) as u32, params: gpu.upload("splats", rows) })
     }
 }
 
@@ -113,6 +129,14 @@ pub struct Kernels {
     ranges: Kernel,
     raster: Kernel,
     raster_backward: Kernel,
+    project_backward: Kernel,
+    loss_prepare: Kernel,
+    blur: Kernel,
+    ssim: Kernel,
+    surface: Kernel,
+    loss_grad: Kernel,
+    surface_backward: Kernel,
+    median_grad: Kernel,
 }
 
 impl Kernels {
@@ -128,6 +152,14 @@ impl Kernels {
             ranges: gpu.kernel("splat_ranges", include_str!("../shaders/splat_ranges.wgsl"), "main").await?,
             raster: gpu.kernel("splat_raster", include_str!("../shaders/splat_raster.wgsl"), "main").await?,
             raster_backward: gpu.kernel("splat_raster_backward", include_str!("../shaders/splat_raster_backward.wgsl"), "main").await?,
+            project_backward: gpu.kernel("splat_project_backward", include_str!("../shaders/splat_project_backward.wgsl"), "main").await?,
+            loss_prepare: gpu.kernel("splat_loss_prepare", include_str!("../shaders/splat_loss_prepare.wgsl"), "main").await?,
+            blur: gpu.kernel("splat_blur", include_str!("../shaders/splat_blur.wgsl"), "main").await?,
+            ssim: gpu.kernel("splat_ssim", include_str!("../shaders/splat_ssim.wgsl"), "main").await?,
+            surface: gpu.kernel("splat_surface", include_str!("../shaders/splat_surface.wgsl"), "main").await?,
+            loss_grad: gpu.kernel("splat_loss_grad", include_str!("../shaders/splat_loss_grad.wgsl"), "main").await?,
+            surface_backward: gpu.kernel("splat_surface_backward", include_str!("../shaders/splat_surface_backward.wgsl"), "main").await?,
+            median_grad: gpu.kernel("splat_median_grad", include_str!("../shaders/splat_median_grad.wgsl"), "main").await?,
         })
     }
 }
@@ -217,18 +249,14 @@ impl Frame {
     }
 }
 
-/// Renders the splats into `frame.pixels` (spherical harmonics up to `degree`); returns the number of intersections.
-pub async fn render(gpu: &Gpu, kernels: &Kernels, splats: &Splats, camera: &Camera, degree: u32, frame: &mut Frame) -> Result<u32> {
-    let n = splats.count;
+fn camera_params(camera: &Camera, count: u32, degree: u32) -> CameraParams {
     let (tiles_x, tiles_y) = camera.tiles();
-    let r = camera.rotation;
-    let t = camera.translation;
-    let c = camera.centre();
-    let params = CameraParams {
+    let (r, t, c) = (camera.rotation, camera.translation, camera.centre());
+    CameraParams {
         rotation: std::array::from_fn(|i| [r[i][0], r[i][1], r[i][2], t[i]]),
         intrinsics: camera.intrinsics,
         position: [c[0], c[1], c[2], 0.0],
-        count: n,
+        count,
         width: camera.width,
         height: camera.height,
         degree,
@@ -236,23 +264,16 @@ pub async fn render(gpu: &Gpu, kernels: &Kernels, splats: &Splats, camera: &Came
         tiles_y,
         near: 0.2,
         far: 1e10,
-    };
+    }
+}
+
+/// Renders the splats into `frame.pixels` (spherical harmonics up to `degree`); returns the number of intersections.
+pub async fn render(gpu: &Gpu, kernels: &Kernels, splats: &Splats, camera: &Camera, degree: u32, frame: &mut Frame) -> Result<u32> {
+    let n = splats.count;
+    let (tiles_x, tiles_y) = camera.tiles();
+    let params = camera_params(camera, n, degree);
     let uniform = gpu.uniform("splat camera", &params);
-    gpu.run(
-        &kernels.project,
-        &[
-            &uniform,
-            &splats.means,
-            &splats.quats,
-            &splats.scales,
-            &splats.opacities,
-            &splats.sh,
-            &frame.projected,
-            &frame.depth_sort.keys[0],
-        ],
-        n as u64,
-    )
-    .await?;
+    gpu.run(&kernels.project, &[&uniform, &splats.params, &frame.projected, &frame.depth_sort.keys[0]], n as u64).await?;
     let count = gpu.uniform("splat count", &Quad { a: n, b: tiles_x, c: 0, d: 0 });
     gpu.run(&kernels.iota, &[&count, &frame.depth_sort.values[0]], n as u64).await?;
     frame.order = radix_sort(gpu, kernels, &frame.depth_sort, n, 32).await?;
@@ -304,4 +325,189 @@ pub async fn raster_backward(
         (tiles_x * tiles_y) as u64 * crate::gpu::WORKGROUP as u64,
     )
     .await
+}
+
+/// Adds the parameters' gradients (`out`, [`PARAMS`] floats per splat) from the projected values' gradients `grads`.
+pub async fn project_backward(
+    gpu: &Gpu,
+    kernels: &Kernels,
+    splats: &Splats,
+    camera: &Camera,
+    degree: u32,
+    frame: &Frame,
+    grads: &wgpu::Buffer,
+    out: &wgpu::Buffer,
+) -> Result<()> {
+    let uniform = gpu.uniform("splat camera", &camera_params(camera, splats.count, degree));
+    gpu.run(&kernels.project_backward, &[&uniform, &splats.params, &frame.projected, grads, out], splats.count as u64).await
+}
+
+/// Weights of the loss terms (our trainer's, after gsplat's 2DGS example): `l1` L1 + `ssim` (1 - SSIM) of the
+/// colour against the photo (background outside the mask), `mask` L1 of the opacity against the mask, `normal`
+/// disagreement of the splats' normals with the median depth's, `distortion` depth distortion.
+#[derive(Clone, Copy, Debug)]
+pub struct Weights {
+    pub l1: f32,
+    pub ssim: f32,
+    pub mask: f32,
+    pub normal: f32,
+    pub distortion: f32,
+}
+
+impl Default for Weights {
+    fn default() -> Self {
+        Weights { l1: 0.8, ssim: 0.2, mask: 0.1, normal: 0.05, distortion: 0.01 }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct ImageParams {
+    width: u32,
+    height: u32,
+    pad: [u32; 2],
+    a: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct ViewParams {
+    width: u32,
+    height: u32,
+    pad: [u32; 2],
+    rotation: [[f32; 4]; 3],
+    intrinsics: [f32; 4],
+    origin: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct LossParams {
+    width: u32,
+    height: u32,
+    pad: [u32; 2],
+    weights: [f32; 4],
+    background: [f32; 4],
+    rotation: [[f32; 4]; 3],
+}
+
+/// Per-pixel buffers of the loss for one image size.
+pub struct Loss {
+    /// The photo as RGBA8 with the mask in alpha.
+    pub photo: wgpu::Buffer,
+    maps: wgpu::Buffer,
+    blur_tmp: wgpu::Buffer,
+    stats: wgpu::Buffer,
+    ssim_grads: wgpu::Buffer,
+    ssim_blurred: wgpu::Buffer,
+    pub ssim: wgpu::Buffer,
+    surface: wgpu::Buffer,
+    dsurface: wgpu::Buffer,
+    ddiff: wgpu::Buffer,
+    /// Gradients of the rendered images ([`DPIXEL`] per pixel), for [`raster_backward`].
+    pub dpixels: wgpu::Buffer,
+    /// Per pixel: |b - a| over the channels, -, |alpha - mask|, 1 - n . s alpha, distortion (SSIM in `ssim`).
+    pub terms: wgpu::Buffer,
+}
+
+impl Loss {
+    pub fn new(gpu: &Gpu, width: u32, height: u32) -> Self {
+        let p = (width * height) as u64;
+        let f = |label: &str, floats: u64| gpu.zeroed(label, floats * 4);
+        Loss {
+            photo: f("splat photo", p),
+            maps: f("splat maps", p * 15),
+            blur_tmp: f("splat blur", p * 15),
+            stats: f("splat stats", p * 15),
+            ssim_grads: f("splat ssim grads", p * 9),
+            ssim_blurred: f("splat ssim blurred", p * 9),
+            ssim: f("splat ssim", p),
+            surface: f("splat surface", p * 8),
+            dsurface: f("splat dsurface", p * 4),
+            ddiff: f("splat ddiff", p * 6),
+            dpixels: f("splat dpixels", p * DPIXEL as u64),
+            terms: f("splat terms", p * 5),
+        }
+    }
+}
+
+fn view_params(camera: &Camera) -> ViewParams {
+    let (r, c) = (camera.rotation, camera.centre());
+    ViewParams {
+        width: camera.width,
+        height: camera.height,
+        pad: [0; 2],
+        rotation: std::array::from_fn(|i| [r[i][0], r[i][1], r[i][2], 0.0]),
+        intrinsics: camera.intrinsics,
+        origin: [c[0], c[1], c[2], 0.0],
+    }
+}
+
+async fn blur(
+    gpu: &Gpu,
+    kernels: &Kernels,
+    camera: &Camera,
+    planes: u32,
+    source: &wgpu::Buffer,
+    tmp: &wgpu::Buffer,
+    out: &wgpu::Buffer,
+) -> Result<()> {
+    let count = (camera.width * camera.height * planes) as u64;
+    for (axis, from, to) in [(0, source, tmp), (1, tmp, out)] {
+        let uniform = gpu.uniform("splat blur", &Quad { a: camera.width, b: camera.height, c: planes, d: axis });
+        gpu.run(&kernels.blur, &[&uniform, from, to], count).await?;
+    }
+    Ok(())
+}
+
+/// The loss of the rendering in `frame` against `loss.photo`, and its gradients in `loss.dpixels`.
+pub async fn loss_backward(
+    gpu: &Gpu,
+    kernels: &Kernels,
+    camera: &Camera,
+    frame: &Frame,
+    loss: &Loss,
+    weights: &Weights,
+    background: [f32; 3],
+) -> Result<()> {
+    let p = (camera.width * camera.height) as u64;
+    let bg = [background[0], background[1], background[2], 0.0];
+    let uniform = gpu.uniform("splat prepare", &ImageParams { width: camera.width, height: camera.height, pad: [0; 2], a: bg });
+    gpu.run(&kernels.loss_prepare, &[&uniform, &frame.pixels, &loss.photo, &loss.maps], p).await?;
+    blur(gpu, kernels, camera, 15, &loss.maps, &loss.blur_tmp, &loss.stats).await?;
+    let scale = -weights.ssim / (3.0 * p as f32);
+    let uniform =
+        gpu.uniform("splat ssim", &ImageParams { width: camera.width, height: camera.height, pad: [0; 2], a: [scale, 0.0, 0.0, 0.0] });
+    gpu.run(&kernels.ssim, &[&uniform, &loss.stats, &loss.ssim_grads, &loss.ssim], p).await?;
+    blur(gpu, kernels, camera, 9, &loss.ssim_grads, &loss.blur_tmp, &loss.ssim_blurred).await?;
+    let view = gpu.uniform("splat view", &view_params(camera));
+    gpu.run(&kernels.surface, &[&view, &frame.pixels, &loss.surface], p).await?;
+    let r = camera.rotation;
+    let uniform = gpu.uniform(
+        "splat loss",
+        &LossParams {
+            width: camera.width,
+            height: camera.height,
+            pad: [0; 2],
+            weights: [weights.l1, weights.mask, weights.normal, weights.distortion],
+            background: bg,
+            rotation: std::array::from_fn(|i| [r[i][0], r[i][1], r[i][2], 0.0]),
+        },
+    );
+    gpu.run(
+        &kernels.loss_grad,
+        &[&uniform, &frame.pixels, &loss.maps, &loss.ssim_blurred, &loss.photo, &loss.surface, &loss.dpixels, &loss.dsurface, &loss.terms],
+        p,
+    )
+    .await?;
+    gpu.run(&kernels.surface_backward, &[&view, &frame.pixels, &loss.surface, &loss.dsurface, &loss.ddiff], p).await?;
+    gpu.run(&kernels.median_grad, &[&view, &loss.ddiff, &loss.dpixels], p).await
+}
+
+/// The photo (RGB, 8 bits) and mask as one RGBA8 word per pixel.
+pub fn pack_photo(rgb: &[u8], mask: &[bool]) -> Vec<u32> {
+    mask.iter()
+        .enumerate()
+        .map(|(i, m)| u32::from_le_bytes([rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2], if *m { 255 } else { 0 }]))
+        .collect()
 }

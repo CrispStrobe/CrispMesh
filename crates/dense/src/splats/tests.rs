@@ -26,9 +26,9 @@ pub fn scene(gpu: &Gpu, npz: &Npz) -> (Splats, Camera, u32) {
     let rest = shn.len() / n;
     let sh: Vec<f32> =
         (0..n).flat_map(|g| sh0[g * 3..g * 3 + 3].iter().chain(&shn[g * rest..(g + 1) * rest]).copied().collect::<Vec<_>>()).collect();
-    let splats =
-        Splats::new(gpu, &get(npz, "param/means"), &get(npz, "param/quats"), &get(npz, "param/scales"), &get(npz, "param/opacities"), &sh)
-            .unwrap();
+    let rows =
+        pack(&get(npz, "param/means"), &get(npz, "param/quats"), &get(npz, "param/scales"), &get(npz, "param/opacities"), &sh).unwrap();
+    let splats = Splats::new(gpu, &rows).unwrap();
     let v = get(npz, "viewmat");
     let k = get(npz, "K");
     let camera = Camera {
@@ -183,6 +183,84 @@ fn raster_backward_matches_the_reference() {
         let (largest, off) = compare(&values, &reference, 1e-3);
         println!("{name:16} largest {largest:.2e}, {off} off");
         if off > 0 {
+            failed.push(name);
+        }
+    }
+    let params = gpu.zeroed("param grads", (n * PARAMS as usize * 4) as u64);
+    block_on(project_backward(&gpu, &kernels, &splats, &camera, degree, &frame, &grads, &params)).expect("projection backward");
+    let ours: Vec<f32> = block_on(gpu.read(&params, n * PARAMS as usize)).unwrap();
+    let column = |range: std::ops::Range<usize>| -> Vec<f32> {
+        (0..n).flat_map(|g| range.clone().map(move |k| (g, k))).map(|(g, k)| ours[g * PARAMS as usize + k]).collect()
+    };
+    for (name, values, reference) in [
+        ("means", column(MEAN..MEAN + 3), get(&npz, "grad/means")),
+        ("quats", column(QUAT..QUAT + 4), get(&npz, "grad/quats")),
+        ("scales", column(SCALE..SCALE + 3), get(&npz, "grad/scales")),
+        ("opacities", column(OPACITY..OPACITY + 1), get(&npz, "grad/opacities")),
+        ("sh0", column(SH0..SH0 + 3), get(&npz, "grad/sh0")),
+        ("shN", column(SHN..SHN + 45), get(&npz, "grad/shN")),
+    ] {
+        let (largest, off) = compare(&values, &reference, 1e-3);
+        println!("{name:16} largest {largest:.2e}, {off} off");
+        if off > 0 {
+            failed.push(name);
+        }
+    }
+    assert!(failed.is_empty(), "differ from the reference: {failed:?}");
+}
+
+/// The loss's image gradients and terms against the reference's.
+#[test]
+fn loss_matches_the_reference() {
+    let Some(npz) = fixture() else { return };
+    let gpu = Gpu::new().expect("GPU");
+    let kernels = block_on(Kernels::new(&gpu)).expect("kernels");
+    let (splats, camera, degree) = scene(&gpu, &npz);
+    let mut frame = Frame::new(&gpu, splats.count, &camera);
+    block_on(render(&gpu, &kernels, &splats, &camera, degree, &mut frame)).expect("render");
+    let p = (camera.width * camera.height) as usize;
+    let (pixels, mask) = (get(&npz, "pixels"), get(&npz, "mask"));
+    let rgb: Vec<u8> = pixels.iter().map(|v| (v * 255.0).round() as u8).collect();
+    let inside: Vec<bool> = mask.iter().map(|m| *m > 0.5).collect();
+    let loss = Loss::new(&gpu, camera.width, camera.height);
+    gpu.write(&loss.photo, &pack_photo(&rgb, &inside));
+    let bg = get(&npz, "background");
+    block_on(loss_backward(&gpu, &kernels, &camera, &frame, &loss, &Weights::default(), [bg[0], bg[1], bg[2]])).expect("loss");
+    let dpixels: Vec<f32> = block_on(gpu.read(&loss.dpixels, p * DPIXEL as usize)).unwrap();
+    let terms: Vec<f32> = block_on(gpu.read(&loss.terms, p * 5)).unwrap();
+    let ssim: Vec<f32> = block_on(gpu.read(&loss.ssim, p)).unwrap();
+    let column = |range: std::ops::Range<usize>| -> Vec<f32> {
+        (0..p).flat_map(|i| range.clone().map(move |k| (i, k))).map(|(i, k)| dpixels[i * DPIXEL as usize + k]).collect()
+    };
+    let r = camera.rotation;
+    let dn = get(&npz, "dimage/normals");
+    let camera_normals: Vec<f32> =
+        (0..p).flat_map(|i| (0..3).map(move |k| (i, k))).map(|(i, k)| (0..3).map(|j| r[k][j] * dn[i * 3 + j]).sum::<f32>()).collect();
+    let mut failed = Vec::new();
+    for (name, values, reference) in [
+        ("colours", column(0..3), get(&npz, "dimage/colours")),
+        ("alpha", column(3..4), get(&npz, "dimage/alpha")),
+        ("normals", column(4..7), camera_normals),
+        ("distort", column(7..8), get(&npz, "dimage/distort")),
+        ("median", column(8..9), get(&npz, "dimage/median")),
+    ] {
+        let (largest, off) = compare(&values, &reference, 1e-3);
+        println!("{name:16} largest {largest:.2e}, {off} off");
+        if off > 0 {
+            failed.push(name);
+        }
+    }
+    let mean = |k: usize, d: f32| terms.iter().skip(k).step_by(5).map(|v| *v as f64).sum::<f64>() / (p as f64 * d as f64);
+    for (name, ours, reference) in [
+        ("l1", mean(0, 3.0), get(&npz, "l1")[0]),
+        ("ssim", ssim.iter().map(|v| *v as f64).sum::<f64>() / (3 * p) as f64, get(&npz, "ssim")[0]),
+        ("mask_l1", mean(2, 1.0), get(&npz, "mask_l1")[0]),
+        ("normal", mean(3, 1.0), get(&npz, "normal")[0]),
+        ("distortion", mean(4, 1.0), get(&npz, "distortion")[0]),
+    ] {
+        let error = (ours - reference as f64).abs() / (reference as f64).abs().max(1e-12);
+        println!("{name:16} {ours:.6} reference {reference:.6} ({error:.1e})");
+        if error > 1e-4 {
             failed.push(name);
         }
     }

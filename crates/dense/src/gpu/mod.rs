@@ -468,7 +468,7 @@ pub fn tests_enabled() -> bool {
 mod tests {
     use wgpu::naga;
 
-    const SHADERS: [(&str, &str); 38] = [
+    const SHADERS: [(&str, &str); 46] = [
         ("carve", include_str!("../shaders/carve.wgsl")),
         ("cover", include_str!("../shaders/cover.wgsl")),
         ("fuse", include_str!("../shaders/fuse.wgsl")),
@@ -507,6 +507,14 @@ mod tests {
         ("splat_ranges", include_str!("../shaders/splat_ranges.wgsl")),
         ("splat_raster", include_str!("../shaders/splat_raster.wgsl")),
         ("splat_raster_backward", include_str!("../shaders/splat_raster_backward.wgsl")),
+        ("splat_project_backward", include_str!("../shaders/splat_project_backward.wgsl")),
+        ("splat_loss_prepare", include_str!("../shaders/splat_loss_prepare.wgsl")),
+        ("splat_blur", include_str!("../shaders/splat_blur.wgsl")),
+        ("splat_ssim", include_str!("../shaders/splat_ssim.wgsl")),
+        ("splat_surface", include_str!("../shaders/splat_surface.wgsl")),
+        ("splat_loss_grad", include_str!("../shaders/splat_loss_grad.wgsl")),
+        ("splat_surface_backward", include_str!("../shaders/splat_surface_backward.wgsl")),
+        ("splat_median_grad", include_str!("../shaders/splat_median_grad.wgsl")),
     ];
 
     /// Every kernel parses and validates without a GPU, uses plain WebGPU

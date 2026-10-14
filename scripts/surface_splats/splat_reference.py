@@ -190,7 +190,7 @@ def scene(seed):
     R = np.stack([right, down, forward]); viewmat = np.eye(4); viewmat[:3, :3] = R; viewmat[:3, 3] = -R @ eye
     K = np.array([[70.0, 0, W / 2 + 0.3], [0, 70.0, H / 2 - 0.4], [0, 0, 1]])
     yy, xx = np.mgrid[0:H, 0:W]
-    pixels = np.stack([0.5 + 0.4 * np.sin(xx / 7.0 + c) * np.cos(yy / 9.0 - c) for c in range(3)], -1)
+    pixels = np.round(np.stack([0.5 + 0.4 * np.sin(xx / 7.0 + c) * np.cos(yy / 9.0 - c) for c in range(3)], -1) * 255) / 255   # 8-bit, as photos are
     mask = (((xx - W / 2) / (W / 3)) ** 2 + ((yy - H / 2) / (H / 3)) ** 2 < 1).astype(np.float64)
     return params, viewmat, K, W, H, degree, pixels, mask, np.array([0.2, 0.6, 0.9])
 

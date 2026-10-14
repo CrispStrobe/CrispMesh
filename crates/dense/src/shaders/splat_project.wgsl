@@ -16,15 +16,14 @@ struct Camera {
 }
 
 @group(0) @binding(0) var<uniform> camera: Camera;
-@group(0) @binding(1) var<storage, read> means: array<f32>;
-@group(0) @binding(2) var<storage, read> quats: array<f32>;
-@group(0) @binding(3) var<storage, read> scales: array<f32>;
-@group(0) @binding(4) var<storage, read> opacities: array<f32>;
-@group(0) @binding(5) var<storage, read> sh: array<f32>;
-@group(0) @binding(6) var<storage, read_write> projected: array<f32>;
-@group(0) @binding(7) var<storage, read_write> sort: array<u32>;
+// Per splat in `splats` (stride 60): mean (3), quaternion w, x, y, z (4), log scales (3), logit opacity, spherical
+// harmonics (16 x 3), unused.
+@group(0) @binding(1) var<storage, read> splats: array<f32>;
+@group(0) @binding(2) var<storage, read_write> projected: array<f32>;
+@group(0) @binding(3) var<storage, read_write> sort: array<u32>;
 
 const STRIDE: u32 = 24u;
+const PARAMS: u32 = 60u;
 const TILE: f32 = 16.0;
 
 fn rotation(q: vec4<f32>) -> mat3x3<f32> {
@@ -39,8 +38,8 @@ fn rotation(q: vec4<f32>) -> mat3x3<f32> {
 }
 
 fn sh_colour(g: u32, dir: vec3<f32>) -> vec3<f32> {
-    let base = g * 48u;
-    var c = vec3<f32>(sh[base], sh[base + 1u], sh[base + 2u]) * 0.2820947917738781;
+    let base = g * PARAMS + 11u;
+    var c = vec3<f32>(splats[base], splats[base + 1u], splats[base + 2u]) * 0.2820947917738781;
     if (camera.degree >= 1u) {
         let x = dir.x; let y = dir.y; let z = dir.z;
         let a = -0.48860251190292;
@@ -61,7 +60,7 @@ fn sh_colour(g: u32, dir: vec3<f32>) -> vec3<f32> {
             }
         }
         for (var k = 1u; k < n; k++) {
-            c += vec3<f32>(sh[base + k * 3u], sh[base + k * 3u + 1u], sh[base + k * 3u + 2u]) * b[k];
+            c += vec3<f32>(splats[base + k * 3u], splats[base + k * 3u + 1u], splats[base + k * 3u + 2u]) * b[k];
         }
     }
     return max(c + 0.5, vec3<f32>(0.0));
@@ -73,10 +72,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (g >= camera.count) { return; }
     let R = transpose(mat3x3<f32>(camera.rotation0.xyz, camera.rotation1.xyz, camera.rotation2.xyz));
     let t = vec3<f32>(camera.rotation0.w, camera.rotation1.w, camera.rotation2.w);
-    let mean = vec3<f32>(means[g * 3u], means[g * 3u + 1u], means[g * 3u + 2u]);
+    let p = g * PARAMS;
+    let mean = vec3<f32>(splats[p], splats[p + 1u], splats[p + 2u]);
     let mean_c = R * mean + t;
-    let s = exp(vec3<f32>(scales[g * 3u], scales[g * 3u + 1u], scales[g * 3u + 2u]));
-    let rs = rotation(vec4<f32>(quats[g * 4u], quats[g * 4u + 1u], quats[g * 4u + 2u], quats[g * 4u + 3u]));
+    let s = exp(vec3<f32>(splats[p + 7u], splats[p + 8u], splats[p + 9u]));
+    let rs = rotation(vec4<f32>(splats[p + 3u], splats[p + 4u], splats[p + 5u], splats[p + 6u]));
     let rs_c = R * mat3x3<f32>(rs[0] * s.x, rs[1] * s.y, rs[2] * s.z);
     var normal = rs_c[2];
     if (-dot(normal, mean_c) <= 0.0) { normal = -normal; }
@@ -114,7 +114,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     projected[base + 9u] = col2.x; projected[base + 10u] = col2.y; projected[base + 11u] = col2.z;
     projected[base + 12u] = normal.x; projected[base + 13u] = normal.y; projected[base + 14u] = normal.z;
     projected[base + 15u] = colour.x; projected[base + 16u] = colour.y; projected[base + 17u] = colour.z;
-    projected[base + 18u] = 1.0 / (1.0 + exp(-opacities[g]));
+    projected[base + 18u] = 1.0 / (1.0 + exp(-splats[p + 10u]));
     projected[base + 19u] = radius.x;
     projected[base + 20u] = radius.y;
     let tiles = vec2<f32>(f32(camera.tiles_x), f32(camera.tiles_y));
