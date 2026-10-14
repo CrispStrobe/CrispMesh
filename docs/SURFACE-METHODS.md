@@ -150,10 +150,13 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
 2. **Silhouette-only mode** that skips the main matching: with the refinement after it, the fast path
    to the same result on captures from several heights (about 3 to 4 minutes instead of 10 to 12).
 3. **A surface optimised as a whole is the quality target.** NeuS-facto shows what these photos
-   contain; nothing in our pipeline reaches that relief. Candidates for our stack (Rust, WebGPU): a
-   signed-distance grid optimised by re-rendering (slow on a T4 in pure PyTorch: two hours; hash-grid
-   CUDA code is minutes, and a dense grid inside our hull is the WebGPU-friendly form), or 2D splats
-   (20 minutes on a T4, a rasteriser with gradients to write). Both are per-scan optimisers, not
-   models to download. To decide: time and memory of each on Apple and browser GPUs.
+   contain; nothing in our pipeline reaches that relief. Both kinds (a signed-distance surface optimised by
+   re-rendering, and 2D splats) are per-scan optimisers, not models to download; both are wanted, on WebGPU and
+   on MLX, natively. First step: the reference model ported to MLX as a prototype
+   ([scripts/neural_surface](../scripts/neural_surface/README.md)). Started from our silhouette hull with the
+   original NeuS sampler, it reaches 0.755 / 0.928 / 0.999 on the drill after 2 000 of 20 000 steps (about
+   70 minutes on an M1) and looks like the reference with less fine relief so far. About 6 times slower per
+   step than the reference on a T4; the speedups are next (smaller network, fewer rendered samples, fewer steps
+   from the hull start, gradients by hand), each a switch checked against the reference at equal steps.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel
    averaging for single-turn captures.
