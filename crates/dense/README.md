@@ -1270,11 +1270,15 @@ NeuS opacities, the original NeuS sampler limited to a band around our silhouett
 hull's distance, Adam with warm-up and cosine schedule, mesh by marching cubes on the network's zero surface.
 
 ```
-crisp3ds-dense surface PACK OUT [steps=20000 stop=0 rays=1024 parts=4 hull=600 band=0.05 snapshot=0 mesh=512 seed=0 ...]
+crisp3ds-dense surface SOURCE OUT [steps=20000 stop=0 rays=1024 parts=4 hull=600 band=0.05 snapshot=0 mesh=512 seed=0 ...]
 ```
 
-`PACK` is what `scripts/neural_surface/pack_scene.py` writes from a scene (cropped photos and masks, cameras,
-hull points and normals). Every setting is the prototype's default.
+`SOURCE` is a pack that `scripts/neural_surface/pack_scene.py` writes (cropped photos and masks, cameras, hull
+points and normals), or an inputs directory with `hull_mesh=STL` (our silhouette mesh) and optionally
+`photos=DIR`, `masks=DIR` (folders replacing the inputs' original photos and masks) and `div=N` (2): the same
+scene is then made here, without Python. On the mustard bottle that scene equals the pack's (masks on all 91
+million pixels, intrinsics exactly, colours within the pack's JPEG noise, centre and radius within 0.01 %).
+Every setting is the prototype's default.
 
 There is no automatic differentiation: each kernel (`src/shaders/surface_*.wgsl`) has a hand-written backward
 kernel. The distance's gradient, which the normals, the NeuS cosine and the eikonal term need, comes from

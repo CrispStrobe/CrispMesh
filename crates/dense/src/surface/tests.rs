@@ -357,3 +357,43 @@ fn training_steps_match_mlx() {
     }
     assert!(failed.is_empty(), "differ from MLX: {failed:?}");
 }
+
+/// A scene made from an inputs directory against the pack `pack_scene.py` made from the same files
+/// (CRISP3DS_SURFACE_INPUTS, _MASKS, _HULL and _INPUTS_PACK; the pack's photos are JPEG, its hull samples random).
+#[test]
+fn scene_from_inputs_matches_the_pack() {
+    let var = |name: &str| std::env::var(name).ok().map(std::path::PathBuf::from);
+    let (Some(inputs), Some(masks), Some(hull), Some(pack)) =
+        (var("CRISP3DS_SURFACE_INPUTS"), var("CRISP3DS_SURFACE_MASKS"), var("CRISP3DS_SURFACE_HULL"), var("CRISP3DS_SURFACE_INPUTS_PACK"))
+    else {
+        return;
+    };
+    let ours = train::scene_from_inputs(&inputs, var("CRISP3DS_SURFACE_PHOTOS").as_deref(), Some(&masks), &hull, 2, 0).expect("scene");
+    let theirs = train::load_pack(&pack).expect("pack");
+    assert_eq!(ours.views.len(), theirs.views.len());
+    let radius = |s: &train::Scene| 1.0 / (1.15 * s.unit);
+    let shift = (0..3).map(|i| (ours.centre[i] - theirs.centre[i]).powi(2)).sum::<f64>().sqrt();
+    println!("centre shift {:.2e} of the radius, radius ratio {:.5}", shift / radius(&theirs), radius(&ours) / radius(&theirs));
+    assert!(shift < 0.01 * radius(&theirs) && (radius(&ours) / radius(&theirs) - 1.0).abs() < 0.01);
+    let (mut mask_off, mut pixels, mut colour) = (0usize, 0usize, 0f64);
+    for (a, b) in ours.views.iter().zip(&theirs.views) {
+        assert_eq!((a.width, a.height), (b.width, b.height));
+        for i in 0..4 {
+            assert!((a.intrinsics[i] - b.intrinsics[i]).abs() < 1e-9, "intrinsics {i}: {} {}", a.intrinsics[i], b.intrinsics[i]);
+        }
+        for p in 0..a.mask.len() {
+            pixels += 1;
+            if a.mask[p] != b.mask[p] {
+                mask_off += 1;
+            } else if a.mask[p] {
+                colour += (0..3).map(|k| (a.image[p * 3 + k] as f64 - b.image[p * 3 + k] as f64).abs()).sum::<f64>() / 3.0;
+            }
+        }
+    }
+    let inside = theirs.views.iter().map(|v| v.mask.iter().filter(|m| **m).count()).sum::<usize>();
+    println!(
+        "masks differ on {mask_off} of {pixels} pixels; mean colour difference inside {:.2} (JPEG in the pack)",
+        colour / inside as f64
+    );
+    assert!(mask_off * 1000 < pixels && colour / (inside as f64) < 3.0);
+}

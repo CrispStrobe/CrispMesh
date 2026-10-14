@@ -179,6 +179,158 @@ pub fn load_pack(pack: &Path) -> Result<Scene> {
     Ok(Scene { views, centre, unit, hull_points, hull_normals: read("hull_normals.npy")? })
 }
 
+/// A scene straight from an inputs directory (cameras.json with each view's original photo `texture_image`, else
+/// `image`, and `mask`; `photos` and `masks` replace their folders), as `pack_scene.py` packs it: every view cropped to one
+/// common window around its mask (48 pixels of margin, a multiple of 16 times `div`), reduced by `div` (block
+/// means, as OpenCV's area resize for a whole factor; masks kept where the mean is at least 128), with the crop's
+/// intrinsics; 100 000 area-weighted samples of the hull mesh with their triangles' normals.
+pub fn scene_from_inputs(
+    inputs: &Path,
+    photos: Option<&Path>,
+    masks: Option<&Path>,
+    hull_mesh: &Path,
+    div: usize,
+    seed: u64,
+) -> Result<Scene> {
+    ensure!(div >= 1, "div must be at least 1");
+    let cameras: serde_json::Value = serde_json::from_slice(&std::fs::read(inputs.join("cameras.json")).context("cameras.json")?)?;
+    let views = cameras["views"].as_array().ok_or_else(|| anyhow!("cameras.json has no views"))?;
+    let mask_path = |view: &serde_json::Value| -> std::path::PathBuf {
+        let name = view["name"].as_str().unwrap_or_default();
+        match masks {
+            Some(dir) => dir.join(format!("{name}.png")),
+            None => inputs.join(view["mask"].as_str().unwrap_or_default()),
+        }
+    };
+    let read_mask = |view: &serde_json::Value| -> Result<image::GrayImage> {
+        let path = mask_path(view);
+        Ok(image::open(&path).with_context(|| path.display().to_string())?.to_luma8())
+    };
+    // The common window: the largest mask box plus margins, in steps of 16 div.
+    let boxes = views
+        .par_iter()
+        .map(|view| -> Result<[usize; 4]> {
+            let mask = read_mask(view)?;
+            let (mut x0, mut y0, mut x1, mut y1) = (usize::MAX, usize::MAX, 0, 0);
+            for (x, y, value) in mask.enumerate_pixels() {
+                if value[0] > 127 {
+                    let (x, y) = (x as usize, y as usize);
+                    (x0, y0, x1, y1) = (x0.min(x), y0.min(y), x1.max(x + 1), y1.max(y + 1));
+                }
+            }
+            ensure!(x1 > 0, "empty mask for {}", view["name"]);
+            Ok([x0, y0, x1, y1])
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let unit = 16 * div;
+    let margin = 48;
+    let cw = (boxes.iter().map(|b| b[2] - b[0]).max().unwrap_or(0) + 2 * margin).div_ceil(unit) * unit;
+    let ch = (boxes.iter().map(|b| b[3] - b[1]).max().unwrap_or(0) + 2 * margin).div_ceil(unit) * unit;
+    let (width, height) = (cw / div, ch / div);
+    let triangles = crate::stl::read_binary(hull_mesh)?.0;
+    let area = |t: &crate::stl::Triangle| {
+        let (a, b, c) = (t[0].map(f64::from), t[1].map(f64::from), t[2].map(f64::from));
+        let n = cross(sub(b, a), sub(c, a));
+        (n, (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt())
+    };
+    let mut cumulative = Vec::with_capacity(triangles.len());
+    let mut total = 0.0;
+    for t in &triangles {
+        total += area(t).1;
+        cumulative.push(total);
+    }
+    ensure!(total > 0.0, "the hull mesh has no area");
+    let mut random = Random::new(seed ^ 0x5eed);
+    let mut points = Vec::with_capacity(100_000);
+    let mut normals = Vec::with_capacity(100_000);
+    for _ in 0..100_000 {
+        let pick = random.uniform() * total;
+        let t = &triangles[cumulative.partition_point(|c| *c < pick).min(triangles.len() - 1)];
+        let (mut u, mut v) = (random.uniform(), random.uniform());
+        if u + v > 1.0 {
+            (u, v) = (1.0 - u, 1.0 - v);
+        }
+        let (a, b, c) = (t[0].map(f64::from), t[1].map(f64::from), t[2].map(f64::from));
+        points.push(std::array::from_fn::<f64, 3, _>(|i| a[i] + u * (b[i] - a[i]) + v * (c[i] - a[i])));
+        let (n, length) = area(t);
+        normals.push(n.map(|x| x / length.max(1e-30)));
+    }
+    let low: [f64; 3] = std::array::from_fn(|i| points.iter().map(|p| p[i]).fold(f64::INFINITY, f64::min));
+    let high: [f64; 3] = std::array::from_fn(|i| points.iter().map(|p| p[i]).fold(f64::NEG_INFINITY, f64::max));
+    let centre: [f64; 3] = std::array::from_fn(|i| 0.5 * (low[i] + high[i]));
+    let radius = points.iter().map(|p| (0..3).map(|i| (p[i] - centre[i]).powi(2)).sum::<f64>().sqrt()).fold(0.0, f64::max);
+    let unit_scale = 1.0 / (1.15 * radius);
+    let views = views
+        .par_iter()
+        .zip(&boxes)
+        .map(|(view, b)| -> Result<View> {
+            let photo = Path::new(view["texture_image"].as_str().or_else(|| view["image"].as_str()).unwrap_or_default());
+            let photo = match photos {
+                Some(dir) => dir.join(photo.file_name().unwrap_or_default()),
+                None => inputs.join(photo),
+            };
+            let rgb = image::open(&photo).with_context(|| photo.display().to_string())?.to_rgb8();
+            let mask = read_mask(view)?;
+            ensure!(rgb.dimensions() == mask.dimensions(), "photo and mask sizes differ for {}", view["name"]);
+            let (w, h) = (mask.width() as usize, mask.height() as usize);
+            ensure!(w >= cw && h >= ch, "the common window {cw} x {ch} is larger than the photo {w} x {h}");
+            let x0 = (((b[0] + b[2]) / 2) as i64 - (cw / 2) as i64).clamp(0, (w - cw) as i64) as usize;
+            let y0 = (((b[1] + b[3]) / 2) as i64 - (ch / 2) as i64).clamp(0, (h - ch) as i64) as usize;
+            let (rgb, mask) = (rgb.into_raw(), mask.into_raw());
+            let mut image = vec![0u8; width * height * 3];
+            let mut inside = vec![false; width * height];
+            let block = (div * div) as f64;
+            for y in 0..height {
+                for x in 0..width {
+                    let mut sum = [0f64; 4];
+                    for dy in 0..div {
+                        for dx in 0..div {
+                            let pixel = (y0 + y * div + dy) * w + x0 + x * div + dx;
+                            for k in 0..3 {
+                                sum[k] += rgb[pixel * 3 + k] as f64;
+                            }
+                            sum[3] += mask[pixel] as f64;
+                        }
+                    }
+                    let m = sum[3] / block >= 127.5;
+                    inside[y * width + x] = m;
+                    for k in 0..3 {
+                        image[(y * width + x) * 3 + k] = if m { (sum[k] / block).round() as u8 } else { 0 };
+                    }
+                }
+            }
+            let k = view["k"].as_array().ok_or_else(|| anyhow!("view without k"))?;
+            let k: Vec<f64> = k.iter().map(|v| v.as_f64().unwrap_or(f64::NAN)).collect();
+            ensure!(k.len() == 4, "k must be fx, fy, cx, cy");
+            let rows = view["rotation"].as_array().ok_or_else(|| anyhow!("rotation"))?;
+            ensure!(rows.len() == 3, "rotation");
+            let rotation = [vec3(&rows[0])?, vec3(&rows[1])?, vec3(&rows[2])?];
+            let t = vec3(&view["translation"])?;
+            let origin = std::array::from_fn(|i| (-(0..3).map(|j| rotation[j][i] * t[j]).sum::<f64>() - centre[i]) * unit_scale);
+            let d = div as f64;
+            Ok(View {
+                width,
+                height,
+                image,
+                mask: inside,
+                intrinsics: [k[0] / d, k[1] / d, (k[2] - x0 as f64) / d, (k[3] - y0 as f64) / d],
+                rotation,
+                origin,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let hull_points = points.iter().map(|p| std::array::from_fn(|i| (p[i] - centre[i]) * unit_scale)).collect();
+    Ok(Scene { views, centre, unit: unit_scale, hull_points, hull_normals: normals })
+}
+
+fn sub(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    std::array::from_fn(|i| a[i] - b[i])
+}
+
+fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+}
+
 /// Exact nearest neighbours (a k-d tree over the points).
 pub(crate) struct Tree {
     points: Vec<[f64; 3]>,
@@ -447,11 +599,10 @@ async fn fit_hull(
     Ok(())
 }
 
-/// Trains on a pack and writes meshes into `out`; resumes from `out/checkpoint.npz`.
-pub async fn train(gpu: &Gpu, pack: &Path, out: &Path, settings: &Settings) -> Result<()> {
+/// Trains on a scene and writes meshes into `out`; resumes from `out/checkpoint.npz`.
+pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) -> Result<()> {
     let start = web_time::Instant::now();
     std::fs::create_dir_all(out)?;
-    let scene = load_pack(pack)?;
     let pixels: f64 = scene.views.iter().map(|v| v.mask.iter().filter(|m| **m).count() as f64 / v.mask.len() as f64).sum::<f64>()
         / scene.views.len() as f64;
     log(&start, &format!("{} views {}x{}, foreground {pixels:.3}", scene.views.len(), scene.views[0].width, scene.views[0].height));
@@ -474,7 +625,7 @@ pub async fn train(gpu: &Gpu, pack: &Path, out: &Path, settings: &Settings) -> R
     let batch = Batch::new(gpu, &shape, rays_per_part, settings.sampling.per_ray());
     let resolution = 160;
     let use_hull = settings.sampling.band > 0.0 || settings.hull_steps > 0;
-    let grid = if use_hull { hull_grid(&scene, resolution) } else { Vec::new() };
+    let grid = if use_hull { hull_grid(scene, resolution) } else { Vec::new() };
     log(&start, "hull grid");
     let hull = use_hull.then(|| Hull { grid: gpu.upload("surface hull", &grid), resolution: resolution as u32 });
     let band_hull = if settings.sampling.band > 0.0 { hull.as_ref() } else { None };
@@ -482,10 +633,10 @@ pub async fn train(gpu: &Gpu, pack: &Path, out: &Path, settings: &Settings) -> R
     if first_step > 0 {
         log(&start, &format!("resumed after step {} (optimiser moments restart)", first_step - 1));
     } else if settings.hull_steps > 0 {
-        fit_hull(gpu, &kernels, &model, &batch, &scene, &grid, resolution, settings.hull_steps, &mut random, &start).await?;
+        fit_hull(gpu, &kernels, &model, &batch, scene, &grid, resolution, settings.hull_steps, &mut random, &start).await?;
         model.begin_step(gpu, &kernels).await?;
         let triangles =
-            save_mesh(gpu, &kernels, &model, &batch, &scene, mesh_hull, settings.sampling.band, 256, &out.join("mesh-hull.stl")).await?;
+            save_mesh(gpu, &kernels, &model, &batch, scene, mesh_hull, settings.sampling.band, 256, &out.join("mesh-hull.stl")).await?;
         log(&start, &format!("hull mesh: {triangles} triangles"));
     }
     let end = if settings.stop > 0 { settings.stop } else { settings.steps };
@@ -506,7 +657,7 @@ pub async fn train(gpu: &Gpu, pack: &Path, out: &Path, settings: &Settings) -> R
         };
         model.begin_step(gpu, &kernels).await?;
         for _ in 0..settings.parts {
-            let (origins, data) = draw_rays(&scene, &mut random, rays_per_part as usize);
+            let (origins, data) = draw_rays(scene, &mut random, rays_per_part as usize);
             gpu.write(&batch.origins, &origins);
             gpu.write(&batch.ray_data, &data);
             profile.mark(gpu, &batch, 0).await?;
@@ -551,7 +702,7 @@ pub async fn train(gpu: &Gpu, pack: &Path, out: &Path, settings: &Settings) -> R
                 &kernels,
                 &model,
                 &batch,
-                &scene,
+                scene,
                 mesh_hull,
                 settings.sampling.band,
                 256,
@@ -568,7 +719,7 @@ pub async fn train(gpu: &Gpu, pack: &Path, out: &Path, settings: &Settings) -> R
     model.begin_step(gpu, &kernels).await?;
     let resolution = if settings.stop > 0 { 256 } else { settings.mesh as usize };
     let triangles =
-        save_mesh(gpu, &kernels, &model, &batch, &scene, mesh_hull, settings.sampling.band, resolution, &out.join("mesh.stl")).await?;
+        save_mesh(gpu, &kernels, &model, &batch, scene, mesh_hull, settings.sampling.band, resolution, &out.join("mesh.stl")).await?;
     let summary = serde_json::json!({"steps": settings.steps, "rays": settings.rays, "views": scene.views.len(), "train_seconds": train_seconds,
         "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "adapter": gpu.describe(), "history": history});
     std::fs::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
@@ -638,11 +789,15 @@ async fn save_checkpoint(gpu: &Gpu, model: &Model, step: u32, path: &Path) -> Re
 /// `crisp3ds-dense surface PACK OUT [NAME=VALUE ...]`
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main(arguments: &[String]) -> Result<()> {
-    const USAGE: &str = "usage: crisp3ds-dense surface PACK OUT [steps=N stop=N rays=N parts=N hull=N band=X coarse=N added=N \
-                         width=N features=N table=LOG2 mesh=N snapshot=N log=N seed=N]";
+    const USAGE: &str = "usage: crisp3ds-dense surface SOURCE OUT [steps=N stop=N rays=N parts=N hull=N band=X coarse=N added=N \
+                         width=N features=N table=LOG2 mesh=N snapshot=N log=N seed=N] [hull_mesh=STL photos=DIR masks=DIR div=N]
+SOURCE: a pack of scripts/neural_surface/pack_scene.py (scene.json), or an inputs directory (cameras.json) with
+hull_mesh (our silhouette mesh), optionally photos and masks (folders replacing the inputs' original photos
+and masks) and div (photo reduction, 2)";
     ensure!(arguments.len() >= 2, "{USAGE}");
-    let (pack, out) = (std::path::PathBuf::from(&arguments[0]), std::path::PathBuf::from(&arguments[1]));
+    let (source, out) = (std::path::PathBuf::from(&arguments[0]), std::path::PathBuf::from(&arguments[1]));
     let mut s = Settings::default();
+    let (mut hull_mesh, mut photos, mut masks, mut div) = (None, None, None, 2usize);
     for item in &arguments[2..] {
         let (name, value) = item.split_once('=').ok_or_else(|| anyhow!("expected NAME=VALUE, got {item}\n{USAGE}"))?;
         let int = || value.parse::<u32>().map_err(|_| anyhow!("{name} needs a whole number"));
@@ -662,10 +817,20 @@ pub fn main(arguments: &[String]) -> Result<()> {
             "snapshot" => s.snapshot = int()?,
             "log" => s.log_every = int()?,
             "seed" => s.seed = int()? as u64,
+            "hull_mesh" => hull_mesh = Some(std::path::PathBuf::from(value)),
+            "photos" => photos = Some(std::path::PathBuf::from(value)),
+            "masks" => masks = Some(std::path::PathBuf::from(value)),
+            "div" => div = int()? as usize,
             _ => bail!("unknown setting {name}\n{USAGE}"),
         }
     }
     ensure!(s.rays % s.parts == 0, "rays must be a multiple of parts");
+    let scene = if source.join("scene.json").exists() {
+        load_pack(&source)?
+    } else {
+        let hull_mesh = hull_mesh.ok_or_else(|| anyhow!("an inputs directory needs hull_mesh=STL\n{USAGE}"))?;
+        scene_from_inputs(&source, photos.as_deref(), masks.as_deref(), &hull_mesh, div, s.seed)?
+    };
     let gpu = Gpu::new()?;
-    crate::gpu::block_on(train(&gpu, &pack, &out, &s))
+    crate::gpu::block_on(train(&gpu, &scene, &out, &s))
 }
