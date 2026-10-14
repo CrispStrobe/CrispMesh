@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{ensure, Result};
 use bytemuck::{Pod, Zeroable};
 
 use super::*;
