@@ -451,6 +451,7 @@ pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) ->
 /// `crisp3ds-dense splats SOURCE OUT [NAME=VALUE ...]`
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main(arguments: &[String]) -> Result<()> {
+    use anyhow::{anyhow, bail};
     const USAGE: &str =
         "usage: crisp3ds-dense splats SOURCE OUT [steps=N stop=N log=N seed=N mesh=N] [hull_mesh=STL photos=DIR masks=DIR div=N]
 SOURCE as for `crisp3ds-dense surface`: a pack (scene.json) or an inputs directory with hull_mesh";
