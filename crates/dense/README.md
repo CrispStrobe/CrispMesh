@@ -68,6 +68,7 @@ described in [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 | `src/hull.rs`, `src/repair.rs`, `src/fusion.rs`, `src/stereo/` | Ports of `multiscale_stereo.py` |
 | `src/photos/` | From photos to the scene: mask and camera providers, gates, undistortion (port of `photos_to_inputs.py`) |
 | `src/surface/` | Neural surface trained by re-rendering the photos (port of `scripts/neural_surface/neus_facto_mlx.py`), experimental |
+| `src/splats/` | 2D Gaussian splats trained on the photos, with surface terms and a fused mesh, experimental |
 | `tools/colmap_pycolmap.py` | Stand-in for the `colmap` executable through the PyCOLMAP wheel (development aid) |
 | `src/main.rs` | `crisp3ds-dense <stage>` command line |
 
@@ -1312,6 +1313,38 @@ resident; the whole schedule in 95 minutes (the prototype 3.9 h, the reference 1
 The reference NeuS-facto run: 0.892 / 0.964 / 0.992, 0.0024. Rendered side by side the three final meshes show
 the same relief. Runs differ from one seed to the next: after 2 000 steps two seeds gave 0.687 / 0.912 / 0.992 and
 0.835 / 0.968 / 0.993 here.
+
+## 2D Gaussian splats: `crisp3ds-dense splats`
+
+Status: experimental, not part of `run`; first runs in progress. 2D Gaussian splatting (flat Gaussian disks) after
+gsplat's 2DGS (Apache-2.0, commit `937e299`) and our trainer after its example (the reference run on a Tesla T4),
+written anew for WebGPU:
+
+```
+crisp3ds-dense splats SOURCE OUT [steps=30000 stop=0 log=500 seed=42 mesh=512] [hull_mesh=STL photos=DIR masks=DIR div=N]
+```
+
+`SOURCE` as for `surface`. Splats start on every second hull sample; each step renders one photo on a random
+background; loss 0.8 L1 + 0.2 (1 - SSIM), 0.1 mask L1, from 3 000 steps 0.01 depth distortion, from 7 000 steps 0.05
+disagreement of the splats' normals with the normals of the median depth; Adam per parameter group; gsplat's default
+densification every 100 steps up to 15 000 (duplicate small splats with large screen gradients, split large ones,
+prune transparent and, later, oversized ones; its opacity reset never fires, a precedence slip in gsplat that the
+reference run inherited, so it is left out here too). Every tenth view is held out for PSNR. The mesh: each view's
+median depth fused (truncation 4 voxels, 512 cubed) in a band around the hull, marching cubes.
+
+Rendering: splats projected (ray transform, screen box, normal turned to the camera, colour from spherical harmonics
+up to degree 3), sorted by depth, one (tile, splat) pair per 16-pixel tile emitted in that order and sorted stably by
+tile, then composited per tile. The sort is a 4-bit radix sort from plain WebGPU (count, scan, stable scatter; scans in
+blocks of 1024). The backward rasterizer follows Brush's per-splat schedule: 32 invocations per tile each own a splat,
+the tile's pixels are replayed front to back on a diagonal with their running state in workgroup memory, and what
+lies behind a splat comes from the forward totals (one more forward total makes the distortion term work that way).
+All parameters of a splat sit in one row of 60 floats, so Adam is one kernel and densification copies rows.
+
+Checked against a dense PyTorch renderer of the same model ([`scripts/surface_splats`](../../scripts/surface_splats/README.md),
+whose projection and spherical harmonics equal gsplat's own to float rounding), `CRISP3DS_SPLAT_FIXTURE`: rendered
+colours, opacity, normals, depths and distortion within 1e-5; the loss terms within 1e-5; the gradients of the images,
+of the projected splats and of every parameter within 6e-5 (relative to the largest value); the radix sort stable on
+100 003 keys.
 
 ## Portability
 
