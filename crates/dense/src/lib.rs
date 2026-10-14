@@ -25,6 +25,7 @@ pub mod render;
 pub mod repair;
 pub mod run;
 pub mod scene;
+pub mod splats;
 pub mod stereo;
 pub mod stl;
 pub mod storage;
