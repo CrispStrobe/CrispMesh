@@ -170,8 +170,8 @@ struct AdamParams {
 }
 
 pub struct Kernels {
-    /// The same kernel per mode (forward, input gradient, weight gradient), so that profiles tell them apart.
-    matmul: [Kernel; 3],
+    /// The matrix product per mode (forward, input gradient, weight gradient) and tile width (64, 32).
+    matmul: [[Kernel; 2]; 3],
     encode: Kernel,
     encode_backward: Kernel,
     activate: Kernel,
@@ -190,28 +190,30 @@ pub struct Kernels {
     round: Kernel,
 }
 
-/// The matrix-product kernel for one mode, its accumulation and stores written out (see the shader).
-pub fn matmul_source(mode: u32) -> String {
+/// The matrix-product kernel for one mode and tile width (64 or 32 columns), its accumulation and stores written
+/// out (see the shader).
+pub fn matmul_source(mode: u32, width: u32) -> String {
+    let halves = width / 32;
     let mut accumulators = String::new();
     let mut inner = String::new();
     let mut store = String::new();
     for i in 0..8 {
-        for h in 0..2 {
+        for h in 0..halves {
             accumulators += &format!("    var c{i}{h} = vec4<f32>(0.0);\n");
         }
     }
-    for h in 0..2 {
-        let at = |q: u32| format!("tile_b[base + tc + {}u]", 8 * (4 * h + q));
+    for h in 0..halves {
+        let at = |q: u32| format!("tile_b[base_b + tc + {}u]", 8 * (4 * h + q));
         inner += &format!("            let b{h} = vec4<f32>({}, {}, {}, {});\n", at(0), at(1), at(2), at(3));
     }
     for i in 0..8 {
         inner += &format!("            let a{i} = tile_a[base + tr + {}u];\n", 8 * i);
-        for h in 0..2 {
+        for h in 0..halves {
             inner += &format!("            c{i}{h} += a{i} * b{h};\n");
         }
     }
     for i in 0..8 {
-        for h in 0..2 {
+        for h in 0..halves {
             for q in 0..4 {
                 store += &format!(
                     "    store(m0 + tr + {}u, n0 + tc + {}u, chunk, c{i}{h}.{});\n",
@@ -224,18 +226,36 @@ pub fn matmul_source(mode: u32) -> String {
     }
     let template = include_str!("../shaders/surface_matmul.wgsl");
     format!(
-        "const MODE: u32 = {mode}u;\n{}",
+        "const MODE: u32 = {mode}u;\nconst TN: u32 = {width}u;\n{}",
         template.replace("    //ACCUMULATORS\n", &accumulators).replace("            //INNER\n", &inner).replace("    //STORE\n", &store)
     )
+}
+
+/// The tile width for `n` output columns: 32 where it pads fewer columns than 64 does.
+fn tile_width(n: u32) -> u32 {
+    if n.div_ceil(32) * 32 < n.div_ceil(64) * 64 {
+        32
+    } else {
+        64
+    }
 }
 
 impl Kernels {
     pub async fn new(gpu: &Gpu) -> Result<Self> {
         Ok(Kernels {
             matmul: [
-                gpu.kernel("surface_matmul_forward", &matmul_source(0), "main").await?,
-                gpu.kernel("surface_matmul_input", &matmul_source(1), "main").await?,
-                gpu.kernel("surface_matmul_weight", &matmul_source(2), "main").await?,
+                [
+                    gpu.kernel("surface_matmul_forward", &matmul_source(0, 64), "main").await?,
+                    gpu.kernel("surface_matmul_forward_32", &matmul_source(0, 32), "main").await?,
+                ],
+                [
+                    gpu.kernel("surface_matmul_input", &matmul_source(1, 64), "main").await?,
+                    gpu.kernel("surface_matmul_input_32", &matmul_source(1, 32), "main").await?,
+                ],
+                [
+                    gpu.kernel("surface_matmul_weight", &matmul_source(2, 64), "main").await?,
+                    gpu.kernel("surface_matmul_weight_32", &matmul_source(2, 32), "main").await?,
+                ],
             ],
             encode: gpu.kernel("surface_encode", include_str!("../shaders/surface_encode.wgsl"), "main").await?,
             encode_backward: gpu.kernel("surface_encode_backward", include_str!("../shaders/surface_encode_backward.wgsl"), "main").await?,
@@ -468,10 +488,12 @@ async fn matmul(
     c: &wgpu::Buffer,
     bias: &wgpu::Buffer,
 ) -> Result<()> {
-    let tiles = p.m.div_ceil(64) as u64 * p.n.div_ceil(64) as u64;
+    let width = tile_width(p.n);
+    let tiles = p.m.div_ceil(64) as u64 * p.n.div_ceil(width) as u64;
     let groups = if p.mode == 2 { tiles * p.k.div_ceil(p.chunk) as u64 } else { tiles };
     let uniform = gpu.uniform("surface matmul", &p);
-    gpu.run(&kernels.matmul[p.mode as usize], &[&uniform, a, b, c, bias], groups * crate::gpu::WORKGROUP as u64).await
+    let kernel = &kernels.matmul[p.mode as usize][if width == 64 { 0 } else { 1 }];
+    gpu.run(kernel, &[&uniform, a, b, c, bias], groups * crate::gpu::WORKGROUP as u64).await
 }
 
 fn mm(m: u32, n: u32, k: u32, mode: u32) -> MatmulParams {

@@ -397,3 +397,18 @@ fn scene_from_inputs_matches_the_pack() {
     );
     assert!(mask_off * 1000 < pixels && colour / (inside as f64) < 3.0);
 }
+
+/// Every generated matrix-product variant parses and validates as plain WebGPU.
+#[test]
+fn matrix_product_variants_are_valid_webgpu() {
+    use wgpu::naga;
+    for mode in 0..3 {
+        for width in [64, 32] {
+            let source = format!("const ROW: u32 = {}u;\n{}", crate::gpu::ROW, matmul_source(mode, width));
+            let module = naga::front::wgsl::parse_str(&source).unwrap_or_else(|e| panic!("{mode} {width}: {}", e.emit_to_string(&source)));
+            naga::valid::Validator::new(naga::valid::ValidationFlags::all(), naga::valid::Capabilities::empty())
+                .validate(&module)
+                .unwrap_or_else(|e| panic!("{mode} {width}: {e:?}"));
+        }
+    }
+}

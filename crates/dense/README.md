@@ -1294,12 +1294,24 @@ gradients, features and colours within 1e-6, the losses and the gradient of ever
 (relative to the largest value), two training steps in two parts with Adam with no entry off by more than 5 %
 of the largest change, the hull grid within 1.2e-7, the sampler's edges within 5.5e-4 (5.5e-3 with the band;
 float rounding moves a quantile at sharpness 512). The matrix product is checked against a CPU product and
-timed. `CRISP3DS_GPU_PROFILE=1` waits for each dispatch and reports the time per kernel.
+timed; it is generated per mode and tile width (64 or 32 columns, whichever pads fewer) with named
+accumulators, since private arrays indexed in loops end up in memory, not registers, and made it ten times
+slower. `CRISP3DS_GPU_PROFILE=1` waits for each dispatch and reports the time per kernel.
 
 Drill, 300 photos at 544 x 576, Apple M1: 0.25 s per step against 0.6 s for the MLX prototype, 1.0 GB
-resident. After 2 000 steps two seeds give 0.687 / 0.912 / 0.992 and 0.835 / 0.968 / 0.993 (F1 at 0.5 / 1 /
-2 % of the diagonal, scan evaluation only); the prototype's one run gave 0.848 / 0.976 / 0.998. At this point
-of the schedule runs differ that much from one seed to the next.
+resident; the whole schedule in 95 minutes (the prototype 3.9 h, the reference 118 minutes on a Tesla T4). F1 at
+0.5 / 1 / 2 % of the diagonal and mean distance (scan evaluation only, each mesh with its own similarity fit):
+
+| Step | WebGPU | MLX prototype |
+| --- | --- | --- |
+| 5 000 | 0.902 / 0.975 / 0.996, 0.0023 | 0.886 / 0.981 / 0.997, 0.0025 |
+| 10 000 | 0.884 / 0.973 / 0.994, 0.0024 | 0.929 / 0.982 / 0.998, 0.0020 |
+| 15 000 | 0.931 / 0.976 / 0.994, 0.0019 | 0.929 / 0.980 / 0.997, 0.0019 |
+| 20 000 | 0.932 / 0.976 / 0.995, 0.0019 | 0.944 / 0.979 / 0.995, 0.0017 |
+
+The reference NeuS-facto run: 0.892 / 0.964 / 0.992, 0.0024. Rendered side by side the three final meshes show
+the same relief. Runs differ from one seed to the next: after 2 000 steps two seeds gave 0.687 / 0.912 / 0.992 and
+0.835 / 0.968 / 0.993 here.
 
 ## Portability
 

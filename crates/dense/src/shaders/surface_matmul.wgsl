@@ -1,5 +1,6 @@
-// Matrix products of the surface network: 64 x 64 outputs per workgroup, 8 x 8 per invocation (rows tr + 8 i,
-// columns tc + 8 j), 16 values of the inner dimension per round through workgroup memory. MODE is prepended, and
+// Matrix products of the surface network: 64 x TN outputs per workgroup (TN 64 or 32), 8 x TN / 8 per invocation
+// (rows tr + 8 i, columns tc + 8 j), 16 values of the inner dimension per round through workgroup memory. MODE and
+// TN are prepended, and
 // the accumulation and the stores are written out by `matmul_source` (named variables, no private arrays: indexed
 // private arrays are kept in memory, not registers, and made the kernel ten times slower):
 // 0, layer forward:    C[m, n] = sum_k A[m, k] B[n, k] + bias[n] on every bias_stride-th row (A: inputs, B: weights)
@@ -20,7 +21,7 @@ struct Dims {
 @group(0) @binding(3) var<storage, read_write> c: array<f32>;
 @group(0) @binding(4) var<storage, read> bias: array<f32>;
 
-// Both tiles k-major: tile[k * 64 + row or column].
+// Both tiles k-major: tile_a[k * 64 + row], tile_b[k * TN + column].
 var<workgroup> tile_a: array<f32, 1024>;
 var<workgroup> tile_b: array<f32, 1024>;
 
@@ -41,7 +42,7 @@ fn store(m: u32, n: u32, chunk: u32, value: f32) {
 fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index) t: u32) {
     let w = group.x + group.y * (ROW / 64u);
     let tiles_m = (dims.m + 63u) / 64u;
-    let tiles_n = (dims.n + 63u) / 64u;
+    let tiles_n = (dims.n + TN - 1u) / TN;
     let tiles = tiles_m * tiles_n;
     var chunk = 0u;
     var k_start = 0u;
@@ -56,7 +57,7 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
     if (w >= tiles * chunks) { return; }
     let tile = w % tiles;
     let m0 = (tile / tiles_n) * 64u;
-    let n0 = (tile % tiles_n) * 64u;
+    let n0 = (tile % tiles_n) * TN;
     let tr = t / 8u;
     let tc = t % 8u;
     //ACCUMULATORS
@@ -73,20 +74,23 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
                 let k = kk + e % 16u;
                 tile_a[(e % 16u) * 64u + e / 16u] = select(0.0, a[dims.a_off + m * dims.k + k], m < dims.m && k < k_end);
             }
-            // B tile: 16 (k) x 64 columns (n).
-            if (MODE == 0u) {
-                let n = n0 + e / 16u;
-                let k = kk + e % 16u;
-                tile_b[(e % 16u) * 64u + e / 16u] = select(0.0, b[dims.b_off + n * dims.k + k], n < dims.n && k < k_end);
-            } else {
-                let n = n0 + e % 64u;
-                let k = kk + e / 64u;
-                tile_b[e] = select(0.0, b[dims.b_off + k * dims.n + n], n < dims.n && k < k_end);
+            // B tile: 16 (k) x TN columns (n).
+            if (e < 16u * TN) {
+                if (MODE == 0u) {
+                    let n = n0 + e / 16u;
+                    let k = kk + e % 16u;
+                    tile_b[(e % 16u) * TN + e / 16u] = select(0.0, b[dims.b_off + n * dims.k + k], n < dims.n && k < k_end);
+                } else {
+                    let n = n0 + e % TN;
+                    let k = kk + e / TN;
+                    tile_b[e] = select(0.0, b[dims.b_off + k * dims.n + n], n < dims.n && k < k_end);
+                }
             }
         }
         workgroupBarrier();
         for (var k = 0u; k < 16u; k++) {
             let base = k * 64u;
+            let base_b = k * TN;
             //INNER
         }
         workgroupBarrier();

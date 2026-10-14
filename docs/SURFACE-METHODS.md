@@ -159,7 +159,8 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
    reference's 0.892 / 0.964 / 0.992 (0.0024), and side by side it shows the same relief. Second step: the
    same model on WebGPU in the engine (`crisp3ds-dense surface`, [crate README](../crates/dense/README.md)),
    with hand-written backward kernels checked against the prototype number for number, 0.25 s per step on the
-   M1 (MLX 0.6 s). Next: the native whole-schedule result, then the mustard bottle, then a pipeline stage that
-   starts from the scene directly, then 2D splats.
+   M1 (MLX 0.6 s): the whole schedule in 95 minutes, 0.932 / 0.976 / 0.995 (mean 0.0019), the same relief.
+   It reads a scene straight from an inputs directory, without Python. Next: the mustard bottle, a run setting,
+   then 2D splats.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel
    averaging for single-turn captures.

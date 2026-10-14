@@ -6,7 +6,7 @@ Apple GPUs, so that its results can be reproduced here before native versions (W
 MLX through its C API) are written against a fixed recipe. The shipped pipeline must not depend on Python.
 
 The native version is `crisp3ds-dense surface` (WebGPU, [crate README](../../crates/dense/README.md)), checked
-against this prototype with `export_fixture.py`.
+against this prototype with `export_fixture.py`; on the drill it reaches 0.932 / 0.976 / 0.995 in 95 minutes.
 
 The model follows the configuration of `neus-facto` in
 [hummat/sdfstudio](https://github.com/hummat/sdfstudio) (Apache-2.0, commit `12a3f75`), which follows NeuS

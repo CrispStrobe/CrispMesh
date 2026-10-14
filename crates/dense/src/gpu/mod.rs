@@ -505,7 +505,7 @@ mod tests {
     fn kernels_are_valid_webgpu() {
         for (name, source) in SHADERS {
             // The surface's matrix product is generated per mode from its template.
-            let source = if name == "surface_matmul" { crate::surface::matmul_source(0) } else { source.to_string() };
+            let source = if name == "surface_matmul" { crate::surface::matmul_source(0, 64) } else { source.to_string() };
             let source = format!("const ROW: u32 = {}u;\n{source}", super::ROW);
             let module = naga::front::wgsl::parse_str(&source).unwrap_or_else(|e| panic!("{name}: {}", e.emit_to_string(&source)));
             let mut validator = naga::valid::Validator::new(naga::valid::ValidationFlags::all(), naga::valid::Capabilities::empty());
