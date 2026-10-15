@@ -43,6 +43,9 @@ export function NewRun({ engine, prefs, onChange }: Props) {
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState<FormValues>({});
   const [texture, setTexture] = useState(false);
+  // Optional photo-optimised surfaces: quality level per method ("" = off) and single numeric settings.
+  const [methodQuality, setMethodQuality] = useState<Record<string, string>>({});
+  const [methodSettings, setMethodSettings] = useState<Record<string, Record<string, string>>>({});
   const [name, setName] = useState("");
   const [values, setValues] = useState<Record<string, string>>({ inputs: engine.kind === "browser" ? ((engine as BrowserEngine).inputs()?.name ?? "") : prefs.inputs });
   const [pointId, setPointId] = useState("inputs");
@@ -79,6 +82,26 @@ export function NewRun({ engine, prefs, onChange }: Props) {
   const point = points.find((candidate) => candidate.id === pointId) ?? points[0]!;
   const missing = missingFields(point, values, providers);
   const optionProblems = point.providers.length > 0 ? startOptionErrors(point, providers, providerOptions) : {};
+  const methods = (health?.methods ?? []).filter((method) => method.available);
+  const methodErrors: Record<string, string> = {};
+  for (const method of methods) {
+    if ((methodQuality[method.id] ?? "") === "") continue;
+    for (const [settingName, value] of Object.entries(methodSettings[method.id] ?? {})) {
+      if (value.trim() !== "" && !Number.isFinite(Number(value))) methodErrors[`${method.id}.${settingName}`] = "A number, or empty for the level's value";
+    }
+  }
+  const methodBody = (): Record<string, unknown> => {
+    const body: Record<string, unknown> = {};
+    for (const method of methods) {
+      const quality = methodQuality[method.id] ?? "";
+      if (quality === "") continue;
+      const settings = Object.entries(methodSettings[method.id] ?? {})
+        .filter(([, value]) => value.trim() !== "")
+        .map(([settingName, value]) => `${settingName}=${value.trim()}`);
+      body[method.id] = { quality, settings };
+    }
+    return body;
+  };
   const choosesDevice = health?.choosesDevice !== false;
   const scoresReference = health?.scoresReference !== false;
   const setField = (key: string, value: string) => {
@@ -95,7 +118,7 @@ export function NewRun({ engine, prefs, onChange }: Props) {
     event.preventDefault();
     setShowErrors(true);
     setServerError(null);
-    if (missing.length > 0 || Object.keys(optionProblems).length > 0 || Object.keys(diff.errors).length > 0) {
+    if (missing.length > 0 || Object.keys(optionProblems).length > 0 || Object.keys(diff.errors).length > 0 || Object.keys(methodErrors).length > 0) {
       // Open the groups that hold a problem and move to the first one.
       requestAnimationFrame(() => {
         const first = document.querySelector<HTMLElement>(".new-run [aria-invalid='true']");
@@ -107,7 +130,7 @@ export function NewRun({ engine, prefs, onChange }: Props) {
     setBusy(true);
     try {
       const start = { name, device: choosesDevice ? device : "", reference: scoresReference ? reference : "", values, providers, options: providerOptions };
-      const id = await engine.startRun({ ...startBody(point, start, diff.changed), ...(engine.kind === "browser" || engine.kind === "local" ? { texture } : {}) });
+      const id = await engine.startRun({ ...startBody(point, start, diff.changed), ...(engine.kind === "browser" || engine.kind === "local" ? { texture } : {}), ...methodBody() });
       if (engine.kind !== "browser") onChange({ inputs: (values.inputs ?? "").trim(), device });
       navigate(`#/engine/run/${encodeURIComponent(id)}`);
     } catch (problem) {
@@ -310,6 +333,59 @@ export function NewRun({ engine, prefs, onChange }: Props) {
             <span><input type="checkbox" checked={texture} onChange={(event) => setTexture(event.currentTarget.checked)} /> Export textured GLB (experimental)</span>
             <span class="sub">Adds photo colours to the mesh. Uses more memory and time; photo seams may remain.</span>
           </label>
+        )}
+
+        {methods.length > 0 && (
+          <fieldset class="methods">
+            <legend>Surfaces from the photos (experimental)</legend>
+            <p class="sub">After the mesh, optimised against the photos on the GPU; the run's own mesh stays. Minutes (fast) to hours (best).</p>
+            {methods.map((method) => {
+              const quality = methodQuality[method.id] ?? "";
+              const chosen = method.qualities.find((level) => level.id === quality);
+              return (
+                <div class="field" key={method.id}>
+                  <label class="field-label" for={`f-method-${method.id}`}>{method.label}</label>
+                  <select
+                    id={`f-method-${method.id}`}
+                    value={quality}
+                    onChange={(event) => setMethodQuality((current) => ({ ...current, [method.id]: event.currentTarget.value }))}
+                  >
+                    <option value="">Off</option>
+                    {method.qualities.map((level) => (
+                      <option key={level.id} value={level.id}>{level.label}</option>
+                    ))}
+                  </select>
+                  <span class="sub">{chosen ? chosen.meaning : method.meaning}</span>
+                  {quality !== "" && method.settings.length > 0 && (
+                    <details>
+                      <summary>Settings of {method.label.toLowerCase()}</summary>
+                      {method.settings.map((setting) => {
+                        const key = `${method.id}.${setting.name}`;
+                        const error = showErrors ? methodErrors[key] : undefined;
+                        return (
+                          <label class="field" key={key}>
+                            <span class="field-label">{setting.name}</span>
+                            <input
+                              inputMode="numeric"
+                              placeholder="the level's value"
+                              aria-invalid={error !== undefined}
+                              value={methodSettings[method.id]?.[setting.name] ?? ""}
+                              onInput={(event) => {
+                                const value = event.currentTarget.value;
+                                setMethodSettings((current) => ({ ...current, [method.id]: { ...(current[method.id] ?? {}), [setting.name]: value } }));
+                              }}
+                            />
+                            <span class="sub">{setting.meaning}</span>
+                            {error && <span class="field-error">{error}</span>}
+                          </label>
+                        );
+                      })}
+                    </details>
+                  )}
+                </div>
+              );
+            })}
+          </fieldset>
         )}
 
         <div class="settings-head">

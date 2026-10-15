@@ -270,3 +270,14 @@ describe("textured export", () => {
     expect(state.downloads).toHaveLength(1);
   });
 });
+
+describe("surfaces optimised against the photos", () => {
+  it("shows the neural surface and the splats as further finished meshes with their labels", () => {
+    let state = reduce(initialState(), event("artifact", { stage: "surface", kind: "neural_surface", path: "surface/mesh.stl", label: "Neural surface (experimental)" }));
+    state = reduce(state, event("artifact", { stage: "splats", kind: "splats", path: "splats/mesh.stl", label: "2D splats (experimental)" }, 1));
+    expect(state.meshes.map((mesh) => [mesh.kind, mesh.path, mesh.label])).toEqual([
+      ["final_mesh", "surface/mesh.stl", "Neural surface (experimental)"],
+      ["final_mesh", "splats/mesh.stl", "2D splats (experimental)"],
+    ]);
+  });
+});

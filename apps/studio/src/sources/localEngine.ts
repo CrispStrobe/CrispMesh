@@ -21,6 +21,7 @@ import {
   type EngineHealth,
   type FetchOptions,
   type LinkStatus,
+  type MethodSpec,
   type RunSource,
   type RunSummary,
   type SourceUpdate,
@@ -89,6 +90,7 @@ export class LocalEngine implements Engine {
       sandboxed: body?.sandboxed === true,
       note: typeof body?.note === "string" && body.note !== "" ? body.note : undefined,
       imports: this.imports,
+      methods: parseMethods(body?.methods),
     };
   }
 
@@ -347,4 +349,28 @@ export class LocalRunSource implements RunSource {
   private emit(update: SourceUpdate): void {
     for (const listener of [...this.listeners]) listener(update);
   }
+}
+
+/** The engine's optional photo-optimised surfaces (`methods` of its health answer); malformed entries are left out. */
+export function parseMethods(value: unknown): MethodSpec[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const text = (item: unknown): string | undefined => (typeof item === "string" ? item : undefined);
+  const methods: MethodSpec[] = [];
+  for (const entry of value) {
+    if (entry === null || typeof entry !== "object") continue;
+    const raw = entry as Record<string, unknown>;
+    const id = text(raw.id);
+    const label = text(raw.label);
+    if (id === undefined || label === undefined || !Array.isArray(raw.qualities)) continue;
+    const qualities = raw.qualities
+      .map((quality) => (quality !== null && typeof quality === "object" ? (quality as Record<string, unknown>) : {}))
+      .filter((quality) => text(quality.id) !== undefined)
+      .map((quality) => ({ id: text(quality.id)!, label: text(quality.label) ?? text(quality.id)!, meaning: text(quality.meaning) ?? "" }));
+    const settings = (Array.isArray(raw.settings) ? raw.settings : [])
+      .map((setting) => (setting !== null && typeof setting === "object" ? (setting as Record<string, unknown>) : {}))
+      .filter((setting) => text(setting.name) !== undefined)
+      .map((setting) => ({ name: text(setting.name)!, kind: text(setting.kind) ?? "number", meaning: text(setting.meaning) ?? "" }));
+    methods.push({ id, label, meaning: text(raw.meaning) ?? "", available: raw.available === true, qualities, settings });
+  }
+  return methods;
 }

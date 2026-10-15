@@ -1264,10 +1264,8 @@ stage (sheets) 0.8, surface 4.8, check 2.4.
 
 ## Neural surface: `crisp3ds-dense surface`
 
-Status: experimental; in a run on request (`crisp3ds-dense run ... --surface STEPS`: after the mesh stage, from the
-run's inputs, its grown or repaired masks and its mesh as the start, photos reduced to at most about 720 pixels
-across; the result is `surface/mesh.stl` beside `mesh/mesh.stl`, native builds only). A signed-distance network
-trained by rendering the photos, the
+Status: experimental; in a run on request (see *Quality levels* below). A signed-distance network trained by
+rendering the photos, the
 NeuS-facto model of the MLX prototype [`scripts/neural_surface`](../../scripts/neural_surface/README.md)
 written for WebGPU: hash grid (16 levels), geometry and colour networks (2 x 64 each, weight normalisation),
 NeuS opacities, the original NeuS sampler limited to a band around our silhouette hull, a start fitted to the
@@ -1357,6 +1355,31 @@ whose projection and spherical harmonics equal gsplat's own to float rounding), 
 colours, opacity, normals, depths and distortion within 1e-5; the loss terms within 1e-5; the gradients of the images,
 of the projected splats and of every parameter within 6e-5 (relative to the largest value); the radix sort stable on
 100 003 keys.
+
+### Quality levels, single settings, runs and the app
+
+Both photo-optimised surfaces (the neural surface above, the 2D splats below) take a quality level and single
+settings, the same way everywhere:
+
+| Level | Neural surface | 2D splats | Photo window across the object |
+| --- | --- | --- | --- |
+| `fast` | 6 000 steps, 384 grid | 10 000 steps, 384 grid | 480 px |
+| `standard` (default) | 20 000 steps, 512 grid (the reference run's) | 30 000 steps, 512 grid (the reference run's) | 720 px |
+| `best` | 30 000 steps, 2 048 rays, 768 grid | 30 000 steps, 768 grid | 960 / 1 080 px |
+
+The photos' resolution follows the object rather than the camera: every view is cropped to one window around the
+masks and reduced by the whole factor that brings it to at most the level's width (`crop=PIXELS`; small objects are
+never enlarged). Lengths in the settings are relative to the object's bounding sphere, so they need no adjusting for
+the object's size. Any single setting overrides the level's value: `crisp3ds-dense surface SOURCE OUT quality=fast
+mesh=512`, `crisp3ds-dense splats SOURCE OUT quality=best crop=900`.
+
+In a run: `crisp3ds-dense run ... --surface QUALITY [--surface-set NAME=VALUE]... --splats QUALITY
+[--splats-set NAME=VALUE]...` (a bare number for `--surface` means that many steps). They run after the mesh stage,
+from the run's inputs, its grown or repaired masks and its mesh as the start, and write `surface/mesh.stl` and
+`splats/mesh.stl` (with `splats.npz` and held-out renders) beside `mesh/mesh.stl`; native builds only. In
+`RunOptions` they are `surface` and `splats` (`{"quality": ..., "settings": [...]}`); `run::methods()` (also in
+`describe()`) lists them with their levels and settings for front ends. The app's "New run" form offers both (off or
+a level, and the numeric settings) and shows their meshes beside the run's own; it accepts numbers only there.
 
 ## Portability
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RunEvent } from "../core/events";
 import { CONTRACT_START_POINTS, missingFields, parseStartPoints, startBody } from "../core/startPoints";
 import { FakeTime, fixtureBytes, fixtureEvents, settle } from "../testing/fixture";
-import { LOCAL_BACKOFF_MS, LOCAL_POLL_MS, LocalEngine, type Bridge } from "./localEngine";
+import { LOCAL_BACKOFF_MS, LOCAL_POLL_MS, LocalEngine, parseMethods, type Bridge } from "./localEngine";
 import { RunStore } from "./runStore";
 import { EngineError, type LinkStatus, type SourceUpdate } from "./types";
 
@@ -304,5 +304,33 @@ describe("start points", () => {
     const form = { name: "", device: "", reference: "", values: { photos: "bunny/photos" }, providers: { masks: "sam", cameras: "not-offered" } };
     expect(startBody(photos, form, {})).toEqual({ photos: "bunny/photos", providers: { masks: "sam", cameras: "alicevision" } });
     expect(missingFields(photos, { photos: "x" })).toEqual([]);
+  });
+});
+
+describe("optional surfaces in the health answer", () => {
+  it("keeps well-formed methods and drops malformed ones", () => {
+    const methods = parseMethods([
+      {
+        id: "surface",
+        label: "Neural surface",
+        meaning: "m",
+        available: true,
+        qualities: [{ id: "fast", label: "Fast", meaning: "f" }, { label: "no id" }],
+        settings: [{ name: "steps", kind: "integer", meaning: "s" }, {}],
+      },
+      { label: "no id", qualities: [] },
+      "text",
+    ]);
+    expect(methods).toEqual([
+      {
+        id: "surface",
+        label: "Neural surface",
+        meaning: "m",
+        available: true,
+        qualities: [{ id: "fast", label: "Fast", meaning: "f" }],
+        settings: [{ name: "steps", kind: "integer", meaning: "s" }],
+      },
+    ]);
+    expect(parseMethods(undefined)).toBeUndefined();
   });
 });

@@ -126,6 +126,10 @@ pub struct StartBody {
     pub photo_options: Vec<String>,
     pub settings: Map<String, Value>,
     pub texture: bool,
+    /// The neural surface and the 2D splats after the mesh (`{"quality": "standard", "settings": ["crop=600"]}`), as
+    /// `crisp3ds-dense run --surface` / `--splats` with their `-set` options; absent: not run.
+    pub surface: Option<crisp3ds_dense::run::Method>,
+    pub splats: Option<crisp3ds_dense::run::Method>,
     pub reference: Option<String>,
     /// Accepted and ignored: the built-in engine uses the system's GPU through wgpu.
     pub device: Option<String>,
@@ -588,8 +592,19 @@ impl Native {
         }
         let mut options = RunOptions {
             output: self.runs().join(id), settings: body.settings.clone(), texture: body.texture,
-            attribution: body.attribution.clone(), ..RunOptions::default()
+            attribution: body.attribution.clone(), surface: body.surface.clone(), splats: body.splats.clone(), ..RunOptions::default()
         };
+        for (name, method) in [("surface", &options.surface), ("splats", &options.splats)] {
+            if let Some(method) = method {
+                crisp3ds_dense::run::Method::parse(&method.quality).map_err(|e| format!("{name}: {e}"))?;
+                // Numbers only: the methods' path settings (hull mesh, photos, masks, start splats) would reach past
+                // the folders chosen in the app.
+                let numeric = |item: &String| item.split_once('=').is_some_and(|(_, value)| value.trim().parse::<f64>().is_ok());
+                if let Some(bad) = method.settings.iter().find(|item| !numeric(item)) {
+                    return Err(format!("{name}: {bad} is not a NAME=NUMBER setting"));
+                }
+            }
+        }
         let given = |text: &Option<String>| text.as_deref().map(str::trim).filter(|text| !text.is_empty()).map(str::to_string);
         if let Some(photos) = given(&body.photos) {
             let folder = self.resolve_source("photos", &photos)?;
@@ -1182,7 +1197,16 @@ mod tests {
         request.texture = true;
         request.attribution = Some("Photo source credit".into());
         request.photo_options = ["--threshold-level", "otsu", "--turntable-span", "6"].map(String::from).to_vec();
+        request.surface = Some(crisp3ds_dense::run::Method { quality: "fast".into(), settings: vec!["crop=600".into()] });
         let options = engine.options(&request, "id").unwrap();
+        assert_eq!(options.surface.as_ref().map(|m| m.quality.as_str()), Some("fast"));
+        assert_eq!(options.splats, None);
+        // Only numeric single settings: the methods' path settings would reach past the chosen folders.
+        let mut bad = request.clone();
+        bad.splats = Some(crisp3ds_dense::run::Method { quality: "standard".into(), settings: vec!["init=/etc/passwd".into()] });
+        assert!(engine.options(&bad, "id").unwrap_err().contains("NAME=NUMBER"));
+        bad.splats = Some(crisp3ds_dense::run::Method { quality: "quick".into(), settings: Vec::new() });
+        assert!(engine.options(&bad, "id").is_err());
         assert!(options.texture);
         assert_eq!(options.attribution.as_deref(), Some("Photo source credit"));
         assert_eq!(options.photos.as_deref(), Some(root.join("data/bunny/rgb").as_path()));

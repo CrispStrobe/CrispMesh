@@ -261,10 +261,11 @@ function artifact(state: RunState, next: RunState, event: RunEvent): RunState {
       stage.status === "pending" ? { ...stage, status: "done", fraction: 1, implicit: true } : stage,
     );
   }
-  if (kind === "preview_mesh" || kind === "final_mesh") {
+  // The neural surface and the 2D splats are further finished surfaces of the run, shown like the final mesh.
+  if (kind === "preview_mesh" || kind === "final_mesh" || kind === "neural_surface" || kind === "splats") {
     const step: MeshStep = {
       seq: event.seq,
-      kind,
+      kind: kind === "preview_mesh" ? "preview_mesh" : "final_mesh",
       path,
       label,
       stage: event.stage,

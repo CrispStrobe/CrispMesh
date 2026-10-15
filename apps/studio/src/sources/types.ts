@@ -80,6 +80,18 @@ export interface RunSource {
   readonly replay?: ReplayControls;
 }
 
+/** An optional surface optimised against the photos after the mesh (the neural surface, the 2D splats), as the engine describes it. */
+export interface MethodSpec {
+  id: string;
+  label: string;
+  meaning: string;
+  /** Whether this engine can run it. */
+  available: boolean;
+  qualities: { id: string; label: string; meaning: string }[];
+  /** Single numeric settings that override the quality level's. */
+  settings: { name: string; kind: string; meaning: string }[];
+}
+
 export interface EngineHealth {
   schema?: string;
   device?: string;
@@ -98,6 +110,8 @@ export interface EngineHealth {
   note?: string;
   /** Files can be brought in from the device's own picker (`Engine.importFiles`). */
   imports?: boolean;
+  /** Optional photo-optimised surfaces this engine knows. */
+  methods?: MethodSpec[];
 }
 
 export interface RunSummary {
