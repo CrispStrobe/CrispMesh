@@ -1265,7 +1265,7 @@ stage (sheets) 0.8, surface 4.8, check 2.4.
 ## Neural surface: `crisp3ds-dense surface`
 
 Status: experimental; in a run on request (`crisp3ds-dense run ... --surface STEPS`: after the mesh stage, from the
-run's inputs, its grown or repaired masks and its mesh as the start, photos reduced to at most about 640 pixels
+run's inputs, its grown or repaired masks and its mesh as the start, photos reduced to at most about 720 pixels
 across; the result is `surface/mesh.stl` beside `mesh/mesh.stl`, native builds only). A signed-distance network
 trained by rendering the photos, the
 NeuS-facto model of the MLX prototype [`scripts/neural_surface`](../../scripts/neural_surface/README.md)

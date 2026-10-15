@@ -24,11 +24,23 @@ pub struct Settings {
     pub weights: Weights,
     /// Fusion grid of the mesh.
     pub mesh: usize,
+    /// Start from these splats (`splats.npz` of a run) instead of the hull.
+    pub init: Option<std::path::PathBuf>,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { steps: 30000, stop: 0, hold_every: 10, log_every: 500, seed: 42, sh_degree: 3, weights: Weights::default(), mesh: 512 }
+        Settings {
+            steps: 30000,
+            stop: 0,
+            hold_every: 10,
+            log_every: 500,
+            seed: 42,
+            sh_degree: 3,
+            weights: Weights::default(),
+            mesh: 512,
+            init: None,
+        }
     }
 }
 
@@ -342,7 +354,10 @@ pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) ->
     ensure!(!training.is_empty(), "no training views");
     let extent = scene.views.iter().map(|v| (v.origin.iter().map(|o| o * o).sum::<f64>()).sqrt()).fold(0.0, f64::max) as f32;
     let strategy = Strategy::new(settings.steps);
-    let rows = initial(scene, &mut random);
+    let rows = match &settings.init {
+        Some(path) => crate::npz::Npz::read(path)?.get("params")?.to_f32(),
+        None => initial(scene, &mut random),
+    };
     let mut splats = Splats::new(gpu, &rows)?;
     let mut first = gpu.zeroed("splat adam m", rows.len() as u64 * 4);
     let mut second = gpu.zeroed("splat adam v", rows.len() as u64 * 4);
@@ -453,7 +468,7 @@ pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) ->
 pub fn main(arguments: &[String]) -> Result<()> {
     use anyhow::{anyhow, bail};
     const USAGE: &str =
-        "usage: crisp3ds-dense splats SOURCE OUT [steps=N stop=N log=N seed=N mesh=N] [hull_mesh=STL photos=DIR masks=DIR div=N]
+        "usage: crisp3ds-dense splats SOURCE OUT [steps=N stop=N log=N seed=N mesh=N init=SPLATS.npz] [hull_mesh=STL photos=DIR masks=DIR div=N]
 SOURCE as for `crisp3ds-dense surface`: a pack (scene.json) or an inputs directory with hull_mesh";
     ensure!(arguments.len() >= 2, "{USAGE}");
     let (source, out) = (std::path::PathBuf::from(&arguments[0]), std::path::PathBuf::from(&arguments[1]));
@@ -468,6 +483,7 @@ SOURCE as for `crisp3ds-dense surface`: a pack (scene.json) or an inputs directo
             "log" => s.log_every = int()?,
             "seed" => s.seed = int()? as u64,
             "mesh" => s.mesh = int()? as usize,
+            "init" => s.init = Some(std::path::PathBuf::from(value)),
             "hull_mesh" => hull_mesh = Some(std::path::PathBuf::from(value)),
             "photos" => photos = Some(std::path::PathBuf::from(value)),
             "masks" => masks = Some(std::path::PathBuf::from(value)),

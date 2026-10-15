@@ -192,7 +192,7 @@ pub fn scene_from_inputs(
     div: usize,
     seed: u64,
 ) -> Result<Scene> {
-    ensure!(div >= 1, "div must be at least 1");
+    // div 0: reduce so that the crop is at most about 720 pixels (the packs' size: the DSLR captures halved).
     let cameras: serde_json::Value = serde_json::from_slice(&std::fs::read(inputs.join("cameras.json")).context("cameras.json")?)?;
     let views = cameras["views"].as_array().ok_or_else(|| anyhow!("cameras.json has no views"))?;
     let mask_path = |view: &serde_json::Value| -> std::path::PathBuf {
@@ -222,8 +222,10 @@ pub fn scene_from_inputs(
             Ok([x0, y0, x1, y1])
         })
         .collect::<Result<Vec<_>>>()?;
-    let unit = 16 * div;
     let margin = 48;
+    let widest = boxes.iter().map(|b| (b[2] - b[0]).max(b[3] - b[1])).max().unwrap_or(0) + 2 * margin;
+    let div = if div == 0 { widest.div_ceil(720).max(1) } else { div };
+    let unit = 16 * div;
     let cw = (boxes.iter().map(|b| b[2] - b[0]).max().unwrap_or(0) + 2 * margin).div_ceil(unit) * unit;
     let ch = (boxes.iter().map(|b| b[3] - b[1]).max().unwrap_or(0) + 2 * margin).div_ceil(unit) * unit;
     let (width, height) = (cw / div, ch / div);
@@ -581,13 +583,10 @@ pub async fn save_mesh(
     Ok(mesh.faces.len())
 }
 
-fn log(start: &web_time::Instant, text: &str) {
-    println!("[{:6.0}s] {text}", start.elapsed().as_secs_f64());
-}
-
 /// Fits the geometry network to the hull's distance (L1 plus 0.1 eikonal), `steps` Adam steps at 1e-3.
 #[allow(clippy::too_many_arguments)]
 async fn fit_hull(
+    say: &dyn Fn(&str),
     gpu: &Gpu,
     kernels: &Kernels,
     model: &Model,
@@ -635,16 +634,29 @@ async fn fit_hull(
         model.end_gradients(gpu, kernels).await?;
         model.adam(gpu, kernels, 1e-3, step, false).await?;
         if step % 200 == 0 || step == steps - 1 {
-            log(start, &format!("hull fit {step}: {loss:.5}"));
+            say(&format!("[{:6.0}s] hull fit {step}: {loss:.5}", start.elapsed().as_secs_f64()));
         }
     }
     model.reset_moments(gpu);
     Ok(())
 }
 
-/// Trains on a scene and writes meshes into `out`; resumes from `out/checkpoint.npz`.
+/// Trains on a scene and writes meshes into `out`; resumes from `out/checkpoint.npz`. Progress to stdout.
 pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) -> Result<()> {
+    train_with(gpu, scene, out, settings, &|text| println!("{text}"), &|| Ok(())).await
+}
+
+/// [`train`] with progress lines to `say` and `check` called every step (an error stops the training).
+pub async fn train_with(
+    gpu: &Gpu,
+    scene: &Scene,
+    out: &Path,
+    settings: &Settings,
+    say: &dyn Fn(&str),
+    check: &dyn Fn() -> Result<()>,
+) -> Result<()> {
     let start = web_time::Instant::now();
+    let log = |start: &web_time::Instant, text: &str| say(&format!("[{:6.0}s] {text}", start.elapsed().as_secs_f64()));
     std::fs::create_dir_all(out)?;
     let pixels: f64 = scene.views.iter().map(|v| v.mask.iter().filter(|m| **m).count() as f64 / v.mask.len() as f64).sum::<f64>()
         / scene.views.len() as f64;
@@ -676,7 +688,7 @@ pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) ->
     if first_step > 0 {
         log(&start, &format!("resumed after step {} (optimiser moments restart)", first_step - 1));
     } else if settings.hull_steps > 0 {
-        fit_hull(gpu, &kernels, &model, &batch, scene, &grid, resolution, settings.hull_steps, &mut random, &start).await?;
+        fit_hull(say, gpu, &kernels, &model, &batch, scene, &grid, resolution, settings.hull_steps, &mut random, &start).await?;
         model.begin_step(gpu, &kernels).await?;
         let triangles =
             save_mesh(gpu, &kernels, &model, &batch, scene, mesh_hull, settings.sampling.band, 256, &out.join("mesh-hull.stl")).await?;
@@ -686,6 +698,7 @@ pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) ->
     let mut profile = Profile::new(std::env::var("CRISP3DS_SURFACE_PROFILE").is_ok_and(|v| v == "1"));
     let mut history = Vec::new();
     for step in first_step..end {
+        check()?;
         let factor = if step < settings.warm_up {
             step as f32 / settings.warm_up as f32
         } else {

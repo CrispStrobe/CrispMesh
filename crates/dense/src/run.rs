@@ -83,6 +83,9 @@ pub struct RunOptions {
     pub texture: bool,
     /// Source credit retained with the run and embedded in textured export.
     pub attribution: Option<String>,
+    /// Train the neural surface for this many steps after the mesh stage (0: no); experimental, native only. Its
+    /// mesh is written to `surface/mesh.stl` beside `mesh/mesh.stl`.
+    pub surface: u32,
 }
 
 impl Default for RunOptions {
@@ -110,6 +113,7 @@ impl Default for RunOptions {
             keep_volume: false,
             texture: false,
             attribution: None,
+            surface: 0,
         }
     }
 }
@@ -745,6 +749,19 @@ async fn stages(
         let _ = inspector.overview(&events);
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    if options.surface > 0 {
+        let command = ["crisp3ds-dense", "surface", &text(&inputs), &text(&output.join("surface")), &format!("steps={}", options.surface)]
+            .map(String::from)
+            .to_vec();
+        let stage = driver.begin("surface", command, None)?;
+        let result = neural_surface(&inputs, output, options.surface, &stage.control);
+        if result.is_ok() {
+            let path = output.join("surface/mesh.stl");
+            stage.events.artifact("neural_surface", &path, "Neural surface (experimental)", json!({}))?;
+        }
+        driver.report["surface"] = driver.end(stage, result)?;
+    }
     if options.check {
         let stl = output.join("mesh/mesh.stl");
         let repaired = output.join("stereo/masks-repaired");
@@ -787,6 +804,21 @@ async fn stages(
     driver.report["physical_scale_established"] = json!(false);
     driver.events.stage("mesh").artifact("report", &output.join("mesh/result.json"), "Mesh report", json!({}))?;
     driver.finish("complete")
+}
+
+/// The neural surface of a finished run: its photos and masks (grown, else repaired, else the inputs'), started from
+/// its mesh, trained for `steps` steps on the GPU.
+#[cfg(not(target_arch = "wasm32"))]
+fn neural_surface(inputs: &Path, output: &Path, steps: u32, control: &Control) -> anyhow::Result<Value> {
+    let masks = ["stereo/masks-grown", "stereo/masks-repaired"].iter().map(|m| output.join(m)).find(|m| m.is_dir());
+    let scene = crate::surface::train::scene_from_inputs(inputs, None, masks.as_deref(), &output.join("mesh/mesh.stl"), 0, 0)?;
+    control.log(format!("{} views {}x{}", scene.views.len(), scene.views[0].width, scene.views[0].height));
+    let settings = crate::surface::train::Settings { steps, ..Default::default() };
+    let gpu = crate::gpu::Gpu::new()?;
+    let out = output.join("surface");
+    crate::gpu::block_on(crate::surface::train::train_with(&gpu, &scene, &out, &settings, &|line| control.log(line), &|| control.check()))?;
+    let summary: Value = serde_json::from_slice(&std::fs::read(out.join("summary.json"))?)?;
+    Ok(json!({"mesh": text(&out.join("mesh.stl")), "triangles": summary["triangles"], "seconds": summary["seconds"]}))
 }
 
 /// How a run may start on this platform, for a front end that builds its form
@@ -886,7 +918,7 @@ pub fn describe_with(photo_options: &[String]) -> Value {
 pub const USAGE: &str = "usage: crisp3ds-dense run --output DIR (--photos DIR --calibration JSON [--masks PROVIDER] [--cameras PROVIDER] \
 [options of `crisp3ds-dense photos`] | --inputs DIR | --scene FILE --prepared DIR --raw-masks DIR) \
 [--config FILE] [--preset detail] [--set KEY=VALUE]... [--threads N] [--stereo-timeout SECONDS] [--minimum-free-gib G] [--reuse-depths FILE] \
-[--texture] [--no-live-previews] [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]";
+[--texture] [--surface STEPS] [--no-live-previews] [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]";
 
 /// Options from the command line of `dense_pipeline.py` (the parts this driver covers).
 pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
@@ -918,6 +950,7 @@ pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
             "--no-preview" => options.preview = false,
             "--keep-volume" => options.keep_volume = true,
             "--texture" => options.texture = true,
+            "--surface" => options.surface = number(value()?)? as u32,
             // Accepted for command lines written for the Python driver; they select nothing here.
             "--device" | "--torch-python" | "--native" | "--photos-timeout" => drop(value()?),
             "--photos" => options.photos = Some(PathBuf::from(value()?)),
