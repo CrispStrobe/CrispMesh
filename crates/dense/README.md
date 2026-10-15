@@ -1322,7 +1322,7 @@ relief, the cap a little softer here. Runs differ from one seed to the next: aft
 Status: experimental; in a run on request (see *Quality levels* below). Drill (300 photos at 544 x 576, 30 000 steps): 171 577 splats, held-out
 PSNR in the mask 25.44 dB, mesh 0.877 / 0.944 / 0.992 at 0.5 / 1 / 2 % (mean 0.0031); the reference run with gsplat
 on a Tesla T4: 168 835 splats, 25.71 dB, 0.881 / 0.947 / 0.992 (0.0026). Side by side the same relief and the same
-rough skin; one thin spike below the chuck here. That run took about 1.7 h on the M1; since then a step at 170 000
+rough skin; one thin fin beside the chuck here, which came from the hull grid and is gone since (below). That run took about 1.7 h on the M1; since then a step at 170 000
 splats takes 0.12 s instead of 0.21 s (about an hour for the whole schedule; gsplat on the T4: 21 min). Mustard
 bottle: 148 983 splats, 24.51 dB, 0.779 / 0.896 / 0.986 (gsplat: 24.26 dB, 0.791 / 0.899 / 0.969), 75 min.
 2D Gaussian splatting (flat Gaussian disks) after
@@ -1341,7 +1341,8 @@ prune transparent and, later, oversized ones; its opacity reset never fires, a p
 reference run inherited, so it is left out here too). Every tenth view is held out for PSNR. The mesh: each view's
 median depth fused (truncation 4 voxels, 512 cubed) in a band around the hull, marching cubes; outside the band the
 hull's side decides. That side comes from the nearest hull sample's normal, and beyond thin or sharp parts the sample
-can face sideways, which once turned a strip outside the drill's chuck into a spike; points that read as inside more
+can face sideways, which once turned a strip outside the drill's chuck into a fin (on the same splats: farthest point
+from the neural surface 17.9 % of the diagonal before, 3.2 % after); points that read as inside more
 than the band away are therefore checked by the winding number of the hull samples (`hull_grid_checked`).
 
 Rendering: splats projected (ray transform, screen box, normal turned to the camera, colour from spherical harmonics
