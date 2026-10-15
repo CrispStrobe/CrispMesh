@@ -1413,9 +1413,11 @@ and along the base. It also agrees with the masks better: 0.8 % of its vertices 
 more views, against 5.7 % for the run's mesh.
 
 The splat trainer can stop at the first value that is not finite (`CRISPMESH_SPLAT_FINITE=1`), naming the buffer
-(parameters, gradients of the projected splats, parameter gradients), the step, the view and the splat; the drill's
-and the mustard bottle's 30 000-step models held about 1 % splats whose parameters were not finite (none after
-10 000 steps on the Bunny). Pruning never removes them, since every comparison with them is false.
+(parameters, gradients of the projected splats, parameter gradients), the step, the view and the splat. The drill's
+30 000-step model from before the backward rasterizer's rewrite (`71b4b05`) held about 1 % splats whose parameters
+were not finite (pruning never removes them, since every comparison with them is false); with the current code a full
+`standard` drill run checked at every step stayed finite throughout (168 677 splats, 25.58 dB held out, none broken).
+The mustard bottle's model with such splats was trained around the time of that rewrite and has not been rerun.
 ## Portability
 
 Measured parity is from Metal on an Apple M1. Beyond that, the CI workflow runs
