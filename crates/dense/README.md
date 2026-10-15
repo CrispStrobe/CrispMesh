@@ -1368,6 +1368,11 @@ settings, the same way everywhere:
 | `standard` (default) | 20 000 steps, 512 grid (the reference run's) | 30 000 steps, 512 grid (the reference run's) | 720 px |
 | `best` | 30 000 steps, 2 048 rays, 768 grid | 30 000 steps, 768 grid | 960 / 1 080 px |
 
+Measured on the drill (Apple M1, F1 at 0.5 / 1 / 2 %, scan evaluation only): `fast` gives 0.896 / 0.981 / 1.000 for
+the neural surface (photos at 368 x 384, 40 min while the machine was also building) and 0.885 / 0.950 / 0.991 for
+the splats (21 min), both at or above the reference runs' `standard`-equivalent results (0.892 / 0.964 / 0.992 and
+0.881 / 0.947 / 0.992); `standard` reached 0.932 / 0.976 / 0.995 and 0.877 / 0.944 / 0.992.
+
 The photos' resolution follows the object rather than the camera: every view is cropped to one window around the
 masks and reduced by the whole factor that brings it to at most the level's width (`crop=PIXELS`; small objects are
 never enlarged). Lengths in the settings are relative to the object's bounding sphere, so they need no adjusting for
