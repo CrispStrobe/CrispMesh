@@ -68,9 +68,9 @@
           "composition": "composed",
           "reference_scope": "independent_geometry",
           "result_ref": "benchmarks/ycb-fresh-005-summary.json",
-          "result_sha256": "3c29f1139d58c8970240246a6eba8a727c9b3cac22f866c6cbff75e871a3dbb5",
+          "result_sha256": "c943a909166be8955372a0a7254db204c9ae49891bd32c5760de20bc74f0bafd",
           "provenance_ref": "benchmarks/ycb-fresh-005-summary.json",
-          "provenance_sha256": "3c29f1139d58c8970240246a6eba8a727c9b3cac22f866c6cbff75e871a3dbb5"
+          "provenance_sha256": "c943a909166be8955372a0a7254db204c9ae49891bd32c5760de20bc74f0bafd"
         },
         {
           "id": "ycb_turntable_fresh_005_rough_sensor",
@@ -82,9 +82,9 @@
           "composition": "composed",
           "reference_scope": "sensor_depth",
           "result_ref": "benchmarks/ycb-fresh-005-summary.json",
-          "result_sha256": "3c29f1139d58c8970240246a6eba8a727c9b3cac22f866c6cbff75e871a3dbb5",
+          "result_sha256": "c943a909166be8955372a0a7254db204c9ae49891bd32c5760de20bc74f0bafd",
           "provenance_ref": "benchmarks/ycb-fresh-005-summary.json",
-          "provenance_sha256": "3c29f1139d58c8970240246a6eba8a727c9b3cac22f866c6cbff75e871a3dbb5"
+          "provenance_sha256": "c943a909166be8955372a0a7254db204c9ae49891bd32c5760de20bc74f0bafd"
         }
       ],
       "evidence": [
