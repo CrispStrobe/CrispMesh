@@ -132,6 +132,7 @@ pub struct Kernels {
     ranges: Kernel,
     raster: Kernel,
     raster_backward: Kernel,
+    backward_prep: Kernel,
     project_backward: Kernel,
     loss_prepare: Kernel,
     blur: Kernel,
@@ -157,6 +158,7 @@ impl Kernels {
             ranges: gpu.kernel("splat_ranges", include_str!("../shaders/splat_ranges.wgsl"), "main").await?,
             raster: gpu.kernel("splat_raster", include_str!("../shaders/splat_raster.wgsl"), "main").await?,
             raster_backward: gpu.kernel("splat_raster_backward", include_str!("../shaders/splat_raster_backward.wgsl"), "main").await?,
+            backward_prep: gpu.kernel("splat_backward_prep", include_str!("../shaders/splat_backward_prep.wgsl"), "main").await?,
             project_backward: gpu.kernel("splat_project_backward", include_str!("../shaders/splat_project_backward.wgsl"), "main").await?,
             loss_prepare: gpu.kernel("splat_loss_prepare", include_str!("../shaders/splat_loss_prepare.wgsl"), "main").await?,
             blur: gpu.kernel("splat_blur", include_str!("../shaders/splat_blur.wgsl"), "main").await?,
@@ -239,6 +241,8 @@ pub struct Frame {
     pub tile_sort: SortBuffers,
     pub ranges: wgpu::Buffer,
     pub pixels: wgpu::Buffer,
+    /// What the backward rasterizer reads per pixel (splat_backward_prep), 16 floats.
+    packed: wgpu::Buffer,
     /// Where the depth order and the tile-sorted pairs ended up after the last render.
     pub order: usize,
     pub pairs: usize,
@@ -255,6 +259,7 @@ impl Frame {
             tile_sort: SortBuffers::new(gpu, count.max(1) * 4),
             ranges: gpu.zeroed("splat ranges", (tx * ty) as u64 * 2 * 4),
             pixels: gpu.zeroed("splat pixels", (camera.width * camera.height) as u64 * PIXEL as u64 * 4),
+            packed: gpu.zeroed("splat packed", (camera.width * camera.height) as u64 * 16 * 4),
             order: 0,
             pairs: 0,
             intersections: 0,
@@ -331,10 +336,12 @@ pub async fn raster_backward(
     grads: &wgpu::Buffer,
 ) -> Result<()> {
     let (tiles_x, tiles_y) = camera.tiles();
+    let count = gpu.uniform("splat prep", &Quad { a: camera.width * camera.height, b: 0, c: 0, d: 0 });
+    gpu.run(&kernels.backward_prep, &[&count, &frame.pixels, dpixels, &frame.packed], (camera.width * camera.height) as u64).await?;
     let uniform = gpu.uniform("splat raster backward", &Quad { a: camera.width, b: camera.height, c: tiles_x, d: 0 });
     gpu.run_groups(
         &kernels.raster_backward,
-        &[&uniform, &frame.ranges, &frame.tile_sort.values[frame.pairs], &frame.projected, &frame.pixels, dpixels, grads],
+        &[&uniform, &frame.ranges, &frame.tile_sort.values[frame.pairs], &frame.projected, &frame.packed, grads],
         (tiles_x * tiles_y) as u64,
     )
     .await

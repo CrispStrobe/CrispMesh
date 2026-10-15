@@ -473,7 +473,7 @@ pub fn tests_enabled() -> bool {
 mod tests {
     use wgpu::naga;
 
-    const SHADERS: [(&str, &str); 51] = [
+    const SHADERS: [(&str, &str); 52] = [
         ("carve", include_str!("../shaders/carve.wgsl")),
         ("cover", include_str!("../shaders/cover.wgsl")),
         ("fuse", include_str!("../shaders/fuse.wgsl")),
@@ -514,6 +514,7 @@ mod tests {
         ("splat_ranges", include_str!("../shaders/splat_ranges.wgsl")),
         ("splat_raster", include_str!("../shaders/splat_raster.wgsl")),
         ("splat_raster_backward", include_str!("../shaders/splat_raster_backward.wgsl")),
+        ("splat_backward_prep", include_str!("../shaders/splat_backward_prep.wgsl")),
         ("splat_project_backward", include_str!("../shaders/splat_project_backward.wgsl")),
         ("splat_loss_prepare", include_str!("../shaders/splat_loss_prepare.wgsl")),
         ("splat_blur", include_str!("../shaders/splat_blur.wgsl")),

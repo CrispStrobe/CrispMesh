@@ -5,7 +5,8 @@
 // pixels' running state in workgroup memory, each splat's gradient summed in its invocation and added to memory once
 // per batch (compare-and-swap). What lies behind a splat comes from the forward pass's totals minus what lies in
 // front, so transmittance is never divided back.
-// Per pixel in (stride 12): colour (3), alpha, normal sum in camera space (3), distortion, median depth, unused (3).
+// Per pixel in: the packed row of splat_backward_prep (image gradients and the forward totals it needs). The colour
+// and normal terms enter only as dot products with the pixel's gradients, so the running sums in front are scalars.
 // Per splat out (stride 20): colour (3), depth, normal (3), u, v, w rows of the ray transform (9), means2d (2),
 // opacity (after the sigmoid), unused.
 
@@ -15,22 +16,20 @@ struct Params { width: u32, height: u32, tiles_x: u32, pad: u32 }
 @group(0) @binding(1) var<storage, read> ranges: array<u32>;
 @group(0) @binding(2) var<storage, read> values: array<u32>;
 @group(0) @binding(3) var<storage, read> projected: array<f32>;
-@group(0) @binding(4) var<storage, read> pixels: array<f32>;
-@group(0) @binding(5) var<storage, read> dpixels: array<f32>;
-@group(0) @binding(6) var<storage, read_write> grads: array<atomic<u32>>;
+@group(0) @binding(4) var<storage, read> packed: array<vec4<f32>>;
+@group(0) @binding(5) var<storage, read_write> grads: array<atomic<u32>>;
 
 const STRIDE: u32 = 24u;
-const OUT: u32 = 16u;
-const DIN: u32 = 12u;
 const G: u32 = 20u;
 const BATCH: u32 = 32u;
 const PIXELS: u32 = 256u;
 
-// Per tile pixel: transmittance before the next splat, and the sums over the splats in front of it of colour (3) and
-// normal (3) times their weight, of weight times depth, of weight, and of the distortion's dL/dw times weight.
+// Per tile pixel: transmittance before the next splat, and the sums over the splats in front of it of weight times
+// colour . colour gradient, times normal . normal gradient, times depth, of weight, and of the distortion's dL/dw
+// times weight.
 var<workgroup> state_T: array<f32, 256>;
-var<workgroup> front_colour: array<vec3<f32>, 256>;
-var<workgroup> front_normal: array<vec3<f32>, 256>;
+var<workgroup> front_cdc: array<f32, 256>;
+var<workgroup> front_ndn: array<f32, 256>;
 var<workgroup> front_d: array<f32, 256>;
 var<workgroup> front_w: array<f32, 256>;
 var<workgroup> front_distort: array<f32, 256>;
@@ -66,15 +65,15 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
     workgroupBarrier();
     for (var k = t; k < PIXELS; k += BATCH) {
         state_T[k] = 1.0;
-        front_colour[k] = vec3<f32>(0.0);
-        front_normal[k] = vec3<f32>(0.0);
+        front_cdc[k] = 0.0;
+        front_ndn[k] = 0.0;
         front_d[k] = 0.0;
         front_w[k] = 0.0;
         front_distort[k] = 0.0;
         let x = tx * 16u + k % 16u;
         let y = ty * 16u + k / 16u;
         if (x < params.width && y < params.height) {
-            atomicMax(&furthest, bitcast<u32>(pixels[(y * params.width + x) * OUT + 11u]));
+            atomicMax(&furthest, bitcast<u32>(packed[(y * params.width + x) * 4u + 3u].y));
         }
     }
     let start = workgroupUniformLoad(&range[0]);
@@ -127,67 +126,69 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
                 let px = f32(x) + 0.5;
                 let py = f32(y) + 0.5;
                 let near = abs(px - xy.x) <= reach.x && abs(py - xy.y) <= reach.y;
-                if (near && x < params.width && y < params.height && at <= bitcast<u32>(pixels[p * OUT + 11u])) {
-                    let h_u = px * w - u;
-                    let h_v = py * w - v;
-                    let c = cross(h_u, h_v);
-                    let dx = xy.x - px;
-                    let dy = xy.y - py;
-                    let sx = c.x / select(1.0, c.z, c.z != 0.0);
-                    let sy = c.y / select(1.0, c.z, c.z != 0.0);
-                    let weight_3d = sx * sx + sy * sy;
-                    let weight_2d = 2.0 * (dx * dx + dy * dy);
-                    let sigma = 0.5 * min(weight_3d, weight_2d);
-                    let vis = exp(-sigma);
-                    let alpha = min(0.999, opacity * vis);
-                    if (c.z != 0.0 && sigma >= 0.0 && alpha >= 1.0 / 255.0) {
-                        let T = state_T[k];
-                        let fac = alpha * T;
-                        let ra = 1.0 / (1.0 - alpha);
-                        let o = p * OUT;
-                        let di = p * DIN;
-                        let dc = vec3<f32>(dpixels[di], dpixels[di + 1u], dpixels[di + 2u]);
-                        let da = dpixels[di + 3u];
-                        let dn = vec3<f32>(dpixels[di + 4u], dpixels[di + 5u], dpixels[di + 6u]);
-                        let ddistort = dpixels[di + 7u];
-                        let T_final = pixels[o + 10u];
-                        let total_w = pixels[o + 3u];
-                        let total_d = pixels[o + 7u];
-                        // What lies behind this splat: the totals minus the front and this splat.
-                        let behind_colour = vec3<f32>(pixels[o], pixels[o + 1u], pixels[o + 2u]) - front_colour[k] - colour * fac;
-                        let behind_normal = vec3<f32>(pixels[o + 4u], pixels[o + 5u], pixels[o + 6u]) - front_normal[k] - normal * fac;
-                        var v_alpha = dot(colour * T - behind_colour * ra, dc) + dot(normal * T - behind_normal * ra, dn) + T_final * ra * da;
-                        let w_upto = front_w[k] + fac;
-                        let d_upto = front_d[k] + fac * depth;
-                        let dl_dw = 2.0 * (2.0 * (depth * w_upto - d_upto) + (total_d - depth * total_w));
-                        let distort_behind = 4.0 * pixels[o + 13u] - (front_distort[k] + dl_dw * fac);
-                        v_alpha += (dl_dw * T - distort_behind * ra) * ddistort;
-                        d_depth += 2.0 * fac * (2.0 - 2.0 * T - total_w + fac) * ddistort;
-                        if (bitcast<u32>(pixels[o + 12u]) == at) { d_depth += dpixels[di + 8u]; }
-                        d_colour += fac * dc;
-                        d_normal += fac * dn;
-                        if (opacity * vis <= 0.999) {
-                            let v_G = opacity * v_alpha;
-                            if (weight_3d <= weight_2d) {
-                                let vsx = v_G * -vis * sx / c.z;
-                                let vsy = v_G * -vis * sy / c.z;
-                                let v_cross = vec3<f32>(vsx, vsy, -(vsx * sx + vsy * sy));
-                                let v_h_u = cross(h_v, v_cross);
-                                let v_h_v = cross(v_cross, h_u);
-                                d_u -= v_h_u;
-                                d_v -= v_h_v;
-                                d_w += px * v_h_u + py * v_h_v;
-                            } else {
-                                d_xy += v_G * -vis * 2.0 * vec2<f32>(dx, dy);
+                if (near && x < params.width && y < params.height) {
+                    let last_row = packed[p * 4u + 3u];
+                    if (at <= bitcast<u32>(last_row.y)) {
+                        let h_u = px * w - u;
+                        let h_v = py * w - v;
+                        let c = cross(h_u, h_v);
+                        let dx = xy.x - px;
+                        let dy = xy.y - py;
+                        let sx = c.x / select(1.0, c.z, c.z != 0.0);
+                        let sy = c.y / select(1.0, c.z, c.z != 0.0);
+                        let weight_3d = sx * sx + sy * sy;
+                        let weight_2d = 2.0 * (dx * dx + dy * dy);
+                        let sigma = 0.5 * min(weight_3d, weight_2d);
+                        let vis = exp(-sigma);
+                        let alpha = min(0.999, opacity * vis);
+                        if (c.z != 0.0 && sigma >= 0.0 && alpha >= 1.0 / 255.0) {
+                            let r0 = packed[p * 4u];
+                            let r1 = packed[p * 4u + 1u];
+                            let r2 = packed[p * 4u + 2u];
+                            let dc = r0.xyz;
+                            let dn = vec3<f32>(r0.w, r1.x, r1.y);
+                            let T = state_T[k];
+                            let fac = alpha * T;
+                            let ra = 1.0 / (1.0 - alpha);
+                            let cdc = dot(colour, dc);
+                            let ndn = dot(normal, dn);
+                            let ddistort = r2.y;
+                            let total_d = r2.z;
+                            let total_w = r2.w;
+                            // What lies behind this splat: the totals minus the front and this splat, as dot products.
+                            var v_alpha = T * cdc - ra * (r1.z - front_cdc[k] - fac * cdc) + T * ndn - ra * (r1.w - front_ndn[k] - fac * ndn) + ra * r2.x;
+                            let w_upto = front_w[k] + fac;
+                            let d_upto = front_d[k] + fac * depth;
+                            let dl_dw = 2.0 * (2.0 * (depth * w_upto - d_upto) + (total_d - depth * total_w));
+                            let distort_behind = last_row.x - (front_distort[k] + dl_dw * fac);
+                            v_alpha += (dl_dw * T - distort_behind * ra) * ddistort;
+                            d_depth += 2.0 * fac * (2.0 - 2.0 * T - total_w + fac) * ddistort;
+                            if (bitcast<u32>(last_row.z) == at) { d_depth += last_row.w; }
+                            d_colour += fac * dc;
+                            d_normal += fac * dn;
+                            if (opacity * vis <= 0.999) {
+                                let v_G = opacity * v_alpha;
+                                if (weight_3d <= weight_2d) {
+                                    let vsx = v_G * -vis * sx / c.z;
+                                    let vsy = v_G * -vis * sy / c.z;
+                                    let v_cross = vec3<f32>(vsx, vsy, -(vsx * sx + vsy * sy));
+                                    let v_h_u = cross(h_v, v_cross);
+                                    let v_h_v = cross(v_cross, h_u);
+                                    d_u -= v_h_u;
+                                    d_v -= v_h_v;
+                                    d_w += px * v_h_u + py * v_h_v;
+                                } else {
+                                    d_xy += v_G * -vis * 2.0 * vec2<f32>(dx, dy);
+                                }
+                                d_opacity += vis * v_alpha;
                             }
-                            d_opacity += vis * v_alpha;
+                            state_T[k] = T * (1.0 - alpha);
+                            front_cdc[k] += fac * cdc;
+                            front_ndn[k] += fac * ndn;
+                            front_d[k] = d_upto;
+                            front_w[k] = w_upto;
+                            front_distort[k] += dl_dw * fac;
                         }
-                        state_T[k] = T * (1.0 - alpha);
-                        front_colour[k] += colour * fac;
-                        front_normal[k] += normal * fac;
-                        front_d[k] = d_upto;
-                        front_w[k] = w_upto;
-                        front_distort[k] += dl_dw * fac;
                     }
                 }
             }

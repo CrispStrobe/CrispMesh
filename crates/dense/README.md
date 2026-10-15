@@ -1324,8 +1324,8 @@ relief, the cap a little softer here. Runs differ from one seed to the next: aft
 Status: experimental, not part of `run`. Drill (300 photos at 544 x 576, 30 000 steps): 171 577 splats, held-out
 PSNR in the mask 25.44 dB, mesh 0.877 / 0.944 / 0.992 at 0.5 / 1 / 2 % (mean 0.0031); the reference run with gsplat
 on a Tesla T4: 168 835 splats, 25.71 dB, 0.881 / 0.947 / 0.992 (0.0026). Side by side the same relief and the same
-rough skin; one thin spike below the chuck here. About 1.7 h of training on the M1 (0.2 s per step at 170 000
-splats; gsplat 21 min).
+rough skin; one thin spike below the chuck here. That run took about 1.7 h on the M1; since then a step at 170 000
+splats takes 0.12 s instead of 0.21 s (about an hour for the whole schedule; gsplat on the T4: 21 min).
 2D Gaussian splatting (flat Gaussian disks) after
 gsplat's 2DGS (Apache-2.0, commit `937e299`) and our trainer after its example (the reference run on a Tesla T4),
 written anew for WebGPU:
@@ -1348,6 +1348,8 @@ tile, then composited per tile. The sort is a 4-bit radix sort from plain WebGPU
 blocks of 1024). The backward rasterizer follows Brush's per-splat schedule: 32 invocations per tile each own a splat,
 the tile's pixels are replayed front to back on a diagonal with their running state in workgroup memory, and what
 lies behind a splat comes from the forward totals (one more forward total makes the distortion term work that way).
+The colour and normal terms enter only as dot products with each pixel's gradients, so its running sums are scalars,
+and everything a pixel contributes is packed into one 64-byte row beforehand (`splat_backward_prep`).
 All parameters of a splat sit in one row of 60 floats, so Adam is one kernel and densification copies rows.
 
 Checked against a dense PyTorch renderer of the same model ([`scripts/surface_splats`](../../scripts/surface_splats/README.md),
