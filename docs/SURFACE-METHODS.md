@@ -161,7 +161,8 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
    with hand-written backward kernels checked against the prototype number for number, 0.25 s per step on the
    M1 (MLX 0.6 s): the whole schedule in 95 minutes, 0.932 / 0.976 / 0.995 (mean 0.0019), the same relief.
    It reads a scene straight from an inputs directory, without Python. Mustard bottle from its inputs: 0.795 /
-   0.907 / 0.965 (reference 0.789 / 0.909 / 0.980). 2D splats on WebGPU (`crisp3ds-dense splats`) are written and
-   checked against a PyTorch reference of gsplat's 2DGS; first whole runs follow. Then a run setting for both.
+   0.907 / 0.965 (reference 0.789 / 0.909 / 0.980). 2D splats on WebGPU (`crisp3ds-dense splats`), checked against a
+   PyTorch reference of gsplat's 2DGS: drill 0.877 / 0.944 / 0.992, held-out 25.44 dB (gsplat 0.881 / 0.947 / 0.992,
+   25.71 dB), about 5 times slower per step than gsplat on a T4. Next: speed, a run setting for both.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel
    averaging for single-turn captures.

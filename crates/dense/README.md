@@ -1264,7 +1264,10 @@ stage (sheets) 0.8, surface 4.8, check 2.4.
 
 ## Neural surface: `crisp3ds-dense surface`
 
-Status: experimental, not part of `run`. A signed-distance network trained by rendering the photos, the
+Status: experimental; in a run on request (`crisp3ds-dense run ... --surface STEPS`: after the mesh stage, from the
+run's inputs, its grown or repaired masks and its mesh as the start, photos reduced to at most about 640 pixels
+across; the result is `surface/mesh.stl` beside `mesh/mesh.stl`, native builds only). A signed-distance network
+trained by rendering the photos, the
 NeuS-facto model of the MLX prototype [`scripts/neural_surface`](../../scripts/neural_surface/README.md)
 written for WebGPU: hash grid (16 levels), geometry and colour networks (2 x 64 each, weight normalisation),
 NeuS opacities, the original NeuS sampler limited to a band around our silhouette hull, a start fitted to the
@@ -1318,7 +1321,12 @@ relief, the cap a little softer here. Runs differ from one seed to the next: aft
 
 ## 2D Gaussian splats: `crisp3ds-dense splats`
 
-Status: experimental, not part of `run`; first runs in progress. 2D Gaussian splatting (flat Gaussian disks) after
+Status: experimental, not part of `run`. Drill (300 photos at 544 x 576, 30 000 steps): 171 577 splats, held-out
+PSNR in the mask 25.44 dB, mesh 0.877 / 0.944 / 0.992 at 0.5 / 1 / 2 % (mean 0.0031); the reference run with gsplat
+on a Tesla T4: 168 835 splats, 25.71 dB, 0.881 / 0.947 / 0.992 (0.0026). Side by side the same relief and the same
+rough skin; one thin spike below the chuck here. About 1.7 h of training on the M1 (0.2 s per step at 170 000
+splats; gsplat 21 min).
+2D Gaussian splatting (flat Gaussian disks) after
 gsplat's 2DGS (Apache-2.0, commit `937e299`) and our trainer after its example (the reference run on a Tesla T4),
 written anew for WebGPU:
 
