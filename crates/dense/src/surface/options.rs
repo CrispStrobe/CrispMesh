@@ -86,7 +86,7 @@ impl Source {
 
     /// The scene: a pack (`scene.json`) as it is, or an inputs directory (`cameras.json`) with the hull mesh.
     pub fn scene(&self, source: &Path, seed: u64) -> Result<Scene> {
-        if source.join("scene.json").exists() {
+        if crate::storage::exists(source.join("scene.json")) {
             return load_pack(source);
         }
         let hull = self.hull_mesh.as_deref().ok_or_else(|| anyhow!("an inputs directory needs hull_mesh=STL"))?;

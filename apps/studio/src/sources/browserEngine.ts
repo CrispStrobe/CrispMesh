@@ -12,6 +12,7 @@ import { normaliseEvent, type RunEvent } from "../core/events";
 import { parseSettingsSchema, type SettingSpec } from "../core/settings";
 import { parseStartPoints, type StartPoint } from "../core/startPoints";
 import type { FromWorker, WorkerLike } from "../browser/protocol";
+import { parseMethods } from "./localEngine";
 import {
   EngineError,
   type Engine,
@@ -403,7 +404,7 @@ export class BrowserEngine implements Engine {
   }
 
   async health(): Promise<EngineHealth> {
-    const { adapter, threads } = await this.load();
+    const { adapter, threads, described } = await this.load();
     const lanes = (threads ?? 1) > 1 ? `${threads} threads` : "single-threaded";
     return {
       schema: "crispmesh_dense_events_v1",
@@ -412,6 +413,7 @@ export class BrowserEngine implements Engine {
       startPoints: this.startPoints,
       choosesDevice: false,
       scoresReference: false,
+      methods: parseMethods((described as { methods?: unknown } | null | undefined)?.methods),
     };
   }
 
@@ -444,6 +446,7 @@ export class BrowserEngine implements Engine {
     const options: Record<string, unknown> = { live_previews: previews };
     if (body.texture === true) options.texture = true;
     if (typeof body.settings === "object" && body.settings !== null) options.settings = body.settings;
+    Object.assign(options, methodOptions(body));
     this.runs.set(id, { id, events: [], status: "running", started: this.clock(), stage: null, fraction: 0, peak: 0, ended: false, listeners: new Set() });
     this.worker?.postMessage({ type: "run", id, files: this.picked.files, options });
     return id;
@@ -476,6 +479,7 @@ export class BrowserEngine implements Engine {
     const options: Record<string, unknown> = { live_previews: this.previews ?? false, photo_options: ["--masks", masks, "--cameras", cameras, ...extra] };
     if (body.texture === true) options.texture = true;
     if (typeof body.settings === "object" && body.settings !== null) options.settings = body.settings;
+    Object.assign(options, methodOptions(body));
     const attribution = typeof body.attribution === "string" && body.attribution.trim() !== "" ? body.attribution.trim() : undefined;
     if (attribution !== undefined) options.attribution = attribution;
     this.runs.set(id, { id, events: [], status: "running", started: this.clock(), stage: null, fraction: 0, peak: 0, ended: false, listeners: new Set(), attribution });
@@ -511,6 +515,18 @@ export class BrowserEngine implements Engine {
     this.worker?.postMessage({ type: "dispose", id });
     this.runs.delete(id);
   }
+}
+
+/** The optional photo-optimised surfaces of a start body (`surface`, `splats`: `{quality, settings}`), as run options. */
+export function methodOptions(body: Record<string, unknown>): Record<string, unknown> {
+  const options: Record<string, unknown> = {};
+  for (const id of ["surface", "splats"]) {
+    const method = body[id] as { quality?: unknown; settings?: unknown } | undefined;
+    if (typeof method !== "object" || method === null || typeof method.quality !== "string") continue;
+    const settings = Array.isArray(method.settings) ? method.settings.filter((item): item is string => typeof item === "string") : [];
+    options[id] = { quality: method.quality, settings };
+  }
+  return options;
 }
 
 export class BrowserRunSource implements RunSource {

@@ -171,7 +171,7 @@ fn vec3(value: &serde_json::Value) -> Result<[f64; 3]> {
 
 /// Reads a pack: scene.json, images/, masks/, hull_points.npy, hull_normals.npy.
 pub fn load_pack(pack: &Path) -> Result<Scene> {
-    let scene: serde_json::Value = serde_json::from_slice(&std::fs::read(pack.join("scene.json")).context("scene.json")?)?;
+    let scene: serde_json::Value = serde_json::from_slice(&crate::storage::read(pack.join("scene.json")).context("scene.json")?)?;
     let centre = vec3(&scene["centre"])?;
     let unit = 1.0 / (1.15 * scene["radius"].as_f64().ok_or_else(|| anyhow!("radius"))?);
     let frames = scene["frames"].as_array().ok_or_else(|| anyhow!("frames"))?;
@@ -179,8 +179,8 @@ pub fn load_pack(pack: &Path) -> Result<Scene> {
         .par_iter()
         .map(|frame| -> Result<View> {
             let path = |key: &str| pack.join(frame[key].as_str().unwrap_or_default());
-            let rgb = image::open(path("image")).with_context(|| format!("{}", path("image").display()))?.to_rgb8();
-            let grey = image::open(path("mask")).with_context(|| format!("{}", path("mask").display()))?.to_luma8();
+            let rgb = crate::storage::open_image(path("image")).with_context(|| format!("{}", path("image").display()))?.to_rgb8();
+            let grey = crate::storage::open_image(path("mask")).with_context(|| format!("{}", path("mask").display()))?.to_luma8();
             ensure!(rgb.dimensions() == grey.dimensions(), "photo and mask sizes differ");
             let (width, height) = (rgb.width() as usize, rgb.height() as usize);
             let mask: Vec<bool> = grey.into_raw().into_iter().map(|v| v > 127).collect();
@@ -217,6 +217,15 @@ pub fn load_pack(pack: &Path) -> Result<Scene> {
     Ok(Scene { views, centre, unit, hull_points, hull_normals: read("hull_normals.npy")? })
 }
 
+/// Maps over the views in parallel, except in a browser: there the photos come through a file source that only the
+/// main thread can reach, so they are read one after the other.
+fn each_view<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync + Send) -> Vec<R> {
+    #[cfg(not(target_arch = "wasm32"))]
+    return items.par_iter().map(f).collect();
+    #[cfg(target_arch = "wasm32")]
+    return items.iter().map(f).collect();
+}
+
 /// A scene straight from an inputs directory (cameras.json with each view's original photo `texture_image`, else
 /// `image`, and `mask`; `photos` and `masks` replace their folders; `div` 0: chosen from `crop`), as `pack_scene.py` packs it: every view cropped to one
 /// common window around its mask (48 pixels of margin, a multiple of 16 times `div`), reduced by `div` (block
@@ -232,7 +241,7 @@ pub fn scene_from_inputs(
     seed: u64,
 ) -> Result<Scene> {
     // div 0: the whole factor that brings the crop window to at most `crop` pixels across.
-    let cameras: serde_json::Value = serde_json::from_slice(&std::fs::read(inputs.join("cameras.json")).context("cameras.json")?)?;
+    let cameras: serde_json::Value = serde_json::from_slice(&crate::storage::read(inputs.join("cameras.json")).context("cameras.json")?)?;
     let views = cameras["views"].as_array().ok_or_else(|| anyhow!("cameras.json has no views"))?;
     let mask_path = |view: &serde_json::Value| -> std::path::PathBuf {
         let name = view["name"].as_str().unwrap_or_default();
@@ -243,24 +252,23 @@ pub fn scene_from_inputs(
     };
     let read_mask = |view: &serde_json::Value| -> Result<image::GrayImage> {
         let path = mask_path(view);
-        Ok(image::open(&path).with_context(|| path.display().to_string())?.to_luma8())
+        Ok(crate::storage::open_image(&path).with_context(|| path.display().to_string())?.to_luma8())
     };
     // The common window: the largest mask box plus margins, in steps of 16 div.
-    let boxes = views
-        .par_iter()
-        .map(|view| -> Result<[usize; 4]> {
-            let mask = read_mask(view)?;
-            let (mut x0, mut y0, mut x1, mut y1) = (usize::MAX, usize::MAX, 0, 0);
-            for (x, y, value) in mask.enumerate_pixels() {
-                if value[0] > 127 {
-                    let (x, y) = (x as usize, y as usize);
-                    (x0, y0, x1, y1) = (x0.min(x), y0.min(y), x1.max(x + 1), y1.max(y + 1));
-                }
+    let boxes = each_view(views, |view| -> Result<[usize; 4]> {
+        let mask = read_mask(view)?;
+        let (mut x0, mut y0, mut x1, mut y1) = (usize::MAX, usize::MAX, 0, 0);
+        for (x, y, value) in mask.enumerate_pixels() {
+            if value[0] > 127 {
+                let (x, y) = (x as usize, y as usize);
+                (x0, y0, x1, y1) = (x0.min(x), y0.min(y), x1.max(x + 1), y1.max(y + 1));
             }
-            ensure!(x1 > 0, "empty mask for {}", view["name"]);
-            Ok([x0, y0, x1, y1])
-        })
-        .collect::<Result<Vec<_>>>()?;
+        }
+        ensure!(x1 > 0, "empty mask for {}", view["name"]);
+        Ok([x0, y0, x1, y1])
+    })
+    .into_iter()
+    .collect::<Result<Vec<_>>>()?;
     let margin = 48;
     let widest = boxes.iter().map(|b| (b[2] - b[0]).max(b[3] - b[1])).max().unwrap_or(0) + 2 * margin;
     let div = if div == 0 { widest.div_ceil(crop.max(1)).max(1) } else { div };
@@ -301,65 +309,65 @@ pub fn scene_from_inputs(
     let centre: [f64; 3] = std::array::from_fn(|i| 0.5 * (low[i] + high[i]));
     let radius = points.iter().map(|p| (0..3).map(|i| (p[i] - centre[i]).powi(2)).sum::<f64>().sqrt()).fold(0.0, f64::max);
     let unit_scale = 1.0 / (1.15 * radius);
-    let views = views
-        .par_iter()
-        .zip(&boxes)
-        .map(|(view, b)| -> Result<View> {
-            let photo = Path::new(view["texture_image"].as_str().or_else(|| view["image"].as_str()).unwrap_or_default());
-            let photo = match photos {
-                Some(dir) => dir.join(photo.file_name().unwrap_or_default()),
-                None => inputs.join(photo),
-            };
-            let rgb = image::open(&photo).with_context(|| photo.display().to_string())?.to_rgb8();
-            let mask = read_mask(view)?;
-            ensure!(rgb.dimensions() == mask.dimensions(), "photo and mask sizes differ for {}", view["name"]);
-            let (w, h) = (mask.width() as usize, mask.height() as usize);
-            ensure!(w >= cw && h >= ch, "the common window {cw} x {ch} is larger than the photo {w} x {h}");
-            let x0 = (((b[0] + b[2]) / 2) as i64 - (cw / 2) as i64).clamp(0, (w - cw) as i64) as usize;
-            let y0 = (((b[1] + b[3]) / 2) as i64 - (ch / 2) as i64).clamp(0, (h - ch) as i64) as usize;
-            let (rgb, mask) = (rgb.into_raw(), mask.into_raw());
-            let mut image = vec![0u8; width * height * 3];
-            let mut inside = vec![false; width * height];
-            let block = (div * div) as f64;
-            for y in 0..height {
-                for x in 0..width {
-                    let mut sum = [0f64; 4];
-                    for dy in 0..div {
-                        for dx in 0..div {
-                            let pixel = (y0 + y * div + dy) * w + x0 + x * div + dx;
-                            for k in 0..3 {
-                                sum[k] += rgb[pixel * 3 + k] as f64;
-                            }
-                            sum[3] += mask[pixel] as f64;
+    let pairs: Vec<(&serde_json::Value, &[usize; 4])> = views.iter().zip(&boxes).collect();
+    let views = each_view(&pairs, |(view, b)| -> Result<View> {
+        let (view, b) = (*view, *b);
+        let photo = Path::new(view["texture_image"].as_str().or_else(|| view["image"].as_str()).unwrap_or_default());
+        let photo = match photos {
+            Some(dir) => dir.join(photo.file_name().unwrap_or_default()),
+            None => inputs.join(photo),
+        };
+        let rgb = crate::storage::open_image(&photo).with_context(|| photo.display().to_string())?.to_rgb8();
+        let mask = read_mask(view)?;
+        ensure!(rgb.dimensions() == mask.dimensions(), "photo and mask sizes differ for {}", view["name"]);
+        let (w, h) = (mask.width() as usize, mask.height() as usize);
+        ensure!(w >= cw && h >= ch, "the common window {cw} x {ch} is larger than the photo {w} x {h}");
+        let x0 = (((b[0] + b[2]) / 2) as i64 - (cw / 2) as i64).clamp(0, (w - cw) as i64) as usize;
+        let y0 = (((b[1] + b[3]) / 2) as i64 - (ch / 2) as i64).clamp(0, (h - ch) as i64) as usize;
+        let (rgb, mask) = (rgb.into_raw(), mask.into_raw());
+        let mut image = vec![0u8; width * height * 3];
+        let mut inside = vec![false; width * height];
+        let block = (div * div) as f64;
+        for y in 0..height {
+            for x in 0..width {
+                let mut sum = [0f64; 4];
+                for dy in 0..div {
+                    for dx in 0..div {
+                        let pixel = (y0 + y * div + dy) * w + x0 + x * div + dx;
+                        for k in 0..3 {
+                            sum[k] += rgb[pixel * 3 + k] as f64;
                         }
-                    }
-                    let m = sum[3] / block >= 127.5;
-                    inside[y * width + x] = m;
-                    for k in 0..3 {
-                        image[(y * width + x) * 3 + k] = if m { (sum[k] / block).round() as u8 } else { 0 };
+                        sum[3] += mask[pixel] as f64;
                     }
                 }
+                let m = sum[3] / block >= 127.5;
+                inside[y * width + x] = m;
+                for k in 0..3 {
+                    image[(y * width + x) * 3 + k] = if m { (sum[k] / block).round() as u8 } else { 0 };
+                }
             }
-            let k = view["k"].as_array().ok_or_else(|| anyhow!("view without k"))?;
-            let k: Vec<f64> = k.iter().map(|v| v.as_f64().unwrap_or(f64::NAN)).collect();
-            ensure!(k.len() == 4, "k must be fx, fy, cx, cy");
-            let rows = view["rotation"].as_array().ok_or_else(|| anyhow!("rotation"))?;
-            ensure!(rows.len() == 3, "rotation");
-            let rotation = [vec3(&rows[0])?, vec3(&rows[1])?, vec3(&rows[2])?];
-            let t = vec3(&view["translation"])?;
-            let origin = std::array::from_fn(|i| (-(0..3).map(|j| rotation[j][i] * t[j]).sum::<f64>() - centre[i]) * unit_scale);
-            let d = div as f64;
-            Ok(View {
-                width,
-                height,
-                image,
-                mask: inside,
-                intrinsics: [k[0] / d, k[1] / d, (k[2] - x0 as f64) / d, (k[3] - y0 as f64) / d],
-                rotation,
-                origin,
-            })
+        }
+        let k = view["k"].as_array().ok_or_else(|| anyhow!("view without k"))?;
+        let k: Vec<f64> = k.iter().map(|v| v.as_f64().unwrap_or(f64::NAN)).collect();
+        ensure!(k.len() == 4, "k must be fx, fy, cx, cy");
+        let rows = view["rotation"].as_array().ok_or_else(|| anyhow!("rotation"))?;
+        ensure!(rows.len() == 3, "rotation");
+        let rotation = [vec3(&rows[0])?, vec3(&rows[1])?, vec3(&rows[2])?];
+        let t = vec3(&view["translation"])?;
+        let origin = std::array::from_fn(|i| (-(0..3).map(|j| rotation[j][i] * t[j]).sum::<f64>() - centre[i]) * unit_scale);
+        let d = div as f64;
+        Ok(View {
+            width,
+            height,
+            image,
+            mask: inside,
+            intrinsics: [k[0] / d, k[1] / d, (k[2] - x0 as f64) / d, (k[3] - y0 as f64) / d],
+            rotation,
+            origin,
         })
-        .collect::<Result<Vec<_>>>()?;
+    })
+    .into_iter()
+    .collect::<Result<Vec<_>>>()?;
     let hull_points = points.iter().map(|p| std::array::from_fn(|i| (p[i] - centre[i]) * unit_scale)).collect();
     Ok(Scene { views, centre, unit: unit_scale, hull_points, hull_normals: normals })
 }
@@ -485,6 +493,55 @@ pub fn hull_grid(scene: &Scene, resolution: usize) -> Vec<f32> {
             let (p, normal) = (scene.hull_points[index], scene.hull_normals[index]);
             let side = (0..3).map(|i| (q[i] - p[i]) * normal[i]).sum::<f64>();
             (d2.sqrt() * if side < 0.0 { -1.0 } else { 1.0 }) as f32
+        })
+        .collect();
+    gaussian_filter(&mut grid, [resolution; 3], 0.7);
+    grid
+}
+
+/// [`hull_grid`] with its inside checked away from the surface. The nearest sample's normal decides the side, and
+/// beyond a thin or sharp part the nearest sample can sit on an edge whose normal points sideways: a strip of space
+/// outside the hull then reads as inside (in the splat mesh, which takes the hull's side wherever the band ends, a
+/// spike). Points that read as inside and lie more than `far` from the hull are therefore tested by the winding
+/// number of the samples (about 1 inside, 0 outside; up to 4 096 samples, each standing for the area its spacing
+/// gives) and turned outside when it is below one half. Near the surface the grid is [`hull_grid`]'s.
+pub fn hull_grid_checked(scene: &Scene, resolution: usize, far: f64) -> Vec<f32> {
+    let points = &scene.hull_points;
+    let tree = Tree::new(points);
+    let probe = (points.len() / 2000).max(1);
+    let spacing: Vec<f64> = points.iter().step_by(probe).map(|p| tree.nearest_k(*p, 2).get(1).copied().unwrap_or(0.0).sqrt()).collect();
+    let h = spacing.iter().sum::<f64>() / spacing.len().max(1) as f64;
+    let stride = (points.len() / 4096).max(1);
+    let area = 4.0 * h * h * stride as f64;
+    let samples: Vec<([f64; 3], [f64; 3])> = points.iter().zip(&scene.hull_normals).step_by(stride).map(|(p, n)| (*p, *n)).collect();
+    let axis: Vec<f64> = (0..resolution).map(|i| -1.0 + 2.0 * i as f64 / (resolution - 1) as f64).collect();
+    let mut grid: Vec<f32> = (0..resolution * resolution * resolution)
+        .into_par_iter()
+        .map(|n| {
+            let q = [axis[n / (resolution * resolution)], axis[n / resolution % resolution], axis[n % resolution]];
+            let (index, d2) = tree.nearest(q);
+            let (p, normal) = (points[index], scene.hull_normals[index]);
+            let side = (0..3).map(|i| (q[i] - p[i]) * normal[i]).sum::<f64>();
+            let distance = d2.sqrt();
+            if side >= 0.0 {
+                return distance as f32;
+            }
+            if distance > far {
+                let winding: f64 = samples
+                    .iter()
+                    .map(|(p, n)| {
+                        let d = [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
+                        let r2 = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+                        (n[0] * d[0] + n[1] * d[1] + n[2] * d[2]) / (r2 * r2.sqrt()).max(1e-30)
+                    })
+                    .sum::<f64>()
+                    * area
+                    / (4.0 * std::f64::consts::PI);
+                if winding < 0.5 {
+                    return distance as f32;
+                }
+            }
+            -distance as f32
         })
         .collect();
     gaussian_filter(&mut grid, [resolution; 3], 0.7);
@@ -697,7 +754,7 @@ pub async fn train_with(
     ensure!(settings.parts > 0 && settings.rays.is_multiple_of(settings.parts), "rays must be a multiple of parts");
     let start = web_time::Instant::now();
     let log = |start: &web_time::Instant, text: &str| say(&format!("[{:6.0}s] {text}", start.elapsed().as_secs_f64()));
-    std::fs::create_dir_all(out)?;
+    crate::storage::create_dir_all(out)?;
     let pixels: f64 = scene.views.iter().map(|v| v.mask.iter().filter(|m| **m).count() as f64 / v.mask.len() as f64).sum::<f64>()
         / scene.views.len() as f64;
     log(&start, &format!("{} views {}x{}, foreground {pixels:.3}", scene.views.len(), scene.views[0].width, scene.views[0].height));
@@ -706,7 +763,7 @@ pub async fn train_with(
     let kernels = Kernels::new(gpu).await?;
     gpu.set_batching(true);
     let checkpoint = out.join("checkpoint.npz");
-    let (table, parameters, first_step) = if checkpoint.exists() {
+    let (table, parameters, first_step) = if crate::storage::exists(&checkpoint) {
         let npz = crate::npz::Npz::read(&checkpoint)?;
         let step = npz.get("step")?.scalar()? as u32 + 1;
         (npz.get("table")?.to_f32(), npz.get("parameters")?.to_f32(), step)
@@ -818,7 +875,7 @@ pub async fn train_with(
         save_mesh(gpu, &kernels, &model, &batch, scene, mesh_hull, settings.sampling.band, resolution, &out.join("mesh.stl")).await?;
     let summary = serde_json::json!({"steps": settings.steps, "rays": settings.rays, "views": scene.views.len(), "train_seconds": train_seconds,
         "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "adapter": gpu.describe(), "history": history});
-    std::fs::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
+    crate::storage::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
     log(&start, &format!("done: {triangles} triangles, training {train_seconds:.0}s"));
     Ok(())
 }

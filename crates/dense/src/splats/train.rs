@@ -283,7 +283,7 @@ async fn evaluate(
                     sheet.put_pixel((w + x) as u32, y as u32, image::Rgb(ours));
                 }
             }
-            sheet.save(dir.join(format!("heldout-{v:03}.png")))?;
+            crate::storage::save_png(dir.join(format!("heldout-{v:03}.png")), 2 * w, h, 3, sheet.as_raw())?;
         }
     }
     Ok(psnr)
@@ -318,7 +318,7 @@ pub async fn mesh(
 ) -> Result<usize> {
     use rayon::prelude::*;
     let hull_resolution = 160;
-    let hull = crate::surface::train::hull_grid(scene, hull_resolution);
+    let hull = crate::surface::train::hull_grid_checked(scene, hull_resolution, band as f64);
     let size = 2.0 / resolution as f32;
     let centre = |i: usize| (i as f32 + 0.5) * size - 1.0;
     let r = resolution;
@@ -389,7 +389,7 @@ pub async fn train_with(
 ) -> Result<Splats> {
     let start = web_time::Instant::now();
     let log = |start: &web_time::Instant, text: &str| say(&format!("[{:6.0}s] {text}", start.elapsed().as_secs_f64()));
-    std::fs::create_dir_all(out)?;
+    crate::storage::create_dir_all(out)?;
     let kernels = Kernels::new(gpu).await?;
     let adam = gpu.kernel("splat_adam", include_str!("../shaders/splat_adam.wgsl"), "main").await?;
     let densify = gpu.kernel("splat_densify_stats", include_str!("../shaders/splat_densify_stats.wgsl"), "main").await?;
@@ -420,6 +420,7 @@ pub async fn train_with(
     let end = if settings.stop > 0 { settings.stop } else { settings.steps };
     let mean_rate = |step: u32| 1.6e-4 * extent * 0.01f32.powf(step as f32 / settings.steps as f32);
     let mut history = Vec::new();
+    let finite_check = std::env::var("CRISPMESH_SPLAT_FINITE").is_ok();
     for step in 0..end {
         check()?;
         let v = training[random.below(training.len())];
@@ -440,6 +441,35 @@ pub async fn train_with(
         gpu.clear(&grads);
         raster_backward(gpu, &kernels, &cam, &frame, &loss.dpixels, &dsplat).await?;
         project_backward(gpu, &kernels, &splats, &cam, degree, &frame, &dsplat, &grads).await?;
+        if finite_check {
+            // Diagnostic (CRISPMESH_SPLAT_FINITE): stops at the first step where a buffer holds a value that is not
+            // finite, naming the buffer, the splat and its row: parameters (left so by the last update), gradients
+            // of the projected splats (loss and raster backward), parameter gradients (projection backward).
+            let n = splats.count as usize;
+            let buffers: [(&str, &wgpu::Buffer, usize); 3] = [
+                ("parameters", &splats.params, PARAMS as usize),
+                ("projected gradients", &dsplat, DSPLAT as usize),
+                ("gradients", &grads, PARAMS as usize),
+            ];
+            for (label, buffer, stride) in buffers {
+                let values: Vec<f32> = gpu.read(buffer, n * stride).await?;
+                if let Some(index) = values.iter().position(|v| !v.is_finite()) {
+                    let splat = index / stride;
+                    let row = |values: &[f32], stride: usize| values[splat * stride..(splat + 1) * stride].to_vec();
+                    let params: Vec<f32> = gpu.read(&splats.params, n * PARAMS as usize).await?;
+                    let projected: Vec<f32> = gpu.read(&frame.projected, n * PROJECTED as usize).await?;
+                    let bad = values.iter().filter(|v| !v.is_finite()).count();
+                    anyhow::bail!(
+                        "step {step}, view {}: {bad} values of the {label} not finite, first splat {splat} field {}; its parameters {:?}; projected {:?}; {label} {:?}",
+                        v,
+                        index % stride,
+                        row(&params, PARAMS as usize),
+                        row(&projected, PROJECTED as usize),
+                        row(&values, stride)
+                    );
+                }
+            }
+        }
         if step < strategy.refine_stop {
             let uniform = gpu.uniform("splat densify", &Quad { a: splats.count, b: cam.width, c: cam.height, d: 0 });
             gpu.run(&densify, &[&uniform, &frame.projected, &dsplat, &stats], splats.count as u64).await?;
@@ -505,7 +535,7 @@ pub async fn train_with(
     crate::npz::write(&out.join("splats.npz"), &[("params", &array)], false)?;
     let summary = serde_json::json!({"steps": settings.steps, "views": scene.views.len(), "held_out": held.len(), "splats": splats.count,
         "train_seconds": train_seconds, "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "heldout_psnr_in_mask_median": median, "heldout_psnr_in_mask": psnr, "adapter": gpu.describe(), "history": history});
-    std::fs::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
+    crate::storage::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
     log(&start, &format!("done: {} splats, training {train_seconds:.0}s, held-out PSNR in the mask median {median:.2} dB", splats.count));
     Ok(splats)
 }

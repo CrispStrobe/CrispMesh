@@ -1319,7 +1319,7 @@ relief, the cap a little softer here. Runs differ from one seed to the next: aft
 
 ## 2D Gaussian splats: `crispmesh-dense splats`
 
-Status: experimental, not part of `run`. Drill (300 photos at 544 x 576, 30 000 steps): 171 577 splats, held-out
+Status: experimental; in a run on request (see *Quality levels* below). Drill (300 photos at 544 x 576, 30 000 steps): 171 577 splats, held-out
 PSNR in the mask 25.44 dB, mesh 0.877 / 0.944 / 0.992 at 0.5 / 1 / 2 % (mean 0.0031); the reference run with gsplat
 on a Tesla T4: 168 835 splats, 25.71 dB, 0.881 / 0.947 / 0.992 (0.0026). Side by side the same relief and the same
 rough skin; one thin spike below the chuck here. That run took about 1.7 h on the M1; since then a step at 170 000
@@ -1339,7 +1339,10 @@ disagreement of the splats' normals with the normals of the median depth; Adam p
 densification every 100 steps up to 15 000 (duplicate small splats with large screen gradients, split large ones,
 prune transparent and, later, oversized ones; its opacity reset never fires, a precedence slip in gsplat that the
 reference run inherited, so it is left out here too). Every tenth view is held out for PSNR. The mesh: each view's
-median depth fused (truncation 4 voxels, 512 cubed) in a band around the hull, marching cubes.
+median depth fused (truncation 4 voxels, 512 cubed) in a band around the hull, marching cubes; outside the band the
+hull's side decides. That side comes from the nearest hull sample's normal, and beyond thin or sharp parts the sample
+can face sideways, which once turned a strip outside the drill's chuck into a spike; points that read as inside more
+than the band away are therefore checked by the winding number of the hull samples (`hull_grid_checked`).
 
 Rendering: splats projected (ray transform, screen box, normal turned to the camera, colour from spherical harmonics
 up to degree 3), sorted by depth, one (tile, splat) pair per 16-pixel tile emitted in that order and sorted stably by
@@ -1382,11 +1385,29 @@ mesh=512`, `crispmesh-dense splats SOURCE OUT quality=best crop=900`.
 In a run: `crispmesh-dense run ... --surface QUALITY [--surface-set NAME=VALUE]... --splats QUALITY
 [--splats-set NAME=VALUE]...` (a bare number for `--surface` means that many steps). They run after the mesh stage,
 from the run's inputs, its grown or repaired masks and its mesh as the start, and write `surface/mesh.stl` and
-`splats/mesh.stl` (with `splats.npz` and held-out renders) beside `mesh/mesh.stl`; native builds only. In
+`splats/mesh.stl` (with `splats.npz` and held-out renders) beside `mesh/mesh.stl`, natively and in a browser. With `--texture` each of
+these meshes is also photo-textured like the run's own (`surface/texture/mesh.glb`, `splats/texture/mesh.glb`). In
 `RunOptions` they are `surface` and `splats` (`{"quality": ..., "settings": [...]}`); `run::methods()` (also in
 `describe()`) lists them with their levels and settings for front ends. The app's "New run" form offers both (off or
 a level, and the numeric settings) and shows their meshes beside the run's own; it accepts numbers only there.
 
+
+In a browser both run inside the same run (Chrome, WebGPU, threaded package): the 73-photo Bunny from its inputs
+folder with 500 steps of each, 467 s for the whole run (neural surface 292 s, splats 79 s), peak WebAssembly memory
+1.71 GiB. There the photos are read one after the other, since only the main thread reaches the page's file source.
+
+On a single turn (Bunny, 73 photos, `fast`; F1 at 0.5 / 1 / 2 %, whole object / above the support, each mesh with its
+own fit to the scan): the run's mesh 0.908 / 0.941 / 0.956 and 0.968 / 0.996 / 1.000; the neural surface 0.865 /
+0.922 / 0.948 and 0.949 / 0.993 / 1.000; the splats 0.865 / 0.917 / 0.947 and 0.946 / 0.990 / 0.999 (25 and 18
+minutes on an M1). The scores are lower, yet the neural surface shows the face that the run's mesh loses (cheek
+pads, muzzle, the cheeks' outline; eyes only hinted); its losses are at the ear tips, which it makes slightly long,
+and along the base. It also agrees with the masks better: 0.8 % of its vertices lie outside the mask in five or
+more views, against 5.7 % for the run's mesh.
+
+The splat trainer can stop at the first value that is not finite (`CRISPMESH_SPLAT_FINITE=1`), naming the buffer
+(parameters, gradients of the projected splats, parameter gradients), the step, the view and the splat; the drill's
+and the mustard bottle's 30 000-step models held about 1 % splats whose parameters were not finite (none after
+10 000 steps on the Bunny). Pruning never removes them, since every comparison with them is false.
 ## Portability
 
 Measured parity is from Metal on an Apple M1. Beyond that, the CI workflow runs

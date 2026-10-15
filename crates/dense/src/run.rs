@@ -83,9 +83,9 @@ pub struct RunOptions {
     pub texture: bool,
     /// Source credit retained with the run and embedded in textured export.
     pub attribution: Option<String>,
-    /// The neural surface after the mesh stage (experimental, native only): `surface/mesh.stl`.
+    /// The neural surface after the mesh stage (experimental): `surface/mesh.stl`.
     pub surface: Option<Method>,
-    /// 2D Gaussian splats after the mesh stage (experimental, native only): `splats/mesh.stl` and `splats.npz`.
+    /// 2D Gaussian splats after the mesh stage (experimental): `splats/mesh.stl` and `splats.npz`.
     pub splats: Option<Method>,
 }
 
@@ -108,7 +108,6 @@ impl Method {
         Ok(Method { quality: value.to_string(), settings: Vec::new() })
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     fn arguments(&self) -> Vec<String> {
         std::iter::once(format!("quality={}", self.quality)).chain(self.settings.iter().cloned()).collect()
     }
@@ -776,7 +775,6 @@ async fn stages(
         let _ = inspector.overview(&events);
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     for (name, method) in [("surface", &options.surface), ("splats", &options.splats)] {
         let Some(method) = method else { continue };
         let command = ["crispmesh-dense", name, &text(&inputs), &text(&output.join(name))]
@@ -785,7 +783,7 @@ async fn stages(
             .chain(method.arguments())
             .collect();
         let stage = driver.begin(name, command, None)?;
-        let result = optimised_surface(name, &inputs, output, method, &stage.control);
+        let mut result = optimised_surface(name, &inputs, output, method, &stage.control).await;
         if result.is_ok() {
             let (kind, label) = if name == "surface" {
                 ("neural_surface", "Neural surface (experimental)")
@@ -793,6 +791,17 @@ async fn stages(
                 ("splats", "2D splats (experimental)")
             };
             stage.events.artifact(kind, &output.join(name).join("mesh.stl"), label, json!({}))?;
+        }
+        // With --texture the method's mesh gets the run's photo texture too, beside it in NAME/texture.
+        if let (true, Ok(report)) = (options.texture, &mut result) {
+            let texture_output = output.join(name).join("texture");
+            match crate::texture::run_with(&inputs, &output.join(name).join("mesh.stl"), &texture_output, 12, 1024, &stage.control) {
+                Ok(_) => {
+                    stage.events.artifact("textured_mesh", &texture_output.join("mesh.glb"), "Textured mesh (GLB)", json!({}))?;
+                    report["textured_mesh"] = json!(text(&texture_output.join("mesh.glb")));
+                }
+                Err(error) => result = Err(error),
+            }
         }
         driver.report[name] = driver.end(stage, result)?;
     }
@@ -843,7 +852,6 @@ async fn stages(
 /// The optional photo-optimised surfaces of a run (`RunOptions::surface`, `RunOptions::splats`), for a front end:
 /// `id`, `label`, `meaning`, whether this build runs it (`available`), and its quality levels and single settings.
 pub fn methods() -> Value {
-    let native = !cfg!(target_arch = "wasm32");
     let qualities = |fast: &str, standard: &str, best: &str| {
         json!([
             {"id": "fast", "label": "Fast", "meaning": fast},
@@ -862,7 +870,7 @@ pub fn methods() -> Value {
             "id": "surface",
             "label": "Neural surface",
             "meaning": "A signed-distance network trained by rendering the photos (NeuS-facto), started from the run's mesh: clean surfaces with fine relief. GPU, minutes to hours.",
-            "available": native,
+            "available": true,
             "qualities": qualities("6 000 steps, photos at about 480 px across the object, 384 grid", "20 000 steps, about 720 px, 512 grid (the reference run's)", "30 000 steps, twice the rays, about 960 px, 768 grid"),
             "settings": common,
             "output": "surface/mesh.stl",
@@ -871,7 +879,7 @@ pub fn methods() -> Value {
             "id": "splats",
             "label": "2D splats",
             "meaning": "Flat Gaussian disks trained on the photos with surface terms (2DGS), fused into a mesh; also a renderable model. GPU, minutes to hours.",
-            "available": native,
+            "available": true,
             "qualities": qualities("10 000 steps, about 480 px, 384 grid", "30 000 steps, about 720 px, 512 grid (the reference run's)", "30 000 steps, about 1080 px, 768 grid"),
             "settings": common,
             "output": "splats/mesh.stl",
@@ -881,13 +889,12 @@ pub fn methods() -> Value {
 
 /// The neural surface or the splats of a finished run: its photos and masks (grown, else repaired, else the inputs'),
 /// started from its mesh, trained on the GPU with the method's quality level and settings.
-#[cfg(not(target_arch = "wasm32"))]
-fn optimised_surface(name: &str, inputs: &Path, output: &Path, method: &Method, control: &Control) -> anyhow::Result<Value> {
+async fn optimised_surface(name: &str, inputs: &Path, output: &Path, method: &Method, control: &Control) -> anyhow::Result<Value> {
     use crate::surface::options::{split, Source};
     let (quality, items) = split(&method.arguments())?;
     let mut source = Source::for_quality(quality, if name == "surface" { 960 } else { 1080 });
     source.hull_mesh = Some(output.join("mesh/mesh.stl"));
-    source.masks = ["stereo/masks-grown", "stereo/masks-repaired"].iter().map(|m| output.join(m)).find(|m| m.is_dir());
+    source.masks = ["stereo/masks-grown", "stereo/masks-repaired"].iter().map(|m| output.join(m)).find(|m| crate::storage::is_dir(m));
     let mut surface = crate::surface::train::Settings::for_quality(quality);
     let mut splats = crate::splats::train::Settings::for_quality(quality);
     for (key, value) in &items {
@@ -898,16 +905,16 @@ fn optimised_surface(name: &str, inputs: &Path, output: &Path, method: &Method, 
     }
     let scene = source.scene(inputs, 0)?;
     control.log(format!("{} quality, {} views {}x{}", quality.name(), scene.views.len(), scene.views[0].width, scene.views[0].height));
-    let gpu = crate::gpu::Gpu::new()?;
+    let gpu = Gpu::request().await?;
     let out = output.join(name);
     let say = |line: &str| control.log(line);
     let check = || control.check();
     if name == "surface" {
-        crate::gpu::block_on(crate::surface::train::train_with(&gpu, &scene, &out, &surface, &say, &check))?;
+        crate::surface::train::train_with(&gpu, &scene, &out, &surface, &say, &check).await?;
     } else {
-        crate::gpu::block_on(crate::splats::train::train_with(&gpu, &scene, &out, &splats, &say, &check))?;
+        crate::splats::train::train_with(&gpu, &scene, &out, &splats, &say, &check).await?;
     }
-    let summary: Value = serde_json::from_slice(&std::fs::read(out.join("summary.json"))?)?;
+    let summary: Value = serde_json::from_slice(&crate::storage::read(out.join("summary.json"))?)?;
     Ok(
         json!({"mesh": text(&out.join("mesh.stl")), "quality": quality.name(), "triangles": summary["triangles"], "seconds": summary["seconds"]}),
     )

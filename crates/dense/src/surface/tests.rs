@@ -415,3 +415,31 @@ fn matrix_product_variants_are_valid_webgpu() {
         }
     }
 }
+
+/// A sphere whose samples near the top carry inward normals (as a sharp edge's samples can face sideways): the plain
+/// grid reads the space above as inside; the checked grid finds it outside by the winding number and keeps the
+/// sphere's inside and the rest of its outside. Needs no GPU.
+#[test]
+fn checked_hull_grid_turns_a_wrong_inside_outside() {
+    let mut random = train::Random::new(7);
+    let (mut hull_points, mut hull_normals) = (Vec::new(), Vec::new());
+    for _ in 0..20_000 {
+        let n = loop {
+            let v = [random.normal(), random.normal(), random.normal()];
+            let length = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+            if length > 1e-9 {
+                break v.map(|x| x / length);
+            }
+        };
+        hull_points.push(n.map(|x| 0.5 * x));
+        hull_normals.push(if n[2] > 0.95 { n.map(|x| -x) } else { n });
+    }
+    let scene = train::Scene { views: Vec::new(), centre: [0.0; 3], unit: 1.0, hull_points, hull_normals };
+    let r = 33;
+    let index = |i: usize, j: usize, k: usize| (i * r + j) * r + k;
+    let (plain, checked) = (train::hull_grid(&scene, r), train::hull_grid_checked(&scene, r, 0.05));
+    // (0, 0, 0.875) lies 0.375 above the top.
+    assert!(plain[index(16, 16, 30)] < 0.0, "the wrong normals should mislead the plain grid");
+    assert!(checked[index(16, 16, 30)] > 0.0);
+    assert!(checked[index(16, 16, 16)] < 0.0 && checked[index(0, 0, 0)] > 0.0 && checked[index(16, 16, 2)] > 0.0);
+}

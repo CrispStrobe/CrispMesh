@@ -6,7 +6,7 @@ import { activeOptions, chosenProviders, importFields, missingFields, parseStart
 import { event, fixtureEvents, settle } from "../testing/fixture";
 import { downloadName } from "../ui/download";
 import { servedByEngine } from "../ui/served";
-import { BrowserEngine, browserStartPoints, checkCalibration, describeInputs, photoFiles, PREVIEW_LIMIT_MEGAPIXELS, previewAdvice, relativeFiles } from "./browserEngine";
+import { BrowserEngine, browserStartPoints, checkCalibration, describeInputs, methodOptions, photoFiles, PREVIEW_LIMIT_MEGAPIXELS, previewAdvice, relativeFiles } from "./browserEngine";
 import { RunStore } from "./runStore";
 
 /** A stand-in for the worker: records what it is sent and lets the test answer. */
@@ -65,6 +65,17 @@ describe("the engine in this browser", () => {
     expect((await engine.settings())[0]?.name).toBe("grid");
     expect(worker.sent).toHaveLength(1); // loaded once
     expect(engine.kind).toBe("browser");
+  });
+
+  it("passes the photo-optimised surfaces of a start body on as run options, and nothing malformed", async () => {
+    expect(methodOptions({ surface: { quality: "fast", settings: ["mesh=384", 7] }, splats: { settings: [] }, texture: true })).toEqual({
+      surface: { quality: "fast", settings: ["mesh=384"] },
+    });
+    const worker = new FakeWorker();
+    const { engine } = engineWith(worker);
+    engine.setInputs(picked());
+    await engine.startRun({ splats: { quality: "standard", settings: [] } });
+    expect((worker.sent.at(-1) as Extract<ToWorker, { type: "run" }>).options).toMatchObject({ splats: { quality: "standard", settings: [] } });
   });
 
   it("says so plainly when the browser has no WebGPU", async () => {
