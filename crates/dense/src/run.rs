@@ -83,9 +83,35 @@ pub struct RunOptions {
     pub texture: bool,
     /// Source credit retained with the run and embedded in textured export.
     pub attribution: Option<String>,
-    /// Train the neural surface for this many steps after the mesh stage (0: no); experimental, native only. Its
-    /// mesh is written to `surface/mesh.stl` beside `mesh/mesh.stl`.
-    pub surface: u32,
+    /// The neural surface after the mesh stage (experimental, native only): `surface/mesh.stl`.
+    pub surface: Option<Method>,
+    /// 2D Gaussian splats after the mesh stage (experimental, native only): `splats/mesh.stl` and `splats.npz`.
+    pub splats: Option<Method>,
+}
+
+/// An optional photo-optimised surface of a run: its quality level (`fast`, `standard`, `best`) and single settings
+/// (`NAME=VALUE`, as for `crisp3ds-dense surface` / `splats`) applied after the level's.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct Method {
+    pub quality: String,
+    pub settings: Vec<String>,
+}
+
+impl Method {
+    /// From a command-line value: a quality level, or a number of steps (with the standard level).
+    pub fn parse(value: &str) -> anyhow::Result<Self> {
+        if value.parse::<u32>().is_ok() {
+            return Ok(Method { quality: "standard".into(), settings: vec![format!("steps={value}")] });
+        }
+        value.parse::<crate::surface::options::Quality>()?;
+        Ok(Method { quality: value.to_string(), settings: Vec::new() })
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn arguments(&self) -> Vec<String> {
+        std::iter::once(format!("quality={}", self.quality)).chain(self.settings.iter().cloned()).collect()
+    }
 }
 
 impl Default for RunOptions {
@@ -113,7 +139,8 @@ impl Default for RunOptions {
             keep_volume: false,
             texture: false,
             attribution: None,
-            surface: 0,
+            surface: None,
+            splats: None,
         }
     }
 }
@@ -750,17 +777,24 @@ async fn stages(
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    if options.surface > 0 {
-        let command = ["crisp3ds-dense", "surface", &text(&inputs), &text(&output.join("surface")), &format!("steps={}", options.surface)]
+    for (name, method) in [("surface", &options.surface), ("splats", &options.splats)] {
+        let Some(method) = method else { continue };
+        let command = ["crisp3ds-dense", name, &text(&inputs), &text(&output.join(name))]
             .map(String::from)
-            .to_vec();
-        let stage = driver.begin("surface", command, None)?;
-        let result = neural_surface(&inputs, output, options.surface, &stage.control);
+            .into_iter()
+            .chain(method.arguments())
+            .collect();
+        let stage = driver.begin(name, command, None)?;
+        let result = optimised_surface(name, &inputs, output, method, &stage.control);
         if result.is_ok() {
-            let path = output.join("surface/mesh.stl");
-            stage.events.artifact("neural_surface", &path, "Neural surface (experimental)", json!({}))?;
+            let (kind, label) = if name == "surface" {
+                ("neural_surface", "Neural surface (experimental)")
+            } else {
+                ("splats", "2D splats (experimental)")
+            };
+            stage.events.artifact(kind, &output.join(name).join("mesh.stl"), label, json!({}))?;
         }
-        driver.report["surface"] = driver.end(stage, result)?;
+        driver.report[name] = driver.end(stage, result)?;
     }
     if options.check {
         let stl = output.join("mesh/mesh.stl");
@@ -806,19 +840,77 @@ async fn stages(
     driver.finish("complete")
 }
 
-/// The neural surface of a finished run: its photos and masks (grown, else repaired, else the inputs'), started from
-/// its mesh, trained for `steps` steps on the GPU.
+/// The optional photo-optimised surfaces of a run (`RunOptions::surface`, `RunOptions::splats`), for a front end:
+/// `id`, `label`, `meaning`, whether this build runs it (`available`), and its quality levels and single settings.
+pub fn methods() -> Value {
+    let native = !cfg!(target_arch = "wasm32");
+    let qualities = |fast: &str, standard: &str, best: &str| {
+        json!([
+            {"id": "fast", "label": "Fast", "meaning": fast},
+            {"id": "standard", "label": "Standard", "meaning": standard},
+            {"id": "best", "label": "Best", "meaning": best},
+        ])
+    };
+    let common = json!([
+        {"name": "crop", "kind": "integer", "meaning": "Target width in pixels of the photo window around the object (480 fast, 720 standard, larger for best); the photos are reduced by the whole factor that reaches it."},
+        {"name": "mesh", "kind": "integer", "meaning": "Grid of the final mesh (cells per side)."},
+        {"name": "steps", "kind": "integer", "meaning": "Optimisation steps (time grows with them)."},
+        {"name": "seed", "kind": "integer", "meaning": "Random seed."},
+    ]);
+    json!([
+        {
+            "id": "surface",
+            "label": "Neural surface",
+            "meaning": "A signed-distance network trained by rendering the photos (NeuS-facto), started from the run's mesh: clean surfaces with fine relief. GPU, minutes to hours.",
+            "available": native,
+            "qualities": qualities("6 000 steps, photos at about 480 px across the object, 384 grid", "20 000 steps, about 720 px, 512 grid (the reference run's)", "30 000 steps, twice the rays, about 960 px, 768 grid"),
+            "settings": common,
+            "output": "surface/mesh.stl",
+        },
+        {
+            "id": "splats",
+            "label": "2D splats",
+            "meaning": "Flat Gaussian disks trained on the photos with surface terms (2DGS), fused into a mesh; also a renderable model. GPU, minutes to hours.",
+            "available": native,
+            "qualities": qualities("10 000 steps, about 480 px, 384 grid", "30 000 steps, about 720 px, 512 grid (the reference run's)", "30 000 steps, about 1080 px, 768 grid"),
+            "settings": common,
+            "output": "splats/mesh.stl",
+        },
+    ])
+}
+
+/// The neural surface or the splats of a finished run: its photos and masks (grown, else repaired, else the inputs'),
+/// started from its mesh, trained on the GPU with the method's quality level and settings.
 #[cfg(not(target_arch = "wasm32"))]
-fn neural_surface(inputs: &Path, output: &Path, steps: u32, control: &Control) -> anyhow::Result<Value> {
-    let masks = ["stereo/masks-grown", "stereo/masks-repaired"].iter().map(|m| output.join(m)).find(|m| m.is_dir());
-    let scene = crate::surface::train::scene_from_inputs(inputs, None, masks.as_deref(), &output.join("mesh/mesh.stl"), 0, 0)?;
-    control.log(format!("{} views {}x{}", scene.views.len(), scene.views[0].width, scene.views[0].height));
-    let settings = crate::surface::train::Settings { steps, ..Default::default() };
+fn optimised_surface(name: &str, inputs: &Path, output: &Path, method: &Method, control: &Control) -> anyhow::Result<Value> {
+    use crate::surface::options::{split, Source};
+    let (quality, items) = split(&method.arguments())?;
+    let mut source = Source::for_quality(quality, if name == "surface" { 960 } else { 1080 });
+    source.hull_mesh = Some(output.join("mesh/mesh.stl"));
+    source.masks = ["stereo/masks-grown", "stereo/masks-repaired"].iter().map(|m| output.join(m)).find(|m| m.is_dir());
+    let mut surface = crate::surface::train::Settings::for_quality(quality);
+    let mut splats = crate::splats::train::Settings::for_quality(quality);
+    for (key, value) in &items {
+        let known = if name == "surface" { surface.set(key, value)? } else { splats.set(key, value)? };
+        if !known && !source.set(key, value)? {
+            anyhow::bail!("unknown {name} setting {key}");
+        }
+    }
+    let scene = source.scene(inputs, 0)?;
+    control.log(format!("{} quality, {} views {}x{}", quality.name(), scene.views.len(), scene.views[0].width, scene.views[0].height));
     let gpu = crate::gpu::Gpu::new()?;
-    let out = output.join("surface");
-    crate::gpu::block_on(crate::surface::train::train_with(&gpu, &scene, &out, &settings, &|line| control.log(line), &|| control.check()))?;
+    let out = output.join(name);
+    let say = |line: &str| control.log(line);
+    let check = || control.check();
+    if name == "surface" {
+        crate::gpu::block_on(crate::surface::train::train_with(&gpu, &scene, &out, &surface, &say, &check))?;
+    } else {
+        crate::gpu::block_on(crate::splats::train::train_with(&gpu, &scene, &out, &splats, &say, &check))?;
+    }
     let summary: Value = serde_json::from_slice(&std::fs::read(out.join("summary.json"))?)?;
-    Ok(json!({"mesh": text(&out.join("mesh.stl")), "triangles": summary["triangles"], "seconds": summary["seconds"]}))
+    Ok(
+        json!({"mesh": text(&out.join("mesh.stl")), "quality": quality.name(), "triangles": summary["triangles"], "seconds": summary["seconds"]}),
+    )
 }
 
 /// How a run may start on this platform, for a front end that builds its form
@@ -912,13 +1004,13 @@ pub fn describe_with(photo_options: &[String]) -> Value {
     }
     let presets: Vec<Value> =
         PRESETS.iter().map(|(name, settings, meaning)| json!({"name": name, "settings": settings, "meaning": meaning})).collect();
-    json!({"schema": "crisp3ds_start_points_v1", "platform": table["platform"], "start_points": points, "presets": presets})
+    json!({"schema": "crisp3ds_start_points_v1", "platform": table["platform"], "start_points": points, "presets": presets, "methods": methods()})
 }
 
 pub const USAGE: &str = "usage: crisp3ds-dense run --output DIR (--photos DIR --calibration JSON [--masks PROVIDER] [--cameras PROVIDER] \
 [options of `crisp3ds-dense photos`] | --inputs DIR | --scene FILE --prepared DIR --raw-masks DIR) \
 [--config FILE] [--preset detail] [--set KEY=VALUE]... [--threads N] [--stereo-timeout SECONDS] [--minimum-free-gib G] [--reuse-depths FILE] \
-[--texture] [--surface STEPS] [--no-live-previews] [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]";
+[--texture] [--surface QUALITY] [--surface-set NAME=VALUE]... [--splats QUALITY] [--splats-set NAME=VALUE]... [--no-live-previews] [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]";
 
 /// Options from the command line of `dense_pipeline.py` (the parts this driver covers).
 pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
@@ -950,7 +1042,10 @@ pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
             "--no-preview" => options.preview = false,
             "--keep-volume" => options.keep_volume = true,
             "--texture" => options.texture = true,
-            "--surface" => options.surface = number(value()?)? as u32,
+            "--surface" => options.surface = Some(Method::parse(&value()?)?),
+            "--splats" => options.splats = Some(Method::parse(&value()?)?),
+            "--surface-set" => options.surface.get_or_insert_with(|| Method { quality: "standard".into(), settings: Vec::new() }).settings.push(value()?),
+            "--splats-set" => options.splats.get_or_insert_with(|| Method { quality: "standard".into(), settings: Vec::new() }).settings.push(value()?),
             // Accepted for command lines written for the Python driver; they select nothing here.
             "--device" | "--torch-python" | "--native" | "--photos-timeout" => drop(value()?),
             "--photos" => options.photos = Some(PathBuf::from(value()?)),
@@ -1051,6 +1146,21 @@ mod tests {
         let files = crate::storage::memory_files("mem:/run");
         std::fs::write(Path::new(&out).join("memory-files.json"), serde_json::to_string(&files).unwrap()).unwrap();
         assert!(!Path::new("mem:").exists(), "nothing was written to a directory named mem:");
+    }
+
+    #[test]
+    fn optional_surfaces_from_the_command_line_and_from_json() {
+        let words = |text: &str| text.split_whitespace().map(String::from).collect::<Vec<_>>();
+        let options = parse(&words("--inputs in --output out --surface fast --surface-set crop=600 --splats 5000")).unwrap();
+        assert_eq!(options.surface, Some(Method { quality: "fast".into(), settings: vec!["crop=600".into()] }));
+        assert_eq!(options.splats, Some(Method { quality: "standard".into(), settings: vec!["steps=5000".into()] }));
+        assert!(parse(&words("--inputs in --output out --surface quick")).is_err());
+        let options: RunOptions =
+            serde_json::from_value(json!({"output": "out", "inputs": "in", "splats": {"quality": "best", "settings": ["mesh=640"]}})).unwrap();
+        assert_eq!(options.splats.unwrap().settings, vec!["mesh=640".to_string()]);
+        let methods = methods();
+        assert_eq!(methods.as_array().unwrap().iter().map(|m| m["id"].as_str().unwrap()).collect::<Vec<_>>(), ["surface", "splats"]);
+        assert_eq!(describe()["methods"], methods);
     }
 
     #[test]

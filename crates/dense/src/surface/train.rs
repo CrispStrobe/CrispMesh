@@ -37,6 +37,44 @@ pub struct Settings {
     pub seed: u64,
 }
 
+impl Settings {
+    /// The settings of a quality level (standard: the reference run's).
+    pub fn for_quality(quality: super::options::Quality) -> Self {
+        use super::options::Quality;
+        let standard = Settings::default();
+        match quality {
+            Quality::Fast => Settings { steps: 6000, hull_steps: 400, mesh: 384, ..standard },
+            Quality::Standard => standard,
+            Quality::Best => Settings { steps: 30000, rays: 2048, parts: 8, mesh: 768, ..standard },
+        }
+    }
+
+    /// Applies one `NAME=VALUE`; false if the name is not a setting of the neural surface.
+    pub fn set(&mut self, name: &str, value: &str) -> Result<bool> {
+        use super::options::{number, whole};
+        let int = || whole(name, value);
+        match name {
+            "steps" => self.steps = int()?,
+            "stop" => self.stop = int()?,
+            "rays" => self.rays = int()?,
+            "parts" => self.parts = int()?,
+            "hull" => self.hull_steps = int()?,
+            "band" => self.sampling.band = number(name, value)?,
+            "coarse" => self.sampling.coarse = int()?,
+            "added" => self.sampling.added = int()?,
+            "width" => self.hidden = int()?,
+            "features" => self.features = int()?,
+            "table" => self.table_log2 = int()?,
+            "mesh" => self.mesh = int()?,
+            "snapshot" => self.snapshot = int()?,
+            "log" => self.log_every = int()?,
+            "seed" => self.seed = int()? as u64,
+            _ => return Ok(false),
+        }
+        Ok(true)
+    }
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
@@ -180,7 +218,7 @@ pub fn load_pack(pack: &Path) -> Result<Scene> {
 }
 
 /// A scene straight from an inputs directory (cameras.json with each view's original photo `texture_image`, else
-/// `image`, and `mask`; `photos` and `masks` replace their folders), as `pack_scene.py` packs it: every view cropped to one
+/// `image`, and `mask`; `photos` and `masks` replace their folders; `div` 0: chosen from `crop`), as `pack_scene.py` packs it: every view cropped to one
 /// common window around its mask (48 pixels of margin, a multiple of 16 times `div`), reduced by `div` (block
 /// means, as OpenCV's area resize for a whole factor; masks kept where the mean is at least 128), with the crop's
 /// intrinsics; 100 000 area-weighted samples of the hull mesh with their triangles' normals.
@@ -190,9 +228,10 @@ pub fn scene_from_inputs(
     masks: Option<&Path>,
     hull_mesh: &Path,
     div: usize,
+    crop: usize,
     seed: u64,
 ) -> Result<Scene> {
-    // div 0: reduce so that the crop is at most about 720 pixels (the packs' size: the DSLR captures halved).
+    // div 0: the whole factor that brings the crop window to at most `crop` pixels across.
     let cameras: serde_json::Value = serde_json::from_slice(&std::fs::read(inputs.join("cameras.json")).context("cameras.json")?)?;
     let views = cameras["views"].as_array().ok_or_else(|| anyhow!("cameras.json has no views"))?;
     let mask_path = |view: &serde_json::Value| -> std::path::PathBuf {
@@ -224,7 +263,7 @@ pub fn scene_from_inputs(
         .collect::<Result<Vec<_>>>()?;
     let margin = 48;
     let widest = boxes.iter().map(|b| (b[2] - b[0]).max(b[3] - b[1])).max().unwrap_or(0) + 2 * margin;
-    let div = if div == 0 { widest.div_ceil(720).max(1) } else { div };
+    let div = if div == 0 { widest.div_ceil(crop.max(1)).max(1) } else { div };
     let unit = 16 * div;
     let cw = (boxes.iter().map(|b| b[2] - b[0]).max().unwrap_or(0) + 2 * margin).div_ceil(unit) * unit;
     let ch = (boxes.iter().map(|b| b[3] - b[1]).max().unwrap_or(0) + 2 * margin).div_ceil(unit) * unit;
@@ -655,6 +694,7 @@ pub async fn train_with(
     say: &dyn Fn(&str),
     check: &dyn Fn() -> Result<()>,
 ) -> Result<()> {
+    ensure!(settings.parts > 0 && settings.rays.is_multiple_of(settings.parts), "rays must be a multiple of parts");
     let start = web_time::Instant::now();
     let log = |start: &web_time::Instant, text: &str| say(&format!("[{:6.0}s] {text}", start.elapsed().as_secs_f64()));
     std::fs::create_dir_all(out)?;
@@ -842,51 +882,27 @@ async fn save_checkpoint(gpu: &Gpu, model: &Model, step: u32, path: &Path) -> Re
     crate::npz::write(path, &[("table", &t), ("parameters", &p), ("step", &s)], false)
 }
 
-/// `crisp3ds-dense surface PACK OUT [NAME=VALUE ...]`
+/// `crisp3ds-dense surface SOURCE OUT [quality=fast|standard|best] [NAME=VALUE ...]`
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main(arguments: &[String]) -> Result<()> {
-    const USAGE: &str = "usage: crisp3ds-dense surface SOURCE OUT [steps=N stop=N rays=N parts=N hull=N band=X coarse=N added=N \
-                         width=N features=N table=LOG2 mesh=N snapshot=N log=N seed=N] [hull_mesh=STL photos=DIR masks=DIR div=N]
+    const USAGE: &str =
+        "usage: crisp3ds-dense surface SOURCE OUT [quality=fast|standard|best] [steps=N stop=N rays=N parts=N hull=N band=X \
+coarse=N added=N width=N features=N table=LOG2 mesh=N snapshot=N log=N seed=N] [hull_mesh=STL photos=DIR masks=DIR div=N crop=PIXELS]
 SOURCE: a pack of scripts/neural_surface/pack_scene.py (scene.json), or an inputs directory (cameras.json) with
-hull_mesh (our silhouette mesh), optionally photos and masks (folders replacing the inputs' original photos
-and masks) and div (photo reduction, 2)";
+hull_mesh (our silhouette mesh), optionally photos and masks (folders replacing the inputs' original photos and
+masks), div (photo reduction; default from crop) and crop (target width of the window around the object: 480 fast,
+720 standard, 960 best). The quality level sets the defaults; single settings after it override them.";
     ensure!(arguments.len() >= 2, "{USAGE}");
     let (source, out) = (std::path::PathBuf::from(&arguments[0]), std::path::PathBuf::from(&arguments[1]));
-    let mut s = Settings::default();
-    let (mut hull_mesh, mut photos, mut masks, mut div) = (None, None, None, 2usize);
-    for item in &arguments[2..] {
-        let (name, value) = item.split_once('=').ok_or_else(|| anyhow!("expected NAME=VALUE, got {item}\n{USAGE}"))?;
-        let int = || value.parse::<u32>().map_err(|_| anyhow!("{name} needs a whole number"));
-        match name {
-            "steps" => s.steps = int()?,
-            "stop" => s.stop = int()?,
-            "rays" => s.rays = int()?,
-            "parts" => s.parts = int()?,
-            "hull" => s.hull_steps = int()?,
-            "band" => s.sampling.band = value.parse().map_err(|_| anyhow!("band needs a number"))?,
-            "coarse" => s.sampling.coarse = int()?,
-            "added" => s.sampling.added = int()?,
-            "width" => s.hidden = int()?,
-            "features" => s.features = int()?,
-            "table" => s.table_log2 = int()?,
-            "mesh" => s.mesh = int()?,
-            "snapshot" => s.snapshot = int()?,
-            "log" => s.log_every = int()?,
-            "seed" => s.seed = int()? as u64,
-            "hull_mesh" => hull_mesh = Some(std::path::PathBuf::from(value)),
-            "photos" => photos = Some(std::path::PathBuf::from(value)),
-            "masks" => masks = Some(std::path::PathBuf::from(value)),
-            "div" => div = int()? as usize,
-            _ => bail!("unknown setting {name}\n{USAGE}"),
+    let (quality, items) = super::options::split(&arguments[2..]).map_err(|e| anyhow!("{e}\n{USAGE}"))?;
+    let mut s = Settings::for_quality(quality);
+    let mut from = super::options::Source::for_quality(quality, 960);
+    for (name, value) in &items {
+        if !s.set(name, value)? && !from.set(name, value)? {
+            bail!("unknown setting {name}\n{USAGE}");
         }
     }
-    ensure!(s.rays % s.parts == 0, "rays must be a multiple of parts");
-    let scene = if source.join("scene.json").exists() {
-        load_pack(&source)?
-    } else {
-        let hull_mesh = hull_mesh.ok_or_else(|| anyhow!("an inputs directory needs hull_mesh=STL\n{USAGE}"))?;
-        scene_from_inputs(&source, photos.as_deref(), masks.as_deref(), &hull_mesh, div, s.seed)?
-    };
+    let scene = from.scene(&source, s.seed)?;
     let gpu = Gpu::new()?;
     crate::gpu::block_on(train(&gpu, &scene, &out, &s))
 }

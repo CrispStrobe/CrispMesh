@@ -18,6 +18,7 @@ use bytemuck::{Pod, Zeroable};
 
 use crate::gpu::{Gpu, Kernel};
 
+pub mod options;
 #[cfg(test)]
 mod tests;
 pub mod train;

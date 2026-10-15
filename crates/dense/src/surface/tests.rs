@@ -368,7 +368,7 @@ fn scene_from_inputs_matches_the_pack() {
     else {
         return;
     };
-    let ours = train::scene_from_inputs(&inputs, var("CRISP3DS_SURFACE_PHOTOS").as_deref(), Some(&masks), &hull, 2, 0).expect("scene");
+    let ours = train::scene_from_inputs(&inputs, var("CRISP3DS_SURFACE_PHOTOS").as_deref(), Some(&masks), &hull, 2, 0, 0).expect("scene");
     let theirs = train::load_pack(&pack).expect("pack");
     assert_eq!(ours.views.len(), theirs.views.len());
     let radius = |s: &train::Scene| 1.0 / (1.15 * s.unit);

@@ -28,6 +28,43 @@ pub struct Settings {
     pub init: Option<std::path::PathBuf>,
 }
 
+impl Settings {
+    /// The settings of a quality level (standard: the reference run's 30 000 steps; the densification schedule
+    /// scales with the steps).
+    pub fn for_quality(quality: crate::surface::options::Quality) -> Self {
+        use crate::surface::options::Quality;
+        let standard = Settings::default();
+        match quality {
+            Quality::Fast => Settings { steps: 10000, mesh: 384, ..standard },
+            Quality::Standard => standard,
+            Quality::Best => Settings { mesh: 768, ..standard },
+        }
+    }
+
+    /// Applies one `NAME=VALUE`; false if the name is not a setting of the splats.
+    pub fn set(&mut self, name: &str, value: &str) -> Result<bool> {
+        use crate::surface::options::{number, whole};
+        let int = || whole(name, value);
+        match name {
+            "steps" => self.steps = int()?,
+            "stop" => self.stop = int()?,
+            "log" => self.log_every = int()?,
+            "seed" => self.seed = int()? as u64,
+            "mesh" => self.mesh = int()? as usize,
+            "sh" => self.sh_degree = int()?.min(3),
+            "hold" => self.hold_every = int()? as usize,
+            "init" => self.init = Some(std::path::PathBuf::from(value)),
+            "l1" => self.weights.l1 = number(name, value)?,
+            "ssim" => self.weights.ssim = number(name, value)?,
+            "mask" => self.weights.mask = number(name, value)?,
+            "normal" => self.weights.normal = number(name, value)?,
+            "distortion" => self.weights.distortion = number(name, value)?,
+            _ => return Ok(false),
+        }
+        Ok(true)
+    }
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
@@ -336,13 +373,22 @@ pub async fn mesh(
     Ok(mesh.faces.len())
 }
 
-fn log(start: &web_time::Instant, text: &str) {
-    println!("[{:6.0}s] {text}", start.elapsed().as_secs_f64());
+/// Trains splats on a scene and writes `splats.npz`, held-out renders and `summary.json` into `out`. Progress to stdout.
+pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) -> Result<Splats> {
+    train_with(gpu, scene, out, settings, &|text| println!("{text}"), &|| Ok(())).await
 }
 
-/// Trains splats on a scene and writes `splats.npz`, held-out renders and `summary.json` into `out`.
-pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) -> Result<Splats> {
+/// [`train`] with progress lines to `say` and `check` called every step (an error stops the training).
+pub async fn train_with(
+    gpu: &Gpu,
+    scene: &Scene,
+    out: &Path,
+    settings: &Settings,
+    say: &dyn Fn(&str),
+    check: &dyn Fn() -> Result<()>,
+) -> Result<Splats> {
     let start = web_time::Instant::now();
+    let log = |start: &web_time::Instant, text: &str| say(&format!("[{:6.0}s] {text}", start.elapsed().as_secs_f64()));
     std::fs::create_dir_all(out)?;
     let kernels = Kernels::new(gpu).await?;
     let adam = gpu.kernel("splat_adam", include_str!("../shaders/splat_adam.wgsl"), "main").await?;
@@ -375,6 +421,7 @@ pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) ->
     let mean_rate = |step: u32| 1.6e-4 * extent * 0.01f32.powf(step as f32 / settings.steps as f32);
     let mut history = Vec::new();
     for step in 0..end {
+        check()?;
         let v = training[random.below(training.len())];
         let view = &scene.views[v];
         let cam = camera(view);
@@ -457,46 +504,32 @@ pub async fn train(gpu: &Gpu, scene: &Scene, out: &Path, settings: &Settings) ->
     let array = crate::npz::Array::new(&[splats.count as usize, PARAMS as usize], crate::npz::Data::F32(rows));
     crate::npz::write(&out.join("splats.npz"), &[("params", &array)], false)?;
     let summary = serde_json::json!({"steps": settings.steps, "views": scene.views.len(), "held_out": held.len(), "splats": splats.count,
-        "train_seconds": train_seconds, "triangles": triangles, "heldout_psnr_in_mask_median": median, "heldout_psnr_in_mask": psnr, "adapter": gpu.describe(), "history": history});
+        "train_seconds": train_seconds, "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "heldout_psnr_in_mask_median": median, "heldout_psnr_in_mask": psnr, "adapter": gpu.describe(), "history": history});
     std::fs::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
     log(&start, &format!("done: {} splats, training {train_seconds:.0}s, held-out PSNR in the mask median {median:.2} dB", splats.count));
     Ok(splats)
 }
 
-/// `crisp3ds-dense splats SOURCE OUT [NAME=VALUE ...]`
+/// `crisp3ds-dense splats SOURCE OUT [quality=fast|standard|best] [NAME=VALUE ...]`
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main(arguments: &[String]) -> Result<()> {
     use anyhow::{anyhow, bail};
     const USAGE: &str =
-        "usage: crisp3ds-dense splats SOURCE OUT [steps=N stop=N log=N seed=N mesh=N init=SPLATS.npz] [hull_mesh=STL photos=DIR masks=DIR div=N]
-SOURCE as for `crisp3ds-dense surface`: a pack (scene.json) or an inputs directory with hull_mesh";
+        "usage: crisp3ds-dense splats SOURCE OUT [quality=fast|standard|best] [steps=N stop=N log=N seed=N mesh=N sh=DEGREE \
+hold=N init=SPLATS.npz l1=X ssim=X mask=X normal=X distortion=X] [hull_mesh=STL photos=DIR masks=DIR div=N crop=PIXELS]
+SOURCE as for `crisp3ds-dense surface` (crop: 480 fast, 720 standard, 1080 best). The quality level sets the
+defaults; single settings after it override them.";
     ensure!(arguments.len() >= 2, "{USAGE}");
     let (source, out) = (std::path::PathBuf::from(&arguments[0]), std::path::PathBuf::from(&arguments[1]));
-    let mut s = Settings::default();
-    let (mut hull_mesh, mut photos, mut masks, mut div) = (None, None, None, 2usize);
-    for item in &arguments[2..] {
-        let (name, value) = item.split_once('=').ok_or_else(|| anyhow!("expected NAME=VALUE, got {item}\n{USAGE}"))?;
-        let int = || value.parse::<u32>().map_err(|_| anyhow!("{name} needs a whole number"));
-        match name {
-            "steps" => s.steps = int()?,
-            "stop" => s.stop = int()?,
-            "log" => s.log_every = int()?,
-            "seed" => s.seed = int()? as u64,
-            "mesh" => s.mesh = int()? as usize,
-            "init" => s.init = Some(std::path::PathBuf::from(value)),
-            "hull_mesh" => hull_mesh = Some(std::path::PathBuf::from(value)),
-            "photos" => photos = Some(std::path::PathBuf::from(value)),
-            "masks" => masks = Some(std::path::PathBuf::from(value)),
-            "div" => div = int()? as usize,
-            _ => bail!("unknown setting {name}\n{USAGE}"),
+    let (quality, items) = crate::surface::options::split(&arguments[2..]).map_err(|e| anyhow!("{e}\n{USAGE}"))?;
+    let mut s = Settings::for_quality(quality);
+    let mut from = crate::surface::options::Source::for_quality(quality, 1080);
+    for (name, value) in &items {
+        if !s.set(name, value)? && !from.set(name, value)? {
+            bail!("unknown setting {name}\n{USAGE}");
         }
     }
-    let scene = if source.join("scene.json").exists() {
-        crate::surface::train::load_pack(&source)?
-    } else {
-        let hull_mesh = hull_mesh.ok_or_else(|| anyhow!("an inputs directory needs hull_mesh=STL\n{USAGE}"))?;
-        crate::surface::train::scene_from_inputs(&source, photos.as_deref(), masks.as_deref(), &hull_mesh, div, s.seed)?
-    };
+    let scene = from.scene(&source, s.seed)?;
     let gpu = Gpu::new()?;
     crate::gpu::block_on(train(&gpu, &scene, &out, &s)).map(|_| ())
 }
