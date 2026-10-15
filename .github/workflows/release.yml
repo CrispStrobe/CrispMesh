@@ -156,7 +156,7 @@ jobs:
           test -s dist/THIRD-PARTY-NOTICES.txt
           test -s dist/engine/pkg/crispmesh_dense_web_bg.wasm
           ! grep -E '(src|href)="/' dist/index.html
-          name="Crisp-3D-Studio_web-$FILE_VERSION"
+          name="CrispMesh_web-$FILE_VERSION"
           mkdir -p ../../release-out && mv dist "$name"
           # The notices on their own as well: the license, the store permission and every third-party license.
           cp "$name/THIRD-PARTY-NOTICES.txt" ../../release-out/THIRD-PARTY-NOTICES.txt
@@ -284,7 +284,7 @@ jobs:
           mkdir -p "$out"
           bundle=src-tauri/target/release/bundle
           find "$bundle" -maxdepth 2 | sort
-          base="Crisp-3D-Studio_$FILE_VERSION-$LABEL"
+          base="CrispMesh_$FILE_VERSION-$LABEL"
           case "$RUNNER_OS" in
             macOS)
               cp "$bundle"/dmg/*.dmg "$out/$base.dmg"
@@ -346,7 +346,7 @@ jobs:
         run: |
           mkdir -p "$GITHUB_WORKSPACE/release-out"
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -n 1)
-          cp "$apk" "$GITHUB_WORKSPACE/release-out/Crisp-3D-Studio_$FILE_VERSION-android-arm64-debug.apk"
+          cp "$apk" "$GITHUB_WORKSPACE/release-out/CrispMesh_$FILE_VERSION-android-arm64-debug.apk"
           ls -la "$GITHUB_WORKSPACE/release-out"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -398,7 +398,7 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/release-out"
           app=$(find src-tauri/gen/apple/build -name '*.app' -maxdepth 6 | head -n 1)
           test -n "$app"
-          ditto -c -k --keepParent "$app" "$GITHUB_WORKSPACE/release-out/Crisp-3D-Studio_$FILE_VERSION-ios-simulator-arm64.app.zip"
+          ditto -c -k --keepParent "$app" "$GITHUB_WORKSPACE/release-out/CrispMesh_$FILE_VERSION-ios-simulator-arm64.app.zip"
           ls -la "$GITHUB_WORKSPACE/release-out"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

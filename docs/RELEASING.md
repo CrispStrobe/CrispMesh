@@ -9,12 +9,12 @@ it, and how builds reach TestFlight.
 
 | File | Job | What it is |
 | --- | --- | --- |
-| `Crisp-3D-Studio_web-<v>.zip` | web | Studio as static files (relative URLs; demo recording, third-party notices and the engine for browsers, `engine/`, inside) |
-| `Crisp-3D-Studio_<v>-macos-arm64.dmg`, `.app.tar.gz` | desktop | Studio desktop app with the engine built in, Apple Silicon, ad-hoc signed |
-| `Crisp-3D-Studio_<v>-windows-x64-setup.exe` | desktop | NSIS installer, per user, unsigned |
-| `Crisp-3D-Studio_<v>-linux-x64.AppImage`, `.deb` | desktop | Linux x64 |
-| `Crisp-3D-Studio_<v>-android-arm64-debug.apk` | android (non-blocking) | debug build, throwaway debug key |
-| `Crisp-3D-Studio_<v>-ios-simulator-arm64.app.zip` | ios (non-blocking) | simulator build, not installable on a device |
+| `CrispMesh_web-<v>.zip` | web | Studio as static files (relative URLs; demo recording, third-party notices and the engine for browsers, `engine/`, inside) |
+| `CrispMesh_<v>-macos-arm64.dmg`, `.app.tar.gz` | desktop | Studio desktop app with the engine built in, Apple Silicon, ad-hoc signed |
+| `CrispMesh_<v>-windows-x64-setup.exe` | desktop | NSIS installer, per user, unsigned |
+| `CrispMesh_<v>-linux-x64.AppImage`, `.deb` | desktop | Linux x64 |
+| `CrispMesh_<v>-android-arm64-debug.apk` | android (non-blocking) | debug build, throwaway debug key |
+| `CrispMesh_<v>-ios-simulator-arm64.app.zip` | ios (non-blocking) | simulator build, not installable on a device |
 | `crispmesh-dense-pipeline-<v>.tar.gz` | python | `scripts/turntable_mesh`, the modules it imports from elsewhere under `scripts/`, the engine contract, the sphere fixture, `LICENSE` |
 | `SHA256SUMS.txt` | publish | checksums of all of the above |
 
@@ -48,8 +48,8 @@ Every release states, in its notes:
 3. Tag and push:
 
    ```sh
-   git tag -a v0.2.0 -m "CrispMesh 0.2.0"
-   git push origin v0.2.0
+   git tag -a v0.3.0 -m "CrispMesh 0.3.0"
+   git push origin v0.3.0
    ```
 
    The tag must be `v` followed by a version like `1.2.3` or `1.2.3-rc.1`.
@@ -57,7 +57,7 @@ Every release states, in its notes:
    `tauri.conf.json` and `Cargo.toml` for the build
    (`apps/studio/scripts/set-version.mjs`); it does not commit it. To keep the
    repository's own numbers in step, run
-   `node apps/studio/scripts/set-version.mjs 0.2.0` and commit before tagging;
+   `node apps/studio/scripts/set-version.mjs 0.3.0` and commit before tagging;
    `--check` tells whether the files agree.
 4. When the workflow is done there is a **draft prerelease** named
    `CrispMesh <version>` with all files attached. It is invisible to the public
@@ -89,7 +89,7 @@ because Apple and Android accept nothing else.
 - Then: untick "prerelease" only if that is meant, and publish.
 
 To withdraw a release: delete the draft (or the release) and the tag
-(`git push origin :refs/tags/v0.2.0`).
+(`git push origin :refs/tags/v0.3.0`).
 
 ## Signing (not set up)
 

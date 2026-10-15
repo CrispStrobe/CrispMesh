@@ -156,7 +156,7 @@ jobs:
           ipa=$(find "$RUNNER_TEMP/export" -name '*.ipa' | head -n 1)
           test -n "$ipa"
           mkdir -p "$GITHUB_WORKSPACE/out"
-          out="$GITHUB_WORKSPACE/out/Crisp-3D-Studio_${VERSION}_${BUILD_NUMBER}_ios.ipa"
+          out="$GITHUB_WORKSPACE/out/CrispMesh_${VERSION}_${BUILD_NUMBER}_ios.ipa"
           mv "$ipa" "$out"
           echo "IPA=$out" >> "$GITHUB_ENV"
       - name: Verify the signature
@@ -287,7 +287,7 @@ jobs:
       - name: Package (signed installer)
         run: |
           mkdir -p "$GITHUB_WORKSPACE/out"
-          pkg="$GITHUB_WORKSPACE/out/Crisp-3D-Studio_${VERSION}_${BUILD_NUMBER}_macos.pkg"
+          pkg="$GITHUB_WORKSPACE/out/CrispMesh_${VERSION}_${BUILD_NUMBER}_macos.pkg"
           productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" "$pkg"
           pkgutil --check-signature "$pkg" | sed -n '1,4p' | sed 's/: [^:]*([A-Z0-9]*)$//'
           echo "PKG=$pkg" >> "$GITHUB_ENV"
