@@ -32,6 +32,9 @@ pub struct Settings {
     pub mask: f32,
     pub variance: f32,
     pub mesh: u32,
+    /// At meshing, a point the network puts inside but that lies outside the object's mask in at least this many
+    /// views counts as outside (0: off).
+    pub carve: u32,
     pub snapshot: u32,
     pub log_every: u32,
     pub seed: u64,
@@ -66,6 +69,7 @@ impl Settings {
             "features" => self.features = int()?,
             "table" => self.table_log2 = int()?,
             "mesh" => self.mesh = int()?,
+            "carve" => self.carve = int()?,
             "snapshot" => self.snapshot = int()?,
             "log" => self.log_every = int()?,
             "seed" => self.seed = int()? as u64,
@@ -95,6 +99,7 @@ impl Default for Settings {
             mask: 0.1,
             variance: 0.3,
             mesh: 512,
+            carve: 0,
             snapshot: 0,
             log_every: 100,
             seed: 0,
@@ -643,6 +648,7 @@ pub async fn save_mesh(
     scene: &Scene,
     hull: Option<(&[f32], usize)>,
     band: f32,
+    carve: u32,
     resolution: usize,
     path: &Path,
 ) -> Result<usize> {
@@ -668,6 +674,17 @@ pub async fn save_mesh(
             *v = v.max(trilinear(grid, r, p) - band);
         });
     }
+    if carve > 0 {
+        let outside = 0.5 * 2.0 / (resolution - 1) as f32;
+        values.par_iter_mut().enumerate().for_each(|(n, v)| {
+            if *v < 0.0 {
+                let p = [axis[n / (resolution * resolution)], axis[n / resolution % resolution], axis[n % resolution]];
+                if outside_masks(scene, p, carve as usize) {
+                    *v = outside;
+                }
+            }
+        });
+    }
     let mesh = cubes::extract(&values, [resolution; 3], 1);
     if mesh.faces.is_empty() {
         return Ok(0);
@@ -677,6 +694,30 @@ pub async fn save_mesh(
         mesh.vertices.iter().map(|v| std::array::from_fn(|i| (v[i] as f64 * spacing - 1.0) / scene.unit + scene.centre[i])).collect();
     crate::stl::write_binary(path, "crispmesh neural surface (webgpu)", &vertices, &mesh.faces)?;
     Ok(mesh.faces.len())
+}
+
+/// Whether `p` (unit-sphere frame) projects outside the object's mask in at least `views` of the views that see it.
+pub fn outside_masks(scene: &Scene, p: [f32; 3], views: usize) -> bool {
+    let mut count = 0;
+    for view in &scene.views {
+        let d = [p[0] as f64 - view.origin[0], p[1] as f64 - view.origin[1], p[2] as f64 - view.origin[2]];
+        let c: [f64; 3] = std::array::from_fn(|i| (0..3).map(|j| view.rotation[i][j] * d[j]).sum());
+        if c[2] <= 0.0 {
+            continue;
+        }
+        let k = view.intrinsics;
+        let (u, w) = ((k[0] * c[0] / c[2] + k[2]).floor(), (k[1] * c[1] / c[2] + k[3]).floor());
+        if u < 0.0 || w < 0.0 || u >= view.width as f64 || w >= view.height as f64 {
+            continue;
+        }
+        if !view.mask[w as usize * view.width + u as usize] {
+            count += 1;
+            if count >= views {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Fits the geometry network to the hull's distance (L1 plus 0.1 eikonal), `steps` Adam steps at 1e-3.
@@ -787,8 +828,19 @@ pub async fn train_with(
     } else if settings.hull_steps > 0 {
         fit_hull(say, gpu, &kernels, &model, &batch, scene, &grid, resolution, settings.hull_steps, &mut random, &start).await?;
         model.begin_step(gpu, &kernels).await?;
-        let triangles =
-            save_mesh(gpu, &kernels, &model, &batch, scene, mesh_hull, settings.sampling.band, 256, &out.join("mesh-hull.stl")).await?;
+        let triangles = save_mesh(
+            gpu,
+            &kernels,
+            &model,
+            &batch,
+            scene,
+            mesh_hull,
+            settings.sampling.band,
+            settings.carve,
+            256,
+            &out.join("mesh-hull.stl"),
+        )
+        .await?;
         log(&start, &format!("hull mesh: {triangles} triangles"));
     }
     let end = if settings.stop > 0 { settings.stop } else { settings.steps };
@@ -858,6 +910,7 @@ pub async fn train_with(
                 scene,
                 mesh_hull,
                 settings.sampling.band,
+                settings.carve,
                 256,
                 &out.join(format!("mesh-{step}.stl")),
             )
@@ -871,8 +924,19 @@ pub async fn train_with(
     let train_seconds = start.elapsed().as_secs_f64();
     model.begin_step(gpu, &kernels).await?;
     let resolution = if settings.stop > 0 { 256 } else { settings.mesh as usize };
-    let triangles =
-        save_mesh(gpu, &kernels, &model, &batch, scene, mesh_hull, settings.sampling.band, resolution, &out.join("mesh.stl")).await?;
+    let triangles = save_mesh(
+        gpu,
+        &kernels,
+        &model,
+        &batch,
+        scene,
+        mesh_hull,
+        settings.sampling.band,
+        settings.carve,
+        resolution,
+        &out.join("mesh.stl"),
+    )
+    .await?;
     let summary = serde_json::json!({"steps": settings.steps, "rays": settings.rays, "views": scene.views.len(), "train_seconds": train_seconds,
         "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "adapter": gpu.describe(), "history": history});
     crate::storage::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;

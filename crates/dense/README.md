@@ -1281,6 +1281,9 @@ points and normals), or an inputs directory with `hull_mesh=STL` (our silhouette
 scene is then made here, without Python. On the mustard bottle that scene equals the pack's (masks on all 91
 million pixels, intrinsics exactly, colours within the pack's JPEG noise, centre and radius within 0.01 %).
 Every setting is the prototype's default.
+`carve=K` (off by default, not yet evaluated): at meshing, a point the network puts inside but that lies outside the
+object's mask in at least K views counts as outside; meant for the slightly long ear tips on the Bunny, which lie
+outside the masks in five or more views.
 
 There is no automatic differentiation: each kernel (`src/shaders/surface_*.wgsl`) has a hand-written backward
 kernel. The distance's gradient, which the normals, the NeuS cosine and the eikonal term need, comes from

@@ -443,3 +443,26 @@ fn checked_hull_grid_turns_a_wrong_inside_outside() {
     assert!(checked[index(16, 16, 30)] > 0.0);
     assert!(checked[index(16, 16, 16)] < 0.0 && checked[index(0, 0, 0)] > 0.0 && checked[index(16, 16, 2)] > 0.0);
 }
+
+/// A camera on the +z axis looking at the origin whose mask covers the left half of its image: a point imaged on the
+/// right counts as outside in that one view, a point on the left and one behind the camera do not. Needs no GPU.
+#[test]
+fn carving_counts_the_views_whose_mask_excludes_a_point() {
+    let (width, height) = (100, 100);
+    let mask: Vec<bool> = (0..width * height).map(|i| i % width < 50).collect();
+    // Camera at z = 2 looking down -z: camera axes x = world x, y = world -y, z = world -z.
+    let view = train::View {
+        width,
+        height,
+        image: vec![0; width * height * 3],
+        mask,
+        intrinsics: [100.0, 100.0, 50.0, 50.0],
+        rotation: [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]],
+        origin: [0.0, 0.0, 2.0],
+    };
+    let scene = train::Scene { views: vec![view], centre: [0.0; 3], unit: 1.0, hull_points: Vec::new(), hull_normals: Vec::new() };
+    assert!(train::outside_masks(&scene, [0.3, 0.0, 0.0], 1));
+    assert!(!train::outside_masks(&scene, [-0.3, 0.0, 0.0], 1));
+    assert!(!train::outside_masks(&scene, [0.3, 0.0, 0.0], 2), "only one view sees it");
+    assert!(!train::outside_masks(&scene, [0.3, 0.0, 3.0], 1), "behind the camera");
+}
