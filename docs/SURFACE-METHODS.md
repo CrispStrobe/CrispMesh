@@ -163,6 +163,8 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
    It reads a scene straight from an inputs directory, without Python. Mustard bottle from its inputs: 0.795 /
    0.907 / 0.965 (reference 0.789 / 0.909 / 0.980). 2D splats on WebGPU (`crisp3ds-dense splats`), checked against a
    PyTorch reference of gsplat's 2DGS: drill 0.877 / 0.944 / 0.992, held-out 25.44 dB (gsplat 0.881 / 0.947 / 0.992,
-   25.71 dB), about 5 times slower per step than gsplat on a T4. Next: speed, a run setting for both.
+   25.71 dB), mustard 0.779 / 0.896 / 0.986, 24.51 dB (gsplat 0.791 / 0.899 / 0.969, 24.26 dB); about an hour per
+   object on the M1. Both are run stages with quality levels (`--surface` / `--splats fast|standard|best`) and in the
+   app's New run form.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel
    averaging for single-turn captures.
