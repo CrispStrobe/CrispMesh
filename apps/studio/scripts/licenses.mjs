@@ -126,11 +126,11 @@ export function classify(expression) {
 const ASSETS = [
   {
     what: "App icons (src-tauri/icons)",
-    origin: "CrispMesh's own artwork, the same set as apps/desktop (drawn from apps/desktop/src-tauri/icons/source.svg)",
-    license: "project (AGPL-3.0-only, owner's copyright)",
+    origin: "CrispMesh's icon, the same set as apps/desktop: generated with FLUX 1.1 [pro] through the Black Forest Labs API for the project (apps/desktop/src-tauri/icons/source.png; source-desktop.png is its rounded desktop form)",
+    license: "project (the owner's, under the Black Forest Labs API terms for generated output)",
   },
   {
-    what: "Interface icons (src/ui/icons.tsx) and the favicon in index.html",
+    what: "Interface icons (src/ui/icons.tsx)",
     origin: "Drawn for Studio as inline SVG paths; no icon set is included",
     license: "project (AGPL-3.0-only, owner's copyright)",
   },
