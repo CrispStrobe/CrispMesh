@@ -510,14 +510,14 @@ pub async fn train_with(
     Ok(splats)
 }
 
-/// `crisp3ds-dense splats SOURCE OUT [quality=fast|standard|best] [NAME=VALUE ...]`
+/// `crispmesh-dense splats SOURCE OUT [quality=fast|standard|best] [NAME=VALUE ...]`
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main(arguments: &[String]) -> Result<()> {
     use anyhow::{anyhow, bail};
     const USAGE: &str =
-        "usage: crisp3ds-dense splats SOURCE OUT [quality=fast|standard|best] [steps=N stop=N log=N seed=N mesh=N sh=DEGREE \
+        "usage: crispmesh-dense splats SOURCE OUT [quality=fast|standard|best] [steps=N stop=N log=N seed=N mesh=N sh=DEGREE \
 hold=N init=SPLATS.npz l1=X ssim=X mask=X normal=X distortion=X] [hull_mesh=STL photos=DIR masks=DIR div=N crop=PIXELS]
-SOURCE as for `crisp3ds-dense surface` (crop: 480 fast, 720 standard, 1080 best). The quality level sets the
+SOURCE as for `crispmesh-dense surface` (crop: 480 fast, 720 standard, 1080 best). The quality level sets the
 defaults; single settings after it override them.";
     ensure!(arguments.len() >= 2, "{USAGE}");
     let (source, out) = (std::path::PathBuf::from(&arguments[0]), std::path::PathBuf::from(&arguments[1]));

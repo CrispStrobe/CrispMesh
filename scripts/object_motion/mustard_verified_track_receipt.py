@@ -20,7 +20,7 @@ from scripts.object_motion.verified_track_adapter import ImageSource, extract_ca
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = Path("/Volumes/backups/code/crisp3ds-data")
+DATA = Path("/Volumes/backups/code/crispmesh-data")
 STAGE = DATA / "mustard-sfm-train-001"
 PRODUCER = DATA / "mustard-sfm-masked-fixed-exhaustive-001"
 STAGE_REPORT_SHA256 = "bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0"

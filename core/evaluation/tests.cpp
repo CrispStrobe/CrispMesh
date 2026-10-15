@@ -16,7 +16,7 @@
 #include <thread>
 #include <atomic>
 
-using namespace crisp3ds::evaluation;
+using namespace crispmesh::evaluation;
 namespace fs = std::filesystem;
 
 namespace {
@@ -127,7 +127,7 @@ int main() {
   std::random_device random;
   bool created = false;
   for (int attempt = 0; attempt < 10; ++attempt) {
-    temp = fs::temp_directory_path() / ("crisp3ds-stereo-eval-" + std::to_string(random()) + "-" + std::to_string(attempt));
+    temp = fs::temp_directory_path() / ("crispmesh-stereo-eval-" + std::to_string(random()) + "-" + std::to_string(attempt));
     if (fs::create_directory(temp)) { created = true; break; }
   }
   assert(created);

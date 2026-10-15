@@ -19,10 +19,10 @@ from scripts.classical_backend.run import digest, folder_bytes
 
 
 REPO = Path(__file__).resolve().parents[2]
-APPLE = Path("/Volumes/backups/code/crisp3ds-data/apple-bunny73-preview-001-output/model.usdz")
+APPLE = Path("/Volumes/backups/code/crispmesh-data/apple-bunny73-preview-001-output/model.usdz")
 APPLE_SHA = "2dbefc3216132134124068fdceb9cf4eb43e5d922c59b47db750086042915d60"
 LAUNCH = APPLE.with_name("result.json")
-MESH_REVIEW = Path("/Volumes/backups/code/crisp3ds-data/apple-bunny73-review-001")
+MESH_REVIEW = Path("/Volumes/backups/code/crispmesh-data/apple-bunny73-review-001")
 MESH = MESH_REVIEW / "mesh-untextured.ply"
 MESH_SHA = "41a6de35cad340f805cec567e2c69f12eed9691f8ae7672d664814756f661303"
 FULL = REPO / ".local-tools/test-data/3dlf-scan-bunny/revopoint/bunny/fuse_mesh_rgb.ply"

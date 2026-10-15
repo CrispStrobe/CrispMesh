@@ -5,7 +5,7 @@
 //   node scripts/set-version.mjs --check      # exit 1 if the files disagree
 //
 // Files: package.json, package-lock.json, src-tauri/tauri.conf.json,
-// src-tauri/Cargo.toml, src-tauri/Cargo.lock (the crisp3ds-studio entry).
+// src-tauri/Cargo.toml, src-tauri/Cargo.lock (the crispmesh-studio entry).
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -17,7 +17,7 @@ const read = (name) => readFileSync(file(name), "utf8");
 const SEMVER = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
 
 const CARGO_TOML = /(\[package\][^[]*?\r?\nversion = ")([^"]+)(")/;
-const CARGO_LOCK = /(name = "crisp3ds-studio"\r?\nversion = ")([^"]+)(")/;
+const CARGO_LOCK = /(name = "crispmesh-studio"\r?\nversion = ")([^"]+)(")/;
 
 function current() {
   return {

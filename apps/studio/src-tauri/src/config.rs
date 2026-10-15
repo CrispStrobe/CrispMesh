@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// Checkout of the crisp3ds repository (the folder that contains `scripts/turntable_mesh`).
+    /// Checkout of the crispmesh repository (the folder that contains `scripts/turntable_mesh`).
     pub repo: String,
     /// Interpreter for the engine and the NumPy/SciPy/OpenCV stages.
     pub python: String,
@@ -88,12 +88,12 @@ pub fn resolve_tools(config: &Config, around: &Surroundings) -> Tools {
         }
     };
     Tools {
-        alicevision: pick(&config.alicevision, "CRISP3DS_ALICEVISION"),
-        alicevision_library_path: pick(&config.alicevision_library_path, "CRISP3DS_ALICEVISION_LIBRARY_PATH"),
-        colmap: pick(&config.colmap, "CRISP3DS_COLMAP"),
-        sam_python: pick(&config.sam_python, "CRISP3DS_SAM_PYTHON"),
-        sam_source: pick(&config.sam_source, "CRISP3DS_SAM_SOURCE"),
-        sam_checkpoint: pick(&config.sam_checkpoint, "CRISP3DS_SAM_CHECKPOINT"),
+        alicevision: pick(&config.alicevision, "CRISPMESH_ALICEVISION"),
+        alicevision_library_path: pick(&config.alicevision_library_path, "CRISPMESH_ALICEVISION_LIBRARY_PATH"),
+        colmap: pick(&config.colmap, "CRISPMESH_COLMAP"),
+        sam_python: pick(&config.sam_python, "CRISPMESH_SAM_PYTHON"),
+        sam_source: pick(&config.sam_source, "CRISPMESH_SAM_SOURCE"),
+        sam_checkpoint: pick(&config.sam_checkpoint, "CRISPMESH_SAM_CHECKPOINT"),
     }
 }
 
@@ -172,17 +172,17 @@ pub fn resolve(config: &Config, around: &Surroundings) -> Resolved {
     };
     let text = |path: PathBuf| path.to_string_lossy().into_owned();
 
-    let repo = pick(&config.repo, Some("CRISP3DS_REPO"), find_checkout(&around.search_from).map(text), String::new());
+    let repo = pick(&config.repo, Some("CRISPMESH_REPO"), find_checkout(&around.search_from).map(text), String::new());
     let python = pick(
         &config.python,
-        Some("CRISP3DS_PYTHON"),
+        Some("CRISPMESH_PYTHON"),
         venv_python(Path::new(&repo.value)).map(text),
         default_python().to_string(),
     );
     // Without a word about PyTorch, one interpreter is assumed to have everything.
-    let torch_python = pick(&config.torch_python, Some("CRISP3DS_TORCH_PYTHON"), None, python.value.clone());
-    let runs_dir = pick(&config.runs_dir, Some("CRISP3DS_RUNS_DIR"), None, text(around.app_data.join("runs")));
-    let data_dir = pick(&config.data_dir, Some("CRISP3DS_DATA_DIR"), None, text(around.app_data.join("data")));
+    let torch_python = pick(&config.torch_python, Some("CRISPMESH_TORCH_PYTHON"), None, python.value.clone());
+    let runs_dir = pick(&config.runs_dir, Some("CRISPMESH_RUNS_DIR"), None, text(around.app_data.join("runs")));
+    let data_dir = pick(&config.data_dir, Some("CRISPMESH_DATA_DIR"), None, text(around.app_data.join("data")));
     let device = match set(&config.device).filter(|device| device != "auto") {
         Some(value) => Value { value, source: Source::Setting },
         None => Value { value: auto_device().to_string(), source: Source::Default },
@@ -194,14 +194,14 @@ pub fn resolve(config: &Config, around: &Surroundings) -> Resolved {
 pub fn problems(resolved: &Resolved) -> Option<String> {
     if resolved.repo.value.is_empty() {
         return Some(
-            "The Crisp3DS source folder is not known. Choose the folder of your crisp3ds checkout (the one that contains \
+            "The CrispMesh source folder is not known. Choose the folder of your crispmesh checkout (the one that contains \
              scripts/turntable_mesh)."
                 .into(),
         );
     }
     if !is_checkout(Path::new(&resolved.repo.value)) {
         return Some(format!(
-            "{} is not a crisp3ds checkout: {} is missing in it.",
+            "{} is not a crispmesh checkout: {} is missing in it.",
             resolved.repo.value, ENGINE_MODULE
         ));
     }
@@ -228,7 +228,7 @@ mod tests {
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-studio-test-{}-{name}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-studio-test-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         folder
@@ -253,7 +253,7 @@ mod tests {
     fn saved_settings_win_over_environment_and_discovery() {
         let repo = checkout("order");
         let config = Config { repo: "/saved/repo".into(), python: "/saved/python".into(), ..Config::default() };
-        let env = [("CRISP3DS_REPO", "/env/repo"), ("CRISP3DS_PYTHON", "/env/python"), ("CRISP3DS_TORCH_PYTHON", "/env/torch")];
+        let env = [("CRISPMESH_REPO", "/env/repo"), ("CRISPMESH_PYTHON", "/env/python"), ("CRISPMESH_TORCH_PYTHON", "/env/torch")];
         let resolved = resolve(&config, &around(&env, vec![repo.join("apps/studio")]));
         assert_eq!(resolved.repo, Value { value: "/saved/repo".into(), source: Source::Setting });
         assert_eq!(resolved.python, Value { value: "/saved/python".into(), source: Source::Setting });
@@ -263,14 +263,14 @@ mod tests {
     #[test]
     fn environment_wins_over_discovery() {
         let repo = checkout("env");
-        let resolved = resolve(&Config::default(), &around(&[("CRISP3DS_REPO", "/env/repo")], vec![repo.clone()]));
+        let resolved = resolve(&Config::default(), &around(&[("CRISPMESH_REPO", "/env/repo")], vec![repo.clone()]));
         assert_eq!(resolved.repo, Value { value: "/env/repo".into(), source: Source::Environment });
     }
 
     #[test]
     fn a_checkout_above_the_app_is_found() {
         let repo = checkout("found");
-        let deep = repo.join("apps/studio/src-tauri/target/debug/crisp3ds-studio");
+        let deep = repo.join("apps/studio/src-tauri/target/debug/crispmesh-studio");
         let resolved = resolve(&Config::default(), &around(&[], vec![deep]));
         assert_eq!(resolved.repo, Value { value: repo.to_string_lossy().into_owned(), source: Source::Found });
         assert_eq!(problems(&resolved), None);
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn defaults_when_nothing_is_known() {
-        let resolved = resolve(&Config::default(), &around(&[("CRISP3DS_PYTHON", "  ")], vec![PathBuf::from("/nowhere/app")]));
+        let resolved = resolve(&Config::default(), &around(&[("CRISPMESH_PYTHON", "  ")], vec![PathBuf::from("/nowhere/app")]));
         assert_eq!(resolved.repo.value, "");
         assert_eq!(resolved.python, Value { value: default_python().into(), source: Source::Default });
         assert_eq!(resolved.torch_python.value, resolved.python.value);
@@ -306,7 +306,7 @@ mod tests {
     fn a_folder_that_is_not_a_checkout_and_a_bad_device_are_named() {
         let empty = scratch("not-a-checkout");
         let config = Config { repo: empty.to_string_lossy().into_owned(), ..Config::default() };
-        assert!(problems(&resolve(&config, &around(&[], vec![]))).unwrap().contains("is not a crisp3ds checkout"));
+        assert!(problems(&resolve(&config, &around(&[], vec![]))).unwrap().contains("is not a crispmesh checkout"));
         let repo = checkout("bad-device");
         let config = Config { repo: repo.to_string_lossy().into_owned(), device: "gpu".into(), ..Config::default() };
         assert!(problems(&resolve(&config, &around(&[], vec![]))).unwrap().contains("not a device"));

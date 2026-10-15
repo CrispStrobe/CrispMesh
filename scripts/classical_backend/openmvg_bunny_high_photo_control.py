@@ -25,9 +25,9 @@ except ImportError:
 from scripts.classical_backend import openmvg_photo_control as core
 from scripts.classical_backend import openmvg_sceaux_photo_control_v2 as cli
 
-SOURCE = Path("/Users/christianstrobele/code/crisp3ds/build-opencv/bunny-gamma05-clahe2")
-COMPARISON_INPUTS = Path("/Users/christianstrobele/code/crisp3ds/build-opencv/classical-bunny-contrast-001/inputs.json")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-photo-sfm-001")
+SOURCE = Path("build-opencv/bunny-gamma05-clahe2")
+COMPARISON_INPUTS = Path("build-opencv/classical-bunny-contrast-001/inputs.json")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-photo-sfm-001")
 PREPARE_SHA = "eca0bfa60badd7fa5c9b5311e7f413a3f337159c158f856066086e44b0a90ecd"
 COMPARISON_SHA = "cd32fda6fb5945640d3e2bf7a33d41ba7990e11ea8116f646d3b64fa37b33f52"
 NAMES = tuple(f"frame_{index:04}.png" for index in range(73))

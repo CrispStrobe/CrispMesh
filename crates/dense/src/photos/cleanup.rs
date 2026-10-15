@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn run_failure_publishes_no_masks_and_success_binds_sources() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-cleanup-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-cleanup-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         let (images, masks) = (root.join("images"), root.join("masks"));
         std::fs::create_dir_all(&images).unwrap();

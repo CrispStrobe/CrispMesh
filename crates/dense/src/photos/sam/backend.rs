@@ -13,7 +13,7 @@ use anyhow::{anyhow, bail, Context};
 use serde_json::Value;
 
 /// Schema of `model.json`, written by `tools/sam2_export_onnx.py`.
-pub const MODEL_SCHEMA: &str = "crisp3ds_sam_model_v1";
+pub const MODEL_SCHEMA: &str = "crispmesh_sam_model_v1";
 
 /// A model directory.
 #[derive(Debug, Clone, PartialEq)]
@@ -170,8 +170,8 @@ pub fn unavailable(format: &str) -> Option<String> {
         return None;
     }
     Some(match format {
-        "onnx" => "this build has no ONNX backend: build crisp3ds-dense with `--features sam-onnx`".to_string(),
-        "gguf" => "this build has no ggml backend: build crisp3ds-dense with `--features sam-ggml`".to_string(),
+        "onnx" => "this build has no ONNX backend: build crispmesh-dense with `--features sam-onnx`".to_string(),
+        "gguf" => "this build has no ggml backend: build crispmesh-dense with `--features sam-ggml`".to_string(),
         other => format!("this build has no backend for SAM models of format `{other}`"),
     })
 }
@@ -210,7 +210,7 @@ pub mod tests {
 
     #[test]
     fn a_model_directory_is_described_by_model_json() {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-sam-model-{}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-sam-model-{}", std::process::id()));
         let _ = crate::photos::fs::remove_dir_all(&folder);
         crate::photos::fs::create_dir_all(&folder).unwrap();
         assert!(ModelInfo::read(&folder).unwrap_err().to_string().contains("model.json"));

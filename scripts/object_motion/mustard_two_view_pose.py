@@ -17,7 +17,7 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = Path("/Volumes/backups/code/crisp3ds-data")
+DATA = Path("/Volumes/backups/code/crispmesh-data")
 SOURCES = {
     "cached": (DATA / "mustard-sfm-masked-fixed-exhaustive-001",
                "5858be16dfa3f0fc50303d0eb4a001e21ee14036f67755a9997d5dac374b3075",

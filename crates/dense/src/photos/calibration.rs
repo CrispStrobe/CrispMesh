@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 use super::solution::Lens;
 use super::util::{self, python_float};
 
-pub const CALIBRATION_SCHEMA: &str = "crisp3ds_lens_calibration_v1";
+pub const CALIBRATION_SCHEMA: &str = "crispmesh_lens_calibration_v1";
 
 /// A radial k1, k2, k3 lens at the resolution it was calibrated for. The
 /// principal point is in the convention where the centre of the top-left pixel is (0, 0).
@@ -48,7 +48,7 @@ impl Scaled {
 }
 
 /// Reads a lens file. Two spellings are accepted: ours (`schema:
-/// crisp3ds_lens_calibration_v1`) and the raw 3DLF `rgb_optic.json` (`model:
+/// crispmesh_lens_calibration_v1`) and the raw 3DLF `rgb_optic.json` (`model:
 /// brown5` with a nested `distortion`, whose tangential terms must be zero).
 pub fn load_calibration(path: &Path) -> anyhow::Result<Calibration> {
     parse_calibration(&util::read_json(path)?)

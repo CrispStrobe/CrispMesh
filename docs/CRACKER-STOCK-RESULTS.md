@@ -29,7 +29,7 @@ box-shaped region has a conspicuous unwanted thin extension. This is **not a
 clean object-quality pass**. Authored meter units are not verified metric scale.
 No reference-fitted surface score is claimed and no cleanup was applied.
 
-External evidence remains under `/Volumes/backups/code/crisp3ds-data/`:
+External evidence remains under `/Volumes/backups/code/crispmesh-data/`:
 `apple-crackerbox60-preview-001/result.json` and `apple-review-001/result.json`,
 with the USDZ, exported PLY and neutral preview alongside them.
 

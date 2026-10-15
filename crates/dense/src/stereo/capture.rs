@@ -140,10 +140,10 @@ pub fn write_object(output: &Path, views: usize, width: usize, height: usize, as
         truth.push(json!({"photo": name, "centre": centre, "rotation": rotation}));
     }
     let calibration = json!({
-        "schema": "crisp3ds_lens_calibration_v1", "model": "radialk3", "calibration_width": width, "calibration_height": height,
+        "schema": "crispmesh_lens_calibration_v1", "model": "radialk3", "calibration_width": width, "calibration_height": height,
         "fx": lens.fx, "fy": lens.fy, "cx": lens.cx, "cy": lens.cy, "k1": lens.k[0], "k2": lens.k[1], "k3": lens.k[2],
         "principal_point_convention": "pixel_centre", "sensor_width_mm": 36.0,
-        "provenance": {"source": "crisp3ds-dense synthetic --capture: the lens the photos were rendered with"},
+        "provenance": {"source": "crispmesh-dense synthetic --capture: the lens the photos were rendered with"},
     });
     std::fs::write(output.join("lens.json"), serde_json::to_string_pretty(&calibration)? + "\n")?;
     let object = if asymmetric { "unit sphere at the origin with bumps" } else { "unit sphere at the origin" };
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn a_capture_has_photos_a_lens_and_the_true_orbit() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-capture-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-capture-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         write(&root, 8, 160, 120).unwrap();
         let photo = crate::storage::open_image(root.join("photos/shot_003.png")).unwrap().to_luma8();

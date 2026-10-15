@@ -2,7 +2,7 @@
   "schema": "photo_support_visual_review_v1",
   "object_id": "006_mustard_bottle",
   "decision": "accepted_three_view_coarse_support_smoke_only",
-  "candidate_manifest_vps": "/mnt/storage/crisp3ds-data/sam21-mustard-point-smoke-001/manifest.json",
+  "candidate_manifest_vps": "/mnt/storage/crispmesh-data/sam21-mustard-point-smoke-001/manifest.json",
   "candidate_manifest_sha256": "09bdd382bc23d26d9306f1e0698f55ad6b8ce7fb92f230ac1a8acc982f2c38ae",
   "review_sheet_sha256": "0c2cedc235dab3bef33f6e49815e1dca4d30525edc1c9c3985b829cc0df0d1fc",
   "local_review_directory": ".local-tools/sam21-mustard-point-review-001",

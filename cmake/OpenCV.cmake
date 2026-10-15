@@ -1,8 +1,8 @@
 # Opt-in, source-pinned OpenCV for calibrated image geometry. Include from the
-# top-level CMakeLists.txt after project(); link ${CRISP3DS_OPENCV_LIBRARIES}.
-option(CRISP3DS_WITH_OPENCV "Build pinned OpenCV image geometry support" OFF)
+# top-level CMakeLists.txt after project(); link ${CRISPMESH_OPENCV_LIBRARIES}.
+option(CRISPMESH_WITH_OPENCV "Build pinned OpenCV image geometry support" OFF)
 
-if(CRISP3DS_WITH_OPENCV)
+if(CRISPMESH_WITH_OPENCV)
   include(FetchContent)
 
   # Keep this set deliberately narrow. In particular, require the bundled
@@ -28,7 +28,7 @@ if(CRISP3DS_WITH_OPENCV)
                    IMGCODEC_PXM IMGCODEC_PFM IPP ITT JASPER JPEGXL KLEIDICV LAPACK MFX
                    OBSENSOR OPENCL OPENCLAMDBLAS OPENCLAMDFFT OPENEXR OPENGL OPENJPEG OPENMP
                    PROTOBUF QT QUIRC SPNG TBB TIFF V4L VA VTK WEBP)
-    set(WITH_${_feature} OFF CACHE BOOL "Excluded from Crisp3DS OpenCV build" FORCE)
+    set(WITH_${_feature} OFF CACHE BOOL "Excluded from CrispMesh OpenCV build" FORCE)
   endforeach()
   set(OPENCV_ENABLE_NONFREE OFF CACHE BOOL "Exclude nonfree algorithms" FORCE)
   set(OPENCV_GENERATE_PKGCONFIG OFF CACHE BOOL "No OpenCV pkg-config export" FORCE)
@@ -36,26 +36,26 @@ if(CRISP3DS_WITH_OPENCV)
 
   # DOWNLOAD_EXTRACT_TIMESTAMP was added in CMake 3.24. Earlier supported
   # CMake versions can still fetch the hash-pinned archive without it.
-  set(_crisp3ds_opencv_timestamp_arg)
+  set(_crispmesh_opencv_timestamp_arg)
   if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
-    set(_crisp3ds_opencv_timestamp_arg DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
+    set(_crispmesh_opencv_timestamp_arg DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
   endif()
-  FetchContent_Declare(crisp3ds_opencv
+  FetchContent_Declare(crispmesh_opencv
     URL "https://codeload.github.com/opencv/opencv/tar.gz/refs/tags/4.12.0"
     URL_HASH "SHA256=44c106d5bb47efec04e531fd93008b3fcd1d27138985c5baf4eafac0e1ec9e9d"
-    ${_crisp3ds_opencv_timestamp_arg}
+    ${_crispmesh_opencv_timestamp_arg}
   )
-  FetchContent_MakeAvailable(crisp3ds_opencv)
+  FetchContent_MakeAvailable(crispmesh_opencv)
 
-  set(CRISP3DS_OPENCV_LIBRARIES
+  set(CRISPMESH_OPENCV_LIBRARIES
       opencv_core opencv_imgproc opencv_imgcodecs
       opencv_flann opencv_features2d opencv_calib3d opencv_objdetect)
-  set(CRISP3DS_OPENCV_INCLUDE_DIRS "${CMAKE_BINARY_DIR}")
+  set(CRISPMESH_OPENCV_INCLUDE_DIRS "${CMAKE_BINARY_DIR}")
   foreach(_module core imgproc imgcodecs flann features2d calib3d objdetect)
-    list(APPEND CRISP3DS_OPENCV_INCLUDE_DIRS
-      "${crisp3ds_opencv_SOURCE_DIR}/modules/${_module}/include")
+    list(APPEND CRISPMESH_OPENCV_INCLUDE_DIRS
+      "${crispmesh_opencv_SOURCE_DIR}/modules/${_module}/include")
   endforeach()
-  foreach(_target IN LISTS CRISP3DS_OPENCV_LIBRARIES)
+  foreach(_target IN LISTS CRISPMESH_OPENCV_LIBRARIES)
     if(NOT TARGET ${_target})
       message(FATAL_ERROR "Required OpenCV target ${_target} was not built")
     endif()

@@ -17,7 +17,7 @@ import statistics
 from scripts.classical_backend import openmvg_sceaux_postcheck as shared
 
 
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001")
 SCHEMA = "openmvg_mustard_train48_photo_control_v1"
 STAGES = ("listing", "features", "putative", "geometric", "sfm")
 TRAIN_NAMES_SHA = "a81d1647109db27991c39c5fe1a9ae308c04081f8ada49d8b0f5ab1c15245544"

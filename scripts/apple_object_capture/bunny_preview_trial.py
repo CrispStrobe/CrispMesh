@@ -15,10 +15,10 @@ from scripts.classical_backend import openmvg_bunny_high_photo_control as bunny
 from scripts.classical_backend.run import digest, folder_bytes
 
 
-ROOT = Path("/Volumes/backups/code/crisp3ds-data")
+ROOT = Path("/Volumes/backups/code/crispmesh-data")
 INPUT = ROOT / "apple-bunny73-preview-001-input"
 OUTPUT = ROOT / "apple-bunny73-preview-001-output"
-PROBE = Path("/Users/christianstrobele/code/crisp3ds/.local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe")
+PROBE = Path(".local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe")
 PROBE_SHA = "f6fe2bbb5677177eeba8b1b19b8a1c49c2e785305b9cfa1f781b67ae10bd277b"
 FLOOR = 11 << 30
 INPUT_CAP = 130 << 20

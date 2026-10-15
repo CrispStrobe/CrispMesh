@@ -41,7 +41,7 @@
     "reference_provenance": "different Google scanner from Berkeley photo camera; shape oracle, not certified metrology ground truth",
     "alignment": "not supplied or verified; no reconstruction accuracy claim",
     "reference_training_use": "never",
-    "vps_root": "/mnt/akademie_storage/crisp3ds-data/ycb-expansion-001/035_power_drill"
+    "vps_root": "/mnt/akademie_storage/crispmesh-data/ycb-expansion-001/035_power_drill"
   },
   "anchor_files": [
     {"path": "photos/NP3_000.jpg", "size_bytes": 1002019, "sha256": "03304374b059b188d65a8f19fde600715cd60fcf32dc59db1ffe6bf41342cda9"},

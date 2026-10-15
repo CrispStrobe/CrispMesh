@@ -17,7 +17,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
-TRAIN_ROOT = Path('/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001')
+TRAIN_ROOT = Path('/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001')
 EXPECTED_STAGE_SHA = 'bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0'
 MIN_FREE = 10 * 1024**3
 MAX_OUTPUT = 128 * 1024**2
@@ -74,9 +74,9 @@ def run(output):
     output = Path(output)
     if output.exists() or output.is_symlink():
         raise FileExistsError(output)
-    if not str(output.resolve()).startswith('/Volumes/backups/code/crisp3ds-data/'):
+    if not str(output.resolve()).startswith('/Volumes/backups/code/crispmesh-data/'):
         raise ValueError('output must be on external data volume')
-    if min(shutil.disk_usage('/Users/christianstrobele/code/crisp3ds').free,
+    if min(shutil.disk_usage('.').free,
            shutil.disk_usage('/Volumes/backups').free) < MIN_FREE:
         raise RuntimeError('10 GiB free-space floor')
     report_path = TRAIN_ROOT / 'stage-report.json'

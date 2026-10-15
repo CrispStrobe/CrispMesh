@@ -23,7 +23,7 @@ class RelocationTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.workspace = self.root / "workspace"
-        self.destination = self.root / "external" / "code" / "crisp3ds-data" / "build-opencv"
+        self.destination = self.root / "external" / "code" / "crispmesh-data" / "build-opencv"
         self.mount = self.root / "external"
         self.mount.mkdir()
         self.name = sorted(ALLOWLIST)[0]

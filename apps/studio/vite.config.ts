@@ -10,7 +10,7 @@ const fixture = resolve(here, "../../tests/fixtures/dense-run-sphere");
 // crates/dense/web/build.sh into pkg/. When it has not been built, the app still builds
 // and that mode says it is not included.
 const enginePackage = resolve(here, "../../crates/dense/web");
-const engineCore = ["crisp3ds-dense.js", "pkg/crisp3ds_dense_web.js", "pkg/crisp3ds_dense_web_bg.wasm"];
+const engineCore = ["crispmesh-dense.js", "pkg/crispmesh_dense_web.js", "pkg/crispmesh_dense_web_bg.wasm"];
 const engineBuilt = engineCore.every((name) => existsSync(join(enginePackage, name)));
 /** Every file under `folder` (relative to the package), recursively. */
 function filesUnder(folder: string): string[] {
@@ -22,7 +22,7 @@ function filesUnder(folder: string): string[] {
 }
 // The threaded package (build.sh threads) runs where the page is cross-origin isolated; on hosts
 // that cannot send the headers (GitHub Pages) coi-worker.js isolates the page with a service worker.
-const threadFiles = existsSync(join(enginePackage, "pkg-threads/crisp3ds_dense_web_bg.wasm")) ? filesUnder("pkg-threads") : [];
+const threadFiles = existsSync(join(enginePackage, "pkg-threads/crispmesh_dense_web_bg.wasm")) ? filesUnder("pkg-threads") : [];
 const isolation = threadFiles.length > 0 && existsSync(join(enginePackage, "coi-worker.js")) ? ["coi-worker.js"] : [];
 const engineFiles = [...engineCore, ...threadFiles];
 // Inside the app (Tauri sets TAURI_ENV_PLATFORM for its build) the engine is native: no service worker there.
@@ -80,13 +80,13 @@ function calibrationIndex(): string {
     ? readdirSync(calibrations)
         .filter((name) => name.endsWith(".json"))
         .sort()
-        .filter((name) => (JSON.parse(readFileSync(join(calibrations, name), "utf8")) as { schema?: string }).schema === "crisp3ds_lens_calibration_v1")
+        .filter((name) => (JSON.parse(readFileSync(join(calibrations, name), "utf8")) as { schema?: string }).schema === "crispmesh_lens_calibration_v1")
         .map((name) => ({ file: name, label: name.replace(/\.json$/, "") }))
     : [];
   return JSON.stringify(rows, null, 2) + "\n";
 }
 const calibrationsPlugin: Plugin = {
-  name: "crisp3ds-calibrations",
+  name: "crispmesh-calibrations",
   configureServer(server) {
     server.middlewares.use((request, response, next) => {
       const path = (request.url ?? "").split("?")[0] ?? "";
@@ -119,13 +119,13 @@ export default defineConfig({
   define: { __BROWSER_ENGINE__: JSON.stringify(engineBuilt) },
   plugins: [
     // The recorded sphere run as `demo/`.
-    mounted("crisp3ds-demo-bundle", "demo", fixture, null, true),
+    mounted("crispmesh-demo-bundle", "demo", fixture, null, true),
     calibrationsPlugin,
-    ...(engineBuilt ? [mounted("crisp3ds-browser-engine", "engine", enginePackage, engineFiles, false)] : []),
+    ...(engineBuilt ? [mounted("crispmesh-browser-engine", "engine", enginePackage, engineFiles, false)] : []),
     ...(engineBuilt && webBuild && isolation.length > 0
       ? [
           {
-            name: "crisp3ds-cross-origin-isolation",
+            name: "crispmesh-cross-origin-isolation",
             // First thing on the page: it registers the service worker and reloads once if needed.
             // It sits next to index.html, because a service worker controls only pages at or below
             // its own folder.

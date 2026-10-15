@@ -7,7 +7,7 @@
 #include <limits>
 #include <stdexcept>
 
-using namespace crisp3ds::depth;
+using namespace crispmesh::depth;
 namespace {
 void check(bool ok,const char* message) { if (!ok) throw std::runtime_error(message); }
 Camera camera(cv::Vec3d center, cv::Matx33d r=cv::Matx33d::eye()) {

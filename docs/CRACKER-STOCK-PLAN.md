@@ -32,7 +32,7 @@ Each arm has a ten-minute deadline, 512 MiB output cap and a 10 GiB free-space
 floor on both volumes. COLMAP sampled child RSS cap is 4 GiB; Apple is 8 GiB.
 Apple's direct-child measurement does not cover all system/XPC service memory.
 Scratch and artifacts remain on the external SSD, under
-`/Volumes/backups/code/crisp3ds-data/` in fresh directories:
+`/Volumes/backups/code/crispmesh-data/` in fresh directories:
 
 - `cracker-stock-raw-001`
 - `cracker-stock-masked-001`

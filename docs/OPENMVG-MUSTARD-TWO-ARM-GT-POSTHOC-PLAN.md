@@ -45,7 +45,7 @@ is read-only: it hashes both exports, the source model, the metadata receipt
 and cached archive, checks all extracted metadata hashes, inventories the nine
 archive headers, reserves disk and opens **no GT H5 datasets**. `--run` is
 separately gated for review and writes only to fresh
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-gt-posthoc-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-gt-posthoc-001`.
 The projected and live gates retain 11 GiB free on external and internal
 disks, allow at most 2 MiB total output and 64 KiB staged metadata, and cap
 wall time at 300 s (H5 reads have individual 10 s subprocess timeouts).

@@ -1,5 +1,5 @@
 //! The marker mat: a printed sheet of square fiducials around a free zone for
-//! the object. Its description (`crisp3ds_marker_mat_v1`) carries everything a
+//! the object. Its description (`crispmesh_marker_mat_v1`) carries everything a
 //! detector needs: every marker's id, bit pattern and corner coordinates in
 //! millimetres.
 //!
@@ -17,7 +17,7 @@ use std::path::Path;
 use anyhow::{anyhow, bail, Context};
 use serde_json::{json, Value};
 
-pub const SCHEMA: &str = "crisp3ds_marker_mat_v1";
+pub const SCHEMA: &str = "crispmesh_marker_mat_v1";
 
 pub const DICT_4X4_50: [u16; 50] = [
     0xb532, 0x0f9a, 0x332d, 0x9946, 0x549e, 0x79cd, 0x9e2e, 0xc4f2, 0xfeda, 0xcf56, 0xf991, 0x11a7, 0x0eb7, 0x2a0f, 0x24b1, 0x263e, 0x4665,
@@ -253,7 +253,7 @@ impl Mat {
     /// Two short lines below the scale bar.
     fn captions(&self) -> [String; 2] {
         let (from, to) = self.scale_bar();
-        [format!("crisp3ds marker mat {}", self.name), format!("print at 100 %: this bar is {:.0} mm", to[0] - from[0])]
+        [format!("crispmesh marker mat {}", self.name), format!("print at 100 %: this bar is {:.0} mm", to[0] - from[0])]
     }
 
     pub fn svg(&self) -> String {
@@ -366,7 +366,7 @@ impl Mat {
     /// Writes `mat.json`, `mat.svg`, `mat.pdf` and `mat.png` (300 dpi) into `folder`.
     pub fn write(&self, folder: &Path) -> anyhow::Result<()> {
         crate::photos::fs::create_dir_all(folder).with_context(|| folder.display().to_string())?;
-        let stem = format!("crisp3ds-marker-mat-{}", self.name);
+        let stem = format!("crispmesh-marker-mat-{}", self.name);
         let text = serde_json::to_string_pretty(&self.to_json())? + "\n";
         crate::photos::fs::write(folder.join(format!("{stem}.json")), text)?;
         crate::photos::fs::write(folder.join(format!("{stem}.svg")), self.svg())?;

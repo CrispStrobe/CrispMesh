@@ -1,7 +1,7 @@
 # Fresh 005 Berkeley sensor-depth diagnostic
 
 The [pre-score plan](FRESH-SENSOR-DEPTH-PLAN.md) was frozen before the one
-approved live batch. The [per-ray report](/Volumes/backups/code/crisp3ds-data/fresh-sensor-depth-005/report.json)
+approved live batch. The [per-ray report](/Volumes/backups/code/crispmesh-data/fresh-sensor-depth-005/report.json)
 completed with SHA-256
 `a4b3d0eda0c7fcb4f508e73f1ce30e5ebfab4112e0e75cc7ddec3524117a3105`
 (1,153,432 bytes). Native rough and refined meshes came from the complete,
@@ -11,7 +11,7 @@ respectively; no zero-area triangles were excluded.
 
 An independent post-reconstruction, named-camera-only fit bound the exact
 fresh 004 sparse model to the sealed Berkeley table-frame camera metadata.
-Its [camera report](/Volumes/backups/code/crisp3ds-data/fresh-sensor-depth-005-preflight/camera-fit.json)
+Its [camera report](/Volumes/backups/code/crispmesh-data/fresh-sensor-depth-005-preflight/camera-fit.json)
 has SHA-256
 `d9e51355eb7776132d8abba83d5d2b8be8ba2d6c073149b9d1d9d7a156efc3b6`.
 All 60 names pair; center RMS is 9.24 mm, or 1.894% of camera radius, and

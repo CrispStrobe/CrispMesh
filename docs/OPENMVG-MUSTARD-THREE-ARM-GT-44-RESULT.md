@@ -1,10 +1,10 @@
 # OpenMVG mustard three-arm posthoc check: common 44 remain poor
 
 The read-only-audited receipt at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-gt-posthoc-three-arm-001/receipt.json`
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-gt-posthoc-three-arm-001/receipt.json`
 is SHA-256 `576b5638985a745d3718dfa59c616a8b2b8ad8045a4470d61bcfd66ca080388e`;
 its report at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-gt-posthoc-three-arm-001/report.json`
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-gt-posthoc-three-arm-001/report.json`
 is SHA-256 `992124c1f9066539c3ad6ad8ac76b51eb696bf1af536cf9d0ce0702d193d734b`.
 The receipt status is `posthoc_common_44_diagnostic_only`, not camera
 acceptance. This independent audit did not rerun scoring or modify any

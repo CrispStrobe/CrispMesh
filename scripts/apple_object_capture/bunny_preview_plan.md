@@ -7,10 +7,10 @@ calibration input. The source folder includes `prepare-manifest.json`, so the
 Apple input is a fresh external copy containing only the 73 PNGs.
 
 The input is now staged at
-`/Volumes/backups/code/crisp3ds-data/apple-bunny73-preview-001-input/images/`.
+`/Volumes/backups/code/crispmesh-data/apple-bunny73-preview-001-input/images/`.
 Its receipt is one directory above at `receipt.json`. The intended fresh
 output path is
-`/Volumes/backups/code/crisp3ds-data/apple-bunny73-preview-001-output/`.
+`/Volumes/backups/code/crispmesh-data/apple-bunny73-preview-001-output/`.
 No Apple reconstruction has been run.
 
 The staging preflight verifies every PNG SHA-256 against the frozen prepare
@@ -32,9 +32,9 @@ launcher command from the receipt is:
 
 ```sh
 python3 -m scripts.apple_object_capture.launch \
-  --probe-bin /Users/christianstrobele/code/crisp3ds/.local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe \
-  --images /Volumes/backups/code/crisp3ds-data/apple-bunny73-preview-001-input/images \
-  --run-dir /Volumes/backups/code/crisp3ds-data/apple-bunny73-preview-001-output \
+  --probe-bin .local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe \
+  --images /Volumes/backups/code/crispmesh-data/apple-bunny73-preview-001-input/images \
+  --run-dir /Volumes/backups/code/crispmesh-data/apple-bunny73-preview-001-output \
   --max-output-mib 512 --timeout-minutes 15
 ```
 

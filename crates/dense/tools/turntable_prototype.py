@@ -6,10 +6,10 @@ OpenCV's SIFT and essential-matrix code and SciPy's least squares.
 
     python turntable_prototype.py --images DIR --masks DIR --calibration LENS.json --output MODEL_DIR
 
-`--images` holds capture_NNNN.png (the contrast images of `crisp3ds-dense
+`--images` holds capture_NNNN.png (the contrast images of `crispmesh-dense
 photos --keep-intermediates`, `work/contrast`), `--masks` the object masks
 under the same names. The result is a COLMAP text model (cameras.txt,
-images.txt, points3D.txt) that `crisp3ds-dense photos --cameras import:MODEL_DIR`
+images.txt, points3D.txt) that `crispmesh-dense photos --cameras import:MODEL_DIR`
 reads, so gates, scene and dense stages are the usual ones.
 
 Steps:
@@ -69,7 +69,7 @@ def main():
     p.add_argument("--features", type=int, default=6000)
     p.add_argument("--span", type=int, default=4, help="match every photo with this many successors")
     p.add_argument("--contrast", type=float, default=0.01, help="SIFT contrast threshold")
-    p.add_argument("--export-matches", type=Path, help="write keypoints and matches as JSON (input of crisp3ds-dense photos --turntable-matches)")
+    p.add_argument("--export-matches", type=Path, help="write keypoints and matches as JSON (input of crispmesh-dense photos --turntable-matches)")
     p.add_argument("--open-turn", action="store_true", help="the photos do not close a full turn: do not scale the steps to 360 degrees")
     args = p.parse_args()
     started = time.time()
@@ -106,7 +106,7 @@ def main():
 
     if args.export_matches:
         args.export_matches.write_text(json.dumps({
-            "schema": "crisp3ds_turntable_matches_v1", "width": w, "height": h, "photos": names,
+            "schema": "crispmesh_turntable_matches_v1", "width": w, "height": h, "photos": names,
             "keypoints": [np.round(k, 3).tolist() for k in keys],
             "pairs": [{"first": i, "second": j, "matches": m.tolist()} for (i, j), m in pairs.items()]}, separators=(",", ":")))
 
@@ -315,17 +315,17 @@ def main():
     out = args.output
     out.mkdir(parents=True, exist_ok=True)
     params = [K[0, 0], K[1, 1], K[0, 2] + 0.5, K[1, 2] + 0.5, dist[0], dist[1], 0, 0, dist[4], 0, 0, 0]
-    (out / "cameras.txt").write_text("# crisp3ds turntable prototype\n1 FULL_OPENCV %d %d %s\n" % (w, h, " ".join(repr(float(v)) for v in params)))
+    (out / "cameras.txt").write_text("# crispmesh turntable prototype\n1 FULL_OPENCV %d %d %s\n" % (w, h, " ".join(repr(float(v)) for v in params)))
     by_view = {}
     for v, pid, f in obs:
         by_view.setdefault(int(v), []).append((int(f), int(pid)))
-    lines = ["# crisp3ds turntable prototype"]
+    lines = ["# crispmesh turntable prototype"]
     for v, name in enumerate(names):
         q = Rotation.from_matrix(Rs[v]).as_quat()  # x, y, z, w
         lines.append("%d %r %r %r %r %r %r %r 1 %s" % (v + 1, q[3], q[0], q[1], q[2], *map(float, ts[v]), name))
         lines.append(" ".join("%r %r %d" % (keys[v][f][0] + 0.5, keys[v][f][1] + 0.5, pid + 1) for f, pid in by_view.get(v, [])))
     (out / "images.txt").write_text("\n".join(lines) + "\n")
-    (out / "points3D.txt").write_text("# crisp3ds turntable prototype\n" + "".join("%d %r %r %r 128 128 128 0\n" % (i + 1, *map(float, X)) for i, X in enumerate(points)))
+    (out / "points3D.txt").write_text("# crispmesh turntable prototype\n" + "".join("%d %r %r %r 128 128 128 0\n" % (i + 1, *map(float, X)) for i, X in enumerate(points)))
     report = {"photos": n, "points": len(points), "observations": len(obs), "steps_deg": np.degrees(steps).round(3).tolist(), "turn_sum_deg": closure,
               "seconds": {"features": t_features, "matching": t_matching, "total": t_total},
               "reprojection_px": {"median": float(np.median(e)), "p95": float(np.percentile(e, 95))}}

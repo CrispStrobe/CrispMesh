@@ -1,6 +1,6 @@
 # CrispMesh
 
-The front end for Crisp3DS's photo-to-STL reconstruction. It shows a run as it
+The front end for CrispMesh's photo-to-STL reconstruction. It shows a run as it
 happens: the stages, the surface getting better step by step in a 3D view, the
 diagnostic sheets, and the numbers.
 
@@ -139,7 +139,7 @@ have a **Download** button. Runs are gone when the page is closed.
   So above 60 megapixels in all, "Show intermediate surfaces while computing"
   is off by default, the form says why, and it can be switched on.
 - **The engine is a separate file**, not part of the script bundle: the build
-  copies `crates/dense/web/{crisp3ds-dense.js, pkg/*}` to `dist/engine/` when
+  copies `crates/dense/web/{crispmesh-dense.js, pkg/*}` to `dist/engine/` when
   `pkg/` exists (`sh crates/dense/web/build.sh`: Rust with the
   `wasm32-unknown-unknown` target and `wasm-bindgen-cli` 0.2.129). Without it
   `npm run build` still works with Node alone, and the card says the engine is
@@ -217,7 +217,7 @@ Things worth knowing:
 
 ### Dependencies and licenses
 
-Studio itself is AGPL-3.0-only, like the rest of Crisp3DS.
+Studio itself is AGPL-3.0-only, like the rest of CrispMesh.
 
 Shipped in the web bundle (runtime):
 
@@ -232,7 +232,7 @@ Linked into the native shell (Rust, direct dependencies):
 | Crate | Use | License |
 | --- | --- | --- |
 | `tauri` 2.11.6, `tauri-build` 2.6.3 | the shell | Apache-2.0 OR MIT |
-| `crisp3ds-dense` (this repository) | the reconstruction engine; brings `wgpu` 30, `image`, `rayon` and others | AGPL-3.0-only (the project's own) |
+| `crispmesh-dense` (this repository) | the reconstruction engine; brings `wgpu` 30, `image`, `rayon` and others | AGPL-3.0-only (the project's own) |
 | `anyhow` 1 | errors of the engine's API | MIT OR Apache-2.0 |
 | `tauri-plugin-dialog` 2 | native folder and file pickers (desktop) | Apache-2.0 OR MIT |
 | `serde` 1, `serde_json` 1 | settings file, messages to the web view | MIT OR Apache-2.0 |
@@ -358,7 +358,7 @@ LocalEngine / LocalRunSource ──invoke──▶ commands ──▶ native::Na
   (`sources/localEngine.ts`) is the HTTP source with `invoke` in place of
   `fetch`, on an injected bridge so it is tested without Tauri.
 - **Threading.** `native_start` checks the request (paths, settings through
-  the crate's own validation), then runs `crisp3ds_dense::run::run` on a
+  the crate's own validation), then runs `crispmesh_dense::run::run` on a
   worker thread named `run-<id>` with a cancel flag, and returns the id once
   the first event is on disk. The crate meshes previews on a thread of its own.
   Commands that read files are asynchronous, so they never run on the main
@@ -388,10 +388,10 @@ LocalEngine / LocalRunSource ──invoke──▶ commands ──▶ native::Na
   moment and those eight seconds.) Runs that an earlier instance left open
   (they carry a `studio-run.json` marker) are closed as failed at the next
   start. Runs written by another engine into the same folder are left alone.
-- **Settings form.** From the crate: `crisp3ds_dense::config::settings_schema()`
+- **Settings form.** From the crate: `crispmesh_dense::config::settings_schema()`
   (name, group, meaning, kind, default). Nothing is embedded in the shell.
 - **Start points.** The "New run" form is built from the crate's
-  `crisp3ds_dense::run::describe()` (`core/startPoints.ts`): "inputs folder",
+  `crispmesh_dense::run::describe()` (`core/startPoints.ts`): "inputs folder",
   "camera solution, images and masks", and "turntable photos". The shell adds
   to each provider whether it can run on this computer, and why not.
 - **The window keeps up when it is covered.** `backgroundThrottling` is
@@ -423,9 +423,9 @@ undistorted photos and masks") and then runs the dense stages.
 - **Tools.** The Folders screen has a section per external tool: AliceVision
   (install folder and extra library folders), COLMAP (program), SAM 2.1
   (Python, source folder, checkpoint). They are saved with the other settings
-  (or come from `CRISP3DS_ALICEVISION`, `CRISP3DS_ALICEVISION_LIBRARY_PATH`,
-  `CRISP3DS_COLMAP`, `CRISP3DS_SAM_PYTHON`, `CRISP3DS_SAM_SOURCE`,
-  `CRISP3DS_SAM_CHECKPOINT`). **Check** starts the tool once and shows its
+  (or come from `CRISPMESH_ALICEVISION`, `CRISPMESH_ALICEVISION_LIBRARY_PATH`,
+  `CRISPMESH_COLMAP`, `CRISPMESH_SAM_PYTHON`, `CRISPMESH_SAM_SOURCE`,
+  `CRISPMESH_SAM_CHECKPOINT`). **Check** starts the tool once and shows its
   version or what went wrong.
 - **What a request may say.** A start request names a provider and option
   values. It can never name a program or a place for one: those come from the
@@ -439,7 +439,7 @@ undistorted photos and masks") and then runs the dense stages.
 The provider options and the tool checks are written by hand in Studio
 (`core/providerOptions.ts`, `src-tauri/src/tools.rs`), because the crate
 describes providers but not their options and has no availability check. They
-follow `crisp3ds-dense photos --help` and need updating when that changes.
+follow `crispmesh-dense photos --help` and need updating when that changes.
 
 Run ids are `YYYYMMDD-HHMMSS-<name>` in UTC (the Python engine uses local
 time).
@@ -453,7 +453,7 @@ libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev`). No Python
 is needed to run the app.
 
 ```sh
-git clone https://github.com/CrispStrobe/crisp3ds && cd crisp3ds/apps/studio
+git clone https://github.com/CrispStrobe/CrispMesh && cd crispmesh/apps/studio
 npm ci
 npm run tauri dev          # or: npm run tauri build -- --debug --no-bundle
 ```
@@ -465,7 +465,7 @@ scene to try is made by the Python reference
 the small settings it prints); the app itself does not generate one.
 
 Folders, first match wins: the **Folders** screen (saved as `config.json` in
-the app's config folder), `CRISP3DS_RUNS_DIR` and `CRISP3DS_DATA_DIR`, then
+the app's config folder), `CRISPMESH_RUNS_DIR` and `CRISPMESH_DATA_DIR`, then
 `runs/` and `data/` in the app's data folder.
 
 ### The external Python engine (optional, desktop)
@@ -485,7 +485,7 @@ waits for `/api/health`, and talks to it over HTTP with the per-start token.
 It is started only when chosen, and ended with its process group when the app
 quits. Its settings (source folder, the two interpreters, device) are on the
 same screen as the folders; they resolve from that screen, then
-`CRISP3DS_REPO`, `CRISP3DS_PYTHON`, `CRISP3DS_TORCH_PYTHON`, then a checkout
+`CRISPMESH_REPO`, `CRISPMESH_PYTHON`, `CRISPMESH_TORCH_PYTHON`, then a checkout
 above the executable with a `.venv` in it, then `python3` from `PATH`.
 `auto` is `mps` on Apple Silicon and `cpu` elsewhere.
 
@@ -520,7 +520,7 @@ and `Info.ios.plist`. Nothing has been uploaded anywhere; see
 Apple M1, macOS, debug build (`tauri build --debug --no-bundle`: the real
 `tauri://` origin and the production CSP; the crate itself optimised). The
 app's own form was driven by `scripts/autopilot-run.js`, which a **debug**
-build runs inside its web view when `CRISP3DS_STUDIO_AUTOPILOT=<file>` is set.
+build runs inside its web view when `CRISPMESH_STUDIO_AUTOPILOT=<file>` is set.
 
 Through the app's own form, built-in engine:
 
@@ -535,7 +535,7 @@ Through the app's own form, built-in engine:
   run folders are complete (`events.jsonl`, `pipeline.json`, sheets, meshes).
 
 In the app's process but **not through the window** (debug hook
-`CRISP3DS_STUDIO_AUTORUN`, because the computer's screen was locked for the
+`CRISPMESH_STUDIO_AUTORUN`, because the computer's screen was locked for the
 rest of the session and a hidden web view does not run its timers):
 
 - **Bunny, default settings, once**: complete in 339 s (stereo 273 s, mesh

@@ -1,6 +1,6 @@
 name: release
 
-# Builds everything a Crisp3DS release consists of and, on a tag, puts it into a
+# Builds everything a CrispMesh release consists of and, on a tag, puts it into a
 # DRAFT PRERELEASE on GitHub. Nothing is published without a person un-drafting it.
 #
 #   tag v1.2.3            -> version 1.2.3, artifacts, draft prerelease v1.2.3
@@ -154,7 +154,7 @@ jobs:
         run: |
           test -s dist/demo/events.jsonl
           test -s dist/THIRD-PARTY-NOTICES.txt
-          test -s dist/engine/pkg/crisp3ds_dense_web_bg.wasm
+          test -s dist/engine/pkg/crispmesh_dense_web_bg.wasm
           ! grep -E '(src|href)="/' dist/index.html
           name="Crisp-3D-Studio_web-$FILE_VERSION"
           mkdir -p ../../release-out && mv dist "$name"
@@ -424,7 +424,7 @@ jobs:
           cache-dependency-path: scripts/turntable_mesh/requirements-dense.txt
       - name: Pack
         run: |
-          name="crisp3ds-dense-pipeline-$FILE_VERSION"
+          name="crispmesh-dense-pipeline-$FILE_VERSION"
           mkdir -p release-out
           # scripts/turntable_mesh, the modules elsewhere under scripts/ that it imports (followed
           # through the sources, e.g. object_dataset/evaluate.py), the contract, the fixture, LICENSE.
@@ -442,8 +442,8 @@ jobs:
       - name: Unpack somewhere that is not the checkout
         run: |
           mkdir "$RUNNER_TEMP/unpacked"
-          tar -C "$RUNNER_TEMP/unpacked" -xzf release-out/crisp3ds-dense-pipeline-$FILE_VERSION.tar.gz
-          echo "ARCHIVE_ROOT=$RUNNER_TEMP/unpacked/crisp3ds-dense-pipeline-$FILE_VERSION" >> "$GITHUB_ENV"
+          tar -C "$RUNNER_TEMP/unpacked" -xzf release-out/crispmesh-dense-pipeline-$FILE_VERSION.tar.gz
+          echo "ARCHIVE_ROOT=$RUNNER_TEMP/unpacked/crispmesh-dense-pipeline-$FILE_VERSION" >> "$GITHUB_ENV"
       # PyPI's Linux wheel bundles the CUDA runtime (several GiB); the CPU index keeps the job small.
       - name: Install requirements from the archive
         working-directory: ${{ env.ARCHIVE_ROOT }}
@@ -454,7 +454,7 @@ jobs:
         working-directory: ${{ env.ARCHIVE_ROOT }}
         env:
           PYTHONPATH: ${{ env.ARCHIVE_ROOT }}
-          CRISP3DS_TEST_ENGINE_RUN: '1'
+          CRISPMESH_TEST_ENGINE_RUN: '1'
         run: python -m unittest discover -v -s scripts/turntable_mesh -t . -p 'test_*.py'
       - name: Synthetic end-to-end run from the unpacked archive
         working-directory: ${{ env.ARCHIVE_ROOT }}

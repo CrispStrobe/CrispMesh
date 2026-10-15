@@ -1,23 +1,23 @@
 # Native foundation
 
-`crisp3ds_core` is a C++20 library with a versioned C ABI in
-[`include/crisp3ds/core.h`](include/crisp3ds/core.h). Its ABI version and project
+`crispmesh_core` is a C++20 library with a versioned C ABI in
+[`include/crispmesh/core.h`](include/crispmesh/core.h). Its ABI version and project
 schema version are both 1. Callers provide output buffers; pass `NULL, 0` to
 query the required byte count, which includes the NUL terminator. A successful
-size query returns `CRISP3DS_BUFFER_TOO_SMALL`. The second call returns the
+size query returns `CRISPMESH_BUFFER_TOO_SMALL`. The second call returns the
 operation status and a single UTF-8 JSON object. The library retains no input
-pointers. The pose operation also offers `crisp3ds_estimate_poses_alloc`, which
-computes once and returns a caller-owned string released with `crisp3ds_free`.
+pointers. The pose operation also offers `crispmesh_estimate_poses_alloc`, which
+computes once and returns a caller-owned string released with `crispmesh_free`.
 
 The CLI commands are:
 
 ```text
-crisp3ds capabilities
-crisp3ds validate <project.json>
-crisp3ds diagnose-geometry
-crisp3ds estimate-poses <project.json>
-crisp3ds reconstruct-sparse <project.json>
-crisp3ds reconstruct <project.json>
+crispmesh capabilities
+crispmesh validate <project.json>
+crispmesh diagnose-geometry
+crispmesh estimate-poses <project.json>
+crispmesh reconstruct-sparse <project.json>
+crispmesh reconstruct <project.json>
 ```
 
 Results are one JSON object on stdout. Exit code 0 means success, 2 means an
@@ -69,7 +69,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ctest --test-dir build --output-on-failure
 
-cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISP3DS_WITH_OPENCV=ON
+cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISPMESH_WITH_OPENCV=ON
 cmake --build build-opencv
 ctest --test-dir build-opencv --output-on-failure
 ```
@@ -83,8 +83,8 @@ accuracy on measured photographs.
 re-estimates all poses from the source images on each run, requires an 8-bit
 binary grayscale PNG `maskPath` for every image, and emits a board-frame sparse
 point/track report with original distorted observation pixels. The C ABI entry
-point is `crisp3ds_reconstruct_sparse_alloc`; release its result with
-`crisp3ds_free`. No project file or image is modified. A failed view or zero
+point is `crispmesh_reconstruct_sparse_alloc`; release its result with
+`crispmesh_free`. No project file or image is modified. A failed view or zero
 valid points produces one structured error and a nonzero CLI exit status.
 
 The baseline uses deterministic single-scale ORB (up to 1,500 features per

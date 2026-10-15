@@ -524,7 +524,7 @@ mod tests {
         assert!(clear_of_border(&dilate(&mask, 2)) && !clear_of_border(&dilate(&mask, 3)));
     }
 
-    /// GPU carve against the scalar reference on the synthetic sphere (`CRISP3DS_GPU_TESTS=1`).
+    /// GPU carve against the scalar reference on the synthetic sphere (`CRISPMESH_GPU_TESTS=1`).
     #[test]
     fn gpu_hull_matches_the_scalar_carve() {
         if !crate::gpu::tests_enabled() {

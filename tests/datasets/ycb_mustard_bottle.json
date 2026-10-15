@@ -41,7 +41,7 @@
     "reference_provenance": "different Google scanner from Berkeley photo camera; shape oracle, not certified metrology ground truth",
     "alignment": "not supplied or verified; no reconstruction accuracy claim",
     "reference_training_use": "never",
-    "vps_root": "/mnt/akademie_storage/crisp3ds-data/ycb-expansion-001/006_mustard_bottle"
+    "vps_root": "/mnt/akademie_storage/crispmesh-data/ycb-expansion-001/006_mustard_bottle"
   },
   "anchor_files": [
     {"path": "photos/NP3_000.jpg", "size_bytes": 1025354, "sha256": "4e0a06a19cb28938503f429f2aa22d9cc990151b9bd91b199fb6dce1487a2d96"},

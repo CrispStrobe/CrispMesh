@@ -4,7 +4,7 @@ Status, 2026-09-27: **one evaluation-only run; partial-arc camera diagnostic, no
 
 The evaluator runner SHA-256 was `f24442884ecb9e102ee5ad96fb4727b56dc30e94d0f92aa783c6350704878c7b`. Read-only preflight verified the image-derived report SHA-256 `e4b686795cc6f3bfba57ac77e9225113714d9d306b5919990191dffbd049a856`, correct mustard archive SHA-256 `5d9b1837eb58b0760463e99021a53fe6e82d5cd2457141945445ed6df06ff3f7`, metadata receipt SHA-256 `3a2b156289b7f7f11d20ef5026ffe9f19893333d155f0acb6e326f027ceb0747`, and all 40 receipt-bound H5 hashes. The sealed image-derived report, receipt, and H5 hashes were rechecked after scoring. The cracker-box metadata was not used.
 
-The sole fresh output is [`mustard-checkerboard-camera-eval-001.json`](</Volumes/backups/code/crisp3ds-data/mustard-checkerboard-camera-eval-001.json>), 20,889 bytes, SHA-256 `0e295eee45a0c4750b61f497c9d11502157d9698be03cb44aa3cafe7eaacc5cc`. It contains all 39 per-frame residuals and 40 H5 hashes. Exact TRAIN names were matched; no outlier was removed or per-frame transform fitted. `NP3_000`, `300`, `306`, `312`, `318`, `330`, `336`, `342`, `348` remain undetected and were not scored.
+The sole fresh output is [`mustard-checkerboard-camera-eval-001.json`](</Volumes/backups/code/crispmesh-data/mustard-checkerboard-camera-eval-001.json>), 20,889 bytes, SHA-256 `0e295eee45a0c4750b61f497c9d11502157d9698be03cb44aa3cafe7eaacc5cc`. It contains all 39 per-frame residuals and 40 H5 hashes. Exact TRAIN names were matched; no outlier was removed or per-frame transform fitted. `NP3_000`, `300`, `306`, `312`, `318`, `330`, `336`, `342`, `348` remain undetected and were not scored.
 
 | Frozen metric, 39 matched frames | Median | P95 | Max |
 | --- | ---: | ---: | ---: |

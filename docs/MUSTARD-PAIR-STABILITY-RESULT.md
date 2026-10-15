@@ -2,7 +2,7 @@
 
 The approved one-batch run followed the [frozen perturbation plan](MUSTARD-PAIR-STABILITY-PLAN.md)
 on the [sealed six-pair panel](MUSTARD-TWO-VIEW-POSE-PLAN.md). The
-[external JSON report](/Volumes/backups/code/crisp3ds-data/mustard-pair-stability-001.json)
+[external JSON report](/Volumes/backups/code/crispmesh-data/mustard-pair-stability-001.json)
 completed in 1.080 seconds, contains 184 leave-one-out removals and two
 single verified additions, and is 526,064 bytes with SHA-256
 `50fee1903d0bb0f855b2fb9acf0568155c20209f0a68fdb1a797993359b8dde5`.

@@ -21,9 +21,9 @@ from scripts.classical_backend import openmvg_bunny_high_cache_rough as prior
 from scripts.classical_backend.run import checked_ply, folder_bytes
 from scripts.classical_backend.openmvg_photo_control import base as supervisor
 
-SOURCE = Path("/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-cache-resume-002")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-cache-fusion-003")
-PROBE = Path("/Volumes/backups/code/crisp3ds-data/openmvg-bunny-clone-probe-001")
+SOURCE = Path("/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-cache-resume-002")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-cache-fusion-003")
+PROBE = Path("/Volumes/backups/code/crispmesh-data/openmvg-bunny-clone-probe-001")
 SOURCE_RESULT_SHA = "b559ef8970065b15cbf3df4a7796fef2275fd3b6831ea42321ddc1540933fd2e"
 SCENE_SHA = "c93d436b1624c9f037bb8621ceccc6b5a9edd39f3e3b90d60877ce51a7b89510"
 IMAGE_AGGREGATE_SHA = "2b66539cfd5757747fe12b626104a7236c60afa648b01b7c05a1e94392533148"

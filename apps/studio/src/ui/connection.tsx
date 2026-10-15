@@ -148,7 +148,7 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
             <h2 id="c-browser">{localEngine === null ? "Reconstruct in this browser" : "This browser"}</h2>
             <p>
               Choose a folder with the cameras, the photos and their masks (an inputs folder, as{" "}
-              <span class="mono">crisp3ds-dense inputs --pack</span> writes it). It is read on this device and nothing is
+              <span class="mono">crispmesh-dense inputs --pack</span> writes it). It is read on this device and nothing is
               uploaded. The model can be downloaded as STL when the run is done; runs are kept until this page is closed.
             </p>
             {browser.built && browser.webgpu && (

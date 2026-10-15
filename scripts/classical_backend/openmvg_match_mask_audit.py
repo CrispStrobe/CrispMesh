@@ -14,7 +14,7 @@ import struct
 from PIL import Image
 
 
-BASE = Path("/Volumes/backups/code/crisp3ds-data")
+BASE = Path("/Volumes/backups/code/crispmesh-data")
 SFM = BASE / "openmvg-mustard-photo-sfm-001"
 MASKS = BASE / "mustard-sfm-train-001"
 PROFILE = Path(__file__).resolve().parents[2] / "tests/datasets/ycb_np3_full_turn_profile.json"

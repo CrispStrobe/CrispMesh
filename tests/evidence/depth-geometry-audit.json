@@ -1,11 +1,11 @@
 {
-  "schema": "crisp3ds_depth_geometry_audit_v1",
+  "schema": "crispmesh_depth_geometry_audit_v1",
   "date": "2026-10-09",
   "base_revision": "fdf742a695cf45ba58bedddfb830575ce641f593",
   "conclusion": "A severe dependence of central band estimates on neighbouring prior errors is reproduced with perfect cameras. Coherent candidate-plane scoring corrects this synthetic failure. Real-object causation and default adoption are not established.",
   "reproduction": {
     "source": "crates/dense/tests/depth_geometry_audit.rs",
-    "command": "CRISP3DS_GPU_TESTS=1 RAYON_NUM_THREADS=2 cargo test --release --manifest-path crates/dense/Cargo.toml --test depth_geometry_audit -- --nocapture --test-threads=1",
+    "command": "CRISPMESH_GPU_TESTS=1 RAYON_NUM_THREADS=2 cargo test --release --manifest-path crates/dense/Cargo.toml --test depth_geometry_audit -- --nocapture --test-threads=1",
     "tests_passed": 3,
     "gpu_enabled": true,
     "device": "Apple M1 / Metal",

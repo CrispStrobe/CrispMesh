@@ -1,7 +1,7 @@
 // Starts downloading an example object in "This browser", cancels after a few files, checks
 // that the partial download is reported and can be deleted, and that it is gone afterwards.
 //
-//   STUDIO_URL=https://crispstrobe.github.io/crisp3ds/ node scripts/examples-cancel-check.mjs
+//   STUDIO_URL=https://crispstrobe.github.io/CrispMesh/ node scripts/examples-cancel-check.mjs
 
 import { chromium } from "playwright";
 
@@ -32,11 +32,11 @@ try {
   await row.locator("progress").waitFor({ state: "detached", timeout: 60000 });
   await page.waitForTimeout(1500);
   console.log("after cancel:", (await row.locator(".example-text").innerText()).replace(/\s+/g, " "), "| buttons:", (await row.locator("button").allInnerTexts()).join(", "));
-  console.log("cached files:", await page.evaluate(async () => (await (await caches.open("crisp3ds-example-objects")).keys()).length));
+  console.log("cached files:", await page.evaluate(async () => (await (await caches.open("crispmesh-example-objects")).keys()).length));
   await row.getByRole("button", { name: "Delete download" }).click();
   await page.waitForTimeout(2500);
   console.log("after delete:", (await row.locator(".example-text").innerText()).replace(/\s+/g, " "), "| buttons:", (await row.locator("button").allInnerTexts()).join(", "));
-  console.log("cached files:", await page.evaluate(async () => (await (await caches.open("crisp3ds-example-objects")).keys()).length));
+  console.log("cached files:", await page.evaluate(async () => (await (await caches.open("crispmesh-example-objects")).keys()).length));
 } catch (problem) {
   problems.push(String(problem?.message ?? problem).split("\n")[0]);
 } finally {

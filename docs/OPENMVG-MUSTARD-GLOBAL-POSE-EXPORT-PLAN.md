@@ -26,7 +26,7 @@ The HTML's blank `NP3_252`/`NP3_276` rows remain candidates, not proof.
 Default `python3 -m scripts.classical_backend.openmvg_mustard_global_pose_export`
 is a read-only preflight. Native `--convert` requires separate review and
 may write only to fresh external
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-global-pose-export-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-global-pose-export-001`.
 It never reuses or overwrites the GLOBAL model or earlier exports. The gate
 reserves 11 GiB free externally **plus** the full 64 MiB output cap, and
 11 GiB internally; during conversion it caps observed process-tree RSS at

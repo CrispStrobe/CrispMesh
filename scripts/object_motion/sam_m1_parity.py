@@ -79,7 +79,7 @@ def host_preflight(output, check_memory=True):
     if sys.platform != "darwin" or os.uname().machine != "arm64":
         raise RuntimeError("M1 parity requires native arm64 macOS")
     mount = Path("/Volumes/backups")
-    external_root = Path("/Volumes/backups/code/crisp3ds-data")
+    external_root = Path("/Volumes/backups/code/crispmesh-data")
     if (not mount.is_mount() or not external_root.is_dir() or external_root.is_symlink() or
             not output.parent.is_dir() or output.parent.is_symlink() or
             not output.parent.resolve().is_relative_to(external_root.resolve()) or

@@ -67,8 +67,8 @@ class Engine:
     def __init__(self, runs, data, python=None, torch_python=None, device="cpu"):
         self.runs, self.data = Path(runs).resolve(), Path(data).resolve()
         self.runs.mkdir(parents=True, exist_ok=True)
-        self.python = python or os.environ.get("CRISP3DS_PYTHON") or sys.executable
-        self.torch_python = torch_python or os.environ.get("CRISP3DS_TORCH_PYTHON") or sys.executable
+        self.python = python or os.environ.get("CRISPMESH_PYTHON") or sys.executable
+        self.torch_python = torch_python or os.environ.get("CRISPMESH_TORCH_PYTHON") or sys.executable
         self.device = device
 
     def list_runs(self):
@@ -94,7 +94,7 @@ class Engine:
             entries.append({"name": child.name, "directory": child.is_dir(),
                             "inputs": child.is_dir() and (child / "cameras.json").is_file(), "photos": photos,
                             "calibration": child.is_file() and child.suffix == ".json"
-                            and '"crisp3ds_lens_calibration_v1"' in child.read_text(errors="ignore")[:400]})
+                            and '"crispmesh_lens_calibration_v1"' in child.read_text(errors="ignore")[:400]})
         return {"path": str(folder.relative_to(self.data)).replace(os.sep, "/").strip("."), "entries": entries[:500]}
 
     def start_run(self, body):
@@ -131,7 +131,7 @@ class Engine:
 
 def handler_for(engine, static, token):
     class Handler(BaseHTTPRequestHandler):
-        server_version = "crisp3ds-engine/1"
+        server_version = "crispmesh-engine/1"
 
         def log_message(self, *args):
             pass
@@ -250,7 +250,7 @@ def main():
         parser.error("--token is required when binding to a non-local address")
     engine = Engine(args.runs, args.data, args.python, args.torch_python, args.device)
     server = ThreadingHTTPServer((args.host, args.port), handler_for(engine, args.static, args.token))
-    print(f"crisp3ds engine on http://{args.host}:{args.port}  runs={engine.runs}  data={engine.data}", flush=True)
+    print(f"crispmesh engine on http://{args.host}:{args.port}  runs={engine.runs}  data={engine.data}", flush=True)
     server.serve_forever()
 
 

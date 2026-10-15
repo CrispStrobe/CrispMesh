@@ -21,7 +21,7 @@ python3 scripts/fetch_test_data.py --dataset middlebury2001 --fetch
 python3 scripts/fetch_test_data.py --dataset piano
 python3 scripts/fetch_test_data.py --dataset middlebury2003
 python3 scripts/fetch_test_data.py --dataset middlebury2001
-CRISP3DS_TEST_REAL_DATA=1 python3 -m unittest scripts/test_fetch_test_data.py
+CRISPMESH_TEST_REAL_DATA=1 python3 -m unittest scripts/test_fetch_test_data.py
 ```
 
 The selected ETH3D data requires explicit acknowledgement of its [CC BY-NC-SA 4.0 terms](https://www.eth3d.net/). This local evaluation use does not settle whether a commercial product workflow is permitted. ETH3D is excluded from the default corpus and should not be redistributed with the application:
@@ -29,10 +29,10 @@ The selected ETH3D data requires explicit acknowledgement of its [CC BY-NC-SA 4.
 ```sh
 python3 scripts/fetch_test_data.py --dataset eth3d --allow-noncommercial-data --fetch
 python3 scripts/fetch_test_data.py --dataset eth3d --allow-noncommercial-data
-CRISP3DS_TEST_ETH3D=1 python3 -m unittest scripts/test_fetch_test_data.py
+CRISPMESH_TEST_ETH3D=1 python3 -m unittest scripts/test_fetch_test_data.py
 ```
 
-For another machine, set `CRISP3DS_TEST_DATA_ROOT=/path/to/storage` to move all dataset folders under that base, or pass `--root PATH` for one selected dataset. The fetcher checks that planned writes leave at least 10 GiB free, refuses changed existing files, bounds byte counts, and writes through temporary files in the selected dataset folder. ETH3D archives are checksum verified before extraction; only 15 named members are streamed to pinned paths, so archive paths cannot direct file writes. The `7z` or `7zz` command is needed for ETH3D only. Unit-test scratch files use `.local-tools/tmp/`.
+For another machine, set `CRISPMESH_TEST_DATA_ROOT=/path/to/storage` to move all dataset folders under that base, or pass `--root PATH` for one selected dataset. The fetcher checks that planned writes leave at least 10 GiB free, refuses changed existing files, bounds byte counts, and writes through temporary files in the selected dataset folder. ETH3D archives are checksum verified before extraction; only 15 named members are streamed to pinned paths, so archive paths cannot direct file writes. The `7z` or `7zz` command is needed for ETH3D only. Unit-test scratch files use `.local-tools/tmp/`.
 
 ## Source and conversion details
 

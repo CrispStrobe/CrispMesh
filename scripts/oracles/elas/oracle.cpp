@@ -1,4 +1,4 @@
-// Test-only adapter for pinned libELAS. This file is not linked into Crisp3DS.
+// Test-only adapter for pinned libELAS. This file is not linked into CrispMesh.
 #include "elas.h"
 
 #include <algorithm>

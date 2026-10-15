@@ -2,7 +2,7 @@
 
 This is an **evaluation-only** build plan, not a commercial/App Store license
 clearance and not a photo/SfM approval. The configured fork is fixed at
-`/Volumes/backups/code/crisp3ds-data/openmvg-v21-ligt-off-oracle-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-v21-ligt-off-oracle-001`.
 The preserved original source under `openmvg-mustard-v21-001` is never built or
 edited by this continuation. No clone, package install, network fetch, image
 stage, or SfM run is part of this command.

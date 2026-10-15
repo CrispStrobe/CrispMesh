@@ -46,7 +46,7 @@ This is an engineering boundary, not a legal guarantee. The [GNU FAQ on GPL deve
 Run the independent Python checks with the local fixture and built evaluator explicitly enabled:
 
 ```sh
-CRISP3DS_TEST_REAL_DATA=1 CRISP3DS_TEST_STEREO_EVAL=1 python3 -m unittest discover -s scripts -p 'test_*.py'
+CRISPMESH_TEST_REAL_DATA=1 CRISPMESH_TEST_STEREO_EVAL=1 python3 -m unittest discover -s scripts -p 'test_*.py'
 node scripts/live_browser_test.mjs
 ```
 

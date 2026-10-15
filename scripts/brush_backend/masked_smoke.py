@@ -15,8 +15,8 @@ from .preflight import sha256
 from .smoke import BINARY, MAX_LOG, MAX_OUTPUT, MAX_RSS, MAX_SECONDS, ROOT, command
 
 MOUNT = Path("/Volumes/backups")
-BRIDGE = MOUNT / "code/crisp3ds-data/brush-ycb-masked-input-001"
-OUTPUT = MOUNT / "code/crisp3ds-data/brush-masked-smoke-001"
+BRIDGE = MOUNT / "code/crispmesh-data/brush-ycb-masked-input-001"
+OUTPUT = MOUNT / "code/crispmesh-data/brush-masked-smoke-001"
 BRIDGE_SHA256 = "7ef45e2ff8e5997d2079f5af508ef2f4623347cd3ac8335d7e3abc75e260e62d"
 BINARY_SHA256 = "8380ed40cce870025393e1ea0257e0752351c67a409d827b76dc75ec3a999a71"
 BUFFER = 256 * 1024**2

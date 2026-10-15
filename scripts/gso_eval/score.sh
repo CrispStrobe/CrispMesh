@@ -2,7 +2,7 @@
 # Scores an existing case (work/CASE/run/mesh/mesh.stl) and makes its camera report and sheet.
 scripts="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$scripts/../.." && pwd)"
-# Data (models/, bin/crisp3ds-dense, work/) lives outside git; override with GSO_EVAL_DIR.
+# Data (models/, bin/crispmesh-dense, work/) lives outside git; override with GSO_EVAL_DIR.
 here="${GSO_EVAL_DIR:-$repo/.local-tools/gso-eval}"
 py="${PYTHON:-python}"
 work=$here/work/$1

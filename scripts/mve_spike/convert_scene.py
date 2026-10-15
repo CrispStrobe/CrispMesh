@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test-only conversion of measured Crisp3DS sparse geometry into an MVE scene."""
+"""Test-only conversion of measured CrispMesh sparse geometry into an MVE scene."""
 
 import argparse
 import hashlib

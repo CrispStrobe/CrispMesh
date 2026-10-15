@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Crisp3DS project manifest v1",
+  "title": "CrispMesh project manifest v1",
   "description": "Structure only: does not assert image existence or verified reconstruction artifacts. Image and marker IDs must additionally be unique; marker corners must form measured, nondegenerate squares in decoded TL/TR/BR/BL order. The application and native validator enforce these geometry conditions.",
   "type": "object",
   "required": ["schemaVersion", "id", "name", "units", "images", "stages"],

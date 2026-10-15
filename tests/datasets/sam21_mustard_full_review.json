@@ -3,7 +3,7 @@
   "object_id": "006_mustard_bottle",
   "decision": "rejected_for_reconstruction",
   "candidate_status": "failed_or_partial_unusable",
-  "candidate_manifest_vps": "/mnt/storage/crisp3ds-data/sam21-mustard-full-001/manifest.json",
+  "candidate_manifest_vps": "/mnt/storage/crispmesh-data/sam21-mustard-full-001/manifest.json",
   "candidate_manifest_sha256": "0441b19a257dd424c3c77728bdee405efddf62ace9563d105d6d76ffcc67c936",
   "batch_manifest_sha256": [
     "aa37ec1e6dbed0c7141ab1637f086ac19a5ffec09634faa5a4d8dd2d2f9656a1",

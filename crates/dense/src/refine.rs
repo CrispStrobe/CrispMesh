@@ -446,7 +446,7 @@ pub fn weld(triangles: &[crate::stl::Triangle]) -> (Vec<[f64; 3]>, Vec<[u32; 3]>
 
 pub fn main(arguments: &[String]) -> Result<()> {
     const USAGE: &str =
-        "usage: crisp3ds-dense refine --inputs DIR --mesh STL --output STL [--peak X] [--rounds A,B,C] [--anchors N] [--outward]
+        "usage: crispmesh-dense refine --inputs DIR --mesh STL --output STL [--peak X] [--rounds A,B,C] [--anchors N] [--outward]
 
 Refines a mesh of the scene in DIR (cameras.json, images) against its photos and writes the result.";
     let mut values = std::collections::BTreeMap::new();
@@ -497,7 +497,7 @@ pub fn run(inputs: &Path, mesh: &Path, output: &Path, options: &Options, check: 
     let (mut vertices, faces) = weld(&triangles);
     drop(triangles);
     let mut report = refine(&mut vertices, &faces, &rows, options, check).with_context(|| format!("refining {}", mesh.display()))?;
-    crate::stl::write_binary(output, "crisp3ds refined mesh", &vertices, &faces)?;
+    crate::stl::write_binary(output, "crispmesh refined mesh", &vertices, &faces)?;
     let info = crate::mesh::surface::topology(&vertices, &faces);
     report["triangles"] = json!(info.triangles);
     report["closed"] = json!(info.boundary_edges == 0 && info.nonmanifold_edges == 0);

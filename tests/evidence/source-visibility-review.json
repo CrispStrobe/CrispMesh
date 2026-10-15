@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_source_visibility_review_v2",
+  "schema": "crispmesh_source_visibility_review_v2",
   "date": "2026-10-09",
   "production_implemented": false,
   "default_changed": false,
@@ -105,7 +105,7 @@
   },
   "decision": "Reject both visibility variants for production integration. With frozen baseline scan alignment, strict drill F1 fails to improve; coherent variant worsens all three thresholds and mean error. Earlier independently fitted scores overstated the apparent strict gain. Bunny local differences remain small; no convincing detail restoration.",
   "fixed_alignment_followup": {
-    "schema": "crisp3ds_drill_frozen_visibility_eval_v1",
+    "schema": "crispmesh_drill_frozen_visibility_eval_v1",
     "reference_used_only_posthoc": true,
     "samples_per_surface": 200000,
     "seed": 233,

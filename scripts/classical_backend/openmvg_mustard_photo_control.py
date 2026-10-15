@@ -16,8 +16,8 @@ import time
 from scripts.classical_backend import openmvg_photo_control as core
 from scripts.classical_backend import openmvg_sceaux_photo_control_v2 as cli
 
-SOURCE = Path("/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001")
+SOURCE = Path("/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001")
 NAMES_SHA = "a81d1647109db27991c39c5fe1a9ae308c04081f8ada49d8b0f5ab1c15245544"
 REPORT_SHA = "bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0"
 STAGE_SECONDS = (120, 600, 900, 600, 900)

@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn publishes_masks_with_statistics_and_a_sheet() {
-        let out = std::env::temp_dir().join(format!("crisp3ds-sheets-{}", std::process::id()));
+        let out = std::env::temp_dir().join(format!("crispmesh-sheets-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&out);
         for folder in ["work/photos", "work/coarse-masks", "work/mask-cleanup/masks"] {
             std::fs::create_dir_all(out.join(folder)).unwrap();

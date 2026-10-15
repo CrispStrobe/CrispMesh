@@ -1,7 +1,7 @@
 """Bounded macOS-only launcher for the original RealityKit Photogrammetry probe.
 
 Support checks are cheap. Reconstruction is opt-in and intentionally separate
-from the cross-platform Crisp3DS pipeline.
+from the cross-platform CrispMesh pipeline.
 """
 from __future__ import annotations
 

@@ -18,8 +18,8 @@ from scripts.upstream_control import image_only as stock
 from scripts.upstream_control import object_sparse
 
 ROOT = stock.ROOT
-SOURCE = Path("/Volumes/backups/code/crisp3ds-data/cracker-stock-masked-001")
-OUTPUT_PARENT = Path("/Volumes/backups/code/crisp3ds-data")
+SOURCE = Path("/Volumes/backups/code/crispmesh-data/cracker-stock-masked-001")
+OUTPUT_PARENT = Path("/Volumes/backups/code/crispmesh-data")
 PYTHON = stock.PYTHON
 NAMES = object_sparse.NAMES
 EXPECTED_DB_SHA256 = "a91caa5b6ae7c3c50f895fe682a006190118846d0510e0c8fa7ed0a1c47d9ae7"

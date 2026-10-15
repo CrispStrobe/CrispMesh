@@ -1,4 +1,4 @@
-#include "crisp3ds/core.h"
+#include "crispmesh/core.h"
 
 #include <fstream>
 #include <iostream>
@@ -7,24 +7,24 @@
 #include <vector>
 
 namespace {
-using operation = crisp3ds_status (*)(char *, size_t, size_t *);
-using project_operation = crisp3ds_status (*)(const char *, size_t, char *, size_t, size_t *);
+using operation = crispmesh_status (*)(char *, size_t, size_t *);
+using project_operation = crispmesh_status (*)(const char *, size_t, char *, size_t, size_t *);
 
 int output(operation fn) {
   size_t needed = 0;
-  if (fn(nullptr, 0, &needed) != CRISP3DS_BUFFER_TOO_SMALL || needed == 0) return 1;
+  if (fn(nullptr, 0, &needed) != CRISPMESH_BUFFER_TOO_SMALL || needed == 0) return 1;
   std::vector<char> buffer(needed);
   auto status = fn(buffer.data(), buffer.size(), &needed);
   std::cout << buffer.data() << '\n';
-  return status == CRISP3DS_OK ? 0 : 1;
+  return status == CRISPMESH_OK ? 0 : 1;
 }
 int output(project_operation fn, const std::string &input) {
   size_t needed = 0;
-  if (fn(input.data(), input.size(), nullptr, 0, &needed) != CRISP3DS_BUFFER_TOO_SMALL || needed == 0) return 1;
+  if (fn(input.data(), input.size(), nullptr, 0, &needed) != CRISPMESH_BUFFER_TOO_SMALL || needed == 0) return 1;
   std::vector<char> buffer(needed);
   auto status = fn(input.data(), input.size(), buffer.data(), buffer.size(), &needed);
   std::cout << buffer.data() << '\n';
-  return status == CRISP3DS_OK ? 0 : status == CRISP3DS_UNAVAILABLE ? 3 : 2;
+  return status == CRISPMESH_OK ? 0 : status == CRISPMESH_UNAVAILABLE ? 3 : 2;
 }
 int output_path(const char *path, bool sparse = false) {
   if (!path || !*path) {
@@ -33,21 +33,21 @@ int output_path(const char *path, bool sparse = false) {
   }
   char *report = nullptr;
   size_t size = 0;
-  auto status = sparse ? crisp3ds_reconstruct_sparse_alloc(path,&report,&size)
-                       : crisp3ds_estimate_poses_alloc(path,&report,&size);
+  auto status = sparse ? crispmesh_reconstruct_sparse_alloc(path,&report,&size)
+                       : crispmesh_estimate_poses_alloc(path,&report,&size);
   if (!report || !size) return 1;
   std::cout << report << '\n';
-  crisp3ds_free(report);
-  return status == CRISP3DS_OK ? 0 : status == CRISP3DS_UNAVAILABLE ? 3 : 2;
+  crispmesh_free(report);
+  return status == CRISPMESH_OK ? 0 : status == CRISPMESH_UNAVAILABLE ? 3 : 2;
 }
 void usage() {
-  std::cerr << "Usage: crisp3ds capabilities | diagnose-geometry | validate <project.json> | estimate-poses <project.json> | reconstruct-sparse <project.json> | reconstruct <project.json>\n";
+  std::cerr << "Usage: crispmesh capabilities | diagnose-geometry | validate <project.json> | estimate-poses <project.json> | reconstruct-sparse <project.json> | reconstruct <project.json>\n";
 }
 } // namespace
 
 int main(int argc, char **argv) {
-  if (argc == 2 && std::string(argv[1]) == "capabilities") return output(crisp3ds_capabilities_json);
-  if (argc == 2 && std::string(argv[1]) == "diagnose-geometry") return output(crisp3ds_geometry_diagnostic_json);
+  if (argc == 2 && std::string(argv[1]) == "capabilities") return output(crispmesh_capabilities_json);
+  if (argc == 2 && std::string(argv[1]) == "diagnose-geometry") return output(crispmesh_geometry_diagnostic_json);
   if (argc != 3) { usage(); return 64; }
   const std::string command = argv[1];
   if (command == "estimate-poses") return output_path(argv[2]);
@@ -70,5 +70,5 @@ int main(int argc, char **argv) {
     std::cout << "{\"ok\":false,\"error\":{\"code\":\"io_error\",\"message\":\"Cannot read project file\"}}\n";
     return 2;
   }
-  return output(command == "validate" ? crisp3ds_validate_project_json : crisp3ds_reconstruct_json, input);
+  return output(command == "validate" ? crispmesh_validate_project_json : crispmesh_reconstruct_json, input);
 }

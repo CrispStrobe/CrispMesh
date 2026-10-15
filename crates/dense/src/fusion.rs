@@ -731,7 +731,7 @@ mod tests {
         assert!((0.6 * expected..1.6 * expected).contains(&measured), "measured {measured}, expected about {expected}");
     }
 
-    /// GPU fusion of exact sphere depth against the scalar votes (`CRISP3DS_GPU_TESTS=1`).
+    /// GPU fusion of exact sphere depth against the scalar votes (`CRISPMESH_GPU_TESTS=1`).
     #[test]
     fn gpu_fusion_matches_scalar_votes_and_finds_the_sphere() {
         if !crate::gpu::tests_enabled() {

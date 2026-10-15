@@ -46,7 +46,7 @@ It deliberately requires a separately sealed 48-mask inventory and explicit
 root visual-QA acceptance. The reviewed v2 candidate below satisfied that
 gate before staging. A separate photo-only
 48-TRAIN stage completed at
-`/Volumes/backups/code/crisp3ds-data/sam21-m1-train48-001` (report SHA-256
+`/Volumes/backups/code/crispmesh-data/sam21-m1-train48-001` (report SHA-256
 `d6e72143fc02ee3d18dd8961ae508417bf122cbdbc24ebc4465e207a30997861`);
 it contains no masks or held-out images and does not satisfy the mask/QA gate.
 
@@ -80,7 +80,7 @@ separate. Tests use tiny synthetic masks and do not substitute for the root's
 image review.
 
 The first corrected five-view attempt at
-`/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-board5-001` **failed**.
+`/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-board5-001` **failed**.
 Its manifest SHA-256 is
 `1008fc7bdbaa75ac33f17f8ddf44eaa275b3e98eb21466906060ebc3300c638c`
 (`partial_unusable`); its separate supervisor SHA-256 is
@@ -104,7 +104,7 @@ The five-view parent remains **partial/failed**. A distinct declarative
 [two-view recipe](../tests/datasets/sam21_mustard_m1_two_view_recipe.json)
 (SHA-256 `38f2a40af084df4c177925bfcfad7b5ebe5f131388283d14d15f5e690a8d0367`)
 produced masks for 336° and 342° in a fresh run at
-`/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-recipe-001` (manifest
+`/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-recipe-001` (manifest
 SHA-256 `361d32f4342fa193d5bfed68289f0a44151b3768b54d2a30998dd4a6b11c6f01`,
 supervisor SHA-256 `c9124c9d1fe921396fda801f15a7f2cb9a7022a6d1829494aad9bc12ff7e703d`).
 Both new producer statuses were `generated_unreviewed`, then the two masks
@@ -119,7 +119,7 @@ exact ordered 43 original + 3 accepted partial-parent + 2 accepted ROI-recipe
 candidate. It preserves each parent status, per-image recipe-row SHA, source
 manifest/supervisor SHA, reviewed contact-sheet SHA and subset QA. The
 candidate was composed fresh at
-`/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-candidate48-002`
+`/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-candidate48-002`
 (inventory SHA-256 `c341e3798a792c83abbacac8a7f882a761c878cdd9dba693c02c5877bbb75751`),
 with full-frame training RGB/mask sheet SHA-256
 `fba2b0cc9c271857d7eb4170e34889c1c96bf79c2cfc1345df040c0bfe2496be`.
@@ -127,14 +127,14 @@ Root's [independent full-48 QA-v2](../tests/datasets/sam21_mustard_candidate48_v
 (SHA-256 `c07a62441a4846f53619d28d16f931bfd3a0e85f99a26df83bc6b664cdd8a2da`)
 accepted the exact 48-mask inventory and sheet only for coarse pose support.
 The fresh train-only stage at
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001` copied exactly
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001` copied exactly
 48,794,098 bytes; report SHA-256
 `bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0`.
 No held-out photo, depth, supplied pose, or reference mesh entered staging.
 
 For a *future* independently accepted complete correction, run from the
 repository root with the pinned interpreter
-`/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python`
+`.local-tools/colmap-sparse/venv/bin/python`
 and `PYTHONDONTWRITEBYTECODE=1`. The read-only composer module is
 `-m scripts.classical_backend.mustard_candidate48`
 with `--correction-root <fresh-complete-board5-root>`,
@@ -144,17 +144,17 @@ with `--correction-root <fresh-complete-board5-root>`,
 `--correction-qa <tracked-five-view-review>` and
 `--correction-qa-sha256 <accepted-review-sha>`. Only separate root approval
 permits repeating with `--compose`; that writes fresh
-`/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-candidate48-001`.
+`/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-candidate48-001`.
 The analogous read-only staging module is
 `-m scripts.classical_backend.mustard_stage` with
-`--train-photos /Volumes/backups/code/crisp3ds-data/sam21-m1-train48-001/photos`,
-`--inventory /Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-candidate48-001/complete_inventory.json`,
-`--inventory-root /Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-candidate48-001`,
+`--train-photos /Volumes/backups/code/crispmesh-data/sam21-m1-train48-001/photos`,
+`--inventory /Volumes/backups/code/crispmesh-data/sam21-mustard-m1-candidate48-001/complete_inventory.json`,
+`--inventory-root /Volumes/backups/code/crispmesh-data/sam21-mustard-m1-candidate48-001`,
 `--inventory-sha256 <composed-inventory-sha>`,
 `--qa <tracked-full48-review>` and
 `--qa-sha256 <accepted-full48-review-sha>`. Only separate approval permits
 repeating with `--prepare`, producing fresh
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001`. The currently
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001`. The currently
 failed board5-001 artifact cannot satisfy these placeholders; a future
 complete artifact requires its own fresh path and reviewed hashes.
 
@@ -197,15 +197,15 @@ and `sfm.json`, including registered and missing names and candidate models.
 An arm below 70% registration is a failed *preset gate*, but retain its
 diagnostic counts; do not erase or relabel it as a completed result.
 The prepared paired output names are fresh
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001` and
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-001`.
-Both use `/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/images`
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001` and
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-001`.
+Both use `/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/images`
 for `--images`, that directory's `train-names.txt` for `--image-list`,
 the absolute interpreter above for `--python`, and
-`/Users/christianstrobele/code/crisp3ds/.local-tools/classical-backend/bin`
+`.local-tools/classical-backend/bin`
 for `--binary-dir`. The masked-only `--pose-mask-dir` is
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/masks`.
-Set `TMPDIR=/Volumes/backups/code/crisp3ds-data` for each run. Both frozen
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/masks`.
+Set `TMPDIR=/Volumes/backups/code/crispmesh-data` for each run. Both frozen
 arms were subsequently launched with the same listed settings and image order;
 their sealed outcomes are reported below. These commands describe that paired
 run, not a new launch request.

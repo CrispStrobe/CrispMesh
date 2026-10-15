@@ -25,7 +25,7 @@ from scripts.classical_backend import openmvg_photo_control as core
 from scripts.classical_backend import openmvg_sceaux_photo_control_v2 as cli
 
 SOURCE = mustard.OUTPUT
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002")
 SOURCE_RECEIPT_SHA = "e45c400dcf71a3ba86fa22f7af2138418d6dc511fddcd6d8470ef33599804744"
 SFM_BINARY_SHA = "3d159212e82f16036b797337d3369ce6dfceabe17ff1745c48aaa2b545ab23f2"
 INPUT_FILES = ("matches/sfm_data.json", "matches/image_describer.json", "matches/matches.e.bin")

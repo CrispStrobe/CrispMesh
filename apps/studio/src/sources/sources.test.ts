@@ -38,12 +38,12 @@ describe("normaliseEngineUrl", () => {
 describe("HttpEngine", () => {
   it("reads health, settings and runs, tolerating fields it does not know", async () => {
     const { fetcher, requests } = fakeFetch((request) => {
-      if (request.url.endsWith("/api/health")) return json({ schema: "crisp3ds_dense_events_v1", device: "mps", can_start_runs: true, extra: 1 });
+      if (request.url.endsWith("/api/health")) return json({ schema: "crispmesh_dense_events_v1", device: "mps", can_start_runs: true, extra: 1 });
       if (request.url.endsWith("/api/settings")) return json({ settings: [{ name: "grid", group: "Hull", meaning: "m", kind: "integer", default: 400 }] });
       return json({ runs: [{ id: "r1", status: "running", started: 5, stage: "stereo", stage_fraction: 0.4, events: 9, colour: "blue" }, { nonsense: true }] });
     });
     const engine = new HttpEngine("http://engine:8765/", { fetcher });
-    expect(await engine.health()).toEqual({ schema: "crisp3ds_dense_events_v1", device: "mps", canStartRuns: true });
+    expect(await engine.health()).toEqual({ schema: "crispmesh_dense_events_v1", device: "mps", canStartRuns: true });
     expect((await engine.settings())[0]?.name).toBe("grid");
     expect(await engine.listRuns()).toEqual([{ id: "r1", status: "running", started: 5, stage: "stereo", stageFraction: 0.4, events: 9 }]);
     expect(requests.map((request) => request.url)).toEqual([
@@ -84,7 +84,7 @@ describe("HttpEngine", () => {
 
   it("does not mistake another web server for an engine", async () => {
     const { fetcher } = fakeFetch(() => json({ hello: "world" }));
-    await expect(new HttpEngine("http://e", { fetcher }).health()).rejects.toThrow(/not a Crisp3DS engine/);
+    await expect(new HttpEngine("http://e", { fetcher }).health()).rejects.toThrow(/not a CrispMesh engine/);
   });
 });
 

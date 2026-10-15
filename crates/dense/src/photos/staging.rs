@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn stages_photos_and_writes_coarse_masks() {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-staging-{}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-staging-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(folder.join("photos")).unwrap();
         for n in [2usize, 10, 1] {

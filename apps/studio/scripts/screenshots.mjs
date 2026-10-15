@@ -59,8 +59,8 @@ async function page(browser, viewport, { theme = "light", prefs = {}, mobile = f
     isMobile: mobile,
   });
   await context.addInitScript((stored) => {
-    if (localStorage.getItem("crisp3ds.studio.v1") === null) {
-      localStorage.setItem("crisp3ds.studio.v1", JSON.stringify(stored));
+    if (localStorage.getItem("crispmesh.studio.v1") === null) {
+      localStorage.setItem("crispmesh.studio.v1", JSON.stringify(stored));
     }
   }, prefs);
   const tab = await context.newPage();

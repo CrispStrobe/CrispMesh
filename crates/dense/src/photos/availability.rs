@@ -1,7 +1,7 @@
 //! Whether a provider can run here: its external programs are looked for at
 //! the given locations and asked for their version where they have one.
 //!
-//! This is the check a host makes before offering a provider (`crisp3ds-dense
+//! This is the check a host makes before offering a provider (`crispmesh-dense
 //! run --describe`, `crate::run::describe_with`); the stage itself checks
 //! again when it runs.
 
@@ -15,7 +15,7 @@ use serde_json::{json, Value};
 use super::cameras::ALICEVISION_TOOLS;
 use super::option_table;
 
-/// Where the external programs are: the tool options of `crisp3ds-dense photos`.
+/// Where the external programs are: the tool options of `crispmesh-dense photos`.
 #[derive(Clone, Debug, Default)]
 pub struct ToolLocations {
     /// AliceVision install prefix or wrapper script.
@@ -289,8 +289,8 @@ mod tests {
         let words: Vec<String> =
             ["--masks", "threshold", "--colmap", "/opt/colmap", "--sam-python=/venv/python", "--threads", "4"].map(String::from).to_vec();
         let environment = |name: &str| match name {
-            "CRISP3DS_COLMAP" => Some("/elsewhere".to_string()),
-            "CRISP3DS_ALICEVISION" => Some("/opt/av".to_string()),
+            "CRISPMESH_COLMAP" => Some("/elsewhere".to_string()),
+            "CRISPMESH_ALICEVISION" => Some("/opt/av".to_string()),
             _ => None,
         };
         let tools = ToolLocations::from_words(&words, &environment);
@@ -301,7 +301,7 @@ mod tests {
 
     #[test]
     fn missing_programs_are_named_and_native_providers_are_available() {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-availability-{}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-availability-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(folder.join("prefix/bin")).unwrap();
         std::fs::create_dir_all(folder.join("prefix/lib")).unwrap();

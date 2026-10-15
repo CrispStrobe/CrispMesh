@@ -1,7 +1,7 @@
 # The marker mat
 
 A printed sheet of square markers that lies under the object and turns with
-it. With it, `crisp3ds-dense photos --cameras markers` gets every camera pose
+it. With it, `crispmesh-dense photos --cameras markers` gets every camera pose
 from the markers alone: no external program, the same result every time, the
 scene in millimetres and with a known handedness.
 
@@ -13,10 +13,10 @@ listed under Limits.
 ## Print it
 
 ```sh
-crisp3ds-dense mat --size a4 --output mat/        # also: letter, a3
+crispmesh-dense mat --size a4 --output mat/        # also: letter, a3
 ```
 
-writes `crisp3ds-marker-mat-a4.pdf`, `.svg`, `.png` (300 dpi) and `.json`.
+writes `crispmesh-marker-mat-a4.pdf`, `.svg`, `.png` (300 dpi) and `.json`.
 
 | Size | Page (mm) | Markers | Marker side | Object zone |
 | --- | --- | --- | --- | --- |
@@ -45,8 +45,8 @@ writes `crisp3ds-marker-mat-a4.pdf`, `.svg`, `.png` (300 dpi) and `.json`.
   is not estimated from the mat.
 
 ```sh
-crisp3ds-dense photos --photos DIR --calibration lens.json --output RUN/frontend \
-    --cameras markers --markers-mat mat/crisp3ds-marker-mat-a4.json --masks ...
+crispmesh-dense photos --photos DIR --calibration lens.json --output RUN/frontend \
+    --cameras markers --markers-mat mat/crispmesh-marker-mat-a4.json --masks ...
 ```
 
 ## What the provider does
@@ -96,7 +96,7 @@ found.
 
 ## Measured (rendered photos)
 
-Renderings by `crisp3ds-dense mat --capture`: the A4 mat under a dark object
+Renderings by `crispmesh-dense mat --capture`: the A4 mat under a dark object
 (a 64 mm wide, 90 mm tall capsule), turning under a fixed camera 420 mm away,
 1200 x 900 pixels, a lens with radial distortion, defocus blur of 0.8 px,
 sensor noise of 2 grey levels, contact shadow. Poses are compared with the
@@ -125,7 +125,7 @@ The scale of the recovered orbit was within 0.03 % of the truth in every row
   against the truth: median 0.035 px here (95 % below 0.15 px); OpenCV 0.71 px
   with its default settings and 0.25 px with sub-pixel refinement.
 - **Through the dense stages.** The base capture with `--cameras markers` and
-  the rendered object masks, then `crisp3ds-dense run`: a closed mesh whose
+  the rendered object masks, then `crispmesh-dense run`: a closed mesh whose
   side has a radius of 31.97 mm (true 32.00, -0.08 %) and whose top is at
   90.00 mm (true 90.00). Camera recovery took one second for 36 photos.
 - **Print aspect.** A mat description stretched by 1 % against the rendered
@@ -176,7 +176,7 @@ The scale of the recovered orbit was within 0.03 % of the truth in every row
 No printed mat has been photographed yet, so the first capture is a test of
 this provider as much as a scan.
 
-1. Print `crisp3ds-marker-mat-a4.pdf` at 100 %. Measure the bar: 80 mm. Note
+1. Print `crispmesh-marker-mat-a4.pdf` at 100 %. Measure the bar: 80 mm. Note
    the measured length, and the page's long edge between the outer marker
    edges (262 mm on A4) if a ruler allows.
 2. Tape the sheet flat on the turntable, centre cross on the axis as well as
@@ -212,11 +212,11 @@ run's output.
 
 ## The description file
 
-`crisp3ds_marker_mat_v1`, millimetres:
+`crispmesh_marker_mat_v1`, millimetres:
 
 ```json
 {
-  "schema": "crisp3ds_marker_mat_v1", "name": "a4", "unit": "mm",
+  "schema": "crispmesh_marker_mat_v1", "name": "a4", "unit": "mm",
   "page": {"width": 210.0, "height": 297.0},
   "dictionary": {"name": "DICT_4X4_50", "bits": 4, "border_cells": 1},
   "marker_size": 24.0, "object_radius": 50.0,

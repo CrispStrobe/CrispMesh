@@ -10,9 +10,9 @@ camera frame; it is not certified physical ground truth.
 ## Sealed evaluation-only reference
 
 The existing VPS acquisition retains the Google 16k mesh at
-`/mnt/akademie_storage/crisp3ds-data/ycb-expansion-001/006_mustard_bottle/reference/`.
+`/mnt/akademie_storage/crispmesh-data/ycb-expansion-001/006_mustard_bottle/reference/`.
 Only its two exact small PLY files were copied to the fresh external-SSD
-`/Volumes/backups/code/crisp3ds-data/mustard-eval-reference-001/` evaluation directory (no archive,
+`/Volumes/backups/code/crispmesh-data/mustard-eval-reference-001/` evaluation directory (no archive,
 held-out photo, pose, or model copied):
 
 | File | Bytes | SHA-256 |

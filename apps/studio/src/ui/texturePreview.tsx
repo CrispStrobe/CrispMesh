@@ -28,7 +28,7 @@ export function TexturePreview({ source, path, themeTick }: { source: RunSource;
       abort.signal.throwIfAborted();
       checkPhotoGlb(bytes);
       const model = await new GLTFLoader().parseAsync(bytes, "");
-      // Crisp3DS exports one static mesh, with one embedded photo atlas.
+      // CrispMesh exports one static mesh, with one embedded photo atlas.
       const meshes: InstanceType<typeof Mesh>[] = [];
       model.scene.traverse((object) => { if (object instanceof Mesh) meshes.push(object); });
       const dispose = () => { for (const mesh of meshes) {
@@ -42,7 +42,7 @@ export function TexturePreview({ source, path, themeTick }: { source: RunSource;
       const mesh = meshes[0];
       const material = mesh?.material;
       if (meshes.length !== 1 || mesh === undefined || !(material instanceof MeshStandardMaterial) || !material.map) {
-        dispose(); throw Error("The preview requires a Crisp3DS photo-textured export.");
+        dispose(); throw Error("The preview requires a CrispMesh photo-textured export.");
       }
       if (!canvas.current || !host.current) { dispose(); return; }
       let view: Viewer | undefined;

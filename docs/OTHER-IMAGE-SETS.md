@@ -20,7 +20,7 @@ plane, distances under 20 mm).
 | --- | --- | --- | --- | --- | --- |
 | DTU MVS, masks and cameras of the IDR preprocessing | research use; not redistributable | structured-light points, observability masks | robot arm, 49 or 64 views on part of a sphere, 1600 x 1200, rectified | IDR subset 2.1 GB, points 7 GB, masks 6.9 GB | `colmap`; `import` of supplied poses (dense stages only); not `turntable` |
 | YCB / BigBIRD Berkeley RGB-D | YCB CC BY 4.0 | Google scanner meshes (16k, 64k) | five cameras over a turntable, 3 degree steps, 1280 x 1024, light booth, glass turntable carrying a chessboard | 0.6 to 1 GB per object | `turntable`, `colmap`; lens with tangential terms |
-| Google Scanned Objects | CC BY 4.0 | the meshes themselves | none: photos rendered by `crisp3ds-dense render` | about 1000 objects, 5 to 15 MB each | any, on rendered photos |
+| Google Scanned Objects | CC BY 4.0 | the meshes themselves | none: photos rendered by `crispmesh-dense render` | about 1000 objects, 5 to 15 MB each | any, on rendered photos |
 | BlendedMVS | CC BY 4.0 | textured meshes, rendered depth | aerial and object orbits, 768 x 576 renders blended with photos | low-resolution set 27.5 GB | `colmap`, `import` |
 | OmniObject3D | CC BY-NC-SA 4.0 | scanned meshes | phone video orbits with masks and COLMAP poses; Blender renders | large, behind a login | `colmap`, `import` |
 | Tanks and Temples (training) | CC BY 4.0 | laser scans | video around large objects and scenes, no masks | 1 to 5 GB per scene | `colmap`, `import`; masks missing |
@@ -63,7 +63,7 @@ dense stages.
 Six GSO models (Copyright 2020 Google LLC, CC BY 4.0, as each model's
 `model.config` and `metadata.pbtxt` state; Downs et al., ICRA 2022,
 <https://arxiv.org/abs/2204.11918>; downloaded from Gazebo Fuel, owner
-GoogleResearch) rendered by `crisp3ds-dense render` as a 3DLF-like capture: 72
+GoogleResearch) rendered by `crispmesh-dense render` as a 3DLF-like capture: 72
 views on one ring at 20 degrees elevation (5 degree steps), 1749 x 1155, the
 3DLF lens (`calibration/3dlf-pro.json`) with its distortion, 4 samples per
 pixel, one light that turns with the camera and casts a hard shadow, 1 px
@@ -281,10 +281,10 @@ This control is reproducible from a retained own `stereo/volume.npz` using
 existing settings (the large minimum weight exceeds every weight in this run):
 
 ```sh
-crisp3ds-dense mesh --volume OWN-RUN/stereo/volume.npz --output NEW-COARSE \
+crispmesh-dense mesh --volume OWN-RUN/stereo/volume.npz --output NEW-COARSE \
   --set mesh_minimum_weight=1000000 --set mesh_hull_overshoot=false \
   --set mesh_open_unseen=false
-crisp3ds-dense texture --inputs OWN-RUN/frontend/inputs \
+crispmesh-dense texture --inputs OWN-RUN/frontend/inputs \
   --mesh NEW-COARSE/mesh.stl --output NEW-TEXTURE
 ```
 

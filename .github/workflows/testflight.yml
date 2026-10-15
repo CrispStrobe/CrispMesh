@@ -283,7 +283,7 @@ jobs:
           /usr/libexec/PlistBuddy -c Print "$APP/Contents/Info.plist" | grep -E 'CFBundleIdentifier|CFBundleName|CFBundleShortVersionString|CFBundleVersion|LSApplicationCategoryType|LSMinimumSystemVersion|ITSAppUsesNonExemptEncryption'
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")" = "$BUILD_NUMBER"
           test -f "$APP/Contents/embedded.provisionprofile"
-          test -s "$APP/Contents/Resources/../MacOS/crisp3ds-studio"
+          test -s "$APP/Contents/Resources/../MacOS/crispmesh-studio"
       - name: Package (signed installer)
         run: |
           mkdir -p "$GITHUB_WORKSPACE/out"

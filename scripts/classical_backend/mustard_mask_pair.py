@@ -23,7 +23,7 @@ from scripts.classical_backend import mustard_stage
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = Path('/Volumes/backups/code/crisp3ds-data')
+DATA = Path('/Volumes/backups/code/crispmesh-data')
 STAGE = DATA / 'mustard-sfm-train-001'
 V2 = DATA / 'mustard-photo-refine-002'
 QA = ROOT / 'tests/datasets/mustard_photo_refine_v2_review.json'

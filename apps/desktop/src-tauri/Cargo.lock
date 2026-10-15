@@ -406,7 +406,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crisp3ds-desktop"
+name = "crispmesh-desktop"
 version = "0.1.0"
 dependencies = [
  "tauri",

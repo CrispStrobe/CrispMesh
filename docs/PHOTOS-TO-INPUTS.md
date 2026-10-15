@@ -1,25 +1,25 @@
 # Photos to dense inputs
 
-This step exists twice. `crisp3ds-dense photos` (Rust, `crates/dense/src/photos/`)
+This step exists twice. `crispmesh-dense photos` (Rust, `crates/dense/src/photos/`)
 is built around interchangeable providers, as planned in
 [`ARCHITECTURE.md`](ARCHITECTURE.md), and needs no Python. The Python module
 `scripts/turntable_mesh/photos_to_inputs.py` is its reference for everything
 that is not a provider's own business (staging, coarse masks, hole cleanup,
 contrast images, gates, sheets, events) and is described in the second half.
 
-## The native step: `crisp3ds-dense photos`
+## The native step: `crispmesh-dense photos`
 
 ```sh
-crisp3ds-dense photos --photos data/bunny/rgb \
+crispmesh-dense photos --photos data/bunny/rgb \
   --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
   --output runs/bunny-front                     # masks: threshold, cameras: turntable, unless given
-crisp3ds-dense run --inputs runs/bunny-front/inputs --output runs/bunny-dense
-crisp3ds-dense photos --list-providers      # the table below, as JSON
+crispmesh-dense run --inputs runs/bunny-front/inputs --output runs/bunny-dense
+crispmesh-dense photos --list-providers      # the table below, as JSON
 ```
 
 With the default providers (`--masks threshold`, `--cameras turntable`) no
 other program is started: photos and a lens calibration go in, masks, cameras
-and undistorted photos come out, on any platform. `crisp3ds-dense run --photos
+and undistorted photos come out, on any platform. `crispmesh-dense run --photos
 DIR --calibration JSON --output RUN` does this step and the dense stages in
 one command.
 
@@ -136,7 +136,7 @@ colours, cast shadows and pale connectors can still fail. Marker-mat masking
 with this experimental provider has not been validated.
 
 ```sh
-crisp3ds-dense run --photos PHOTOS --calibration LENS.json \
+crispmesh-dense run --photos PHOTOS --calibration LENS.json \
   --masks background --output NEW-RUN --texture
 ```
 
@@ -154,7 +154,7 @@ it used. It does not undistort anything.
 | `--cameras` | What it does | Needs | License | Desktop / phone / browser |
 | --- | --- | --- | --- | --- |
 | `turntable` (default) | our own solver for one turn of ordered turntable photos ([`TURNTABLE-SOLVER.md`](TURNTABLE-SOLVER.md)): SIFT features in the masks, one rotation about a fixed axis fitted to all consecutive pairs, tracks, bundle adjustment with free poses and the lens fixed. Repeatable; `--open-turn` for photos that do not close a turn | nothing | this crate | yes / yes / yes |
-| `markers` | a printed mat of ArUco markers under the object ([`MARKER-MAT.md`](MARKER-MAT.md)): markers detected in every photo, a pose per photo from all visible corners, the scene in the mat's millimetres and handedness. Verified on rendered photos only | the mat's description (`--markers-mat`, written by `crisp3ds-dense mat`) | this crate; marker codes of OpenCV's `DICT_4X4_50` | yes / yes / yes |
+| `markers` | a printed mat of ArUco markers under the object ([`MARKER-MAT.md`](MARKER-MAT.md)): markers detected in every photo, a pose per photo from all visible corners, the scene in the mat's millimetres and handedness. Verified on rendered photos only | the mat's description (`--markers-mat`, written by `crispmesh-dense mat`) | this crate; marker codes of OpenCV's `DICT_4X4_50` | yes / yes / yes |
 | `colmap` | `feature_extractor` with one shared `FULL_OPENCV` camera fixed to the declared lens and the masks as COLMAP masks, `exhaustive_matcher` (or `sequential_matcher`, or `matches_importer` on a closed ring of pairs), `mapper` with focal length, principal point and distortion not refined | a COLMAP executable (`--colmap`, or `colmap` on the `PATH`) | BSD-3-Clause; dependencies carry their own | yes / no / no |
 | `alicevision` | `cameraInit`, `featureExtraction` inside the masks, `imageMatching`, `featureMatching`, `globalSfM --lockAllIntrinsics true`: the commands of the reference | AliceVision executables (`--alicevision`) | MPL-2.0 (parts derived from libmv MIT); dependencies carry their own | yes / no / no |
 | `import:PATH` | reads an existing solution: an AliceVision `.sfm` file, or a COLMAP model directory (`cameras`, `images`, `points3D` as `.bin` or `.txt`, also below `sparse/0`). Its photos may be named like the originals or `capture_NNNN.png` | nothing | this crate | yes / yes / yes |
@@ -192,7 +192,7 @@ Python reference uses.
 **Where the COLMAP executable has run.** In CI on Ubuntu (job "photos with the
 COLMAP executable" in `.github/workflows/dense-native.yml`): the distribution's
 COLMAP 3.9.1, version detected by the provider, on a synthetic textured capture
-written by `crisp3ds-dense synthetic --capture` (40 photos of a sphere on a
+written by `crispmesh-dense synthetic --capture` (40 photos of a sphere on a
 20 degree orbit): 40 of 40 photos registered, recovered elevation 19.99 degrees
 against 20, largest step error 0.06 degrees, radius spread 0.06 %, and a dense
 run on top that ends in a closed mesh of genus 0. On the development Mac there
@@ -241,16 +241,16 @@ provider, the AliceVision scenes for `alicevision` and `colmap/` (database,
 
 ### Options of the native step
 
-`crisp3ds-dense photos --help` lists them. Provider options are namespaced
+`crispmesh-dense photos --help` lists them. Provider options are namespaced
 (`--threshold-…`, `--sam-…`, `--alicevision-…`, `--colmap-…`); the names of the
 reference command line remain as aliases (`--dark-threshold`, `--envelope`,
 `--device`, `--describer-types`, `--describer-preset`, `--matching-method`,
 `--sfm-option`, `--initial-field-of-view`, `--sensor-database`). Environment
-variables: `CRISP3DS_MASKS`, `CRISP3DS_CAMERAS`, `CRISP3DS_ALICEVISION`,
-`CRISP3DS_ALICEVISION_LIBRARY_PATH`, `CRISP3DS_ALICEVISION_ENV`,
-`CRISP3DS_ALICEVISION_SENSOR_DB`, `CRISP3DS_COLMAP`, `CRISP3DS_PYTHON`,
-`CRISP3DS_SAM_PYTHON`, `CRISP3DS_SAM_SOURCE`, `CRISP3DS_SAM_CHECKPOINT`,
-`CRISP3DS_SAM_CONFIG`, `CRISP3DS_SAM_PYTHONPATH`, `CRISP3DS_REPOSITORY`.
+variables: `CRISPMESH_MASKS`, `CRISPMESH_CAMERAS`, `CRISPMESH_ALICEVISION`,
+`CRISPMESH_ALICEVISION_LIBRARY_PATH`, `CRISPMESH_ALICEVISION_ENV`,
+`CRISPMESH_ALICEVISION_SENSOR_DB`, `CRISPMESH_COLMAP`, `CRISPMESH_PYTHON`,
+`CRISPMESH_SAM_PYTHON`, `CRISPMESH_SAM_SOURCE`, `CRISPMESH_SAM_CHECKPOINT`,
+`CRISPMESH_SAM_CONFIG`, `CRISPMESH_SAM_PYTHONPATH`, `CRISPMESH_REPOSITORY`.
 Additions: `--stop-after masks`, `--list-providers`. Not offered: TIFF photos
 (PNG and JPEG are read), `--alicevision-dense` and `--prepare-timeout`.
 
@@ -263,11 +263,11 @@ undistorted photos and the `inputs/` directory. It replaces the per-object
 drivers that were written by hand for the Dragon, the Armadillo and the Bunny.
 
 ```sh
-export CRISP3DS_ALICEVISION=/path/to/av.py            # or an install prefix
-export CRISP3DS_ALICEVISION_DENSE=/path/to/av-dense.py
-export CRISP3DS_SAM_PYTHON=/path/to/sam-venv/bin/python
-export CRISP3DS_SAM_SOURCE=/path/to/sam2-checkout
-export CRISP3DS_SAM_CHECKPOINT=/path/to/sam2.1_hiera_tiny.pt
+export CRISPMESH_ALICEVISION=/path/to/av.py            # or an install prefix
+export CRISPMESH_ALICEVISION_DENSE=/path/to/av-dense.py
+export CRISPMESH_SAM_PYTHON=/path/to/sam-venv/bin/python
+export CRISPMESH_SAM_SOURCE=/path/to/sam2-checkout
+export CRISPMESH_SAM_CHECKPOINT=/path/to/sam2.1_hiera_tiny.pt
 
 python -m scripts.turntable_mesh.photos_to_inputs \
   --photos data/bunny/rgb \
@@ -324,7 +324,7 @@ some pure-Python dependency, add directories with `--sam-pythonpath`.
 
 ```json
 {
-  "schema": "crisp3ds_lens_calibration_v1",
+  "schema": "crispmesh_lens_calibration_v1",
   "model": "radialk3",
   "calibration_width": 583,
   "calibration_height": 385,
@@ -446,12 +446,12 @@ accuracy of the shape.
 ## Options
 
 Tool locations (flag, then environment variable): `--python` /
-`CRISP3DS_PYTHON`, `--alicevision` / `CRISP3DS_ALICEVISION`,
-`--alicevision-dense` / `CRISP3DS_ALICEVISION_DENSE`, `--sensor-database` /
-`CRISP3DS_ALICEVISION_SENSOR_DB`, `--sam-python` / `CRISP3DS_SAM_PYTHON`,
-`--sam-source` / `CRISP3DS_SAM_SOURCE`, `--sam-checkpoint` /
-`CRISP3DS_SAM_CHECKPOINT`, `--sam-config` / `CRISP3DS_SAM_CONFIG`,
-`--sam-pythonpath` / `CRISP3DS_SAM_PYTHONPATH`.
+`CRISPMESH_PYTHON`, `--alicevision` / `CRISPMESH_ALICEVISION`,
+`--alicevision-dense` / `CRISPMESH_ALICEVISION_DENSE`, `--sensor-database` /
+`CRISPMESH_ALICEVISION_SENSOR_DB`, `--sam-python` / `CRISPMESH_SAM_PYTHON`,
+`--sam-source` / `CRISPMESH_SAM_SOURCE`, `--sam-checkpoint` /
+`CRISPMESH_SAM_CHECKPOINT`, `--sam-config` / `CRISPMESH_SAM_CONFIG`,
+`--sam-pythonpath` / `CRISPMESH_SAM_PYTHONPATH`.
 
 | Option | Default | Meaning |
 | --- | --- | --- |

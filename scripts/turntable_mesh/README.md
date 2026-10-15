@@ -1,6 +1,6 @@
 # Dense turntable pipeline: calibrated photos to a closed STL
 
-This directory holds the photo-to-mesh workers of Crisp3DS. This README covers
+This directory holds the photo-to-mesh workers of CrispMesh. This README covers
 the **all-view dense pipeline**, the route that currently gives the best closed
 models from a turntable photo set on an Apple M1 (GPU through PyTorch MPS, or
 CPU). The development tree holds further experimental workers (the earlier
@@ -62,7 +62,7 @@ No dataset needed; this runs the whole CLI on an analytic sphere in about 15 s
 on CPU:
 
 ```sh
-cd /path/to/crisp3ds
+cd /path/to/crispmesh
 export PYTHONPATH=$PWD
 python -m scripts.turntable_mesh.synthetic_scene --output /tmp/sphere
 python -m scripts.turntable_mesh.dense_pipeline --inputs /tmp/sphere --output /tmp/sphere-run \
@@ -101,15 +101,15 @@ in two virtual environments. The driver starts each stage as a separate process:
 
 | Stages | Needs | Selected by |
 | --- | --- | --- |
-| inputs, surface, check | NumPy, SciPy, scikit-image, OpenCV, Pillow | `--python` or `CRISP3DS_PYTHON` |
-| stereo | PyTorch, NumPy, Pillow | `--torch-python` or `CRISP3DS_TORCH_PYTHON` |
+| inputs, surface, check | NumPy, SciPy, scikit-image, OpenCV, Pillow | `--python` or `CRISPMESH_PYTHON` |
+| stereo | PyTorch, NumPy, Pillow | `--torch-python` or `CRISPMESH_TORCH_PYTHON` |
 
 Both default to the interpreter running the driver, so one environment with all
 of the packages works without any flag. On the development machine:
 
 ```sh
-export CRISP3DS_PYTHON=$PWD/.local-tools/colmap-sparse/venv/bin/python
-export CRISP3DS_TORCH_PYTHON=$PWD/.local-tools/sam21-m1-local-cache-001/venv/bin/python
+export CRISPMESH_PYTHON=$PWD/.local-tools/colmap-sparse/venv/bin/python
+export CRISPMESH_TORCH_PYTHON=$PWD/.local-tools/sam21-m1-local-cache-001/venv/bin/python
 ```
 
 `--device mps` uses the Apple GPU and refuses to run if MPS is unavailable
@@ -124,7 +124,7 @@ uses them when given the binary:
 
 ```sh
 (cd crates/dense && cargo build --release)
-python -m scripts.turntable_mesh.dense_pipeline ... --native path/to/crisp3ds-dense
+python -m scripts.turntable_mesh.dense_pipeline ... --native path/to/crispmesh-dense
 ```
 
 With `--native`, the stereo stage (mask repair, hull, matching, fusion) and the
@@ -370,10 +370,10 @@ stepper-driven turntable and wrong for a hand-turned one.
 
 ```sh
 export PYTHONPATH=$PWD
-$CRISP3DS_TORCH_PYTHON -m unittest scripts.turntable_mesh.test_multiscale_stereo   # config + stereo on an analytic sphere
-$CRISP3DS_PYTHON       -m unittest scripts.turntable_mesh.test_tsdf_hull_mesh      # surface extraction on analytic volumes
-$CRISP3DS_PYTHON       -m unittest scripts.turntable_mesh.test_scan_evaluate       # similarity fit, platform removal, mirror detection
-$CRISP3DS_PYTHON       -m unittest scripts.turntable_mesh.test_turntable_rig scripts.turntable_mesh.test_dense_pipeline
+$CRISPMESH_TORCH_PYTHON -m unittest scripts.turntable_mesh.test_multiscale_stereo   # config + stereo on an analytic sphere
+$CRISPMESH_PYTHON       -m unittest scripts.turntable_mesh.test_tsdf_hull_mesh      # surface extraction on analytic volumes
+$CRISPMESH_PYTHON       -m unittest scripts.turntable_mesh.test_scan_evaluate       # similarity fit, platform removal, mirror detection
+$CRISPMESH_PYTHON       -m unittest scripts.turntable_mesh.test_turntable_rig scripts.turntable_mesh.test_dense_pipeline
 ```
 
 Each test file skips the cases whose libraries are missing in that interpreter.
@@ -408,7 +408,7 @@ Measured on the Dragon before this pipeline existed:
 
 ## Dependencies and licenses
 
-Crisp3DS itself is **AGPL-3.0-only** (`LICENSE` in the repository root). Nothing
+CrispMesh itself is **AGPL-3.0-only** (`LICENSE` in the repository root). Nothing
 below is vendored into this repository; the table records what the code imports,
 launches or was tested with, so that anyone packaging it can check obligations.
 Versions are the ones installed on the development machine on 2026-10-05.
@@ -436,7 +436,7 @@ BSD-2-Clause), and Torch's bundled components under their own notices.
 
 | Software | License | Role | How it is used |
 | --- | --- | --- | --- |
-| AliceVision (fork `CrispStrobe/AliceVision`, branch `crisp3ds/m1-sycl`) | MPL-2.0; parts MIT (libmv) | Camera recovery (global SfM), `prepareDenseScene` undistortion; optional native depth/meshing engine | External executables; this pipeline reads its `.sfm` JSON and PNGs |
+| AliceVision (fork `CrispStrobe/AliceVision`, branch `crispmesh/m1-sycl`) | MPL-2.0; parts MIT (libmv) | Camera recovery (global SfM), `prepareDenseScene` undistortion; optional native depth/meshing engine | External executables; this pipeline reads its `.sfm` JSON and PNGs |
 | AdaptiveCpp (fork `CrispStrobe/AdaptiveCpp`) | BSD-2-Clause | SYCL runtime for AliceVision's Metal depth stages | Linked by the AliceVision build only |
 | Apple metal-cpp | Apache-2.0 | Headers for the AdaptiveCpp Metal backend | Build-time only |
 | SAM 2.1 (Meta) | Apache-2.0 † (code and checkpoints) | Object masks | Separate segmentation step; masks are files |
@@ -484,7 +484,7 @@ Transitive Rust and npm dependencies are not enumerated here; use
 **Handedness of the 3DLF scans.** Every reconstruction of the four test
 objects fits its Revopoint scan only as a mirror image, with the AliceVision,
 COLMAP and turntable cameras alike (Dragon, trimmed rms 0.60 mirrored against
-1.98 proper). The reconstruction is not what is mirrored. `crisp3ds-dense
+1.98 proper). The reconstruction is not what is mirrored. `crispmesh-dense
 synthetic --capture --asymmetric` renders 48 photos of a sphere with three
 bumps of different sizes on its +x, +y and +z axes, from the rig's camera
 convention (x right, y down, z forward, world to camera). From those photos the

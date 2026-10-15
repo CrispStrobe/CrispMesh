@@ -29,7 +29,7 @@ from pathlib import Path
 import sys
 
 MODEL_CONFIG = "configs/sam2.1/sam2.1_hiera_t.yaml"
-SCHEMA = "crisp3ds_sam_model_v1"
+SCHEMA = "crispmesh_sam_model_v1"
 LICENSE = "Apache-2.0 (SAM 2, Copyright Meta Platforms, Inc. and affiliates)"
 MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
@@ -298,7 +298,7 @@ def main():
     parser.add_argument("--site-packages", type=Path, action="append", default=[], help="extra module directory (onnx, onnxruntime)")
     parser.add_argument("--repository", type=Path, help="checkout with scripts/turntable_mesh (for --check)")
     parser.add_argument("--variants", default="", help="comma-separated: fp16, int8")
-    parser.add_argument("--check", type=Path, help="work directory of `crisp3ds-dense photos --stop-after masks` (photos/, coarse-masks/)")
+    parser.add_argument("--check", type=Path, help="work directory of `crispmesh-dense photos --stop-after masks` (photos/, coarse-masks/)")
     parser.add_argument("--check-views", type=int, default=8)
     args = parser.parse_args()
     for folder in args.site_packages + ([args.repository] if args.repository else []):

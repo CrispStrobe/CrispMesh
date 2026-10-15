@@ -1,11 +1,11 @@
 """A stand-in for the `colmap` executable built on the PyCOLMAP wheel.
 
-Development aid for the `colmap` camera provider of `crisp3ds-dense photos`
+Development aid for the `colmap` camera provider of `crispmesh-dense photos`
 (crates/dense/src/photos/cameras.rs) on machines without a COLMAP executable:
 it accepts the command lines the provider builds and runs the same COLMAP
 library steps through PyCOLMAP.
 
-    crisp3ds-dense photos ... --cameras colmap --colmap crates/dense/tools/colmap_pycolmap.py --python <python with pycolmap>
+    crispmesh-dense photos ... --cameras colmap --colmap crates/dense/tools/colmap_pycolmap.py --python <python with pycolmap>
 
 Covered: `feature_extractor`, `exhaustive_matcher`, `sequential_matcher`,
 `mapper`, with options written as `--Group.name value` (COLMAP 3 names). Not

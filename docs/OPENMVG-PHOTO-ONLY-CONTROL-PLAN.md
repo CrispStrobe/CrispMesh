@@ -37,7 +37,7 @@ fetch is part of this control.
 Use exactly the 11 JPEGs in
 `.local-tools/upstream-control/openmvs-sceaux-v23/images`, copied byte-for-byte
 to fresh external output
-`/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-001`.
 The upstream sample manifest SHA-256 is
 `1ee34cff7e6d75fca9f56de4aa5644b45a382030af54a474824ada6af77316a3`;
 it lists the 11 exact photo SHA-256 values and byte sizes. The supervisor
@@ -106,7 +106,7 @@ agreement, not physical ground truth. No dense reconstruction is included.
 
 Only after the Sceaux run and review, prepare a **separate** fresh external
 output and one-shot supervisor mode for the exact 48 TRAIN JPEGs in
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/images`.
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/images`.
 The sealed `train-names.txt` hash is
 `a81d1647109db27991c39c5fe1a9ae308c04081f8ada49d8b0f5ab1c15245544`;
 `stage-report.json` is

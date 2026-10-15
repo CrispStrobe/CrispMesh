@@ -6,7 +6,7 @@ const bytes = (text: string) => new TextEncoder().encode(text).buffer as ArrayBu
 async function manifestWith(contents: Record<string, string>) {
   const entry = async (path: string) => ({ path, size: contents[path]!.length, sha256: await sha256(bytes(contents[path]!)) });
   return {
-    schema: "crisp3ds_example_objects_v1",
+    schema: "crispmesh_example_objects_v1",
     source: "https://data.mendeley.com/datasets/ngvgpsvd8b/1",
     doi: "10.17632/ngvgpsvd8b.1",
     license: "CC-BY-4.0",
@@ -28,7 +28,7 @@ async function manifestWith(contents: Record<string, string>) {
 }
 
 const contents: Record<string, string> = {
-  "calibration/3dlf-pro.json": '{"schema":"crisp3ds_lens_calibration_v1"}',
+  "calibration/3dlf-pro.json": '{"schema":"crispmesh_lens_calibration_v1"}',
   "dragon/rgb/dragon_0_rgb.png": "photo 0",
   "dragon/rgb/dragon_2_rgb.png": "photo 2",
   "dragon/rgb/dragon_10_rgb.png": "photo 10",

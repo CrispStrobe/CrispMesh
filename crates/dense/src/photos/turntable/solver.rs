@@ -27,9 +27,9 @@ pub struct Matches {
 }
 
 impl Matches {
-    /// The file the prototype writes with `--export-matches` (`crisp3ds_turntable_matches_v1`).
+    /// The file the prototype writes with `--export-matches` (`crispmesh_turntable_matches_v1`).
     pub fn from_json(value: &Value) -> anyhow::Result<Matches> {
-        if value["schema"] != "crisp3ds_turntable_matches_v1" {
+        if value["schema"] != "crispmesh_turntable_matches_v1" {
             bail!("not a turntable matches file");
         }
         let keypoints: Vec<Vec<P2>> = serde_json::from_value(value["keypoints"].clone())?;
@@ -1025,7 +1025,7 @@ mod tests {
 
     #[test]
     fn malformed_match_indices_are_refused_before_indexing() {
-        let valid = json!({"schema":"crisp3ds_turntable_matches_v1", "keypoints":[[[1.,2.]],[[3.,4.]]], "pairs":[{"first":0,"second":1,"matches":[[0,0]]}]});
+        let valid = json!({"schema":"crispmesh_turntable_matches_v1", "keypoints":[[[1.,2.]],[[3.,4.]]], "pairs":[{"first":0,"second":1,"matches":[[0,0]]}]});
         assert!(Matches::from_json(&valid).is_ok());
         for (field, value) in [("first", json!(-1)), ("second", json!(9)), ("matches", json!([[0, 8]]))] {
             let mut bad = valid.clone();

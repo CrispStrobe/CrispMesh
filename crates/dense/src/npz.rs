@@ -475,7 +475,7 @@ mod tests {
         let original = Npz::read(&fixture("arrays-deflated.npz")).unwrap();
         let entries: Vec<(&str, &Array)> = original.arrays.iter().map(|(name, array)| (name.as_str(), array)).collect();
         for compress in [false, true] {
-            let path = std::env::temp_dir().join(format!("crisp3ds-npz-{}-{}.npz", std::process::id(), compress));
+            let path = std::env::temp_dir().join(format!("crispmesh-npz-{}-{}.npz", std::process::id(), compress));
             write(&path, &entries, compress).unwrap();
             let again = Npz::read(&path).unwrap();
             crate::storage::remove_file(&path).unwrap();
@@ -518,7 +518,7 @@ mod tests {
         // And through the archive: a large array survives a compressed round trip.
         let values: Vec<f32> = (0..3_000_000).map(|n| (n % 977) as f32 * 0.5).collect();
         let array = Array::new(&[values.len()], Data::F32(values));
-        let path = std::env::temp_dir().join(format!("crisp3ds-npz-pieces-{}.npz", std::process::id()));
+        let path = std::env::temp_dir().join(format!("crispmesh-npz-pieces-{}.npz", std::process::id()));
         write(&path, &[("big", &array)], true).unwrap();
         let back = Npz::read(&path).unwrap();
         crate::storage::remove_file(&path).unwrap();

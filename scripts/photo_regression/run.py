@@ -82,7 +82,7 @@ def main():
             if not Path(case[key]).exists():
                 parser.error(f'missing {key} for {case["id"]}')
     args.output.mkdir(parents=True)
-    report = {'schema': 'crisp3ds_photo_regression_v1', 'reconstruction_providers': 'photo-derived masks and turntable cameras; manifest photo provenance requires caller verification', 'cases': []}
+    report = {'schema': 'crispmesh_photo_regression_v1', 'reconstruction_providers': 'photo-derived masks and turntable cameras; manifest photo provenance requires caller verification', 'cases': []}
     binary = str(args.binary.resolve())
     for case in cases:
         free = shutil.disk_usage(args.output).free/2**30

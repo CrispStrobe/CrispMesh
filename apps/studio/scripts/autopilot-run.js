@@ -1,6 +1,6 @@
 // Runs INSIDE the native app's web view (debug builds only):
 //
-//   CRISP3DS_STUDIO_AUTOPILOT=scripts/autopilot-run.js <the debug binary>
+//   CRISPMESH_STUDIO_AUTOPILOT=scripts/autopilot-run.js <the debug binary>
 //
 // It waits for the shell's own engine, starts a small run through the New run form
 // (finding the inputs with the folder browser), waits for it to finish, checks that
@@ -192,7 +192,7 @@
     }
     await sleep(1500);
     // Whether the surface is drawn at all: a picture of an empty view would still pass a blank check.
-    const probe = window.__crisp3dsProbe?.();
+    const probe = window.__crispmeshProbe?.();
     await log(`3D view: ${probe ? `${probe.surface} of ${probe.samples} sampled pixels show the surface` : "no probe"}`);
     const drawn = probe !== undefined && probe.surface > 0;
     const images = [...document.querySelectorAll(".sheet img")];
@@ -223,7 +223,7 @@
       // canvas as a picture, so the screenshot shows it. Debug builds only, like this script.
       const still = () => {
         const canvas = document.querySelector(".viewer canvas");
-        const shot = window.__crisp3dsProbe?.();
+        const shot = window.__crispmeshProbe?.();
         if (!canvas || !shot?.picture || shot.surface === 0) return;
         let image = document.querySelector("img.autopilot-still");
         if (!image) {

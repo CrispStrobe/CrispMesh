@@ -206,7 +206,7 @@ Details: [YCB](YCB-COMPARISON.md), [bunny](BUNNY-EVALUATION.md),
 Local checks: 245 Python tests (8 skipped), 11 native CTests, 30 desktop tests,
 43 CLI/web contract cases, web production build, live Chromium interaction test,
 and the 530-entry locked dependency inventory check passed. At code commit
-`0f470ad`, both the [quality harness](https://github.com/CrispStrobe/crisp3ds/actions/runs/36287594304)
-and [foundation matrix](https://github.com/CrispStrobe/crisp3ds/actions/runs/36287594254)
+`0f470ad`, both the [quality harness](https://github.com/CrispStrobe/CrispMesh/actions/runs/36287594304)
+and [foundation matrix](https://github.com/CrispStrobe/CrispMesh/actions/runs/36287594254)
 passed on macOS, Windows and Linux. Photo reconstructions in this report ran on
 M1 only. No native UI, mobile packaging, GPU or KIRI comparison is implied by CI.

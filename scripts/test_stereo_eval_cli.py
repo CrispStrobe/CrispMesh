@@ -1,7 +1,7 @@
 """Hand-computed CLI checks for the opt-in stereo evaluator.
 
-Run: CRISP3DS_TEST_STEREO_EVAL=1 python3 -m unittest scripts/test_stereo_eval_cli.py
-Requires the OpenCV build target build-opencv/bin/crisp3ds_stereo_eval.
+Run: CRISPMESH_TEST_STEREO_EVAL=1 python3 -m unittest scripts/test_stereo_eval_cli.py
+Requires the OpenCV build target build-opencv/bin/crispmesh_stereo_eval.
 """
 
 import json
@@ -15,7 +15,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parent.parent
-CLI = ROOT / "build-opencv/bin/crisp3ds_stereo_eval"
+CLI = ROOT / "build-opencv/bin/crispmesh_stereo_eval"
 
 
 def write_pfm(path: Path, rows: list[list[float]], scale: float = -1.0) -> None:
@@ -41,15 +41,15 @@ def read_pfm(path: Path) -> list[list[float]]:
     return list(reversed(rows))
 
 
-@unittest.skipUnless(os.environ.get("CRISP3DS_TEST_STEREO_EVAL") == "1", "opt-in evaluator CLI checks")
+@unittest.skipUnless(os.environ.get("CRISPMESH_TEST_STEREO_EVAL") == "1", "opt-in evaluator CLI checks")
 class StereoEvalCliTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         if not CLI.is_file():
-            raise AssertionError(f"Build the evaluator first: cmake --build build-opencv --target crisp3ds_stereo_eval ({CLI})")
+            raise AssertionError(f"Build the evaluator first: cmake --build build-opencv --target crispmesh_stereo_eval ({CLI})")
 
     def setUp(self) -> None:
-        self.temporary = tempfile.TemporaryDirectory(prefix="crisp3ds-stereo-cli-")
+        self.temporary = tempfile.TemporaryDirectory(prefix="crispmesh-stereo-cli-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         self.truth = self.root / "truth.pfm"

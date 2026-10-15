@@ -59,7 +59,7 @@ it, all consumed match/feature bytes, `-s INCREMENTAL`, `-M matches.e.bin`,
 all implicit/default SfM flags and the two-thread setting. Stage
 all **105** receipt-inventoried match-directory files (including the initial
 scene, describer, essential-matrix matches, and 96 region files) into fresh
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002/matches`;
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002/matches`;
 verify each staged SHA-256 against the `-001` receipt before launch. Change
 only `-f ADJUST_ALL` to `-f NONE` in the SfM algorithm; `-i`, `-m`, and `-o`
 change paths solely to isolate the byte-identical inputs and fresh outputs.
@@ -70,10 +70,10 @@ The planned argument sequence is:
 
 ```text
 openMVG_main_SfM
-  -i /Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002/matches/sfm_data.json
-  -m /Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002/matches
+  -i /Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002/matches/sfm_data.json
+  -m /Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002/matches
   -M matches.e.bin
-  -o /Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002/sparse
+  -o /Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002/sparse
   -s INCREMENTAL
   -f NONE
 ```

@@ -19,7 +19,7 @@ from scripts.object_dataset import prepare_ycb as base
 
 
 BASE_URL = "https://ycb-benchmarks.s3.amazonaws.com/data/"
-STORAGE_ROOT = Path("/mnt/akademie_storage/crisp3ds-data/ycb-expansion-001")
+STORAGE_ROOT = Path("/mnt/akademie_storage/crispmesh-data/ycb-expansion-001")
 STORAGE_FLOOR = 10 * 1024**3
 MAX_EXTRACT = 200_000_000
 MAX_SECONDS = 900

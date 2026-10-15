@@ -96,7 +96,7 @@ export function App() {
     () =>
       BROWSER_ENGINE_BUILT && typeof Worker !== "undefined"
         ? new BrowserEngine({
-            module: new URL("engine/crisp3ds-dense.js", document.baseURI).href,
+            module: new URL("engine/crispmesh-dense.js", document.baseURI).href,
             createWorker: () => new Worker(new URL("../browser/engine.worker.ts", import.meta.url), { type: "module" }) as unknown as WorkerLike,
           })
         : null,

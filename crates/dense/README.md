@@ -1,4 +1,4 @@
-# crisp3ds-dense: the native dense pipeline
+# crispmesh-dense: the native dense pipeline
 
 The reconstruction from turntable photos to a checked STL in Rust, without
 Python: GPU stages as WebGPU compute shaders through `wgpu` (Metal, Vulkan,
@@ -61,7 +61,7 @@ described in [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 | `src/storage.rs` | Files on disk or in an in-memory tree (`mem:` paths; everything in a browser) |
 | `web/` | Browser package: `wasm-bindgen` bindings, JavaScript wrapper, worker, test page and its headless test |
 | `src/run.rs`, `src/control.rs` | The run driver (port of `dense_pipeline.py`): library API and `run` command; cancel flag, deadlines, stage logs |
-| `src/capi.rs`, `include/crisp3ds_dense.h` | C interface of the run driver (feature `capi`) |
+| `src/capi.rs`, `include/crispmesh_dense.h` | C interface of the run driver (feature `capi`) |
 | `src/scene.rs` | Inputs directory from an AliceVision scene (port of `dense_all_views_inputs.py`) |
 | `src/check.rs`, `src/render.rs` | Photo check and its sheets (ports of `mesh_photo_check.py`, `stl_compare_render.py`) |
 | `src/inputs.rs` | Inputs directory as `Stereo.__init__` prepares it |
@@ -70,7 +70,7 @@ described in [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 | `src/surface/` | Neural surface trained by re-rendering the photos (port of `scripts/neural_surface/neus_facto_mlx.py`), experimental |
 | `src/splats/` | 2D Gaussian splats trained on the photos, with surface terms and a fused mesh, experimental |
 | `tools/colmap_pycolmap.py` | Stand-in for the `colmap` executable through the PyCOLMAP wheel (development aid) |
-| `src/main.rs` | `crisp3ds-dense <stage>` command line |
+| `src/main.rs` | `crispmesh-dense <stage>` command line |
 
 ## Build and test
 
@@ -84,21 +84,21 @@ Formatting follows `rustfmt.toml` (`cargo fmt --check`), lints are
 `cargo clippy --all-targets -- -D warnings`; `.github/workflows/dense-native.yml`
 runs both and the tests on Linux, macOS and Windows. Needs Rust 1.88 or newer.
 
-## A whole run: `crisp3ds-dense run`, `crisp3ds_dense::run`, C interface
+## A whole run: `crispmesh-dense run`, `crispmesh_dense::run`, C interface
 
 The driver (it began as a port of `scripts/turntable_mesh/dense_pipeline.py`)
 for three starting points, in one process:
 
 ```sh
-crisp3ds-dense run --output RUN --inputs DIR                                   # an inputs directory
-crisp3ds-dense run --output RUN --scene final.sfm --prepared DIR --raw-masks DIR
-crisp3ds-dense run --output RUN --photos DIR --calibration lens.json           # plain photos
-    [--masks PROVIDER] [--cameras PROVIDER] [options of `crisp3ds-dense photos`]
+crispmesh-dense run --output RUN --inputs DIR                                   # an inputs directory
+crispmesh-dense run --output RUN --scene final.sfm --prepared DIR --raw-masks DIR
+crispmesh-dense run --output RUN --photos DIR --calibration lens.json           # plain photos
+    [--masks PROVIDER] [--cameras PROVIDER] [options of `crispmesh-dense photos`]
     [--config FILE] [--set key=value ...] [--threads N] [--stereo-timeout S]
     [--minimum-free-gib G] [--reuse-depths depths.npz] [--no-live-previews]
     [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]
-crisp3ds-dense run --describe [tool locations]      # start points, providers, their options and availability, as JSON
-crisp3ds-dense settings --schema                    # every setting with group, kind, default and meaning, as JSON
+crispmesh-dense run --describe [tool locations]      # start points, providers, their options and availability, as JSON
+crispmesh-dense settings --schema                    # every setting with group, kind, default and meaning, as JSON
 ```
 
 The photos stage reads and writes through `crate::storage`, so the run
@@ -127,7 +127,7 @@ machine): complete, 73 of 73 photos registered, 608 s (photos stage 555, stereo
 and `all` 0.890 / 0.926 / 0.947 (before `support_from_sparse`, see "Masks
 without a network").
 
-**For a host application.** `crisp3ds_dense::run::describe()` (and
+**For a host application.** `crispmesh_dense::run::describe()` (and
 `describe_with(photo_options)`, which takes the tool locations as words of the
 photos command line) returns what `run --describe` prints: per start point its
 fields, the `stages` a run goes through, and for the photos start the provider
@@ -142,8 +142,8 @@ providers in this crate report the crate's version) and its options as
 module are in the module's `settings`; tools, machine, deadlines and gates are
 in the start point's `option_groups`. The rows come from the table the
 command-line parser itself reads (`src/photos/option_table.rs`;
-`crisp3ds-dense photos --list-options` prints all of it), so a form built from
-them cannot drift from the parser. `crisp3ds_dense::photos::availability::check`
+`crispmesh-dense photos --list-options` prints all of it), so a form built from
+them cannot drift from the parser. `crispmesh_dense::photos::availability::check`
 is the same check as a function. `config::settings_schema()` is what
 `settings --schema` prints.
 
@@ -180,7 +180,7 @@ As a library:
 
 ```rust
 use std::sync::{atomic::AtomicBool, Arc};
-use crisp3ds_dense::run::{run, RunOptions};
+use crispmesh_dense::run::{run, RunOptions};
 
 let options = RunOptions { output: "runs/bunny".into(), inputs: Some("bunny/inputs".into()), ..Default::default() };
 let cancel = Arc::new(AtomicBool::new(false));           // set from any thread to stop the run
@@ -197,13 +197,13 @@ For a run from photos set `photos` and put the photos stage's options into
 "--masks", "threshold"]`).
 `run_async` is the same as a future, for hosts that must not block.
 `run` returns the content of `pipeline.json`, or the error that stopped the run
-(`crisp3ds_dense::control::Stopped` when cancelled or past a deadline). The
+(`crispmesh_dense::control::Stopped` when cancelled or past a deadline). The
 observer is called from the run's thread and from the preview thread, so it must
 be `Send + Sync` and should return quickly; a Tauri command would forward each
 event to the window from there. One run uses one GPU device; start runs one at a
 time.
 
-From C, Swift, Kotlin or C++ (`include/crisp3ds_dense.h`):
+From C, Swift, Kotlin or C++ (`include/crispmesh_dense.h`):
 
 ```sh
 cargo rustc --release --lib --features capi --crate-type cdylib      # or staticlib
@@ -211,21 +211,21 @@ cargo rustc --release --lib --features capi --crate-type cdylib      # or static
 
 ```c
 char *error = NULL;
-Crisp3dsRun *run = crisp3ds_run_start("{\"output\": \"runs/bunny\", \"inputs\": \"bunny/inputs\"}", &error);
+CrispMeshRun *run = crispmesh_run_start("{\"output\": \"runs/bunny\", \"inputs\": \"bunny/inputs\"}", &error);
 for (;;) {
-    char *state = crisp3ds_run_poll(run);    /* {"finished", "status", "events": [...], "report", "error"} */
+    char *state = crispmesh_run_poll(run);    /* {"finished", "status", "events": [...], "report", "error"} */
     /* ... show the new events; stop when "finished" is true ... */
-    crisp3ds_string_free(state);
+    crispmesh_string_free(state);
 }
-crisp3ds_run_cancel(run);                    /* optional, from any thread */
-crisp3ds_run_free(run);                      /* cancels if still running, waits, releases */
+crispmesh_run_cancel(run);                    /* optional, from any thread */
+crispmesh_run_free(run);                      /* cancels if still running, waits, releases */
 ```
 
 The run executes on a thread the library starts; `poll` never blocks. This is
 the only module with `unsafe` code beyond byte casts (it dereferences the
 caller's pointers).
 
-## From photos to the scene: `crisp3ds-dense photos`
+## From photos to the scene: `crispmesh-dense photos`
 
 Native form of `python -m scripts.turntable_mesh.photos_to_inputs`, built
 around providers (`docs/ARCHITECTURE.md`, `docs/PHOTOS-TO-INPUTS.md`): one for
@@ -236,9 +236,9 @@ them. No Python is needed with `--masks threshold` or `import:DIR` and
 `import:PATH`.
 
 ```sh
-crisp3ds-dense photos --photos DIR --calibration lens.json --output DIR [--events events.jsonl] \
+crispmesh-dense photos --photos DIR --calibration lens.json --output DIR [--events events.jsonl] \
     --masks threshold|import:DIR|external-sam --cameras alicevision|colmap|import:PATH [options]
-crisp3ds-dense photos --list-providers
+crispmesh-dense photos --list-providers
 ```
 
 `--list-providers` prints each provider's platforms (desktop, mobile, wasm),
@@ -413,7 +413,7 @@ normal builds and CI download and link nothing):
 
 ```sh
 cargo build --release --features sam-onnx
-crisp3ds-dense run --photos data/bunny/rgb --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
+crispmesh-dense run --photos data/bunny/rgb --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
     --masks sam --sam-runtime /path/to/libonnxruntime.dylib --output runs/bunny-sam
 ```
 
@@ -422,7 +422,7 @@ The runtime is ONNX Runtime's shared library (`--sam-runtime` or
 works). The model is `--sam-model DIR` (`model.json`, `encoder.onnx`,
 `decoder.onnx`, written by `tools/sam2_export_onnx.py`), else it is fetched
 once from `huggingface.co/cstr/sam2.1-hiera-tiny-ONNX` into the cache
-(`CRISP3DS_CACHE_DIR`, else the platform's) and checked against SHA-256 pinned
+(`CRISPMESH_CACHE_DIR`, else the platform's) and checked against SHA-256 pinned
 in `src/photos/sam/fetch.rs`, with progress in the event log (step
 `sam-download`). `--sam-candidates single` (default) takes SAM's own single
 mask, `several` the best-scored of its three proposals that agrees with every
@@ -456,7 +456,7 @@ backend it was built with (Metal on Apple machines), `cpu` the CPU:
 
 ```sh
 cargo build --release --features sam-ggml
-crisp3ds-dense run --photos data/bunny/rgb --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
+crispmesh-dense run --photos data/bunny/rgb --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
     --masks sam --sam-model sam2.1-hiera-tiny-f16.gguf --sam-runtime libcrispembed-sam2.dylib \
     --sam-accelerator gpu --output runs/bunny-sam
 ```
@@ -550,7 +550,7 @@ byte-identical meshes before and after.
 **Handedness of the 3DLF scans.** Every reconstruction of the four test
 objects fits its Revopoint scan only as a mirror image, with the AliceVision,
 COLMAP and turntable cameras alike (Dragon, trimmed rms 0.60 mirrored against
-1.98 proper). The reconstruction is not what is mirrored. `crisp3ds-dense
+1.98 proper). The reconstruction is not what is mirrored. `crispmesh-dense
 synthetic --capture --asymmetric` renders 48 photos of a sphere with three
 bumps of different sizes on its +x, +y and +z axes, from the rig's camera
 convention (x right, y down, z forward, world to camera). From those photos the
@@ -833,7 +833,7 @@ COLMAP that was planned was not made (the disk reached its floor). Not tried:
 
 ### The Bunny from its photos
 
-`crisp3ds-dense photos` on the 73 Bunny photos, then the native dense stages
+`crispmesh-dense photos` on the 73 Bunny photos, then the native dense stages
 and the scanner evaluator. AliceVision 3.4 local build, 2 threads.
 
 | | Python stage (run 220) | native, prefix called directly, `--masks threshold` | native, `av.py` wrapper, `--masks external-sam` |
@@ -858,7 +858,7 @@ times faster than their Python counterparts. Command line of the middle
 column:
 
 ```sh
-crisp3ds-dense photos --photos <bunny>/rgb --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
+crispmesh-dense photos --photos <bunny>/rgb --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
     --output <run>/frontend --events <run>/events.jsonl --threads 2 \
     --masks threshold --cameras alicevision \
     --alicevision .local-tools/alicevision-local/prefix --alicevision-library-path /opt/homebrew/lib
@@ -892,7 +892,7 @@ the first must be a step like the others.
 provider, so a run from photos starts no other program:
 
 ```sh
-crisp3ds-dense run --photos data/bunny/rgb \
+crispmesh-dense run --photos data/bunny/rgb \
   --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
   --output runs/bunny
 ```
@@ -913,14 +913,14 @@ command with `--masks threshold` at `545356e`, before the shadow step, on an
 otherwise idle machine; the runs at `ac36992` shared the machine with other
 work and their times say nothing.
 
-### Cameras from a printed mat: `--cameras markers`, `crisp3ds-dense mat`
+### Cameras from a printed mat: `--cameras markers`, `crispmesh-dense mat`
 
-`crisp3ds-dense mat --size a4|letter|a3 --output DIR` writes a mat of ArUco
+`crispmesh-dense mat --size a4|letter|a3 --output DIR` writes a mat of ArUco
 markers (PDF, SVG, PNG, JSON); with it under the object,
 `--cameras markers --markers-mat FILE.json` gets every pose from the markers:
 no external program, repeatable, in millimetres, right-handed. Detection, pose
 and the mat are in `src/photos/markers/` (plain Rust, builds for wasm32; no
-crate added). `crisp3ds-dense mat --capture DIR` renders a synthetic capture
+crate added). `crispmesh-dense mat --capture DIR` renders a synthetic capture
 with known poses and `mat --compare` measures a scene against it.
 
 Verified on rendered photos only; no printed mat has been photographed.
@@ -932,10 +932,10 @@ degrees and position error at most 0.6 mm at 420 mm (0.004 degrees and
 finds 800, corners 0.035 px from the truth in the median; the object
 reconstructed by the dense stages 0.08 % smaller than its true 64 mm width.
 
-### Rendered captures of textured meshes: `crisp3ds-dense render`
+### Rendered captures of textured meshes: `crispmesh-dense render`
 
 ```sh
-crisp3ds-dense render (--mesh MODEL.obj | --sphere) --output DIR [--views N (72)] [--elevation DEG (20)]
+crispmesh-dense render (--mesh MODEL.obj | --sphere) --output DIR [--views N (72)] [--elevation DEG (20)]
     [--width W (1749)] [--height H (1155)] [--fill F (0.7)] [--calibration LENS.json] [--distance D]
     [--samples 1|4 (4)] [--blur SIGMA_PX (0)] [--noise SIGMA (0)] [--backdrop GREY (0.86)] [--flat] [--threads N (4)]
 ```
@@ -964,15 +964,15 @@ and gate decisions (the cases of `test_photos_to_inputs.py`,
 for `.sfm` and COLMAP text and binary models, command lines of the three
 external programs, bounded processes (deadline, cancel, process group), and the
 whole stage on a synthetic capture with threshold masks and imported cameras.
-`CRISP3DS_ALICEVISION_TESTS=1` with `CRISP3DS_ALICEVISION` (and, for a build
-against Homebrew, `CRISP3DS_ALICEVISION_LIBRARY_PATH=/opt/homebrew/lib`) adds a
+`CRISPMESH_ALICEVISION_TESTS=1` with `CRISPMESH_ALICEVISION` (and, for a build
+against Homebrew, `CRISPMESH_ALICEVISION_LIBRARY_PATH=/opt/homebrew/lib`) adds a
 test that starts the real `cameraInit`.
 
-## Inputs from a scene: `crisp3ds-dense inputs`
+## Inputs from a scene: `crispmesh-dense inputs`
 
 ```sh
-crisp3ds-dense inputs --scene final.sfm --prepared DIR --raw-masks DIR --output DIR [--self-contained [--link]]
-crisp3ds-dense inputs --pack DIR [--output DIR] [--link]
+crispmesh-dense inputs --scene final.sfm --prepared DIR --raw-masks DIR --output DIR [--self-contained [--link]]
+crispmesh-dense inputs --pack DIR [--output DIR] [--link]
 ```
 
 An inputs directory is self-contained when its photos and masks lie inside it
@@ -984,7 +984,7 @@ only the masks are inside. `--self-contained` copies the photos in as well;
 `--pack DIR` does the same for an existing inputs directory, in place or as a
 copy in `--output`; `--link` makes hard links instead of copies where the file
 system allows (the Bunny's 146 files: linked in well under a second, 565 MB
-that occupy no further space). `crisp3ds_dense::scene::pack` is the function.
+that occupy no further space). `crispmesh_dense::scene::pack` is the function.
 
 Port of `dense_all_views_inputs.py`: one camera table for all registered views
 of an AliceVision scene with one shared `radialk3` intrinsic, pointing at the
@@ -1002,10 +1002,10 @@ accumulated with fused multiply-adds, which is what NumPy's matrix product does
 on Apple silicon; a NumPy build that does not may differ in the last bit of a
 translation.
 
-## Photo check: `crisp3ds-dense check`
+## Photo check: `crispmesh-dense check`
 
 ```sh
-crisp3ds-dense check --inputs DIR --mesh mesh.stl --output DIR \
+crispmesh-dense check --inputs DIR --mesh mesh.stl --output DIR \
     [--repaired-masks DIR] [--preview-views N] [--check-views N] [--events events.jsonl]
 ```
 
@@ -1026,13 +1026,13 @@ scales, colours and shading; they are resampled in float instead of OpenCV's
 fixed point, and the two labels of the preview are set in a built-in 5x7 font
 instead of OpenCV's Hershey font.
 
-## Surface extraction: `crisp3ds-dense mesh`
+## Surface extraction: `crispmesh-dense mesh`
 
 Status: ported, at parity with `python -m scripts.turntable_mesh.tsdf_hull_mesh`
 on the four test objects (table below). `dense_pipeline.py --native` calls it.
 
 ```sh
-crisp3ds-dense mesh --volume stereo/volume.npz --output mesh \
+crispmesh-dense mesh --volume stereo/volume.npz --output mesh \
     [--config config.json] [--set key=value ...] [--step N] \
     [--events events.jsonl] [--label TEXT] [--threads N]
 ```
@@ -1105,14 +1105,14 @@ objects. Preview path (`--step 2`, Dragon): both closed, 245 442 / 245 436
 triangles, genus 12 / 11, distance median 0.001, p99 0.19, maximum 1.05 voxels
 (cells are two voxels wide there), 22.9 s / 6.2 s.
 
-## Dense stereo: `crisp3ds-dense stereo`
+## Dense stereo: `crispmesh-dense stereo`
 
 Port of `python -m scripts.turntable_mesh.multiscale_stereo`: inputs, silhouette
 hull, mask repair, coarse-to-fine matching, cross-view agreement and TSDF
 fusion. `dense_pipeline.py --native` calls it.
 
 ```sh
-crisp3ds-dense stereo --inputs DIR --output DIR [--config config.json] \
+crispmesh-dense stereo --inputs DIR --output DIR [--config config.json] \
     [--set key=value ...] [--reuse-depths depths.npz] [--events events.jsonl] \
     [--previews] [--device NAME]
 ```
@@ -1151,10 +1151,10 @@ canvas above about 2.6 megapixels at the finest level. Raised limits are not
 requested even where the adapter offers them.
 
 Tests: `cargo test` runs everything that needs no GPU, including validation of
-every shader with naga. `CRISP3DS_GPU_TESTS=1 cargo test` adds the kernels
+every shader with naga. `CRISPMESH_GPU_TESTS=1 cargo test` adds the kernels
 against scalar implementations and the whole stage on an analytic sphere
 (`stereo/synthetic.rs`, a port of `synthetic_scene.py`) with the thresholds of
-`test_multiscale_stereo.py`. `CRISP3DS_GPU_FALLBACK=1` asks for a software
+`test_multiscale_stereo.py`. `CRISPMESH_GPU_FALLBACK=1` asks for a software
 adapter.
 
 Deliberate differences from the reference:
@@ -1173,7 +1173,7 @@ Deliberate differences from the reference:
 Kept as in the reference although probably unintended there: all views of the
 finer levels search with the inverse-depth step of the last view swept at the
 coarsest level (`step` is overwritten per view in the level-0 loop). Giving
-every view its own step was measured natively (`CRISP3DS_OWN_STEP=1`, SAM
+every view its own step was measured natively (`CRISPMESH_OWN_STEP=1`, SAM
 masks, same cameras; scanner F1 at 0.5 % / 1 % / 2 %, own step minus shared
 step):
 
@@ -1262,7 +1262,7 @@ repair with its hulls 6.0, level 256 4.5, level 512 first pass 10.0, second pass
 3.1, level 876 10.3, fusion 0.8, writing the files 7.3, the rest of the stereo
 stage (sheets) 0.8, surface 4.8, check 2.4.
 
-## Neural surface: `crisp3ds-dense surface`
+## Neural surface: `crispmesh-dense surface`
 
 Status: experimental; in a run on request (see *Quality levels* below). A signed-distance network trained by
 rendering the photos, the
@@ -1272,7 +1272,7 @@ NeuS opacities, the original NeuS sampler limited to a band around our silhouett
 hull's distance, Adam with warm-up and cosine schedule, mesh by marching cubes on the network's zero surface.
 
 ```
-crisp3ds-dense surface SOURCE OUT [steps=20000 stop=0 rays=1024 parts=4 hull=600 band=0.05 snapshot=0 mesh=512 seed=0 ...]
+crispmesh-dense surface SOURCE OUT [steps=20000 stop=0 rays=1024 parts=4 hull=600 band=0.05 snapshot=0 mesh=512 seed=0 ...]
 ```
 
 `SOURCE` is a pack that `scripts/neural_surface/pack_scene.py` writes (cropped photos and masks, cameras, hull
@@ -1290,15 +1290,15 @@ and the second derivatives of the eikonal term follow from the activations' back
 gradient is added with compare-and-swap. Dispatches are recorded into one command encoder and submitted 32 at a
 time (`Gpu::set_batching`, off for every other stage).
 
-Tests against the prototype (`CRISP3DS_GPU_TESTS=1`, `CRISP3DS_SURFACE_FIXTURE` from
-`scripts/neural_surface/export_fixture.py`, `CRISP3DS_SURFACE_PACK` for the hull grid): per-sample distances,
+Tests against the prototype (`CRISPMESH_GPU_TESTS=1`, `CRISPMESH_SURFACE_FIXTURE` from
+`scripts/neural_surface/export_fixture.py`, `CRISPMESH_SURFACE_PACK` for the hull grid): per-sample distances,
 gradients, features and colours within 1e-6, the losses and the gradient of every parameter within 1e-5
 (relative to the largest value), two training steps in two parts with Adam with no entry off by more than 5 %
 of the largest change, the hull grid within 1.2e-7, the sampler's edges within 5.5e-4 (5.5e-3 with the band;
 float rounding moves a quantile at sharpness 512). The matrix product is checked against a CPU product and
 timed; it is generated per mode and tile width (64 or 32 columns, whichever pads fewer) with named
 accumulators, since private arrays indexed in loops end up in memory, not registers, and made it ten times
-slower. `CRISP3DS_GPU_PROFILE=1` waits for each dispatch and reports the time per kernel.
+slower. `CRISPMESH_GPU_PROFILE=1` waits for each dispatch and reports the time per kernel.
 
 Drill, 300 photos at 544 x 576, Apple M1: 0.25 s per step against 0.6 s for the MLX prototype, 1.0 GB
 resident; the whole schedule in 95 minutes (the prototype 3.9 h, the reference 118 minutes on a Tesla T4). F1 at
@@ -1317,7 +1317,7 @@ the reference's 0.789 / 0.909 / 0.980, 0.0036; side by side the same shape, both
 relief, the cap a little softer here. Runs differ from one seed to the next: after 2 000 steps two seeds gave 0.687 / 0.912 / 0.992 and
 0.835 / 0.968 / 0.993 here.
 
-## 2D Gaussian splats: `crisp3ds-dense splats`
+## 2D Gaussian splats: `crispmesh-dense splats`
 
 Status: experimental, not part of `run`. Drill (300 photos at 544 x 576, 30 000 steps): 171 577 splats, held-out
 PSNR in the mask 25.44 dB, mesh 0.877 / 0.944 / 0.992 at 0.5 / 1 / 2 % (mean 0.0031); the reference run with gsplat
@@ -1330,7 +1330,7 @@ gsplat's 2DGS (Apache-2.0, commit `937e299`) and our trainer after its example (
 written anew for WebGPU:
 
 ```
-crisp3ds-dense splats SOURCE OUT [steps=30000 stop=0 log=500 seed=42 mesh=512] [hull_mesh=STL photos=DIR masks=DIR div=N]
+crispmesh-dense splats SOURCE OUT [steps=30000 stop=0 log=500 seed=42 mesh=512] [hull_mesh=STL photos=DIR masks=DIR div=N]
 ```
 
 `SOURCE` as for `surface`. Splats start on every second hull sample; each step renders one photo on a random
@@ -1352,7 +1352,7 @@ and everything a pixel contributes is packed into one 64-byte row beforehand (`s
 All parameters of a splat sit in one row of 60 floats, so Adam is one kernel and densification copies rows.
 
 Checked against a dense PyTorch renderer of the same model ([`scripts/surface_splats`](../../scripts/surface_splats/README.md),
-whose projection and spherical harmonics equal gsplat's own to float rounding), `CRISP3DS_SPLAT_FIXTURE`: rendered
+whose projection and spherical harmonics equal gsplat's own to float rounding), `CRISPMESH_SPLAT_FIXTURE`: rendered
 colours, opacity, normals, depths and distortion within 1e-5; the loss terms within 1e-5; the gradients of the images,
 of the projected splats and of every parameter within 6e-5 (relative to the largest value); the radix sort stable on
 100 003 keys.
@@ -1376,10 +1376,10 @@ the splats (21 min), both at or above the reference runs' `standard`-equivalent 
 The photos' resolution follows the object rather than the camera: every view is cropped to one window around the
 masks and reduced by the whole factor that brings it to at most the level's width (`crop=PIXELS`; small objects are
 never enlarged). Lengths in the settings are relative to the object's bounding sphere, so they need no adjusting for
-the object's size. Any single setting overrides the level's value: `crisp3ds-dense surface SOURCE OUT quality=fast
-mesh=512`, `crisp3ds-dense splats SOURCE OUT quality=best crop=900`.
+the object's size. Any single setting overrides the level's value: `crispmesh-dense surface SOURCE OUT quality=fast
+mesh=512`, `crispmesh-dense splats SOURCE OUT quality=best crop=900`.
 
-In a run: `crisp3ds-dense run ... --surface QUALITY [--surface-set NAME=VALUE]... --splats QUALITY
+In a run: `crispmesh-dense run ... --surface QUALITY [--surface-set NAME=VALUE]... --splats QUALITY
 [--splats-set NAME=VALUE]...` (a bare number for `--surface` means that many steps). They run after the mesh stage,
 from the run's inputs, its grown or repaired masks and its mesh as the start, and write `surface/mesh.stl` and
 `splats/mesh.stl` (with `splats.npz` and held-out renders) beside `mesh/mesh.stl`; native builds only. In
@@ -1459,7 +1459,7 @@ FILE` starts from photos instead; `--channel chrome` uses an installed Google
 Chrome instead of Playwright's Chromium (no per-process memory figures then).
 
 ```js
-import { createRun, settingsSchema } from "./crisp3ds-dense.js";
+import { createRun, settingsSchema } from "./crispmesh-dense.js";
 const run = await createRun({
   files,                                  // Map: path in the inputs directory -> Uint8Array
   options: { settings: { grid: 320 } },   // fields of RunOptions; output and inputs are filled in
@@ -1472,8 +1472,8 @@ run.cancel(); run.dispose();
 // From turntable photos: masks and cameras are recovered in the browser first.
 const fromPhotos = await createRun({
   photos,                                 // Map or object: file name -> Uint8Array (PNG or JPEG), one turn in name order
-  calibration,                            // crisp3ds_lens_calibration_v1 as an object, JSON text or bytes
-  options: { live_previews: false, photo_options: [] },  // RunOptions; photo_options: words of `crisp3ds-dense photos`
+  calibration,                            // crispmesh_lens_calibration_v1 as an object, JSON text or bytes
+  options: { live_previews: false, photo_options: [] },  // RunOptions; photo_options: words of `crispmesh-dense photos`
   onEvent,
 });
 ```
@@ -1573,7 +1573,7 @@ mesh is byte-identical. Bunny from photos in Chrome with live previews: peak
 `sh build.sh threads` writes `pkg-threads/`: the same crate with WebAssembly
 threads (shared memory) and `--features threads`, which exports
 `initThreadPool(n)` from `wasm-bindgen-rayon` (a rayon pool on Web Workers).
-`crisp3ds-dense.js` loads it when the page is cross-origin isolated
+`crispmesh-dense.js` loads it when the page is cross-origin isolated
 (`crossOriginIsolated`) and the files are there, starts `min(cores, 4)`
 workers (`load({ threads })`; `threads: 1` forces the default package), and
 otherwise, or when the pool does not start within 30 s, loads `pkg/`.
@@ -1806,7 +1806,7 @@ evaluator and the parity scripts use NumPy, SciPy (BSD-3-Clause), Pillow
 (MIT-CMU) and OpenCV (Apache-2.0). The CI jobs install Mesa (MIT) for the
 software Vulkan adapter and the Ubuntu `colmap` package.
 
-Native depth diagnostics: `CRISP3DS_STAGE_DEPTHS=1` retains finest-level
+Native depth diagnostics: `CRISPMESH_STAGE_DEPTHS=1` retains finest-level
 `depths-pass-N-raw.npz`, `depths-pass-N-consistent.npz` and adjusted camera
 intrinsics. Raw means after photometric score acceptance, before cross-view
 rejection; these are the reconstruction's own inferred depths. The ordinary
@@ -1923,7 +1923,7 @@ offsets, and beats staying by 0.08; plain surfaces, which agree at every
 offset, are left alone. The accepted offsets are spread over the mesh by 200
 averaging steps and applied along the normals (inward only when the silhouette
 comes first), followed by two Taubin cycles. `mesh/mesh-unrefined.stl` keeps the
-mesh before it, `mesh/refine.json` the counts; `crisp3ds-dense refine --inputs DIR
+mesh before it, `mesh/refine.json` the counts; `crispmesh-dense refine --inputs DIR
 --mesh STL --output STL` runs it alone. Five heights, no settings: drill
 0.818/0.921/0.998 → 0.857/0.977/0.999 (mean error −19 %), mustard
 0.766/0.918/0.997 → 0.737/0.913/0.995 (within the fit; the plain bottle gains
@@ -1971,9 +1971,9 @@ records technical distinctions, without claiming legal clearance.
 Example opt-in trial on the pipeline's own recovered inputs:
 
 ```sh
-crisp3ds-dense stereo --inputs RUN/frontend/inputs --output trial/stereo \
+crispmesh-dense stereo --inputs RUN/frontend/inputs --output trial/stereo \
   --set slanted_refine=true --set fusion_interpolate=true
-crisp3ds-dense mesh --volume trial/stereo/volume.npz --output trial/mesh
+crispmesh-dense mesh --volume trial/stereo/volume.npz --output trial/mesh
 ```
 
 The independent refinement alone added about 88 s on the native M1 Bunny run.
@@ -2007,7 +2007,7 @@ adding smoothing or inferring missing detail. Native and browser engines share
 the implementation; ordinary defaults remain unchanged.
 
 ```sh
-crisp3ds-dense run --inputs recovered-inputs --output supported-fallback \
+crispmesh-dense run --inputs recovered-inputs --output supported-fallback \
   --set fallback_supported=true --set peak_min_margin=0.02
 ```
 

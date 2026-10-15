@@ -11,7 +11,7 @@ from scripts.compare_stereo_profiles import PROFILES, main, summarize
 from scripts.test_stereo_eval_cli import write_pfm
 
 ROOT = Path(__file__).resolve().parent.parent
-CLI = ROOT / "build-opencv/bin/crisp3ds_stereo_eval"
+CLI = ROOT / "build-opencv/bin/crispmesh_stereo_eval"
 
 
 class CompareProfilesTest(unittest.TestCase):
@@ -33,7 +33,7 @@ class CompareProfilesTest(unittest.TestCase):
 
     @unittest.skipUnless(CLI.is_file(), "build evaluator first")
     def test_default_and_explicit_baseline_disparity_parity(self):
-        with tempfile.TemporaryDirectory(prefix="crisp3ds-profile-") as folder:
+        with tempfile.TemporaryDirectory(prefix="crispmesh-profile-") as folder:
             root = Path(folder)
             rows = [[(x * 57 + y * 113 + x * y * 19) & 255 for x in range(128)] for y in range(48)]
             for name, pixels in (("left.pgm", rows),
@@ -60,7 +60,7 @@ class CompareProfilesTest(unittest.TestCase):
 
     @unittest.skipUnless(CLI.is_file(), "build evaluator first")
     def test_failed_trial_persists_summary(self):
-        with tempfile.TemporaryDirectory(prefix="crisp3ds-profile-failure-") as folder:
+        with tempfile.TemporaryDirectory(prefix="crispmesh-profile-failure-") as folder:
             fake_scene = {"manifest": {"width": 128, "height": 48, "calibration": None},
                           "manifest_sha256": "0", "prepared_sha256": {}, "sources": {},
                           "ndisp": 16, "common_search_count": 16,

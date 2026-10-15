@@ -1,7 +1,7 @@
 # OpenMVG Sceaux photo control `-001`: parser-gated stop
 
 The sealed 11-photo, evaluation-only run at
-`/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-001` stopped at
+`/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-001` stopped at
 `ComputeFeatures` before putative matching, geometric filtering, or SfM. The
 listing stage completed and its log reports **11 usable images and one
 intrinsic**. The failed feature command included `-n 2`; the actual built

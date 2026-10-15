@@ -26,9 +26,9 @@ from scripts.object_motion.orbit_plausibility import validate_profile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MANIFEST = Path("/Volumes/backups/code/crisp3ds-data/mustard-feature-mask-pair-001-sam/inputs.json")
+MANIFEST = Path("/Volumes/backups/code/crispmesh-data/mustard-feature-mask-pair-001-sam/inputs.json")
 MANIFEST_SHA256 = "bc8d06024627219736959c7b4a34173cdd918bb5fba666528f08ca4a7a1957ae"
-TRAIN_IMAGES = Path("/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/images")
+TRAIN_IMAGES = Path("/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/images")
 PROFILE = ROOT / "tests/datasets/ycb_np3_full_turn_profile.json"
 PROFILE_SHA256 = "bb00d17e1940f121dc12f7ddb31d4adf80b7e9a935f18e5535cfc1a2cde1998d"
 EXTERNAL = Path("/Volumes/backups")

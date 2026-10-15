@@ -50,7 +50,7 @@ Every event has `type`, `time` (Unix seconds) and `stage` (`masks`, `cameras`,
 
 | `type` | Other fields | Meaning |
 | --- | --- | --- |
-| `run_started` | `schema`, `configuration`, `device`, `inputs` | First event of every run. `schema` is `crisp3ds_dense_events_v1` |
+| `run_started` | `schema`, `configuration`, `device`, `inputs` | First event of every run. `schema` is `crispmesh_dense_events_v1` |
 | `stage_started` | | A stage began |
 | `progress` | `fraction` (0..1 within the stage), `message` | For a progress bar and a status line |
 | `metric` | `name`, `value` | A number worth showing, e.g. `coverage_level_1`, `silhouette_iou_median` |

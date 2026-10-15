@@ -119,7 +119,7 @@ const BROWSER_START: StartPoint[] = [
     meaning: "Photos of an object on a turntable, one turn, and the calibration of the lens. Masks and cameras are made first, here in the browser; nothing is uploaded.",
     fields: [
       { key: "photos", label: "Photos", kind: "folder", required: true, help: "One photo per turntable position, in capture order by name (PNG or JPEG)." },
-      { key: "calibration", label: "Lens calibration", kind: "file", required: true, help: "Focal length, principal point and radial distortion of the lens (crisp3ds_lens_calibration_v1)." },
+      { key: "calibration", label: "Lens calibration", kind: "file", required: true, help: "Focal length, principal point and radial distortion of the lens (crispmesh_lens_calibration_v1)." },
     ],
     providers: [
       {
@@ -226,7 +226,7 @@ export function checkCalibration(text: string): string {
   } catch {
     throw new Error("This file is not JSON; a lens calibration is a JSON file.");
   }
-  if (parsed.schema !== "crisp3ds_lens_calibration_v1") throw new Error("This JSON file is not a lens calibration (crisp3ds_lens_calibration_v1).");
+  if (parsed.schema !== "crispmesh_lens_calibration_v1") throw new Error("This JSON file is not a lens calibration (crispmesh_lens_calibration_v1).");
   return text;
 }
 
@@ -245,7 +245,7 @@ interface Held {
 }
 
 export interface BrowserOptions {
-  /** Absolute URL of `crisp3ds-dense.js` of the engine package. */
+  /** Absolute URL of `crispmesh-dense.js` of the engine package. */
   module: string;
   createWorker(): WorkerLike;
   /** Wall clock in Unix seconds. */
@@ -389,7 +389,7 @@ export class BrowserEngine implements Engine {
       if (!run.events.some((event) => event.type === "run_finished")) {
         const time = this.clock();
         const add = (type: string, fields: Record<string, unknown>) => run.events.push({ type, time, stage: null, seq: run.events.length, ...fields });
-        if (run.events.length === 0) add("run_started", { schema: "crisp3ds_dense_events_v1", device: "WebGPU" });
+        if (run.events.length === 0) add("run_started", { schema: "crispmesh_dense_events_v1", device: "WebGPU" });
         add("error", { message: message.message ?? "The engine stopped without saying why." });
         add("run_finished", { status: "failed", seconds: message.seconds });
         run.status = "failed";
@@ -406,7 +406,7 @@ export class BrowserEngine implements Engine {
     const { adapter, threads } = await this.load();
     const lanes = (threads ?? 1) > 1 ? `${threads} threads` : "single-threaded";
     return {
-      schema: "crisp3ds_dense_events_v1",
+      schema: "crispmesh_dense_events_v1",
       device: `${adapter === null ? "WebGPU" : `WebGPU: ${adapter}`} · ${lanes}`,
       canStartRuns: true,
       startPoints: this.startPoints,

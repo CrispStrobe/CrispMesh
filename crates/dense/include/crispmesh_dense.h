@@ -1,4 +1,4 @@
-/* C interface of the crisp3ds-dense run driver (crates/dense, feature "capi").
+/* C interface of the crispmesh-dense run driver (crates/dense, feature "capi").
  *
  * Build the library:
  *   cargo rustc --release --lib --features capi --crate-type cdylib      (shared)
@@ -13,7 +13,7 @@
  *     "inputs": "/path/to/inputs",                 // or "scene", "prepared" and "raw_masks",
  *                                                  // or "photos": "/path/to/photos" with
  *     "photo_options": ["--calibration", "lens.json", "--masks", "threshold"],
- *                                                  // (words of `crisp3ds-dense photos`)
+ *                                                  // (words of `crispmesh-dense photos`)
  *     "config": "/path/to/config.json",
  *     "preset": "detail",                         // optional named settings, see describe()
  *     "overrides": ["grid=320"],
@@ -31,36 +31,36 @@
  * is the content of pipeline.json on success and "error" a message otherwise.
  *
  * Every char* returned by the library is UTF-8, NUL-terminated and must be
- * released with crisp3ds_string_free, except the version string.
+ * released with crispmesh_string_free, except the version string.
  */
-#ifndef CRISP3DS_DENSE_H
-#define CRISP3DS_DENSE_H
+#ifndef CRISPMESH_DENSE_H
+#define CRISPMESH_DENSE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct Crisp3dsRun Crisp3dsRun;
+typedef struct CrispMeshRun CrispMeshRun;
 
 /* Version of the library; static, do not free. */
-const char *crisp3ds_version(void);
+const char *crispmesh_version(void);
 
 /* Starts a run. Returns NULL when the options are invalid; if error is not
- * NULL, *error then receives a message to free with crisp3ds_string_free. */
-Crisp3dsRun *crisp3ds_run_start(const char *options_json, char **error);
+ * NULL, *error then receives a message to free with crispmesh_string_free. */
+CrispMeshRun *crispmesh_run_start(const char *options_json, char **error);
 
 /* New events and the state of the run as a JSON string (see above). */
-char *crisp3ds_run_poll(Crisp3dsRun *run);
+char *crispmesh_run_poll(CrispMeshRun *run);
 
 /* Asks the run to stop. It ends with status "cancelled" at the next view while
  * matching, or at the next stage boundary. */
-void crisp3ds_run_cancel(Crisp3dsRun *run);
+void crispmesh_run_cancel(CrispMeshRun *run);
 
 /* Cancels the run if it is still going, waits for it and releases the handle. */
-void crisp3ds_run_free(Crisp3dsRun *run);
+void crispmesh_run_free(CrispMeshRun *run);
 
 /* Releases a string returned by this library. NULL is accepted. */
-void crisp3ds_string_free(char *text);
+void crispmesh_string_free(char *text);
 
 #ifdef __cplusplus
 }

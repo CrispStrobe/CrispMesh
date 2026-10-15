@@ -214,10 +214,10 @@ impl Inspector {
     }
 }
 
-/// `crisp3ds-dense inspect --inputs DIR --output DIR --mesh STEP=LABEL=FILE ...`: sheets of any meshes with
+/// `crispmesh-dense inspect --inputs DIR --output DIR --mesh STEP=LABEL=FILE ...`: sheets of any meshes with
 /// the views and crops of the inputs directory, and their overview, as a run draws them.
 pub fn main(arguments: &[String]) -> anyhow::Result<()> {
-    const USAGE: &str = "usage: crisp3ds-dense inspect --inputs DIR --output DIR --mesh STEP=LABEL=FILE [--mesh ...]";
+    const USAGE: &str = "usage: crispmesh-dense inspect --inputs DIR --output DIR --mesh STEP=LABEL=FILE [--mesh ...]";
     let (mut inputs, mut output, mut meshes) = (None, None, Vec::new());
     let mut rest = arguments.iter();
     while let Some(flag) = rest.next() {

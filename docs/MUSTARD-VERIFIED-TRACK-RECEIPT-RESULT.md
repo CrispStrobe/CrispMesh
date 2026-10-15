@@ -1,7 +1,7 @@
 # Sealed TRAIN verified-track receipts
 
 The first two attempts produced no receipt. Their destination
-`/Volumes/backups/code/crisp3ds-data/mustard-verified-tracks-001.json`
+`/Volumes/backups/code/crispmesh-data/mustard-verified-tracks-001.json`
 remains absent. After the separately approved scalar-only audit identified the
 exact empty-row encoding, one narrowly corrected, fresh counts-only run wrote
 `mustard-verified-tracks-002.json`. No feature coordinates or tracks were
@@ -42,7 +42,7 @@ Both internal and external volumes remained above the 10 GiB reserve after
 the second attempt (approximately 22.2 GiB and 14.2 GiB free, respectively).
 
 The approved `-002` diagnostic completed in 8.69 seconds. Its 1,102-byte
-[external receipt](</Volumes/backups/code/crisp3ds-data/mustard-verified-tracks-002.json>)
+[external receipt](</Volumes/backups/code/crispmesh-data/mustard-verified-tracks-002.json>)
 has SHA-256 `a374019ff3cd6c211ddacaf270eccbbd690cbe9530d194d8cf4ee65c1b8fc898`.
 It binds adapter SHA-256
 `0ff9d78b055e8c5b5f806dbe8fb86a9501845154b4f42f0ef4e6f4a9017bfc7a`,

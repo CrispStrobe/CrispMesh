@@ -2,7 +2,7 @@
 
 The one approved 60-view, 160³ image-only hull run completed without boundary
 truncation: 55,815 occupied cells, 29,860 triangles, and a compact box-like
-[neutral preview](/Volumes/backups/code/crisp3ds-data/cracker-visual-hull-001/neutral-preview.png).
+[neutral preview](/Volumes/backups/code/crispmesh-data/cracker-visual-hull-001/neutral-preview.png).
 The separate one approved scanner-only score then reproduced the frozen rough,
 refined, and reference-self baselines exactly before evaluating the hull. No
 run was retried and no threshold, camera, mask, grid, or candidate was changed.
@@ -48,12 +48,12 @@ reference fit and therefore does not establish physical pose or metric scale.
 
 ## Provenance and bounds
 
-The [hull report](/Volumes/backups/code/crisp3ds-data/cracker-visual-hull-001/hull-report.json)
+The [hull report](/Volumes/backups/code/crispmesh-data/cracker-visual-hull-001/hull-report.json)
 SHA-256 is `b0e88ce667f34e6e569aace1b21987f0fc3291813666887816e3c1556b05f2af`;
 the immutable hull mesh is `050f230c49f17d5e54fb5b15d8a2ddf4878e250d9662a9ad94fdd9eabdbc2de4`.
-The [score report](/Volumes/backups/code/crisp3ds-data/cracker-visual-hull-score-001/score.json)
+The [score report](/Volumes/backups/code/crispmesh-data/cracker-visual-hull-score-001/score.json)
 SHA-256 is `98db747b2dbd5b1ad4af7bf82fa520ea5d9ac3e5e6e9c4b7eca3eb08dbf06b1a`;
-its [supervisor receipt](/Volumes/backups/code/crisp3ds-data/cracker-visual-hull-score-001/result.json)
+its [supervisor receipt](/Volumes/backups/code/crispmesh-data/cracker-visual-hull-score-001/result.json)
 is `7e13de4592610e8787130105b2435aaf1b7ac96589e319ab54af4ab68d133438`.
 The exact scanner hash remained
 `6e0187aa961aef4fa21dfc753023a4be7e82924e6398dc0875a2b0d609363ed4`;

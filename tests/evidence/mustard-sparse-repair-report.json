@@ -74,7 +74,7 @@
   "helper_sha256": "e24ed0545a4dafc810cd3f3c7f628c277e65df380e18e72f6fc38fb1b86fb6cc",
   "output": {
     "duplicate_same_image_tracks": 0,
-    "model_dir": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-repair-001/model",
+    "model_dir": "/Volumes/backups/code/crispmesh-data/mustard-sparse-repair-001/model",
     "model_files_sha256": {
       "cameras.bin": "ebc18fcca6fa2dacf0b6ff16cfae700d62d44626530d48dcecc7e72767a24348",
       "images.bin": "fa6f5d355e4ec6baba5409fdd1511bf331b9f7b2c30daf49e82865999621d190",

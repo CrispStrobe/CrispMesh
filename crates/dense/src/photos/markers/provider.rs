@@ -26,7 +26,7 @@ impl CameraProvider for Markers {
 
     fn check(&self, options: &Options) -> anyhow::Result<()> {
         let path = options.markers.mat.as_ref().ok_or_else(|| {
-            anyhow!("--cameras markers needs the description of the printed mat: --markers-mat FILE.json (crisp3ds-dense mat --size a4 --output DIR writes one)")
+            anyhow!("--cameras markers needs the description of the printed mat: --markers-mat FILE.json (crispmesh-dense mat --size a4 --output DIR writes one)")
         })?;
         Mat::load(path).map(|_| ())
     }

@@ -1,7 +1,7 @@
 # OpenMVG Sceaux `-002`: sealed outdoor photo control
 
 The fresh, evaluation-only Sceaux run completed its five planned stages.
-Its [receipt](/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-002/receipt.json)
+Its [receipt](/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-002/receipt.json)
 has SHA-256 `4b82d6546a36d3e3e9b5ff3feec871082b35583152fba6a68ba789d53e4639e6`
 and status `completed_pending_geometry_review`. This is an **outdoor software
 pipeline control**, not a mustard/object result, physical camera-accuracy
@@ -13,10 +13,10 @@ photo hashes, all **56** inventoried output-file sizes/hashes, all five stage
 commands, logs, and required stage artifacts. The HTML report independently
 matches the receipt: **11 views, 11 poses, one intrinsic, 6,048 tracks, and
 19,807 residual observations**. The sparse cereal model
-[`sfm_data.bin`](/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-002/sparse/sfm_data.bin)
+[`sfm_data.bin`](/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-002/sparse/sfm_data.bin)
 is 902,327 bytes with SHA-256
 `3f7409c6fad154eaeefbbfb4a02354a06618d0dd22285a1e63723acee2c3cff2`;
-the [SfM HTML report](/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-002/sparse/SfMReconstruction_Report.html)
+the [SfM HTML report](/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-002/sparse/SfMReconstruction_Report.html)
 has SHA-256 `8d91b9d7490081c1db07a227398761d62e5f179253b8fc91af1021fba6fba0fa`.
 
 | Stage | Wall time | Peak RSS | Log bytes | Verified log SHA-256 |

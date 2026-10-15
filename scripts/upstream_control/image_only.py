@@ -31,7 +31,7 @@ from scripts.upstream_control import run as sample_run
 from scripts.upstream_control.run import verify_sample
 
 PYTHON = ROOT / ".local-tools/colmap-sparse/venv/bin/python"
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001")
 SEED = 20260927
 MAX_BYTES = 512 << 20
 MAX_RSS = 4 << 30

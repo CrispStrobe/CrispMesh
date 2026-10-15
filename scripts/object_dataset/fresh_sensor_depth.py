@@ -14,8 +14,8 @@ from scripts.classical_backend import geometry, score_fresh_complete
 from scripts.object_dataset import evaluate, sensor_depth as sd
 
 
-RUN = Path("/Volumes/backups/code/crisp3ds-data/turntable-fresh-openmvs-005")
-CAMERA_FIT = Path("/Volumes/backups/code/crisp3ds-data/fresh-sensor-depth-005-preflight/camera-fit.json")
+RUN = Path("/Volumes/backups/code/crispmesh-data/turntable-fresh-openmvs-005")
+CAMERA_FIT = Path("/Volumes/backups/code/crispmesh-data/fresh-sensor-depth-005-preflight/camera-fit.json")
 BASELINE = sd.ROOT / "build-opencv/sensor-depth-004/report.json"
 RESULT_SHA = "dafc6ccb2a90f0c5a45748291571455237acd8ae08da01dd80adc10222a3625e"
 CAMERA_FIT_SHA = "d9e51355eb7776132d8abba83d5d2b8be8ba2d6c073149b9d1d9d7a156efc3b6"
@@ -86,7 +86,7 @@ def evaluate_run(output: Path) -> dict:
     output = Path(output)
     if (output.exists() or output.is_symlink() or not output.parent.is_dir() or
             output.parent.is_symlink() or not str(output.resolve()).startswith(
-                "/Volumes/backups/code/crisp3ds-data/")):
+                "/Volumes/backups/code/crispmesh-data/")):
         raise ValueError("output must be a fresh directory on the backup data volume")
     before_free = disk_floor(output)
     if (sd.sha256(RUN / "result.json") != RESULT_SHA or

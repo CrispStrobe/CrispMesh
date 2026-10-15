@@ -780,7 +780,7 @@ mod tests {
         (same as f64 / a.data.len() as f64, valid)
     }
 
-    /// GPU sweep and refinement against the scalar implementation (`CRISP3DS_GPU_TESTS=1`).
+    /// GPU sweep and refinement against the scalar implementation (`CRISPMESH_GPU_TESTS=1`).
     #[test]
     fn gpu_matching_matches_the_scalar_implementation() {
         if !crate::gpu::tests_enabled() {

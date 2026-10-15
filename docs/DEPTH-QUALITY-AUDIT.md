@@ -118,7 +118,7 @@ These are implementation comparisons, not an external benchmark on our images.
 Revisions and reproduction values are in
 [`depth-geometry-audit.json`](../tests/evidence/depth-geometry-audit.json).
 
-| Stage | Established implementation | Current ordinary Crisp3DS path |
+| Stage | Established implementation | Current ordinary CrispMesh path |
 | --- | --- | --- |
 | Photometric support | COLMAP derives a patch homography from the centre's candidate depth and normal. | Band refinement warps patch pixels using their individual prior depths plus a common inverse-depth offset. |
 | Geometric evidence | COLMAP's geometric stereo evaluates source-depth forward/backward reprojection during optimisation. | Ordinary band matching is photometric; a later filter counts relative depth agreement at rounded projections. |
@@ -161,12 +161,12 @@ plus browser execution/memory checks. No defaults change in this audit.
 Run the controls serially with a GPU:
 
 ```sh
-CRISP3DS_GPU_TESTS=1 RAYON_NUM_THREADS=2 cargo test --release \
+CRISPMESH_GPU_TESTS=1 RAYON_NUM_THREADS=2 cargo test --release \
   --manifest-path crates/dense/Cargo.toml --test depth_geometry_audit \
   -- --nocapture --test-threads=1
 ```
 
-`CRISP3DS_AUDIT_OUTPUT` optionally retains a newly created mesh directory.
+`CRISPMESH_AUDIT_OUTPUT` optionally retains a newly created mesh directory.
 Without it, the test deletes its own mesh output. Camera-ray checks run even
 when GPU tests are disabled. The band failure is reported diagnostically; the
 test does not assert that the erroneous result is acceptable.

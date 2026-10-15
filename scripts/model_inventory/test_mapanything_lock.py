@@ -108,7 +108,7 @@ class MapAnythingLockTests(unittest.TestCase):
             workspace = root / "internal"
             workspace.mkdir()
             mount = root / "backups"
-            expected = mount / "ai" / "crisp3ds" / "map-anything-apache" / inventory.MODEL_REVISION
+            expected = mount / "ai" / "crispmesh" / "map-anything-apache" / inventory.MODEL_REVISION
             expected.mkdir(parents=True)
             destination = expected / "model.safetensors"
             required = inventory.ARTIFACT_BYTES + inventory.RESERVE_BYTES

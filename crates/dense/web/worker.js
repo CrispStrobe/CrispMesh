@@ -6,7 +6,7 @@
 //   { type: "done", report, files, seconds, adapter, limits }, { type: "error", message },
 //   { type: "file", path, bytes } for every path in `keep` (transferred).
 
-import { createRun, load, memory, threadCount } from "./crisp3ds-dense.js";
+import { createRun, load, memory, threadCount } from "./crispmesh-dense.js";
 
 let run;
 

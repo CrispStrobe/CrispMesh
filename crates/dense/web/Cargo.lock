@@ -155,7 +155,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crisp3ds-dense"
+name = "crispmesh-dense"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -174,11 +174,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "crisp3ds-dense-web"
+name = "crispmesh-dense-web"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
- "crisp3ds-dense",
+ "crispmesh-dense",
  "js-sys",
  "serde_json",
  "wasm-bindgen",

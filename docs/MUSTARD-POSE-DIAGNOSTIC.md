@@ -8,7 +8,7 @@ and its three binary file hashes before and after reading. The full fresh
 report is preserved byte-exact as
 [`mustard-pose-trajectory.json`](../tests/evidence/mustard-pose-trajectory.json)
 from the external artifact path
-`/Volumes/backups/code/crisp3ds-data/mustard-pose-trajectory-001.json`
+`/Volumes/backups/code/crispmesh-data/mustard-pose-trajectory-001.json`
 (SHA-256 `082dee8e15473b6965bffa770a155acebae0992336a2a0855f358ce329c3fdbd`).
 The frozen diagnostic runner is
 [`pose_trajectory.py`](../scripts/object_motion/pose_trajectory.py)

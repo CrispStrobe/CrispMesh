@@ -21,8 +21,8 @@ from scripts.classical_backend.mustard_stage import (
 
 ROOT = Path(__file__).resolve().parents[2]
 MOUNT = Path("/Volumes/backups")
-OUTPUT = MOUNT / "code/crisp3ds-data/sam21-m1-train48-001"
-REMOTE_PHOTOS = "/mnt/storage/crisp3ds-data/ycb-expansion-001/006_mustard_bottle/photos"
+OUTPUT = MOUNT / "code/crispmesh-data/sam21-m1-train48-001"
+REMOTE_PHOTOS = "/mnt/storage/crispmesh-data/ycb-expansion-001/006_mustard_bottle/photos"
 CAP = 150 * 1024**2
 FLOOR = 10 * 1024**3
 BUFFER = 256 * 1024**2

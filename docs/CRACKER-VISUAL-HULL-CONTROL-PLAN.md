@@ -27,7 +27,7 @@ unresolved orientation/coverage disagreement.
 ## Exact sealed inputs and coordinates
 
 Read, without copying or modifying, the completed
-`/Volumes/backups/code/crisp3ds-data/turntable-fresh-openmvs-005` producer
+`/Volumes/backups/code/crispmesh-data/turntable-fresh-openmvs-005` producer
 `result.json` (SHA-256
 `dafc6ccb2a90f0c5a45748291571455237acd8ae08da01dd80adc10222a3625e`),
 its `masks/report.json` (SHA-256
@@ -81,7 +81,7 @@ output directory is created; the worker independently revalidates before
 carving to guard against an intervening source change.
 
 Proposed fresh external output:
-`/Volumes/backups/code/crisp3ds-data/cracker-visual-hull-001`.
+`/Volumes/backups/code/crispmesh-data/cracker-visual-hull-001`.
 No existing artifact is overwritten; no large source copy or download. Cap
 grid memory/RSS at 2 GiB, worker time at 300 seconds, two CPU threads, total
 new output at 256 MiB, triangle count at 500,000, report at 2 MiB and preview
@@ -96,7 +96,7 @@ log bytes and deadline. The pure-core and binary-PLY/neutral-preview synthetic
 tests run without sealed inputs. Proposed command after explicit approval:
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 .local-tools/colmap-sparse/venv/bin/python -m scripts.classical_backend.cracker_visual_hull --output /Volumes/backups/code/crisp3ds-data/cracker-visual-hull-001
+PYTHONDONTWRITEBYTECODE=1 .local-tools/colmap-sparse/venv/bin/python -m scripts.classical_backend.cracker_visual_hull --output /Volumes/backups/code/crispmesh-data/cracker-visual-hull-001
 ```
 
 ## Separate scanner-only score, unchanged golden

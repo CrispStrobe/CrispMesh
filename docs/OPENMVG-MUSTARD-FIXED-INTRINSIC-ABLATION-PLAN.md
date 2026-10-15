@@ -37,7 +37,7 @@ option change is `-f ADJUST_ALL` → `-f NONE`. No earlier stage is rerun.
 Default `python3 -m scripts.classical_backend.openmvg_mustard_fixed_intrinsic_ablation`
 is a read-only preflight. The explicit `--run` entry point is **not approved by
 this plan**; review the preflight/command first. It may write only to fresh
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002`.
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002`.
 It never cleans or reuses -001 or an existing -002. External free space must
 exceed an 11 GiB floor plus the full 256 MiB output reservation; internal
 space must exceed 11 GiB. The SfM process is capped at 1 GiB observed

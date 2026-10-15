@@ -4,7 +4,7 @@
   "matching_images_byte_identical": true,
   "original_texture_pixels_equal_source_capture": true,
   "staged_photos_removed": true,
-  "schema": "crisp3ds_original_texture_rgb_v1",
+  "schema": "crispmesh_original_texture_rgb_v1",
   "geometry_changed": false,
   "input_matching_images": "Gamma/CLAHE; unchanged by this fix",
   "texture_images": "Unenhanced capture RGB, undistorted with the same recovered lens",

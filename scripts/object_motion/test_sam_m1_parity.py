@@ -80,12 +80,12 @@ Pages speculative: 4,000.
               patch.object(parity.os, "stat", side_effect=fake_stat),
               patch.object(parity, "disk_free_both", return_value=common.MIN_FREE_BYTES),
               patch.object(parity, "available_kib", return_value=parity.MIN_AVAILABLE_KIB)):
-            parity.host_preflight(Path("/Volumes/backups/code/crisp3ds-data/out"))
+            parity.host_preflight(Path("/Volumes/backups/code/crispmesh-data/out"))
             with self.assertRaisesRegex(ValueError, "external"):
                 parity.host_preflight(Path("/Users/example/internal"))
             with patch.object(parity.Path, "is_mount", return_value=False):
                 with self.assertRaisesRegex(ValueError, "external"):
-                    parity.host_preflight(Path("/Volumes/backups/code/crisp3ds-data/out"))
+                    parity.host_preflight(Path("/Volumes/backups/code/crispmesh-data/out"))
 
     def test_missing_manifest_and_nonexternal_inputs_fail_closed(self):
         status, reason = parity.manifest_status(Path("/nonexistent/mac-sam-parity.json"))

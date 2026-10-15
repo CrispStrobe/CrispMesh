@@ -29,6 +29,6 @@ One batch has a 300-second deadline, three views, at most 2,048 rays/view,
 the existing one-million-vertex/two-million-face cap, and a 20 MiB JSON cap.
 Require at least 10 GiB free on both workspace and backup volumes before and
 after. All persistent new diagnostic artifacts go under
-`/Volumes/backups/code/crisp3ds-data`. The output is a diagnostic on a
+`/Volumes/backups/code/crispmesh-data`. The output is a diagnostic on a
 repeatedly inspected development object, not an independent metric-accuracy
 or whole-object completeness claim.

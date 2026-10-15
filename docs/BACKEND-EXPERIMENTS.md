@@ -139,7 +139,7 @@ capability); [gsplat README](https://github.com/nerfstudio-project/gsplat)
 [PhotogrammetrySession API](https://developer.apple.com/documentation/realitykit/photogrammetrysession).
 The KIRI announcements linked above are vendor claims and provide neither
 independent quality measurements nor the current production source code. These
-are upstream claims and interfaces, not tested results in Crisp3DS.
+are upstream claims and interfaces, not tested results in CrispMesh.
 
 Before **any** experiment, inventory the exact component commit, model/checkpoint
 and dataset assets, rasterizer, CUDA extension, converter, texture/mesh tools,

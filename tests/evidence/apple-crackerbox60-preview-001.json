@@ -306,11 +306,11 @@
     }
   ],
   "command": [
-    "/Users/christianstrobele/code/crisp3ds/.local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe",
+    ".local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe",
     "--images",
-    "/Users/christianstrobele/code/crisp3ds/.local-tools/test-data/ycb-cracker-box/photos",
+    ".local-tools/test-data/ycb-cracker-box/photos",
     "--output",
-    "/Volumes/backups/code/crisp3ds-data/apple-crackerbox60-preview-001/model.usdz"
+    "/Volumes/backups/code/crispmesh-data/apple-crackerbox60-preview-001/model.usdz"
   ],
   "limits": {
     "max_output_bytes": 536870912,
@@ -319,21 +319,21 @@
     "timeout_minutes": 10.0,
     "min_free_bytes": 10737418240,
     "source_reserve_paths": [
-      "/Users/christianstrobele/code/crisp3ds/.local-tools/tmp/apple-probe.9SE5u9",
-      "/Users/christianstrobele/code/crisp3ds/.local-tools/test-data/ycb-cracker-box/photos"
+      ".local-tools/tmp/apple-probe.9SE5u9",
+      ".local-tools/test-data/ycb-cracker-box/photos"
     ]
   },
   "stages": [
     {
       "name": "photogrammetry",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe",
+        ".local-tools/tmp/apple-probe.9SE5u9/photogrammetry-probe",
         "--images",
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/test-data/ycb-cracker-box/photos",
+        ".local-tools/test-data/ycb-cracker-box/photos",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/apple-crackerbox60-preview-001/model.usdz"
+        "/Volumes/backups/code/crispmesh-data/apple-crackerbox60-preview-001/model.usdz"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/apple-crackerbox60-preview-001/photogrammetry.log",
+      "log": "/Volumes/backups/code/crispmesh-data/apple-crackerbox60-preview-001/photogrammetry.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 30.525,
@@ -350,11 +350,11 @@
   "output_bytes": 394921,
   "free_bytes_after": 19355578368,
   "source_free_bytes_after": {
-    "/Users/christianstrobele/code/crisp3ds/.local-tools/tmp/apple-probe.9SE5u9": 24083464192,
-    "/Users/christianstrobele/code/crisp3ds/.local-tools/test-data/ycb-cracker-box/photos": 24083464192
+    ".local-tools/tmp/apple-probe.9SE5u9": 24083464192,
+    ".local-tools/test-data/ycb-cracker-box/photos": 24083464192
   },
   "artifact": {
-    "path": "/Volumes/backups/code/crisp3ds-data/apple-crackerbox60-preview-001/model.usdz",
+    "path": "/Volumes/backups/code/crispmesh-data/apple-crackerbox60-preview-001/model.usdz",
     "bytes": 380651,
     "sha256": "00e6e5bc15a79634ffb7b0bd42492c8df5ebe575d63b228f53f737d4f23e1ae7",
     "validity": "nonempty_file_only; USDZ contents and mesh not inspected"

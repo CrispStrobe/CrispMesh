@@ -1,6 +1,6 @@
 // A run of the dense pipeline in the browser, from a map of files.
 //
-//   import { createRun, settingsSchema } from "./crisp3ds-dense.js";
+//   import { createRun, settingsSchema } from "./crispmesh-dense.js";
 //   const run = await createRun({
 //     files,                         // Map or object: path inside the inputs directory -> Uint8Array
 //     options: { settings: { grid: 96 } },   // fields of RunOptions; output and inputs are filled in
@@ -63,7 +63,7 @@ export async function load({ threads: wanted } = {}) {
     const count = wanted ?? cores;
     if (globalThis.crossOriginIsolated && count > 1) {
       try {
-        const module = await import("./pkg-threads/crisp3ds_dense_web.js");
+        const module = await import("./pkg-threads/crispmesh_dense_web.js");
         wasm = await module.default();
         // A pool whose workers cannot load never reports back: give up after 30 s.
         let timer;
@@ -74,10 +74,10 @@ export async function load({ threads: wanted } = {}) {
         return;
       } catch (error) {
         // No threaded package next to this file, or the pool could not start: single-threaded.
-        console.warn(`crisp3ds-dense: threaded package not used (${error?.message ?? error})`);
+        console.warn(`crispmesh-dense: threaded package not used (${error?.message ?? error})`);
       }
     }
-    const module = await import("./pkg/crisp3ds_dense_web.js");
+    const module = await import("./pkg/crispmesh_dense_web.js");
     wasm = await module.default();
     engine = module;
     threads = 1;
@@ -122,11 +122,11 @@ export function memory() {
  * A run from an inputs directory (`files`) or from turntable photos (`photos` and `calibration`).
  *
  *   photos:      Map or object: file name -> Uint8Array (PNG or JPEG), one turn in the order of the names
- *   calibration: the lens calibration (crisp3ds_lens_calibration_v1) as an object, JSON text or bytes
+ *   calibration: the lens calibration (crispmesh_lens_calibration_v1) as an object, JSON text or bytes
  *
  * From photos the masks and cameras are recovered first with the providers that need no other
  * program (threshold masks and the turntable solver by default); `options.photo_options` takes
- * further words of `crisp3ds-dense photos`. The photos stay in JavaScript memory (the map is
+ * further words of `crispmesh-dense photos`. The photos stay in JavaScript memory (the map is
  * kept until `dispose`) and are handed to the engine one at a time.
  */
 export async function createRun({ files, photos, calibration, options = {}, onEvent } = {}) {

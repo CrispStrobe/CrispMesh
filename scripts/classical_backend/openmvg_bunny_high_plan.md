@@ -14,7 +14,7 @@ Features use `SIFT_ANATOMY` and `HIGH`; the remaining stages use putative
 matching, essential-matrix geometric filtering, and incremental SfM.
 
 The one-shot output is
-`/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-photo-sfm-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-photo-sfm-001`.
 Default CLI invocation only preflights. `--run-bunny` creates fresh output.
 The runner enforces a 1 GiB output cap, 4 GiB process-tree RSS cap, 16 MiB
 per-stage log cap, two worker threads, and finite 120/1800/1800/1200/1800

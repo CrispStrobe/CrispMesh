@@ -31,7 +31,7 @@ fn runtime(library: Option<&PathBuf>) -> anyhow::Result<String> {
         }
         match ort::init_from(&path) {
             Ok(environment) => {
-                environment.with_name("crisp3ds-sam").commit();
+                environment.with_name("crispmesh-sam").commit();
                 Ok(format!("{} ({})", ort::info().lines().next().unwrap_or("ONNX Runtime"), path.display()))
             }
             Err(error) => Err(format!("{}: {error}", path.display())),

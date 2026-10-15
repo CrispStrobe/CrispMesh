@@ -222,7 +222,7 @@ impl Capture {
         )?;
         let camera = self.camera();
         let lens = json!({
-            "schema": "crisp3ds_lens_calibration_v1", "model": "radialk3", "calibration_width": self.width, "calibration_height": self.height,
+            "schema": "crispmesh_lens_calibration_v1", "model": "radialk3", "calibration_width": self.width, "calibration_height": self.height,
             "fx": camera.fx, "fy": camera.fy, "cx": camera.cx, "cy": camera.cy, "k1": self.k[0], "k2": self.k[1], "k3": self.k[2],
             "principal_point_convention": "pixel_centre", "provenance": {"source": "synthetic marker-mat capture"},
         });
@@ -234,7 +234,7 @@ impl Capture {
             })
             .collect();
         let truth = json!({
-            "schema": "crisp3ds_marker_capture_truth_v1", "unit": "mm", "views": views,
+            "schema": "crispmesh_marker_capture_truth_v1", "unit": "mm", "views": views,
             "object": {"radius": self.object_radius, "height": self.object_height},
             "capture": {"elevation_deg": self.elevation_deg, "distance": self.distance, "blur": self.blur, "noise": self.noise, "exposure": self.exposure},
         });

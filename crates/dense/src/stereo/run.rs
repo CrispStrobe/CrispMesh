@@ -300,7 +300,7 @@ pub async fn run_fused(
     let mut report = json!({
         "configuration": serde_json::to_value(config)?,
         "device": format!("wgpu: {}", gpu.describe()),
-        "engine": concat!("crisp3ds-dense ", env!("CARGO_PKG_VERSION")),
+        "engine": concat!("crispmesh-dense ", env!("CARGO_PKG_VERSION")),
         "levels": [],
         "reuse_depths": arguments.reuse_depths.as_ref().map(|p| p.display().to_string()),
     });
@@ -571,7 +571,7 @@ mod tests {
     use crate::stereo::{options, synthetic};
 
     /// The whole stage on the analytic sphere, with the thresholds of
-    /// scripts/turntable_mesh/test_multiscale_stereo.py (CRISP3DS_GPU_TESTS=1).
+    /// scripts/turntable_mesh/test_multiscale_stereo.py (CRISPMESH_GPU_TESTS=1).
     #[test]
     fn gpu_stage_recovers_the_sphere() {
         if !crate::gpu::tests_enabled() {

@@ -13,7 +13,7 @@ use super::coarse::Threshold;
 use super::option_table;
 use super::staging::{list_photos, PHOTO_SUFFIXES};
 
-pub const SCHEMA: &str = "crisp3ds_photos_to_inputs_v1";
+pub const SCHEMA: &str = "crispmesh_photos_to_inputs_v1";
 
 /// Default dark-hole cleanup budget for the SAM mask providers (the others: the option table's 0.02).
 pub const SAM_HOLE_CLEANUP_BUDGET: f64 = 0.05;
@@ -166,7 +166,7 @@ pub struct TurntableOptions {
     pub features: usize,
     /// Every photo is matched with this many successors.
     pub span: usize,
-    /// Debug input: features and matches made elsewhere (`crisp3ds_turntable_matches_v1`).
+    /// Debug input: features and matches made elsewhere (`crispmesh_turntable_matches_v1`).
     pub matches: Option<PathBuf>,
     /// Include moving turntable features while retaining object-only scene bounds.
     pub surface: bool,
@@ -179,7 +179,7 @@ pub struct TurntableOptions {
 /// Options of the `markers` camera provider.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MarkersOptions {
-    /// Description of the printed mat (`crisp3ds_marker_mat_v1`).
+    /// Description of the printed mat (`crispmesh_marker_mat_v1`).
     pub mat: Option<PathBuf>,
     /// A photo with fewer decoded markers gets no pose.
     pub minimum_per_photo: usize,
@@ -250,10 +250,10 @@ pub struct Options {
 }
 
 pub const USAGE: &str = "\
-usage: crisp3ds-dense photos --photos DIR --calibration JSON --output DIR [--events PATH]
+usage: crispmesh-dense photos --photos DIR --calibration JSON --output DIR [--events PATH]
                              [--masks PROVIDER] [--cameras PROVIDER] [options]
-       crisp3ds-dense photos --list-providers
-       crisp3ds-dense photos --list-options      every option below as JSON (flag, kind, default, choices, meaning)
+       crispmesh-dense photos --list-providers
+       crispmesh-dense photos --list-options      every option below as JSON (flag, kind, default, choices, meaning)
 
 From a folder of turntable photos to the scene the dense stages read (inputs/:
 cameras.json, undistorted images/ and masks/, sparse_points.npy). Masks and
@@ -285,16 +285,16 @@ masks, threshold provider (also makes the prompts of external-sam and the red ov
                                   external-sam), every provider
 masks, external-sam provider (flag, then environment variable):
   --sam-python EXE --sam-source DIR --sam-checkpoint FILE [--sam-config NAME] [--sam-pythonpath LIST] --sam-repository DIR
-                                  [CRISP3DS_SAM_PYTHON, _SAM_SOURCE, _SAM_CHECKPOINT, _SAM_CONFIG, _SAM_PYTHONPATH,
-                                  CRISP3DS_REPOSITORY: the checkout with scripts/turntable_mesh/segment.py]
+                                  [CRISPMESH_SAM_PYTHON, _SAM_SOURCE, _SAM_CHECKPOINT, _SAM_CONFIG, _SAM_PYTHONPATH,
+                                  CRISPMESH_REPOSITORY: the checkout with scripts/turntable_mesh/segment.py]
   --sam-device mps|cpu|cuda (mps)   --[no-]sam-multimask --[no-]sam-preserve-holes --[no-]sam-automatic-cues (on)
 masks, sam provider (--[no-]sam-preserve-holes and --[no-]sam-automatic-cues apply to it too):
   --sam-prompt-mask threshold|background (threshold)   coarse seed for either SAM provider; background uses RGB contrast
-  --sam-model DIR                 model.json with the ONNX graphs, as tools/sam2_export_onnx.py writes them [CRISP3DS_SAM_MODEL];
+  --sam-model DIR                 model.json with the ONNX graphs, as tools/sam2_export_onnx.py writes them [CRISPMESH_SAM_MODEL];
                                   default: fetched on first use from huggingface.co/cstr/sam2.1-hiera-tiny-ONNX into the
-                                  cache (CRISP3DS_CACHE_DIR, else the platform's) and checked against pinned SHA-256
+                                  cache (CRISPMESH_CACHE_DIR, else the platform's) and checked against pinned SHA-256
   --sam-runtime FILE              ONNX Runtime's shared library (libonnxruntime.dylib, .so, onnxruntime.dll), or for a
-                                  .gguf model CrispEmbed's libcrispembed-sam2 [CRISP3DS_SAM_RUNTIME, else ORT_DYLIB_PATH
+                                  .gguf model CrispEmbed's libcrispembed-sam2 [CRISPMESH_SAM_RUNTIME, else ORT_DYLIB_PATH
                                   or CRISPEMBED_SAM2_LIB]
   --sam-accelerator cpu|coreml|gpu (cpu)   coreml for ONNX models, gpu for GGUF models
   --sam-candidates single|several (single)   SAM's own single mask, or the best-scored of its three proposals
@@ -307,15 +307,15 @@ cameras, every provider:
                                   (robot arm, hand-held), only the camera audit applies; not with --cameras turntable
 cameras, alicevision provider:
   --alicevision PATH              install prefix with bin/aliceVision_* (run directly), or a wrapper script called as
-                                  `wrapper TOOL args` [CRISP3DS_ALICEVISION]
-  --alicevision-library-path L    extra library directories for a prefix, separated like PATH [CRISP3DS_ALICEVISION_LIBRARY_PATH]
-  --alicevision-env K=V           extra variable for the tools of a prefix; repeat [CRISP3DS_ALICEVISION_ENV: K=V,K=V]
-  --alicevision-sensor-database FILE   cameraSensors.db [CRISP3DS_ALICEVISION_SENSOR_DB, else <prefix>/share/aliceVision/]
+                                  `wrapper TOOL args` [CRISPMESH_ALICEVISION]
+  --alicevision-library-path L    extra library directories for a prefix, separated like PATH [CRISPMESH_ALICEVISION_LIBRARY_PATH]
+  --alicevision-env K=V           extra variable for the tools of a prefix; repeat [CRISPMESH_ALICEVISION_ENV: K=V,K=V]
+  --alicevision-sensor-database FILE   cameraSensors.db [CRISPMESH_ALICEVISION_SENSOR_DB, else <prefix>/share/aliceVision/]
   --alicevision-memory-gib N (4)  --alicevision-initial-field-of-view DEG (45)  --alicevision-describer-types T (sift)
   --alicevision-describer-preset P (normal)  --alicevision-matching-method M (Exhaustive)
   --alicevision-sfm-option ARG    extra token for globalSfM; repeat per token
 cameras, colmap provider:
-  --colmap PATH                   the colmap executable, or a wrapper called as `wrapper COMMAND args` [CRISP3DS_COLMAP]
+  --colmap PATH                   the colmap executable, or a wrapper called as `wrapper COMMAND args` [CRISPMESH_COLMAP]
   --colmap-matching exhaustive|sequential|ring (exhaustive)   ring: every photo with its --colmap-overlap successors
                                   around the closed turn (matches_importer); sequential: the same without closing the turn
   --colmap-overlap N (10)         --colmap-masks on|off (on: no features outside the masks)
@@ -329,11 +329,11 @@ cameras, turntable provider (our own solver for ordered turntable photos; docs/T
   --turntable-rings N (1)         the photos are N complete turns of equal length one after the other (cameras at
                                   several heights): every turn is solved, then all are joined and adjusted together
 cameras, markers provider (a printed mat under the object; docs/MARKER-MAT.md):
-  --markers-mat FILE              description of the printed mat, as `crisp3ds-dense mat` writes it [CRISP3DS_MARKERS_MAT]
+  --markers-mat FILE              description of the printed mat, as `crispmesh-dense mat` writes it [CRISPMESH_MARKERS_MAT]
   --markers-minimum N (5)         a photo with fewer decoded markers gets no pose
   --markers-aspect auto|X         height over width of the print relative to the design (1); auto estimates it
 tools:
-  --python EXE                    only for .py wrappers [CRISP3DS_PYTHON]
+  --python EXE                    only for .py wrappers [CRISPMESH_PYTHON]
 machine:
   --threads N (2)   --minimum-free-gib N (10, checked before every step)   --keep-intermediates
   --stop-after masks              write the masks and stop; needs no camera provider
@@ -494,7 +494,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
     if calibration.is_none() && !stop_after_masks && !matches!(cameras, CameraChoice::Import(_)) {
         bail!("--calibration is required");
     }
-    let library_path = pick("alicevision-library-path", "CRISP3DS_ALICEVISION_LIBRARY_PATH").map(|v| split_paths(&v)).unwrap_or_default();
+    let library_path = pick("alicevision-library-path", "CRISPMESH_ALICEVISION_LIBRARY_PATH").map(|v| split_paths(&v)).unwrap_or_default();
     let mut tool_environment = Vec::new();
     match values.get("alicevision-env") {
         Some(pairs) => {
@@ -503,12 +503,12 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
             }
         }
         None => {
-            for item in environment("CRISP3DS_ALICEVISION_ENV").unwrap_or_default().split(',').filter(|v| !v.is_empty()) {
+            for item in environment("CRISPMESH_ALICEVISION_ENV").unwrap_or_default().split(',').filter(|v| !v.is_empty()) {
                 tool_environment.push(pair(item)?);
             }
         }
     }
-    let tools = pick("alicevision", "CRISP3DS_ALICEVISION").map(|location| Tools {
+    let tools = pick("alicevision", "CRISPMESH_ALICEVISION").map(|location| Tools {
         location: absolute(&location),
         library_path: library_path.into_iter().map(PathBuf::from).collect(),
         environment: tool_environment,
@@ -519,18 +519,18 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
             "background" => true,
             value => bail!("invalid --sam-prompt-mask {value:?}; choose threshold or background"),
         },
-        python: pick("sam-python", "CRISP3DS_SAM_PYTHON"),
-        source: pick("sam-source", "CRISP3DS_SAM_SOURCE").map(|p| absolute(&p)),
-        checkpoint: pick("sam-checkpoint", "CRISP3DS_SAM_CHECKPOINT").map(|p| absolute(&p)),
-        config: pick("sam-config", "CRISP3DS_SAM_CONFIG"),
-        pythonpath: pick("sam-pythonpath", "CRISP3DS_SAM_PYTHONPATH").map(|v| split_paths(&v)).unwrap_or_default(),
-        repository: pick("sam-repository", "CRISP3DS_REPOSITORY").map(|p| absolute(&p)),
+        python: pick("sam-python", "CRISPMESH_SAM_PYTHON"),
+        source: pick("sam-source", "CRISPMESH_SAM_SOURCE").map(|p| absolute(&p)),
+        checkpoint: pick("sam-checkpoint", "CRISPMESH_SAM_CHECKPOINT").map(|p| absolute(&p)),
+        config: pick("sam-config", "CRISPMESH_SAM_CONFIG"),
+        pythonpath: pick("sam-pythonpath", "CRISPMESH_SAM_PYTHONPATH").map(|v| split_paths(&v)).unwrap_or_default(),
+        repository: pick("sam-repository", "CRISPMESH_REPOSITORY").map(|p| absolute(&p)),
         device: word("sam-device"),
         multimask: switch("sam-multimask"),
         preserve_holes: switch("sam-preserve-holes"),
         automatic_cues: switch("sam-automatic-cues"),
-        model: pick("sam-model", "CRISP3DS_SAM_MODEL").map(|p| absolute(&p)),
-        runtime: pick("sam-runtime", "CRISP3DS_SAM_RUNTIME").map(|p| absolute(&p)),
+        model: pick("sam-model", "CRISPMESH_SAM_MODEL").map(|p| absolute(&p)),
+        runtime: pick("sam-runtime", "CRISPMESH_SAM_RUNTIME").map(|p| absolute(&p)),
         accelerator: word("sam-accelerator"),
         several_candidates: word("sam-candidates") == "several",
     };
@@ -554,7 +554,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
     let turns = turntable.rings as u64;
     let deadline = |name: &str| -> anyhow::Result<u64> { Ok(seconds(name)? * if text(name).is_some() { 1 } else { turns }) };
     let markers = MarkersOptions {
-        mat: pick("markers-mat", "CRISP3DS_MARKERS_MAT").map(|p| absolute(&p)),
+        mat: pick("markers-mat", "CRISPMESH_MARKERS_MAT").map(|p| absolute(&p)),
         minimum_per_photo: integer("markers-minimum")?.clamp(1, 1000) as usize,
         aspect: match text("markers-aspect").as_deref() {
             None | Some("auto") => None,
@@ -569,7 +569,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         aspect_auto: text("markers-aspect").as_deref() == Some("auto"),
     };
     let colmap = ColmapOptions {
-        location: pick("colmap", "CRISP3DS_COLMAP").map(|p| absolute(&p)),
+        location: pick("colmap", "CRISPMESH_COLMAP").map(|p| absolute(&p)),
         cli: match word("colmap-cli").as_str() {
             "auto" => 0,
             value => value.parse::<i64>().map_err(|_| anyhow!("--colmap-cli needs auto, 3 or 4, got {value:?}"))?,
@@ -602,7 +602,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         events: text("events").map(|p| absolute(&p)),
         masks: masks.clone(),
         cameras,
-        python: pick("python", "CRISP3DS_PYTHON"),
+        python: pick("python", "CRISPMESH_PYTHON"),
         threads: threads as usize,
         minimum_free_gib: number("minimum-free-gib")?,
         keep_intermediates: switch("keep-intermediates"),
@@ -625,7 +625,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         clahe_grid: clahe_grid as usize,
         alicevision: AliceVisionOptions {
             tools,
-            sensor_database: pick("alicevision-sensor-database", "CRISP3DS_ALICEVISION_SENSOR_DB").map(PathBuf::from),
+            sensor_database: pick("alicevision-sensor-database", "CRISPMESH_ALICEVISION_SENSOR_DB").map(PathBuf::from),
             memory_gib: number("alicevision-memory-gib")?,
             initial_field_of_view: number("alicevision-initial-field-of-view")?,
             describer_types: word("alicevision-describer-types"),
@@ -676,7 +676,7 @@ impl Options {
     pub fn to_json(&self) -> Value {
         let argument = |path: Option<&PathBuf>| path.map(|p| p.to_string_lossy().to_string());
         let mut record = json!({
-            "schema": SCHEMA, "engine": concat!("crisp3ds-dense ", env!("CARGO_PKG_VERSION")),
+            "schema": SCHEMA, "engine": concat!("crispmesh-dense ", env!("CARGO_PKG_VERSION")),
             "photos": self.photos, "photo_count": self.photo_count, "calibration": self.calibration, "output": self.output,
             "masks_provider": self.masks.name(),
             "masks_import": argument(if let MaskChoice::Import(folder) = &self.masks { Some(folder) } else { None }),
@@ -728,7 +728,7 @@ pub(crate) mod tests {
     use std::path::Path;
 
     pub fn scratch(name: &str) -> PathBuf {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-options-{}-{name}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-options-{}-{name}", std::process::id()));
         let _ = crate::photos::fs::remove_dir_all(&folder);
         crate::photos::fs::create_dir_all(folder.join("photos")).unwrap();
         for n in [1, 2, 10] {
@@ -803,8 +803,8 @@ pub(crate) mod tests {
         crate::photos::fs::create_dir_all(folder.join("given")).unwrap();
         let given = folder.join("given").to_string_lossy().to_string();
         let variables = |name: &str| match name {
-            "CRISP3DS_CAMERAS" => Some("colmap".to_string()),
-            "CRISP3DS_COLMAP" => Some("/opt/colmap".to_string()),
+            "CRISPMESH_CAMERAS" => Some("colmap".to_string()),
+            "CRISPMESH_COLMAP" => Some("/opt/colmap".to_string()),
             _ => None,
         };
         let more = ["--masks", &format!("import:{given}"), "--colmap-matching", "ring", "--colmap-masks=off"];

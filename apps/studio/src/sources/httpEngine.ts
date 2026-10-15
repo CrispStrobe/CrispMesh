@@ -93,7 +93,7 @@ export class HttpEngine implements Engine {
   async health(signal?: AbortSignal): Promise<EngineHealth> {
     const body = (await this.json("health", { signal })) as Record<string, unknown> | null;
     if (typeof body !== "object" || body === null || (body.schema === undefined && body.can_start_runs === undefined)) {
-      throw new EngineError("Something answered at this address, but it is not a Crisp3DS engine.", 0);
+      throw new EngineError("Something answered at this address, but it is not a CrispMesh engine.", 0);
     }
     return {
       schema: typeof body.schema === "string" ? body.schema : undefined,

@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_photo_robustness_review_v1",
+  "schema": "crispmesh_photo_robustness_review_v1",
   "date": "2026-10-08",
   "reconstruction_inputs": "RGB photos, declared lens calibration, photo-derived masks and recovered cameras only",
   "evaluation_inputs_not_used_for_reconstruction": [

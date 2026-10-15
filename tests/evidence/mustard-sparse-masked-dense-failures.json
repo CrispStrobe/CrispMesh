@@ -6,7 +6,7 @@
   "runs": [
     {
       "name": "mustard-sparse-masked-dense-001",
-      "external_result_path": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-001/result.json",
+      "external_result_path": "/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-001/result.json",
       "result_sha256": "b605ad2162bd9402e757deda9583d41206f873717fa0c9c483af18cd537e9499",
       "status": "failed",
       "stage": "undistort validation",
@@ -17,7 +17,7 @@
     },
     {
       "name": "mustard-sparse-masked-dense-002",
-      "external_result_path": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-002/result.json",
+      "external_result_path": "/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-002/result.json",
       "result_sha256": "f950939ffd555e33059cbd678bce29a5522b52404a887613e8e1262e3008ddcd",
       "runner_sha256": "056300dec95c87d1ab0285839ee7e24727e6251cb17246946cb81c40e60cd87c",
       "native_verbose_log_sha256": "9b5cd933f0cd182343e2755f7fde22a2d8ab558433bf53e5f7ce078c0dd2a923",
@@ -41,7 +41,7 @@
     },
     {
       "name": "mustard-sparse-masked-dense-003",
-      "external_result_path": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-003/result.json",
+      "external_result_path": "/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-003/result.json",
       "result_sha256": "bb5e07d3a49b6b37d32f08535730a951b25c6f4a9825425872c63604658b0366",
       "runner_sha256": "69115524d01414996fe66cdcab26b470749db8d92cf293ad8cddef3c713517f8",
       "native_verbose_log_sha256": "1b29bf2b535dfa3173419fa42255efb5b676458b5c9bfd4187ece10f702e34a3",

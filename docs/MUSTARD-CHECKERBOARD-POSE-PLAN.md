@@ -4,7 +4,7 @@ Status: analytic design and three TRAIN-image inspection only. No 48-image corne
 
 ## Inputs and observed board
 
-Use the 48 original TRAIN JPEG paths and byte hashes in the sealed `/Volumes/backups/code/crisp3ds-data/mustard-feature-mask-pair-001-sam/inputs.json` (SHA-256 `bc8d06024627219736959c7b4a34173cdd918bb5fba666528f08ca4a7a1957ae`). Use the existing explicit 60-slot `ycb_np3_full_turn_profile.json` for cyclic capture **order** only. Do not turn filename suffixes into camera angles. Reject any unlisted filename or changed JPEG hash.
+Use the 48 original TRAIN JPEG paths and byte hashes in the sealed `/Volumes/backups/code/crispmesh-data/mustard-feature-mask-pair-001-sam/inputs.json` (SHA-256 `bc8d06024627219736959c7b4a34173cdd918bb5fba666528f08ca4a7a1957ae`). Use the existing explicit 60-slot `ycb_np3_full_turn_profile.json` for cyclic capture **order** only. Do not turn filename suffixes into camera angles. Reject any unlisted filename or changed JPEG hash.
 
 Visual inspection and OpenCV 4.10 `findChessboardCornersSB` on `NP3_006`, `NP3_090`, and `NP3_180` found the full **9 columns × 8 rows of inner corners** (72 corners; a 10×9-square board). Inner-corner convex-hull fractions of 1280×1024 image area were 0.0139, 0.0238, and 0.0293. The board changes side with the bottle, demonstrating shared turntable motion. With assumed `fx=fy=1536`, `(cx,cy)=(640,512)` and zero distortion, OpenCV 4.10 `solvePnPGeneric(..., SOLVEPNP_IPPE)` returned two planar hypotheses for each detected board; the better reprojection RMS values were 0.484, 0.922, and 1.219 px. A 180° reversal of all inner-corner labels gave identical RMS values. No unmarked checkerboard corner is a physical board ID.
 

@@ -24,12 +24,12 @@ cmake --build build --config Release --parallel
 ctest --test-dir build --build-config Release --output-on-failure
 ```
 
-Proves: the core library, the `crisp3ds` CLI and the registered CTest cases
+Proves: the core library, the `crispmesh` CLI and the registered CTest cases
 (`core_contract`, `cli_capabilities`, `cli_geometry`, `cli_unavailable`) build
 and pass with the default options on each system.
 
 On macOS only it additionally builds the pinned OpenCV backend
-(`-DCRISP3DS_WITH_OPENCV=ON`), runs the stereo evaluator regression, the
+(`-DCRISPMESH_WITH_OPENCV=ON`), runs the stereo evaluator regression, the
 desktop typecheck/tests/bundle, the shared contract parity check, the whole
 `scripts/` unittest discovery with a small pinned dependency set (NumPy, Pillow,
 pycolmap, OpenCV; **no SciPy, scikit-image or Torch**, so tests that need those
@@ -51,7 +51,7 @@ Windows Torch comes from the CPU wheel index, so no CUDA runtime is downloaded.
    `test_engine_server`. The engine test replays the recorded run in
    `tests/fixtures/dense-run-sphere` (health, settings, run list, event paging,
    file serving, path traversal, token, refusal of a non-local bind without
-   `--token`). With `CRISP3DS_TEST_ENGINE_RUN=1`, as set in CI, it also starts
+   `--token`). With `CRISPMESH_TEST_ENGINE_RUN=1`, as set in CI, it also starts
    one real run on the synthetic sphere through `POST /api/runs` and follows its
    event log to `run_finished`
 3. the README "Quick start": `synthetic_scene`, then `dense_pipeline --device cpu`
@@ -89,16 +89,16 @@ python -m scripts.turntable_mesh.dense_pipeline --inputs /tmp/sphere --output /t
 
 With the two development environments, run the unit tests once with each
 interpreter (tests whose libraries are missing skip) and give the driver
-`CRISP3DS_PYTHON` and `CRISP3DS_TORCH_PYTHON` as described in
+`CRISPMESH_PYTHON` and `CRISPMESH_TORCH_PYTHON` as described in
 `scripts/turntable_mesh/README.md`.
 
 ## desktop app
 
 - **web bundle** (Linux): `npm ci`, `npm test`, `npm run build`; uploads
-  `apps/desktop/dist` as artifact `crisp3ds-web`.
+  `apps/desktop/dist` as artifact `crispmesh-web`.
 - **native** (macOS arm64, Windows, Linux): `npm ci`, `npm test`,
   `npx tauri build --no-bundle --ci -- --locked`; uploads the bare executable as
-  `crisp3ds-desktop-<os>-unsigned`. Linux installs WebKitGTK 4.1, GTK 3,
+  `crispmesh-desktop-<os>-unsigned`. Linux installs WebKitGTK 4.1, GTK 3,
   libayatana-appindicator, librsvg, libxdo and OpenSSL headers first.
 - **android / ios** (manual: `gh workflow run desktop.yml -f mobile=true`,
   non-blocking): `tauri android init` + `tauri android build --debug --apk
@@ -129,7 +129,7 @@ npx tauri build --no-bundle -- --locked        # native shell in src-tauri/targe
 ### Not done yet
 
 - **GitHub Pages**: the web bundle is only an artifact. Publishing needs Pages
-  enabled in the repository settings, a build with `vite build --base=/crisp3ds/`
+  enabled in the repository settings, a build with `vite build --base=/crispmesh/`
   (the default base `/` breaks asset URLs under a project path) and a deploy
   job with `pages: write` and `id-token: write`.
 - **Installers**: set `bundle.active` to `true` (and choose targets), then drop

@@ -15,7 +15,7 @@ import re
 from scripts.classical_backend import openmvg_mustard_sparse_diagnostic as sparse
 
 
-EXPORT_ROOT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-pose-export-001")
+EXPORT_ROOT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-pose-export-001")
 EXPORT_JSON = EXPORT_ROOT / "sfm_camera_poses.json"
 EXPORT_RECEIPT = EXPORT_ROOT / "receipt.json"
 APPROVED_RECEIPT_SHA256 = "ab73c2b729adb8abd1f84d97f1908b26635cd8caa6d2d1756185d9a31a34dac3"

@@ -19,7 +19,7 @@ from scripts.object_motion.ycb_camera_reference import dataset, rigid
 
 
 ROOT = Path(__file__).resolve().parents[2]
-EXTERNAL_BASE = Path('/Volumes/backups/code/crisp3ds-data')
+EXTERNAL_BASE = Path('/Volumes/backups/code/crispmesh-data')
 POSE_REPORT = EXTERNAL_BASE / 'mustard-checkerboard-pose-001.json'
 POSE_REPORT_SHA256 = 'e4b686795cc6f3bfba57ac77e9225113714d9d306b5919990191dffbd049a856'
 METADATA_ROOT = EXTERNAL_BASE / 'mustard-pose-metadata-001'

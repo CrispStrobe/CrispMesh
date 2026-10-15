@@ -68,7 +68,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mesh', type=Path, required=True)
     parser.add_argument('--cameras', type=Path, required=True)
-    parser.add_argument('--stage-cameras', type=Path, required=True, help='CRISP3DS_STAGE_DEPTHS stage camera metadata with cropped intrinsics')
+    parser.add_argument('--stage-cameras', type=Path, required=True, help='CRISPMESH_STAGE_DEPTHS stage camera metadata with cropped intrinsics')
     parser.add_argument('--depths', type=Path, required=True)
     parser.add_argument('--truncation', type=float, required=True, help='scene units; same truncation used for fusion')
     parser.add_argument('--behind-distance', type=float, required=True, help='scene units; fusion behind band')
@@ -83,7 +83,7 @@ def main():
             counts = support_counts(points, rows, stage, [archive[f'depth_{i:03}'] for i in range(len(rows))], args.truncation, args.behind_distance)
         near = counts['near']
         report = {
-            'schema': 'crisp3ds_surface_support_v1', 'reference_used': False,
+            'schema': 'crispmesh_surface_support_v1', 'reference_used': False,
             'samples': args.samples, 'seed': args.seed, 'truncation': args.truncation, 'behind_distance': args.behind_distance,
             'near_surface_views_histogram': {str(i): int((near == i).sum()) for i in range(int(near.max())+1)},
             'fraction_near_surface_at_least': {str(i): float(np.mean(near >= i)) for i in [1, 2, 3, 4, 5]},

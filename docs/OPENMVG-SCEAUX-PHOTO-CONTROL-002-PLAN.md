@@ -3,7 +3,7 @@
 Status: **read-only preflight passed; no 002 photo run authorized**. This is
 evaluation-only software, with no shipping-license conclusion. The first
 attempt is retained at
-`/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-001`.
 It stopped at ComputeFeatures before any feature extraction because that
 binary rejected `-n 2`; image listing had completed. Its receipt SHA-256 is
 `555f394b32f565bf0232e16899193c638871d4f614d81b10969a3168ac6f230f`.
@@ -47,7 +47,7 @@ Attempt 002 uses only the same 11 sealed Sceaux JPEGs from the local sample
 manifest (SHA-256
 `1ee34cff7e6d75fca9f56de4aa5644b45a382030af54a474824ada6af77316a3`),
 copied into a **new** external output
-`/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-002`.
+`/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-002`.
 No sample scene, reference poses, calibration, mesh or depth is an input.
 Both source and staged photos are hashed. The exact five-stage contract is:
 

@@ -9,11 +9,11 @@ only this post-candidate scoring lane, never Apple inference, component
 selection, cropping, fit tuning, or reruns.
 
 Use the exact untextured full Apple PLY at
-`/Volumes/backups/code/crisp3ds-data/apple-mustard48-review-001/mesh-untextured.ply`,
+`/Volumes/backups/code/crispmesh-data/apple-mustard48-review-001/mesh-untextured.ply`,
 SHA-256 `c460f11fea76f9f2a64e8d60a9ec3ddcc6241f503aedc89745ab1c8a6b430004`
 (935 vertices, 1,847 triangles). Keep every face, including the visible
 support surface. Use the sealed Google 16k mustard geometry at
-`/Volumes/backups/code/crisp3ds-data/mustard-eval-reference-001/google_geometry_f64.ply`,
+`/Volumes/backups/code/crispmesh-data/mustard-eval-reference-001/google_geometry_f64.ply`,
 SHA-256 `b82268e4ea6c9ad9dbcf8e6fd35b4a3b3631af3ecfcd413722df07f87cf601b4`
 (8,194 vertices, 16,384 triangles, two zero-area faces). The scanner's
 bounding-box diagonal is `0.22468174167724111` in reference-coordinate

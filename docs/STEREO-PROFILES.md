@@ -1,6 +1,6 @@
 # Bounded stereo profiles
 
-`crisp3ds_stereo_eval` retains its original SGBM behavior and metrics schema when
+`crispmesh_stereo_eval` retains its original SGBM behavior and metrics schema when
 `--profile` is absent. The opt-in profiles use the same prepared images, rounded
 disparity search count, and independent ground-truth scoring. No profile reads
 the reference image while matching. All profiles are fixed before comparison.

@@ -48,7 +48,7 @@ After a separately completed photo run, an operator can invoke:
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python3 \
   -m scripts.classical_backend.openmvg_sceaux_postcheck \
-  --output /Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-002
+  --output /Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-002
 ```
 
 The command prints JSON to stdout and writes nothing. It needs only the

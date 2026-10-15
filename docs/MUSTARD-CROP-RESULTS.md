@@ -19,7 +19,7 @@ The six [focused tests](../scripts/classical_backend/test_crop_masked_dense.py)
 passed, including synthetic PyCOLMAP serialization and the local sealed
 48-camera fixture. Root's full suite ran 540 tests with eight skips before
 the run. Output is on the external SSD at
-`/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-003`;
+`/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-003`;
 [`failure evidence`](../tests/evidence/mustard-sparse-masked-dense-failures.json)
 binds its result, verbose log, PLY and all 24 base DMAP SHA-256 values. No
 held-out photos, reference mesh or GT determined the crop or reconstruction.

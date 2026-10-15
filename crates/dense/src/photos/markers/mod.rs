@@ -3,7 +3,7 @@
 //!
 //! | Module | Content |
 //! | --- | --- |
-//! | `mat` | the mat: layout, description (`crisp3ds_marker_mat_v1`), SVG, PDF and PNG |
+//! | `mat` | the mat: layout, description (`crispmesh_marker_mat_v1`), SVG, PDF and PNG |
 //! | `detect` | marker detection in a photo |
 //! | `pose` | pose per photo from all visible corners, print aspect from all photos, the solution |
 //! | `synth` | a rendered capture with known poses, for tests and measurements |
@@ -35,15 +35,15 @@ use self::mat::Mat;
 use self::pose::Pose;
 
 pub const MAT_USAGE: &str = "\
-usage: crisp3ds-dense mat --size a4|letter|a3 --output DIR
-           writes crisp3ds-marker-mat-SIZE.pdf, .svg, .png (300 dpi) and .json (crisp3ds_marker_mat_v1)
-       crisp3ds-dense mat --detect PHOTO --mat MAT.json [--calibration LENS.json]
+usage: crispmesh-dense mat --size a4|letter|a3 --output DIR
+           writes crispmesh-marker-mat-SIZE.pdf, .svg, .png (300 dpi) and .json (crispmesh_marker_mat_v1)
+       crispmesh-dense mat --detect PHOTO --mat MAT.json [--calibration LENS.json]
            prints the markers found in one photo as JSON
-       crisp3ds-dense mat --capture DIR [--size a4 | --mat MAT.json] [--views 36] [--width 1200] [--height 900]
+       crispmesh-dense mat --capture DIR [--size a4 | --mat MAT.json] [--views 36] [--width 1200] [--height 900]
            [--elevation 25] [--distance 420] [--blur 0.8] [--noise 2] [--exposure 1] [--object-radius 32]
            [--object-height 90] [--turn 1] [--seed 7] [--table 0.66] [--threads 2]
            renders a synthetic turntable capture of the mat with known poses (photos/, masks/, lens.json, truth.json)
-       crisp3ds-dense mat --compare CAMERAS.json --truth TRUTH.json
+       crispmesh-dense mat --compare CAMERAS.json --truth TRUTH.json
            rotation and position differences between a scene's cameras and a capture's true poses
 
 The mat lies under the object and turns with it. Print at 100 % and check the scale bar. See docs/MARKER-MAT.md.";

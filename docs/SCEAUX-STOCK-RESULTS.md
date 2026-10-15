@@ -58,7 +58,7 @@ original 183 repeated tracks are retained without repair or bundle adjustment.
 
 Use stock model `sceaux-stock-sfm-001/models/0` unchanged in the existing
 `scripts.classical_backend.run --sparse-model` path, fresh external output
-`/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001`. Limits: 10 minutes,
+`/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001`. Limits: 10 minutes,
 1.5 GiB output, 4 GiB sampled child RSS, 16 MiB logs, two threads and both 10 GiB
 free-space floors. Native undistortion max dimension 640; native OpenMVS
 densify resolution level 2, rough meshing, refinement level 1 / one scale,

@@ -1,21 +1,21 @@
-# Crisp3DS
+# CrispMesh
 
-Photos of an object in, a closed printable mesh out. Crisp3DS turns turntable
+Photos of an object in, a closed printable mesh out. CrispMesh turns turntable
 photos into a watertight STL with one native program (Rust and WebGPU) that
 runs on desktop GPUs, in the browser and inside **CrispMesh**, the app
 for macOS, Windows, Linux, iOS and Android.
 
-[![dense pipeline](https://github.com/CrispStrobe/crisp3ds/actions/workflows/dense-pipeline.yml/badge.svg)](https://github.com/CrispStrobe/crisp3ds/actions/workflows/dense-pipeline.yml)
-[![studio](https://github.com/CrispStrobe/crisp3ds/actions/workflows/studio.yml/badge.svg)](https://github.com/CrispStrobe/crisp3ds/actions/workflows/studio.yml)
-[![foundation](https://github.com/CrispStrobe/crisp3ds/actions/workflows/foundation.yml/badge.svg)](https://github.com/CrispStrobe/crisp3ds/actions/workflows/foundation.yml)
+[![dense pipeline](https://github.com/CrispStrobe/CrispMesh/actions/workflows/dense-pipeline.yml/badge.svg)](https://github.com/CrispStrobe/CrispMesh/actions/workflows/dense-pipeline.yml)
+[![studio](https://github.com/CrispStrobe/CrispMesh/actions/workflows/studio.yml/badge.svg)](https://github.com/CrispStrobe/CrispMesh/actions/workflows/studio.yml)
+[![foundation](https://github.com/CrispStrobe/CrispMesh/actions/workflows/foundation.yml/badge.svg)](https://github.com/CrispStrobe/CrispMesh/actions/workflows/foundation.yml)
 
 ## What is here
 
 | Part | Where | State |
 | --- | --- | --- |
 | **Native pipeline**: photos to a closed STL, masks, cameras, GPU dense stages | [`crates/dense/`](crates/dense/README.md) | The primary implementation; one command, no Python, no external program; Metal, Vulkan, DirectX 12, WebGPU; library API and C interface |
-| **In the browser**: the same pipeline as WebAssembly and WebGPU | [`crates/dense/web/`](crates/dense/README.md), live at [crispstrobe.github.io/crisp3ds](https://crispstrobe.github.io/crisp3ds/) | From photos or prepared inputs, threaded where the page allows; nothing is uploaded |
-| **CrispMesh**: the app, one code base for desktop, phone and web | [`apps/studio/`](apps/studio/README.md) | Reconstructs in-process from photos, live progress and diagnostics, example objects; release [v0.2.0](https://github.com/CrispStrobe/crisp3ds/releases/tag/v0.2.0) and internal TestFlight builds ([releasing](docs/RELEASING.md)) |
+| **In the browser**: the same pipeline as WebAssembly and WebGPU | [`crates/dense/web/`](crates/dense/README.md), live at [crispstrobe.github.io/CrispMesh](https://crispstrobe.github.io/CrispMesh/) | From photos or prepared inputs, threaded where the page allows; nothing is uploaded |
+| **CrispMesh**: the app, one code base for desktop, phone and web | [`apps/studio/`](apps/studio/README.md) | Reconstructs in-process from photos, live progress and diagnostics, example objects; release [v0.2.0](https://github.com/CrispStrobe/CrispMesh/releases/tag/v0.2.0) and internal TestFlight builds ([releasing](docs/RELEASING.md)) |
 | **Engine contract**: event log, artifacts, replay bundles, HTTP engine | [`docs/ENGINE-CONTRACT.md`](docs/ENGINE-CONTRACT.md) | Shared by the native engine, the browser engine and the Python reference |
 | **Python reference pipeline** and evaluation tools | [`scripts/turntable_mesh/`](scripts/turntable_mesh/README.md) | What the native crate was ported from; no longer extended. The scanner evaluator and test-scene tools stay in Python |
 | **Core**: C++20 library and CLI for projects, calibration, marker boards | [`core/`](core/README.md) | Builds and tests on macOS, Linux, Windows |
@@ -32,8 +32,8 @@ turntable photos and a lens calibration to a closed STL in one command, with
 no Python and no other program:
 
 ```sh
-cargo build --release -p crisp3ds-dense
-crisp3ds-dense run --photos data/bunny/rgb \
+cargo build --release -p crispmesh-dense
+crispmesh-dense run --photos data/bunny/rgb \
   --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
   --output runs/bunny
 ```
@@ -180,21 +180,21 @@ Requires CMake 3.20+ and a C++20 compiler. No external native libraries are link
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
-./build/crisp3ds capabilities
-./build/crisp3ds validate tests/contracts/calibrated-project.json
-./build/crisp3ds diagnose-geometry
+./build/crispmesh capabilities
+./build/crispmesh validate tests/contracts/calibrated-project.json
+./build/crispmesh diagnose-geometry
 ```
 
-On Visual Studio generators the executable is `build/Release/crisp3ds.exe`. The [core README](core/README.md) describes commands, return codes and the C ABI.
+On Visual Studio generators the executable is `build/Release/crispmesh.exe`. The [core README](core/README.md) describes commands, return codes and the C ABI.
 
 To enable actual image-to-pose estimation, build the pinned OpenCV configuration:
 
 ```sh
-cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISP3DS_WITH_OPENCV=ON
+cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISPMESH_WITH_OPENCV=ON
 cmake --build build-opencv --config Release --parallel 4
 ctest --test-dir build-opencv -C Release --output-on-failure
-./build-opencv/bin/crisp3ds estimate-poses build-opencv/synthetic-pose-fixture/project.json
-./build-opencv/bin/crisp3ds reconstruct-sparse build-opencv/synthetic-sparse-fixture/project.json
+./build-opencv/bin/crispmesh estimate-poses build-opencv/synthetic-pose-fixture/project.json
+./build-opencv/bin/crispmesh reconstruct-sparse build-opencv/synthetic-sparse-fixture/project.json
 ```
 
 This test-generated dataset is explicitly synthetic. For your photographs, supply a project with matching camera calibration and measured rotating-board geometry; see [pose contracts and gates](docs/POSE-MILESTONE.md). The CLI emits a JSON report on stdout. Save it to a separate file and use **Import pose report** in the workspace to inspect translations, rotations and reprojection errors. Importing a report does not mark pipeline stages complete. The first enabled build downloads and compiles [pinned OpenCV sources](docs/OPENCV.md).
@@ -239,7 +239,7 @@ earlier C++-core route.
 
 ## License
 
-Original Crisp3DS project code is licensed under [GNU AGPL v3 only](LICENSE) (`AGPL-3.0-only`). Third-party code, assets, and datasets retain their own licenses and attribution requirements; the project license does not relicense them. The dependency-selection policy and exact shipped dependency/source-bundle audit remain separate release gates. As sole copyright holder, the author also distributes official store builds (App Store, Mac App Store, Google Play) under the stores' terms; this additional permission under AGPL-3.0 section 7 is stated in [NOTICE](NOTICE), applies only to binaries published by the copyright holder, and does not change the AGPL rights to the source. Store builds contain no third-party GPL, LGPL or AGPL code. `apps/desktop/package.json` remains `private: true` because npm publication is unrelated to GitHub repository visibility.
+Original CrispMesh project code is licensed under [GNU AGPL v3 only](LICENSE) (`AGPL-3.0-only`). Third-party code, assets, and datasets retain their own licenses and attribution requirements; the project license does not relicense them. The dependency-selection policy and exact shipped dependency/source-bundle audit remain separate release gates. As sole copyright holder, the author also distributes official store builds (App Store, Mac App Store, Google Play) under the stores' terms; this additional permission under AGPL-3.0 section 7 is stated in [NOTICE](NOTICE), applies only to binaries published by the copyright holder, and does not change the AGPL rights to the source. Store builds contain no third-party GPL, LGPL or AGPL code. `apps/desktop/package.json` remains `private: true` because npm publication is unrelated to GitHub repository visibility.
 
 Every library, engine and dataset the pipeline and the apps depend on is listed
 with its license in the [pipeline README](scripts/turntable_mesh/README.md#dependencies-and-licenses)

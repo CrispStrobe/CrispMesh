@@ -6,7 +6,7 @@
   "quality_accepted": false,
   "camera_holdout": {
     "drill-holdout-cameras": {
-      "schema": "crisp3ds_camera_holdout_v1",
+      "schema": "crispmesh_camera_holdout_v1",
       "reference_used": false,
       "training_tracks_must_exclude_reserved_components": true,
       "reserved_tracks": 183,
@@ -499,7 +499,7 @@
       }
     },
     "drill-cycle-holdout-cameras": {
-      "schema": "crisp3ds_camera_holdout_v1",
+      "schema": "crispmesh_camera_holdout_v1",
       "reference_used": false,
       "training_tracks_must_exclude_reserved_components": true,
       "reserved_tracks": 183,

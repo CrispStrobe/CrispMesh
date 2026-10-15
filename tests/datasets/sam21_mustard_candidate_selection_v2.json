@@ -8,7 +8,7 @@
     {
       "name": "NP3_318.jpg", "origin": "board5_partial3",
       "source_sha256": "c19d377824bc0aa7e937244f797f810b333b1e853c698688629926c066846991",
-      "parent_root": "/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-board5-001",
+      "parent_root": "/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-board5-001",
       "parent_manifest_sha256": "1008fc7bdbaa75ac33f17f8ddf44eaa275b3e98eb21466906060ebc3300c638c",
       "parent_supervisor_sha256": "b4485b72c539d59b6b3229917f0099ceb11359cdb8c9228bd0553208989619ce",
       "recipe_path": "tests/datasets/sam21_mustard_m1_board5_prompts.json",
@@ -22,7 +22,7 @@
     {
       "name": "NP3_330.jpg", "origin": "board5_partial3",
       "source_sha256": "fccafec5b4b44c5b03d3c927b211b2c942d0a6e343dbbbdaba95022e83c773b5",
-      "parent_root": "/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-board5-001",
+      "parent_root": "/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-board5-001",
       "parent_manifest_sha256": "1008fc7bdbaa75ac33f17f8ddf44eaa275b3e98eb21466906060ebc3300c638c",
       "parent_supervisor_sha256": "b4485b72c539d59b6b3229917f0099ceb11359cdb8c9228bd0553208989619ce",
       "recipe_path": "tests/datasets/sam21_mustard_m1_board5_prompts.json",
@@ -36,7 +36,7 @@
     {
       "name": "NP3_336.jpg", "origin": "roi_v2_2",
       "source_sha256": "b38f4232499b27fd108960280fef2868ddb172d81088d7044475eceb10f24fc2",
-      "parent_root": "/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-recipe-001",
+      "parent_root": "/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-recipe-001",
       "parent_manifest_sha256": "361d32f4342fa193d5bfed68289f0a44151b3768b54d2a30998dd4a6b11c6f01",
       "parent_supervisor_sha256": "c9124c9d1fe921396fda801f15a7f2cb9a7022a6d1829494aad9bc12ff7e703d",
       "recipe_path": "tests/datasets/sam21_mustard_m1_two_view_recipe.json",
@@ -49,7 +49,7 @@
     {
       "name": "NP3_342.jpg", "origin": "roi_v2_2",
       "source_sha256": "59901cf97ce97b2de0b46d428818fd676d6a169e67eaf72094dcd8c4058b5998",
-      "parent_root": "/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-recipe-001",
+      "parent_root": "/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-recipe-001",
       "parent_manifest_sha256": "361d32f4342fa193d5bfed68289f0a44151b3768b54d2a30998dd4a6b11c6f01",
       "parent_supervisor_sha256": "c9124c9d1fe921396fda801f15a7f2cb9a7022a6d1829494aad9bc12ff7e703d",
       "recipe_path": "tests/datasets/sam21_mustard_m1_two_view_recipe.json",
@@ -62,7 +62,7 @@
     {
       "name": "NP3_348.jpg", "origin": "board5_partial3",
       "source_sha256": "fda8eed74101a71e14f8828a03b7ef29a61b2d65d928f87e783894b2b691562d",
-      "parent_root": "/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-board5-001",
+      "parent_root": "/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-board5-001",
       "parent_manifest_sha256": "1008fc7bdbaa75ac33f17f8ddf44eaa275b3e98eb21466906060ebc3300c638c",
       "parent_supervisor_sha256": "b4485b72c539d59b6b3229917f0099ceb11359cdb8c9228bd0553208989619ce",
       "recipe_path": "tests/datasets/sam21_mustard_m1_board5_prompts.json",

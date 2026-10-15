@@ -479,7 +479,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crisp3ds-dense"
+name = "crispmesh-dense"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -498,11 +498,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "crisp3ds-studio"
+name = "crispmesh-studio"
 version = "0.2.0"
 dependencies = [
  "anyhow",
- "crisp3ds-dense",
+ "crispmesh-dense",
  "getrandom 0.3.4",
  "libc",
  "serde",

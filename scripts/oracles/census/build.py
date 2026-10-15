@@ -38,7 +38,7 @@ def main() -> None:
     environment = dict(os.environ, TMPDIR=str(SCRATCH))
     subprocess.run(command, check=True, env=environment)
     provenance = {
-        "name": "crisp3ds_census_reference",
+        "name": "crispmesh_census_reference",
         "role": "project-authored reference comparator; not an external oracle or production stage",
         "method": "5x5 Census/Hamming plus intensity cost, 3x3 box aggregation, integer WTA",
         "invalid_disparity": "+Infinity at unsupported borders; zero is a valid candidate",

@@ -2,8 +2,8 @@
 
 The Apple `.preview` mesh was evaluated with the same frozen whole-scanner and
 scanner-only ROI protocol used for the existing MVE/COLMAP bunny diagnostics.
-The [Apple USDZ](/Volumes/backups/code/crisp3ds-data/apple-bunny73-preview-001-output/model.usdz)
-and its [untextured evaluation PLY](/Volumes/backups/code/crisp3ds-data/apple-bunny73-review-001/mesh-untextured.ply)
+The [Apple USDZ](/Volumes/backups/code/crispmesh-data/apple-bunny73-preview-001-output/model.usdz)
+and its [untextured evaluation PLY](/Volumes/backups/code/crispmesh-data/apple-bunny73-review-001/mesh-untextured.ply)
 were read only. Their SHA-256 hashes, the full scan, the ROI, the previous
 receipts, and the unchanged evaluation scripts passed preflight. Apple Object
 Capture is macOS-only; `.preview` is its coarse detail setting. No scanner
@@ -31,7 +31,7 @@ scale.
 The [whole-scan report](../build-opencv/apple-bunny73-evaluation-001/whole-surface-metrics.json)
 gives F = 8.48%, 16.41%, and 32.09% at the three frozen thresholds. At 1%,
 precision is 18.33% and recall is 14.84%; normalized Chamfer-L1 mean is
-4.22% of the full scanner bbox diagonal. The [whole-scan fitted preview](/Users/christianstrobele/code/crisp3ds/.local-tools/apple-bunny73-whole-fit-preview.png)
+4.22% of the full scanner bbox diagonal. The [whole-scan fitted preview](.local-tools/apple-bunny73-whole-fit-preview.png)
 shows an upright scanner bunny on its broad disk beside a sideways fitted
 Apple bunny. This orientation/support disagreement makes the numbers poor
 evidence of intrinsic mesh quality. The native Apple preview itself has a
@@ -41,7 +41,7 @@ The [ROI report](../build-opencv/apple-bunny73-evaluation-001/roi-surface-metric
 gives, at the ROI's 1% threshold, precision 28.52%, recall 30.96%, and
 F = 29.69%. At the original absolute 2.085879777-unit threshold, precision
 is 44.09%, recall 45.09%, and F = 44.59%. ROI-normalized Chamfer-L1 mean is
-2.83%. The [ROI fitted preview](/Users/christianstrobele/code/crisp3ds/.local-tools/apple-bunny73-roi-fit-preview.png)
+2.83%. The [ROI fitted preview](.local-tools/apple-bunny73-roi-fit-preview.png)
 shows a broadly bunny-like XY outline, but the ears, body, and other
 projections still differ. Cropping the reference removes much of its disk and
 changes the fitted pose and scale. The ROI is a post hoc development

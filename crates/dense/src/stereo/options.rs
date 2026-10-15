@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn reads_a_result_file() {
-        let path = std::env::temp_dir().join(format!("crisp3ds-options-{}.json", std::process::id()));
+        let path = std::env::temp_dir().join(format!("crispmesh-options-{}.json", std::process::id()));
         crate::storage::write(&path, r#"{"configuration": {"grid": 320, "sizes": [256, 512], "unknown": 1}, "views": 73}"#).unwrap();
         let config = build(Some(&path), &["planes=64".to_string()]).unwrap();
         crate::storage::remove_file(&path).unwrap();

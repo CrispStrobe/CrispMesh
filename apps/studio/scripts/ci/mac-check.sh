@@ -21,13 +21,13 @@ mkdir -p "$OUT"
 WORK=$(mktemp -d)
 APP="$WORK/CrispMesh.app"
 mkdir -p "$APP/Contents/MacOS"
-cp "$BINARY" "$APP/Contents/MacOS/crisp3ds-studio"
+cp "$BINARY" "$APP/Contents/MacOS/crispmesh-studio"
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>$BUNDLE</string>
-<key>CFBundleExecutable</key><string>crisp3ds-studio</string>
+<key>CFBundleExecutable</key><string>crispmesh-studio</string>
 <key>CFBundleName</key><string>CrispMesh</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleVersion</key><string>1</string>
@@ -52,7 +52,7 @@ cleanup() {
 trap cleanup EXIT
 rm -rf "$CONTAINER"
 # The first start makes the container; the sphere goes into its data folder.
-"$APP/Contents/MacOS/crisp3ds-studio" >/dev/null 2>&1 &
+"$APP/Contents/MacOS/crispmesh-studio" >/dev/null 2>&1 &
 PID=$!
 n=0; until [ -d "$CONTAINER/Data/Library" ] || [ $n -ge 60 ]; do sleep 1; n=$((n+1)); done
 sleep 3; kill "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; PID=""
@@ -92,7 +92,7 @@ if best.id >= 0 && best.area > 200 * 200 { print(best.id) }
 SWIFT
 swiftc -O -o "$WORK/winid" "$WORK/winid.swift"
 
-CRISP3DS_STUDIO_AUTOPILOT="$CONTAINER/Data/autopilot.js" "$APP/Contents/MacOS/crisp3ds-studio" >"$WORK/stdout.txt" 2>&1 &
+CRISPMESH_STUDIO_AUTOPILOT="$CONTAINER/Data/autopilot.js" "$APP/Contents/MacOS/crispmesh-studio" >"$WORK/stdout.txt" 2>&1 &
 PID=$!
 shots=""
 seen=""

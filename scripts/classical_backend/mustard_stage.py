@@ -13,7 +13,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 MOUNT = Path("/Volumes/backups")
-OUTPUT = MOUNT / "code/crisp3ds-data/mustard-sfm-train-001"
+OUTPUT = MOUNT / "code/crispmesh-data/mustard-sfm-train-001"
 PACKAGE = ROOT / "build-opencv/ycb-evaluation-vps-001/mustard-package.json"
 PACKAGE_SHA256 = "45b6ed1430627a747eaeb8d4dff7d2c49502083cca0a7914e25aacd45b594425"
 ACQUISITION_SHA256 = "c48998dffc7798e7d21f275383b1c67dc2e5e9313a8bfe699f72303f61583b52"

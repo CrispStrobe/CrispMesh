@@ -23,7 +23,7 @@ The original `build-manifest.json` SHA-256 (now preserved as
 `logs/04-configure.log` SHA-256 is
 `c12becb2b57a76590f239730bc5960b19befb862cb310df65f50dc242d6696f6`.
 These artifacts live under
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-v21-001`; do not mutate
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-v21-001`; do not mutate
 them while planning the next controlled attempt.
 
 A separate `--resume-preflight` is read-only and succeeds only when the first
@@ -68,8 +68,8 @@ The source-unmodified version-pinned retry adds exactly two CMake hints to
 the prior policy-override configure command:
 
 ```text
--DEigen3_DIR:PATH=/Users/christianstrobele/code/crisp3ds/.local-tools/bundle-quality/eigen-install/share/eigen3/cmake
--DEIGEN_DIR:PATH=/Users/christianstrobele/code/crisp3ds/.local-tools/bundle-quality/eigen-install/include/eigen3
+-DEigen3_DIR:PATH=.local-tools/bundle-quality/eigen-install/share/eigen3/cmake
+-DEIGEN_DIR:PATH=.local-tools/bundle-quality/eigen-install/include/eigen3
 ```
 
 OpenMVG's top-level `find_package(Eigen3)` uses the first cached config path;
@@ -196,7 +196,7 @@ is AGPL-3.0-only; this plan does not change that. [OpenMVG license](https://gith
 The present external backup device has 15,086,732 KiB free, about 14.39 GiB,
 or about 4.39 GiB above the 10 GiB floor; the internal workspace device has
 23,424,000 KiB free. `/Volumes/backups/ai` and
-`/Volumes/backups/code/crisp3ds-data` share that backup device. A separate
+`/Volumes/backups/code/crispmesh-data` share that backup device. A separate
 AliceVision Meshroom DMG is 1,247,000,900 bytes before extraction; do not
 overlap its provisioning with this build. [AliceVision local audit](ALICEVISION-MAC-ORACLE.md).
 
@@ -278,7 +278,7 @@ is **read-only**: it hashes the already sealed TRAIN manifest, 48 JPEGs and
 48 masks, reports device free space, and reports the pending build/source
 inventory. No clone or build is implied by preflight. A separate, future
 operator-approved `--build` would create only the fresh
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-v21-001` tree (source,
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-v21-001` tree (source,
 build, logs, scratch) and build exactly the four listed CLI targets with two
 compile threads. A later `--stage` copies only the hashed TRAIN JPEGs and
 renamed masks into `images48`; it does not run an SfM command. The managed
@@ -300,7 +300,7 @@ in [the supervisor test](../scripts/classical_backend/test_openmvg_m1_supervisor
 ## Frozen TRAIN-only camera comparison
 
 Use only the sealed 48 photos in
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/images` and its
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/images` and its
 reviewed coarse feature masks. The staged JPEGs total 47 MiB; masks total
 192 KiB. The `train-names.txt` SHA-256 is
 `a81d1647109db27991c39c5fe1a9ae308c04081f8ada49d8b0f5ab1c15245544`;

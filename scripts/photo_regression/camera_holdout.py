@@ -100,7 +100,7 @@ def evaluate(matches, held, rows, lens, foreground_masks=None, selection_rows=No
                 if verified:verified_groups[group].append(e)
     def summary(e):
         return {'count':len(e),'median':float(np.median(e)) if e else None,'p95':float(np.percentile(e,95)) if e else None,'fraction_below_1px':float(np.mean(np.array(e)<1)) if e else None}
-    result={'schema':'crisp3ds_camera_holdout_v1','reference_used':False,'training_tracks_must_exclude_reserved_components':True,
+    result={'schema':'crispmesh_camera_holdout_v1','reference_used':False,'training_tracks_must_exclude_reserved_components':True,
             'reserved_tracks':len(held['tracks']),'failed_triangulations':failed,'behind_camera_observations':behind,
             'held_out_reprojection_pixels':summary(errors),'per_view':[{'name':r['name'],**summary(e)} for r,e in zip(rows,per_view)],
             'fit_verified_tracks':fit_verified_tracks,'fit_verified_held_out_pixels':summary(fit_verified),

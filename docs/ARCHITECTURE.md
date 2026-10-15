@@ -1,6 +1,6 @@
 # Architecture: a modular photo-to-mesh pipeline
 
-Crisp3DS turns photos of an object into a closed mesh. The reconstruction is
+CrispMesh turns photos of an object into a closed mesh. The reconstruction is
 split into modules with fixed interfaces, so that each module can have several
 interchangeable providers and each platform uses the ones it can run. This
 document is the plan of record; status columns say what exists today.
@@ -29,7 +29,7 @@ the reference for what was ported and is no longer extended.
 
 ### The scene: what providers hand to the dense stages
 
-A directory, the same one `dense_pipeline --inputs` and `crisp3ds-dense run
+A directory, the same one `dense_pipeline --inputs` and `crispmesh-dense run
 --inputs` take:
 
 | File | Content |
@@ -48,7 +48,7 @@ of the photos.
 | Module | Input | Output | Must also report |
 | --- | --- | --- | --- |
 | Masks | photos | one 0/255 mask per photo, named like the photo, in the photo's own (distorted) frame | a contact sheet; photos where much of the dark region was dropped |
-| Cameras | photos, lens calibration (`crisp3ds_lens_calibration_v1`), optionally masks | poses for the registered photos, sparse points, the lens model actually used | registered count, reprojection statistics, orbit sanity; pass or fail against the gates in `docs/PHOTOS-TO-INPUTS.md` |
+| Cameras | photos, lens calibration (`crispmesh_lens_calibration_v1`), optionally masks | poses for the registered photos, sparse points, the lens model actually used | registered count, reprojection statistics, orbit sanity; pass or fail against the gates in `docs/PHOTOS-TO-INPUTS.md` |
 | Undistortion | photos, masks, lens model | pinhole photos and masks, updated `k` | — |
 
 A provider is selected by name. It declares the platforms it supports; the
@@ -62,9 +62,9 @@ application offers only those. All providers write the same event log
 | Provider | How | Desktop | Phone | Browser | Status |
 | --- | --- | --- | --- | --- | --- |
 | `turntable` | our own solver for ordered turntable photos with a known lens: features, tracks, bundle adjustment from a turntable initial guess | yes | yes | yes | Implemented (`--cameras turntable`; `docs/TURNTABLE-SOLVER.md`): pure Rust with its own SIFT, builds for wasm32, no random choice (two runs give identical files). Scanner F1 within 0.01 of `colmap` on four objects (+0.002, +0.001, -0.007, -0.005), above `alicevision` on all four, 13 to 24 s. Turntable captures only; verified on one camera and rig; not run in a browser. The default camera provider on every platform |
-| `markers` | printed mat with fiducials on the turntable; pose from marker corners | yes | yes | yes | Implemented (`--cameras markers`, `crisp3ds-dense mat`; `docs/MARKER-MAT.md`): pure Rust, builds for wasm32. Verified on rendered photos only (poses within 0.02 degrees and 0.25 mm of the truth down to 5 degrees elevation; an object reconstructed to 0.1 % of its size in millimetres). No printed mat has been photographed. Gives the scale (`scale` in `cameras.json`) and the handedness |
+| `markers` | printed mat with fiducials on the turntable; pose from marker corners | yes | yes | yes | Implemented (`--cameras markers`, `crispmesh-dense mat`; `docs/MARKER-MAT.md`): pure Rust, builds for wasm32. Verified on rendered photos only (poses within 0.02 degrees and 0.25 mm of the truth down to 5 degrees elevation; an object reconstructed to 0.1 % of its size in millimetres). No printed mat has been photographed. Gives the scale (`scale` in `cameras.json`) and the handedness |
 | `colmap` | external executable: feature extraction, sequential matching, mapper with fixed intrinsics; model converted to the scene | yes | no | no | Implemented (`--cameras colmap`). Verified on four objects through the PyCOLMAP 3.11 library with the provider's own command lines: 73 of 73 photos registered each time, scanner F1 equal to or above `alicevision`. The `colmap` executable itself has not been run (none on the development machine); COLMAP 4 option names and ring matching are untested |
-| `alicevision` | external executables: features, matching, global SfM with a fixed lens | yes | no | no | Works. Native orchestration (`crisp3ds-dense photos --cameras alicevision`), executables started directly from an install prefix or through a wrapper; verified on the Bunny (see `crates/dense/README.md`). The Python orchestration remains as reference |
+| `alicevision` | external executables: features, matching, global SfM with a fixed lens | yes | no | no | Works. Native orchestration (`crispmesh-dense photos --cameras alicevision`), executables started directly from an install prefix or through a wrapper; verified on the Bunny (see `crates/dense/README.md`). The Python orchestration remains as reference |
 | `import` | read an existing solution (AliceVision `.sfm`, COLMAP text or binary model) | yes | yes | yes | Works on desktop (`--cameras import:PATH`): `.sfm`, COLMAP text and binary. Reproduces the existing inputs of four objects exactly. The readers build for every target; the `photos` command is not yet built for browsers |
 | `device` | poses recorded by ARKit or ARCore during capture | no | yes | no | Later, with capture |
 

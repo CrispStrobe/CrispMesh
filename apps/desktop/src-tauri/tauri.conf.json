@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Crisp3DS",
+  "productName": "CrispMesh",
   "version": "0.1.0",
-  "identifier": "dev.crisp3ds.workspace",
+  "identifier": "dev.crispmesh.workspace",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
@@ -10,7 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{ "title": "Crisp3DS", "width": 1250, "height": 820, "minWidth": 780, "minHeight": 580 }],
+    "windows": [{ "title": "CrispMesh", "width": 1250, "height": 820, "minWidth": 780, "minHeight": 580 }],
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src ipc: http://ipc.localhost",
       "devCsp": "default-src 'self' http://127.0.0.1:1420; script-src 'self' http://127.0.0.1:1420; style-src 'self' 'unsafe-inline' http://127.0.0.1:1420; connect-src ipc: http://ipc.localhost ws://127.0.0.1:1420 http://127.0.0.1:1420"

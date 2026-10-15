@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_detail_reliability_controls_review_v1",
+  "schema": "crispmesh_detail_reliability_controls_review_v1",
   "date": "2026-10-09",
   "engine_revision": "dec689af1f789a880b21e79b2f08a0b5d22ef6c1",
   "production_changes": false,
@@ -770,7 +770,7 @@
       "reserved_tracks_used_in_optimization": false
     },
     "baseline": {
-      "schema": "crisp3ds_camera_holdout_v1",
+      "schema": "crispmesh_camera_holdout_v1",
       "reference_used": false,
       "training_tracks_must_exclude_reserved_components": true,
       "reserved_tracks": 183,
@@ -1267,7 +1267,7 @@
       }
     },
     "candidate": {
-      "schema": "crisp3ds_camera_holdout_v1",
+      "schema": "crispmesh_camera_holdout_v1",
       "reference_used": false,
       "training_tracks_must_exclude_reserved_components": true,
       "reserved_tracks": 183,

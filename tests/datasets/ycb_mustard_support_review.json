@@ -4,7 +4,7 @@
   "decision": "rejected_for_reconstruction",
   "review_scope": "All 48 training-view masked and overlay contact-sheet panels, compared with original training contact sheets; not full-resolution pixel annotation",
   "candidate_manifest_sha256": "33e692ab9f3169f85cce44b3cf0c165b9f290080f8371151acedbe385834e257",
-  "candidate_manifest_vps": "/mnt/storage/crisp3ds-data/ycb-mustard-support-001/manifest.json",
+  "candidate_manifest_vps": "/mnt/storage/crispmesh-data/ycb-mustard-support-001/manifest.json",
   "local_review_directory": ".local-tools/ycb-mustard-support-review-001",
   "reason": "Warm-colour scanline policy removes visible blue/red label strips in multiple views despite passing support-size bounds; discriminative object texture is excluded.",
   "example_training_images": ["NP3_060.jpg", "NP3_072.jpg", "NP3_150.jpg", "NP3_180.jpg", "NP3_210.jpg", "NP3_312.jpg"],

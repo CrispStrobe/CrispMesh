@@ -1,11 +1,11 @@
 /**
  * Example objects: real photo sets the app can download on request and reconstruct, described
- * by a manifest (`crisp3ds_example_objects_v1`). Nothing of them is bundled; the files come from
+ * by a manifest (`crispmesh_example_objects_v1`). Nothing of them is bundled; the files come from
  * the public dataset repository the manifest sits in, each checked against its SHA-256.
  * No DOM.
  *
  *   {
- *     "schema": "crisp3ds_example_objects_v1",
+ *     "schema": "crispmesh_example_objects_v1",
  *     "source": "<dataset page>", "doi": "...", "license": "CC-BY-4.0",
  *     "attribution": "<text shown before download and kept with every run>",
  *     "calibration_files": [ { "path": "calibration/3dlf-pro.json", "size": 1107, "sha256": "..." } ],
@@ -19,7 +19,7 @@
  * Paths are relative to the manifest's folder (`base_url` when given).
  */
 
-export const EXAMPLES_SCHEMA = "crisp3ds_example_objects_v1";
+export const EXAMPLES_SCHEMA = "crispmesh_example_objects_v1";
 
 /** A dataset repository the app offers objects from, with what is said about its objects besides the dataset's own attribution. */
 export interface ExampleSource {

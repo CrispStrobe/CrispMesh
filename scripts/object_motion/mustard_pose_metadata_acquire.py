@@ -21,7 +21,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parents[2]
-EXTERNAL_BASE = Path('/Volumes/backups/code/crisp3ds-data')
+EXTERNAL_BASE = Path('/Volumes/backups/code/crispmesh-data')
 MANIFEST = ROOT / 'build-opencv/ycb-vps-acquisition-001/mustard-manifest.json'
 MANIFEST_SHA256 = 'c48998dffc7798e7d21f275383b1c67dc2e5e9313a8bfe699f72303f61583b52'
 POSE_REPORT = EXTERNAL_BASE / 'mustard-checkerboard-pose-001.json'

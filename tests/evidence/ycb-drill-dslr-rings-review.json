@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_evidence_v1",
+  "schema": "crispmesh_evidence_v1",
   "date": "2026-10-11",
   "title": "YCB power drill from DSLR photos: resolution and several camera heights",
   "question": "Is the drill limited by the photos rather than the algorithm, and do more pixels per millimetre and more camera heights fix it?",

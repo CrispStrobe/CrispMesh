@@ -1,17 +1,17 @@
 [package]
-name = "crisp3ds-dense"
+name = "crispmesh-dense"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-only"
-description = "Native port of the Crisp3DS all-view dense pipeline (reference implementation: scripts/turntable_mesh)"
+description = "Native port of the CrispMesh all-view dense pipeline (reference implementation: scripts/turntable_mesh)"
 publish = false
 
 [lib]
-name = "crisp3ds_dense"
+name = "crispmesh_dense"
 path = "src/lib.rs"
 
 [[bin]]
-name = "crisp3ds-dense"
+name = "crispmesh-dense"
 path = "src/main.rs"
 
 [dependencies]
@@ -60,7 +60,7 @@ libc = "0.2"
 # Optional neighboring-plane propagation is excluded from normal builds while
 # its patent claim coverage is unresolved. This flag is not patent permission.
 research-patchmatch = []
-# The C interface of the run driver (src/capi.rs, include/crisp3ds_dense.h).
+# The C interface of the run driver (src/capi.rs, include/crispmesh_dense.h).
 capi = []
 # The `sam` mask provider's ONNX backend: `--masks sam --sam-model DIR --sam-runtime libonnxruntime`.
 sam-onnx = ["dep:ort", "dep:ureq"]

@@ -37,8 +37,8 @@ import time
 from .dense_events import EventLog
 
 REPOSITORY = Path(__file__).resolve().parents[2]
-SCHEMA = "crisp3ds_photos_to_inputs_v1"
-CALIBRATION_SCHEMA = "crisp3ds_lens_calibration_v1"
+SCHEMA = "crispmesh_photos_to_inputs_v1"
+CALIBRATION_SCHEMA = "crispmesh_lens_calibration_v1"
 PHOTO_SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
 INTERMEDIATES = ("work/photos", "work/contrast", "work/features", "work/matches")
 INTERNAL_STEPS = ("coarse", "publish-masks", "contrast", "audit", "verify-prepared", "overlay")
@@ -65,7 +65,7 @@ def capture_name(index):
 def load_calibration(path):
     """Read a lens file into {width, height, fx, fy, cx, cy, k:[k1,k2,k3], sensor_width_mm}.
 
-    Two spellings are accepted. Ours (``schema: crisp3ds_lens_calibration_v1``)
+    Two spellings are accepted. Ours (``schema: crispmesh_lens_calibration_v1``)
     and the raw 3DLF ``rgb_optic.json`` (``model: brown5`` with a nested
     ``distortion``). Tangential terms must be zero: the camera recovery and the
     dense stage only model radial k1, k2, k3. The principal point is in the
@@ -645,31 +645,31 @@ def resolve(args):
     count = len([p for p in photos.iterdir() if p.suffix.lower() in PHOTO_SUFFIXES and p.is_file()])
     if not 3 <= count <= 96:
         raise ValueError(f"found {count} photos; the camera audit supports 3 to 96")
-    alicevision = pick(args.alicevision, "CRISP3DS_ALICEVISION")
-    sam_python = pick(args.sam_python, "CRISP3DS_SAM_PYTHON")
-    sam_source = pick(args.sam_source, "CRISP3DS_SAM_SOURCE")
-    sam_checkpoint = pick(args.sam_checkpoint, "CRISP3DS_SAM_CHECKPOINT")
-    missing = [flag for flag, value in (("--alicevision / CRISP3DS_ALICEVISION", alicevision),
-                                        ("--sam-python / CRISP3DS_SAM_PYTHON", sam_python),
-                                        ("--sam-source / CRISP3DS_SAM_SOURCE", sam_source),
-                                        ("--sam-checkpoint / CRISP3DS_SAM_CHECKPOINT", sam_checkpoint)) if not value]
+    alicevision = pick(args.alicevision, "CRISPMESH_ALICEVISION")
+    sam_python = pick(args.sam_python, "CRISPMESH_SAM_PYTHON")
+    sam_source = pick(args.sam_source, "CRISPMESH_SAM_SOURCE")
+    sam_checkpoint = pick(args.sam_checkpoint, "CRISPMESH_SAM_CHECKPOINT")
+    missing = [flag for flag, value in (("--alicevision / CRISPMESH_ALICEVISION", alicevision),
+                                        ("--sam-python / CRISPMESH_SAM_PYTHON", sam_python),
+                                        ("--sam-source / CRISPMESH_SAM_SOURCE", sam_source),
+                                        ("--sam-checkpoint / CRISPMESH_SAM_CHECKPOINT", sam_checkpoint)) if not value]
     if missing:
         raise ValueError("missing tool locations: " + "; ".join(missing))
     threshold = args.dark_threshold.strip().lower()
     if threshold != "otsu" and not (threshold.isdigit() and 1 <= int(threshold) <= 255):
         raise ValueError("--dark-threshold must be a grey level 1..255 or 'otsu'")
-    pythonpath = pick(args.sam_pythonpath, "CRISP3DS_SAM_PYTHONPATH", "")
+    pythonpath = pick(args.sam_pythonpath, "CRISPMESH_SAM_PYTHONPATH", "")
     cfg = {
         "schema": SCHEMA, "photos": str(photos), "photo_count": count,
         "calibration": str(Path(args.calibration).absolute()), "output": str(Path(args.output).absolute()),
-        "python": str(pick(args.python, "CRISP3DS_PYTHON", sys.executable)),
+        "python": str(pick(args.python, "CRISPMESH_PYTHON", sys.executable)),
         "alicevision": str(Path(alicevision).absolute()),
-        "alicevision_dense": str(Path(pick(args.alicevision_dense, "CRISP3DS_ALICEVISION_DENSE", alicevision)).absolute()),
-        "sensor_database": pick(args.sensor_database, "CRISP3DS_ALICEVISION_SENSOR_DB"),
+        "alicevision_dense": str(Path(pick(args.alicevision_dense, "CRISPMESH_ALICEVISION_DENSE", alicevision)).absolute()),
+        "sensor_database": pick(args.sensor_database, "CRISPMESH_ALICEVISION_SENSOR_DB"),
         "alicevision_memory_gib": args.alicevision_memory_gib,
         "sam_python": str(sam_python), "sam_source": str(Path(sam_source).absolute()),
         "sam_checkpoint": str(Path(sam_checkpoint).absolute()),
-        "sam_config": pick(args.sam_config, "CRISP3DS_SAM_CONFIG"),
+        "sam_config": pick(args.sam_config, "CRISPMESH_SAM_CONFIG"),
         "sam_pythonpath": [p for p in pythonpath.split(os.pathsep) if p],
         "device": args.device, "threads": args.threads, "minimum_free_gib": args.minimum_free_gib,
         "envelope": args.envelope, "dark_threshold": threshold if threshold == "otsu" else int(threshold),
@@ -869,16 +869,16 @@ def parser():
     p.add_argument("--events", type=Path, help="event log to append to (default <output>/events.jsonl)")
     p.add_argument("--internal-step", choices=INTERNAL_STEPS, help=argparse.SUPPRESS)
     tools = p.add_argument_group("tools (flag, then environment variable)")
-    tools.add_argument("--python", help="interpreter with NumPy, SciPy, OpenCV, Pillow [CRISP3DS_PYTHON, else this one]")
-    tools.add_argument("--alicevision", help="wrapper script or install prefix with the sparse tools [CRISP3DS_ALICEVISION]")
-    tools.add_argument("--alicevision-dense", help="wrapper or prefix with prepareDenseScene [CRISP3DS_ALICEVISION_DENSE, else --alicevision]")
-    tools.add_argument("--sensor-database", help="cameraSensors.db [CRISP3DS_ALICEVISION_SENSOR_DB, else <prefix>/share/aliceVision/]")
+    tools.add_argument("--python", help="interpreter with NumPy, SciPy, OpenCV, Pillow [CRISPMESH_PYTHON, else this one]")
+    tools.add_argument("--alicevision", help="wrapper script or install prefix with the sparse tools [CRISPMESH_ALICEVISION]")
+    tools.add_argument("--alicevision-dense", help="wrapper or prefix with prepareDenseScene [CRISPMESH_ALICEVISION_DENSE, else --alicevision]")
+    tools.add_argument("--sensor-database", help="cameraSensors.db [CRISPMESH_ALICEVISION_SENSOR_DB, else <prefix>/share/aliceVision/]")
     tools.add_argument("--alicevision-memory-gib", type=float, default=4.0)
-    tools.add_argument("--sam-python", help="interpreter with Torch and the SAM 2 dependencies [CRISP3DS_SAM_PYTHON]")
-    tools.add_argument("--sam-source", help="SAM 2 source checkout containing sam2/ [CRISP3DS_SAM_SOURCE]")
-    tools.add_argument("--sam-checkpoint", help="SAM 2.1 checkpoint file [CRISP3DS_SAM_CHECKPOINT]")
-    tools.add_argument("--sam-config", help="SAM model config name [CRISP3DS_SAM_CONFIG, else segment.py's default: hiera tiny]")
-    tools.add_argument("--sam-pythonpath", help="extra PYTHONPATH entries for the SAM interpreter [CRISP3DS_SAM_PYTHONPATH]")
+    tools.add_argument("--sam-python", help="interpreter with Torch and the SAM 2 dependencies [CRISPMESH_SAM_PYTHON]")
+    tools.add_argument("--sam-source", help="SAM 2 source checkout containing sam2/ [CRISPMESH_SAM_SOURCE]")
+    tools.add_argument("--sam-checkpoint", help="SAM 2.1 checkpoint file [CRISPMESH_SAM_CHECKPOINT]")
+    tools.add_argument("--sam-config", help="SAM model config name [CRISPMESH_SAM_CONFIG, else segment.py's default: hiera tiny]")
+    tools.add_argument("--sam-pythonpath", help="extra PYTHONPATH entries for the SAM interpreter [CRISPMESH_SAM_PYTHONPATH]")
     machine = p.add_argument_group("machine")
     machine.add_argument("--device", choices=("mps", "cpu", "cuda"), default="mps", help="SAM device")
     machine.add_argument("--threads", type=int, default=2)

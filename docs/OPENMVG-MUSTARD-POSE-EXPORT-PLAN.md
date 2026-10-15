@@ -3,7 +3,7 @@
 Status: **sixth target built and conversion read-only preflight passed; no
 conversion has run**. The sealed
 mustard photo-only SfM attempt remains a failed sparse gate: its receipt at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001/receipt.json`
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001/receipt.json`
 has SHA-256
 `e45c400dcf71a3ba86fa22f7af2138418d6dc511fddcd6d8470ef33599804744`,
 status `failed_registration_or_sparse_gate`, **46/48 poses**, 222 tracks and
@@ -27,8 +27,8 @@ named-pose export command is:
 
 ```text
 openMVG_main_ConvertSfM_DataFormat \
-  -i /Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001/sparse/sfm_data.bin \
-  -o /Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-pose-export-001/sfm_camera_poses.json \
+  -i /Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001/sparse/sfm_data.bin \
+  -o /Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-pose-export-001/sfm_camera_poses.json \
   -V -I -E
 ```
 

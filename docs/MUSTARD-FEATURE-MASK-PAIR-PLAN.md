@@ -42,9 +42,9 @@ arms serially within a 10-minute combined wall limit, even if the first arm
 fails its registration gate; no threshold, seed or option retry follows.
 
 The fresh outputs are
-`/Volumes/backups/code/crisp3ds-data/mustard-feature-mask-pair-001-sam` and
+`/Volumes/backups/code/crispmesh-data/mustard-feature-mask-pair-001-sam` and
 `...-v2`, with a separate
-`/Volumes/backups/code/crisp3ds-data/mustard-feature-mask-pair-001-receipt.json`.
+`/Volumes/backups/code/crispmesh-data/mustard-feature-mask-pair-001-receipt.json`.
 Each arm is capped at 0.45 GiB (483,183,820 bytes), so the two producer
 outputs plus a ≤1 MiB receipt stay below 1 GiB. Each stage has a 16 MiB log,
 4 GiB sampled child RSS and two CPU threads. The wrapper requires at least
@@ -87,11 +87,11 @@ must not be used again.
 
 ## Sealed paired outcome and independent audit
 
-The fresh [receipt](</Volumes/backups/code/crisp3ds-data/mustard-feature-mask-pair-001-receipt.json>) has SHA-256
+The fresh [receipt](</Volumes/backups/code/crispmesh-data/mustard-feature-mask-pair-001-receipt.json>) has SHA-256
 `3b6481f06f63506fdd2ab5c452a15f3e71c139d2ce8b722ef6e849ea0f12d9a5`
-and status `completed`. The [SAM control result](</Volumes/backups/code/crisp3ds-data/mustard-feature-mask-pair-001-sam/result.json>) SHA-256 is
+and status `completed`. The [SAM control result](</Volumes/backups/code/crispmesh-data/mustard-feature-mask-pair-001-sam/result.json>) SHA-256 is
 `4d6ce1bba0534c25035168d8c82565cf99ad2415c5c7327fb7ca6f0e6c4401d3`;
-the [v2 result](</Volumes/backups/code/crisp3ds-data/mustard-feature-mask-pair-001-v2/result.json>) SHA-256 is
+the [v2 result](</Volumes/backups/code/crispmesh-data/mustard-feature-mask-pair-001-v2/result.json>) SHA-256 is
 `cf56fab6fd4e51188b1ffabb7718f3e94fcdb0ea380e2892c04c5a6f9d7ca9ea`.
 Both producers independently say `sparse_complete`, with one saved candidate
 model each and 48/48 registered train views. Independent rehashing found

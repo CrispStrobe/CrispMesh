@@ -328,7 +328,7 @@ impl Run<'_> {
         };
         crate::photos::fs::write(&log, &text).with_context(|| log.display().to_string())?;
         let entry = json!({
-            "command": ["crisp3ds-dense", "photos", "(in process)", name],
+            "command": ["crispmesh-dense", "photos", "(in process)", name],
             "exit_code": if stopped.is_some() { Value::Null } else { json!(result.is_err() as u8) },
             "timed_out": stopped == Some(Stopped::Deadline), "cancelled": stopped == Some(Stopped::Cancelled),
             "seconds": started.elapsed().as_secs_f64(), "log": log.to_string_lossy(),

@@ -7,7 +7,7 @@ dense stage was rerun for this review.
 
 ## Identity and input
 
-- Output: `/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-photo-sfm-001`
+- Output: `/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-photo-sfm-001`
 - Receipt SHA-256: `97cf72ab72c75a88f04d97baa29c6de49a1640103d7143dd151bc2efe54c507d`
 - Sparse model SHA-256: `aea2b3129cb317663435461fd12fa4c0078c57211fc1c08cf7b1a29ad6902975`
 - HTML SfM report SHA-256: `0fa1014793eddc438861fa54ff0978fa9da109eacf0976236ee6c65d21511faa`

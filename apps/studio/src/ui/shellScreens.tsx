@@ -55,7 +55,7 @@ export function useLocalEngine(shell: Shell | null, wanted: boolean): { info: Sh
 }
 
 export const NOT_BUNDLED =
-  "The external engine runs with the interpreters named here, from a crisp3ds source folder on this computer. The built-in engine needs none of this.";
+  "The external engine runs with the interpreters named here, from a crispmesh source folder on this computer. The built-in engine needs none of this.";
 
 const STATE_TEXT: Record<EngineStatus["state"], string> = {
   stopped: "Stopped",
@@ -133,10 +133,10 @@ interface FieldSpec {
 const PYTHON_FIELDS: FieldSpec[] = [
   {
     field: "repo",
-    label: "Crisp3DS source folder",
-    help: "Your checkout of the crisp3ds repository: the folder that contains scripts/turntable_mesh.",
+    label: "CrispMesh source folder",
+    help: "Your checkout of the crispmesh repository: the folder that contains scripts/turntable_mesh.",
     pick: "folder",
-    pickTitle: "Choose the crisp3ds source folder",
+    pickTitle: "Choose the crispmesh source folder",
   },
   {
     field: "python",
@@ -192,7 +192,7 @@ const TOOL_GROUPS: { tool: ToolName; title: string; what: string; fields: FieldS
   {
     tool: "sam",
     title: "SAM 2.1",
-    what: "Masks by a neural network (provider external-sam). Needs a Python with PyTorch, the SAM 2 source and a checkpoint, and the crisp3ds source folder below.",
+    what: "Masks by a neural network (provider external-sam). Needs a Python with PyTorch, the SAM 2 source and a checkpoint, and the crispmesh source folder below.",
     fields: [
       { field: "sam_python", label: "Python with PyTorch", help: "The interpreter that runs SAM.", pick: "file", pickTitle: "Choose the Python interpreter for SAM" },
       { field: "sam_source", label: "SAM 2 source folder", help: "A checkout of the SAM 2 repository.", pick: "folder", pickTitle: "Choose the SAM 2 source folder" },

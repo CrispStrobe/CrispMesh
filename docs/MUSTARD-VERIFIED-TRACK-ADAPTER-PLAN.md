@@ -6,12 +6,12 @@ or checkerboard pose was opened by this adapter; no live extraction is approved.
 ## Frozen source and provenance boundary
 
 Proposed first source for a later approved run is the sealed
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/database.db`
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/database.db`
 (SHA-256 `5858be16dfa3f0fc50303d0eb4a001e21ee14036f67755a9997d5dac374b3075`,
 1,851,392 bytes), whose producer `result.json` is SHA-256
 `5a83c3e05e2b66887411799ecc8c5f3f41e3b8af3bbd775d308055ef7ee0041e`.
 The 48 TRAIN RGB and **coarse pose-support** masks are staged in
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001` under
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001` under
 `stage-report.json` SHA-256
 `bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0`.
 These are prior sealed-provenance facts, not new checks made by a live run.

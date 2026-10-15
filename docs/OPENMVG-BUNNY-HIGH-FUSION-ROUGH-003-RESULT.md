@@ -5,7 +5,7 @@ but **failed the independent object-shape gate**. No refinement, texture,
 scanner-fit score, or pipeline ranking was run from this mesh.
 
 The frozen native root is
-`/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-cache-fusion-003`.
+`/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-cache-fusion-003`.
 The original `result.json` (SHA-256
 `bb7b7d928b245931afe0c7646bee73bf7fe2fe752b399a347687a96fd2955fc2`)
 records `failed` solely because the runner expected `mesh.mvs` after
@@ -20,7 +20,7 @@ A separate [post-hoc rescue validator](../scripts/classical_backend/openmvg_bunn
 sealed the failed receipt, both stage logs, the three actual artifacts, all
 73 cached base maps and images, original source lineage, resource caps, and
 native geometry. Its sidecar is
-`/Users/christianstrobele/code/crisp3ds/.local-tools/openmvg-bunny-high-fusion-rough-rescue-003.json`
+`.local-tools/openmvg-bunny-high-fusion-rough-rescue-003.json`
 (SHA-256 `6f32778a79c2f2f911fb4c8745e812baebe299b963dd07b3c11392bc221dd42c`),
 with status `native_rough_complete_pending_visual_review`; it is **not** a
 positive quality approval. Native `dense.ply` has 569,064 points. Native
@@ -34,7 +34,7 @@ consumed 152.808 real-wall seconds, 903,900,892 logical output bytes, and
 11 GiB reserve remained intact.
 
 The lossless neutral geometry export is
-`/Users/christianstrobele/code/crisp3ds/.local-tools/openmvg-bunny-high-fusion-rough-neutral-003.ply`
+`.local-tools/openmvg-bunny-high-fusion-rough-neutral-003.ply`
 (SHA-256 `78daf68ba049bc1b089c65696ae71e72f06adcd430befa9b3f65cfb31ea45970`).
 The [candidate-only XY/XZ/YZ preview](../.local-tools/openmvg-bunny-high-fusion-rough-neutral-003.png)
 (SHA-256 `1361688445c0e55b9534afd6394241990a8caa47c108d2075c5c8331da20fb3f`)

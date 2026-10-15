@@ -25,8 +25,8 @@ import time
 from scripts.classical_backend import openmvg_m1_supervisor as base
 from scripts.upstream_control import fetch
 
-BUILD = Path("/Volumes/backups/code/crisp3ds-data/openmvg-v21-ligt-off-oracle-001")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-001")
+BUILD = Path("/Volumes/backups/code/crispmesh-data/openmvg-v21-ligt-off-oracle-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-001")
 SAMPLE = fetch.OUTPUT
 SAMPLE_MANIFEST_SHA = "1ee34cff7e6d75fca9f56de4aa5644b45a382030af54a474824ada6af77316a3"
 FOUR_RECEIPT_SHA = "9aec9a7ac01c76f683416cd8eb47c57bbcbfa006a642348568a04298570078c1"

@@ -598,7 +598,7 @@ pub(crate) mod tests {
 
     #[test]
     fn colmap_text_and_binary_models_convert_conventions() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-colmap-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-colmap-{}", std::process::id()));
         let _ = crate::photos::fs::remove_dir_all(&root);
         colmap_text_model(&root.join("text"));
         colmap_binary_from_text(&root.join("text"), &root.join("sparse/0"));

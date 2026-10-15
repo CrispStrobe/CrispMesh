@@ -1,4 +1,4 @@
-"""DTU MVS evaluation of a crisp3ds mesh (development tool, evaluation only).
+"""DTU MVS evaluation of a crispmesh mesh (development tool, evaluation only).
 
 Follows the official DTU protocol as ported by DTUeval-python: the mesh is sampled to points
 about 0.2 mm apart; accuracy is the distance from those points (inside the scan's observability

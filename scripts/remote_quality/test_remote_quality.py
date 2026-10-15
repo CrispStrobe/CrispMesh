@@ -90,7 +90,7 @@ class RemoteQualityTest(unittest.TestCase):
             base = Path(tmp)
             harness = base / "kaggle_harness.py"
             harness.write_text("def init_progress(**kwargs): pass\n")
-            config = {"account": "tester", "slug": "crisp3ds-quality-r1", "run_id": "quality-r1",
+            config = {"account": "tester", "slug": "crispmesh-quality-r1", "run_id": "quality-r1",
                       "input_dataset": "other/input", "archive_name": "quality.zip",
                       "command": ["/usr/bin/python3", "scripts/example.py"]}
             with self.assertRaisesRegex(ValueError, "owned"):

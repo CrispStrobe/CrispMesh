@@ -21,7 +21,7 @@ from scripts.object_motion.mustard_verified_track_receipt import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = Path('/Volumes/backups/code/crisp3ds-data')
+DATA = Path('/Volumes/backups/code/crispmesh-data')
 POSE = DATA / 'mustard-checkerboard-calibrated-pose-001.json'
 POSE_SHA256 = '25f37be625cf4edd00bdf29c479529d341cd76d3dc748d8b966e482c4668619d'
 TRACK_RECEIPT = DATA / 'mustard-verified-tracks-002.json'

@@ -1,4 +1,4 @@
-# Releasing Crisp3DS
+# Releasing CrispMesh
 
 What a release consists of, how to cut one, what to check before publishing
 it, and how builds reach TestFlight.
@@ -15,7 +15,7 @@ it, and how builds reach TestFlight.
 | `Crisp-3D-Studio_<v>-linux-x64.AppImage`, `.deb` | desktop | Linux x64 |
 | `Crisp-3D-Studio_<v>-android-arm64-debug.apk` | android (non-blocking) | debug build, throwaway debug key |
 | `Crisp-3D-Studio_<v>-ios-simulator-arm64.app.zip` | ios (non-blocking) | simulator build, not installable on a device |
-| `crisp3ds-dense-pipeline-<v>.tar.gz` | python | `scripts/turntable_mesh`, the modules it imports from elsewhere under `scripts/`, the engine contract, the sphere fixture, `LICENSE` |
+| `crispmesh-dense-pipeline-<v>.tar.gz` | python | `scripts/turntable_mesh`, the modules it imports from elsewhere under `scripts/`, the engine contract, the sphere fixture, `LICENSE` |
 | `SHA256SUMS.txt` | publish | checksums of all of the above |
 
 The pipeline archive is tested before it is uploaded: it is unpacked outside
@@ -48,7 +48,7 @@ Every release states, in its notes:
 3. Tag and push:
 
    ```sh
-   git tag -a v0.2.0 -m "Crisp3DS 0.2.0"
+   git tag -a v0.2.0 -m "CrispMesh 0.2.0"
    git push origin v0.2.0
    ```
 
@@ -60,7 +60,7 @@ Every release states, in its notes:
    `node apps/studio/scripts/set-version.mjs 0.2.0` and commit before tagging;
    `--check` tells whether the files agree.
 4. When the workflow is done there is a **draft prerelease** named
-   `Crisp3DS <version>` with all files attached. It is invisible to the public
+   `CrispMesh <version>` with all files attached. It is invisible to the public
    until someone publishes it.
 
 Phone builds get a plain numeric version (`1.2.3`; a dry run uses `0.0.1`),

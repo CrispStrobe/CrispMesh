@@ -1,6 +1,6 @@
 //! Independent analytic geometry through production projection, GPU fusion and meshing.
 //! No dataset geometry, cameras, masks or depths are used.
-use crisp3ds_dense::{
+use crispmesh_dense::{
     config::DenseConfig,
     events::EventLog,
     fusion,
@@ -128,10 +128,10 @@ fn analytic_camera_rays_round_trip_in_production_coordinates() {
 
 #[test]
 fn exact_depths_preserve_a_recess_and_a_raised_feature() {
-    if std::env::var("CRISP3DS_GPU_TESTS").as_deref() != Ok("1") {
+    if std::env::var("CRISPMESH_GPU_TESTS").as_deref() != Ok("1") {
         return;
     }
-    let retained = std::env::var_os("CRISP3DS_AUDIT_OUTPUT").map(std::path::PathBuf::from);
+    let retained = std::env::var_os("CRISPMESH_AUDIT_OUTPUT").map(std::path::PathBuf::from);
     let output = retained.clone().unwrap_or_else(|| {
         std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("../../.local-tools/depth-geometry-audit-{}", std::process::id()))
     });
@@ -153,7 +153,7 @@ fn exact_depths_preserve_a_recess_and_a_raised_feature() {
     let fused = block_on(fusion::tsdf(&gpu, &hull, &cameras, &views, &depths, 0, &config)).unwrap();
     let volume = Volume::from_fused(&hull, fused);
     let report =
-        mesh::run_volume(volume, &output, &config, 1, &EventLog::none(), None, 2, &crisp3ds_dense::control::Control::none()).unwrap();
+        mesh::run_volume(volume, &output, &config, 1, &EventLog::none(), None, 2, &crispmesh_dense::control::Control::none()).unwrap();
     let (triangles, _) = stl::read_binary(&output.join("mesh.stl")).unwrap();
     let measured = [front_y(&triangles, -0.55), front_y(&triangles, -0.3), front_y(&triangles, 0.3)];
     let expected = [-0.8, -0.6, -0.98];
@@ -174,7 +174,7 @@ fn exact_depths_preserve_a_recess_and_a_raised_feature() {
 /// only neighbouring prior depths. The selected centre pixel starts at truth.
 #[test]
 fn report_band_refinement_response_to_neighbour_prior_errors() {
-    if std::env::var("CRISP3DS_GPU_TESTS").as_deref() != Ok("1") {
+    if std::env::var("CRISPMESH_GPU_TESTS").as_deref() != Ok("1") {
         return;
     }
     let texture =
@@ -195,17 +195,17 @@ fn report_band_refinement_response_to_neighbour_prior_errors() {
     let hull = Hull::from_flags(&vec![true; 64 * 64 * 64], [64; 3], [-2.0, -2.0, 1.0], 0.0625);
     let config = DenseConfig::default();
     let gpu = Gpu::new().unwrap();
-    let mut matcher = block_on(crisp3ds_dense::stereo::matcher::Matcher::new(&gpu, &config, &hull)).unwrap();
+    let mut matcher = block_on(crispmesh_dense::stereo::matcher::Matcher::new(&gpu, &config, &hull)).unwrap();
     let buffers = matcher.upload(&views);
     let mut results = Vec::new();
     let mut unaggregated_results = Vec::new();
     let mut coherent_results = Vec::new();
     let coherent_config = DenseConfig { coherent_band: true, ..config.clone() };
-    let mut coherent_matcher = block_on(crisp3ds_dense::stereo::matcher::Matcher::new(&gpu, &coherent_config, &hull)).unwrap();
+    let mut coherent_matcher = block_on(crispmesh_dense::stereo::matcher::Matcher::new(&gpu, &coherent_config, &hull)).unwrap();
     let mut independent_results = Vec::new();
     let mut recovered_results = Vec::new();
-    let independent = block_on(crisp3ds_dense::stereo::planes::Planes::independent(&gpu, &hull)).unwrap();
-    let settings = crisp3ds_dense::stereo::planes::Settings {
+    let independent = block_on(crispmesh_dense::stereo::planes::Planes::independent(&gpu, &hull)).unwrap();
+    let settings = crispmesh_dense::stereo::planes::Settings {
         radius: 5,
         stride: 1,
         best_of: 3,
@@ -226,10 +226,10 @@ fn report_band_refinement_response_to_neighbour_prior_errors() {
         unaggregated_results.push(unaggregated.data[64 * 128 + 64]);
         let coherent = block_on(coherent_matcher.refine(&buffers, &views, 0, &[1, 2], &init, 0.003, 20, 11, 2.0, 0.55)).unwrap();
         coherent_results.push(coherent.data[64 * 128 + 64]);
-        let planes = crisp3ds_dense::stereo::planes::initial_planes(&views[0], &init, &init);
+        let planes = crispmesh_dense::stereo::planes::initial_planes(&views[0], &init, &init);
         let (refined, _) = block_on(independent.run(&gpu, &views, 0, &[1, 2], &hull, &planes, &settings)).unwrap();
         independent_results.push(refined[64 * 128 + 64][0]);
-        let planes = crisp3ds_dense::stereo::planes::initial_planes(&views[0], &result, &init);
+        let planes = crispmesh_dense::stereo::planes::initial_planes(&views[0], &result, &init);
         let (recovered, _) = block_on(independent.run(&gpu, &views, 0, &[1, 2], &hull, &planes, &settings)).unwrap();
         recovered_results.push(recovered[64 * 128 + 64][0]);
     }

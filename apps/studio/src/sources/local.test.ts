@@ -39,7 +39,7 @@ const page = (available: () => number) => (args: Record<string, unknown>) => {
 describe("LocalEngine over a mocked command bridge", () => {
   it("copies files picked on a phone into the data folder, one raw command per file", async () => {
     const { bridge, calls } = shell({
-      native_health: () => ({ schema: "crisp3ds_dense_events_v1", can_start_runs: true, imports: true }),
+      native_health: () => ({ schema: "crispmesh_dense_events_v1", can_start_runs: true, imports: true }),
       native_import: (_args, headers) => ({ path: `${decodeURIComponent(headers!["x-folder"]!)}/${decodeURIComponent(headers!["x-name"]!)}` }),
     });
     const engine = new LocalEngine(bridge);
@@ -61,7 +61,7 @@ describe("LocalEngine over a mocked command bridge", () => {
   it("reads health with the engine's start points and what it does not offer", async () => {
     const { bridge } = shell({
       native_health: () => ({
-        schema: "crisp3ds_dense_events_v1",
+        schema: "crispmesh_dense_events_v1",
         device: "wgpu",
         can_start_runs: true,
         data_dir: "/Users/me/data",
@@ -70,7 +70,7 @@ describe("LocalEngine over a mocked command bridge", () => {
       }),
     });
     const health = await new LocalEngine(bridge).health();
-    expect(health).toMatchObject({ schema: "crisp3ds_dense_events_v1", canStartRuns: true, choosesDevice: false, scoresReference: false, dataFolder: "/Users/me/data" });
+    expect(health).toMatchObject({ schema: "crispmesh_dense_events_v1", canStartRuns: true, choosesDevice: false, scoresReference: false, dataFolder: "/Users/me/data" });
     expect(health.startPoints?.map((point) => point.id)).toEqual(["inputs"]);
   });
 
@@ -150,7 +150,7 @@ describe("LocalRunSource", () => {
 
   it("shows a run that failed for want of a GPU with the engine's message", async () => {
     const events = [
-      { type: "run_started", time: 1, stage: null, schema: "crisp3ds_dense_events_v1", device: "wgpu", seq: 0 },
+      { type: "run_started", time: 1, stage: null, schema: "crispmesh_dense_events_v1", device: "wgpu", seq: 0 },
       { type: "error", time: 2, stage: null, message: "no GPU adapter: No suitable graphics adapter found", seq: 1 },
       { type: "run_finished", time: 2, stage: null, status: "failed", seconds: 1, seq: 2 },
     ];

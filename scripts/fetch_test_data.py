@@ -447,7 +447,7 @@ def verify_eth3d_scene(root, scene):
 def selected_root(dataset, override=None):
     if override is not None:
         return override.expanduser().resolve()
-    base = Path(os.environ.get("CRISP3DS_TEST_DATA_ROOT", REPO / ".local-tools/test-data"))
+    base = Path(os.environ.get("CRISPMESH_TEST_DATA_ROOT", REPO / ".local-tools/test-data"))
     suffix = {"piano": "middlebury-2014", "middlebury2003": "middlebury-2003",
               "middlebury2001": "middlebury-2001", "eth3d": "eth3d"}[dataset]
     return (base / suffix).expanduser().resolve()

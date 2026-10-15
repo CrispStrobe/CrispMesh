@@ -1,7 +1,6 @@
 # Status
 
-State of Crisp3DS (the engine) and CrispMesh (the app, called Crisp 3D Studio
-until 2026-10-13) on 2026-10-13. The plan of record is
+State of CrispMesh (engine and app) on 2026-10-13. The plan of record is
 [ARCHITECTURE.md](ARCHITECTURE.md); measurements and settings are in the
 [crate README](../crates/dense/README.md); the current comparison of surface
 methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md).
@@ -10,13 +9,13 @@ methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md)
 
 | Area | State |
 | --- | --- |
-| **Photos to STL, one command** | `crisp3ds-dense run --photos DIR --calibration JSON --output RUN`: threshold masks, our own turntable camera solver, GPU dense stages, closed STL. No Python, no external program. About 50–100 s per 73-photo object on an Apple M1 |
+| **Photos to STL, one command** | `crispmesh-dense run --photos DIR --calibration JSON --output RUN`: threshold masks, our own turntable camera solver, GPU dense stages, closed STL. No Python, no external program. About 50–100 s per 73-photo object on an Apple M1 |
 | **Native crate** (`crates/dense`, Rust + wgpu) | The primary implementation. Metal, Vulkan, DirectX 12 and WebGPU; library API, C interface, event log contract; Python package kept as the reference it was ported from |
-| **Browser** | The same pipeline as WebAssembly + WebGPU, from photos or from prepared inputs, single-threaded or threaded (cross-origin isolated pages). Default Bunny from 73 photos in Chrome: measured 130–264 s with 4 threads, peak WebAssembly memory about 1.6–2.1 GiB. Live at <https://crispstrobe.github.io/crisp3ds/> |
-| **CrispMesh** (app) | Desktop (macOS, Windows, Linux), iOS and Android from one code base (Tauri 2); the engine runs in-process. Start from photos with provider choice, live progress, preview surfaces, diagnostic sheets, per-step inspection sheets, example objects downloaded on request. Release [v0.2.0](https://github.com/CrispStrobe/crisp3ds/releases/tag/v0.2.0) (prerelease, unsigned desktop builds); internal TestFlight builds for iOS and macOS |
+| **Browser** | The same pipeline as WebAssembly + WebGPU, from photos or from prepared inputs, single-threaded or threaded (cross-origin isolated pages). Default Bunny from 73 photos in Chrome: measured 130–264 s with 4 threads, peak WebAssembly memory about 1.6–2.1 GiB. Live at <https://crispstrobe.github.io/CrispMesh/> |
+| **CrispMesh** (app) | Desktop (macOS, Windows, Linux), iOS and Android from one code base (Tauri 2); the engine runs in-process. Start from photos with provider choice, live progress, preview surfaces, diagnostic sheets, per-step inspection sheets, example objects downloaded on request. Release [v0.2.0](https://github.com/CrispStrobe/CrispMesh/releases/tag/v0.2.0) (prerelease, unsigned desktop builds); internal TestFlight builds for iOS and macOS |
 | **Masks** | `threshold` (default; contact shadow removed), `import`, `sam` (SAM 2.1 natively through ONNX Runtime or CrispEmbed's ggml engine, optional build feature), `external-sam` (PyTorch) |
 | **Cameras** | `turntable` (default; our own solver, pure Rust, repeatable), `markers` (printed mat, gives scale and handedness; validated on renders only), `colmap`, `alicevision`, `import`; `--capture orbit` for camera paths that are not one ring |
-| **Evaluation** | Scanner F1 against independent scans (3DLF), DTU protocol, Google Scanned Objects rendered by our own renderer (`crisp3ds-dense render`), per-step inspection sheets in every run |
+| **Evaluation** | Scanner F1 against independent scans (3DLF), DTU protocol, Google Scanned Objects rendered by our own renderer (`crispmesh-dense render`), per-step inspection sheets in every run |
 
 ## Measured results (default command, from photos)
 

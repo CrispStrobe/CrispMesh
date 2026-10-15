@@ -1,7 +1,7 @@
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
-#include "crisp3ds/core.h"
+#include "crispmesh/core.h"
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -29,16 +29,16 @@ static std::string read_text(const fs::path &path) {
   std::ifstream file(path, std::ios::binary);
   return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 }
-static std::string run_api(const fs::path &project, crisp3ds_status expected) {
+static std::string run_api(const fs::path &project, crispmesh_status expected) {
   size_t size = 0;
   char *output = nullptr;
-  auto status = crisp3ds_estimate_poses_alloc(project.string().c_str(), &output, &size);
+  auto status = crispmesh_estimate_poses_alloc(project.string().c_str(), &output, &size);
   if (status != expected) {
     std::cerr << "Unexpected status " << status << ": " << (output ? output : "null") << '\n';
     std::abort();
   }
   std::string result = output;
-  crisp3ds_free(output);
+  crispmesh_free(output);
   return result;
 }
 static std::string project_json(const std::string &image_path, int width = 1280, int height = 960) {
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
   }
   assert(cv::imwrite((root / "synthetic-board.png").string(),image));
   write_text(root / "project.json",project_json("synthetic-board.png"));
-  auto result = run_api(root / "project.json", CRISP3DS_OK);
+  auto result = run_api(root / "project.json", CRISPMESH_OK);
   assert(result.find("\"detectedMarkerIds\"") != std::string::npos);
   assert(result.find("\"rmsReprojectionErrorPx\"") != std::string::npos);
   auto translation = numbers_after(result,"\"translationMm\"",3);
@@ -120,20 +120,20 @@ int main(int argc, char **argv) {
   assert(cv::imwrite((root / "synthetic-board.jpg").string(),image,
                      {cv::IMWRITE_JPEG_QUALITY,95}));
   write_text(root / "jpeg.json",project_json("synthetic-board.jpg"));
-  auto jpeg_result = run_api(root / "jpeg.json",CRISP3DS_OK);
+  auto jpeg_result = run_api(root / "jpeg.json",CRISPMESH_OK);
   auto jpeg_translation = numbers_after(jpeg_result,"\"translationMm\"",3);
   for (int i = 0; i < 3; ++i) assert(std::abs(jpeg_translation[i] - tvec.at<double>(i)) < 5);
 
   cv::Mat blank(image.size(),CV_8UC1,cv::Scalar(255));
   assert(cv::imwrite((root / "blank.png").string(),blank));
   write_text(root / "missing.json",project_json("blank.png"));
-  assert(run_api(root / "missing.json",CRISP3DS_INVALID_PROJECT).find("insufficient_markers") != std::string::npos);
+  assert(run_api(root / "missing.json",CRISPMESH_INVALID_PROJECT).find("insufficient_markers") != std::string::npos);
   std::string mixed = project_json("synthetic-board.png");
   size_t image_end = mixed.find("}],\"calibration\"");
   assert(image_end != std::string::npos);
   mixed.replace(image_end,2,"},{\"id\":\"view-2\",\"path\":\"blank.png\"}]");
   write_text(root / "mixed.json",mixed);
-  auto mixed_result = run_api(root / "mixed.json",CRISP3DS_INVALID_PROJECT);
+  auto mixed_result = run_api(root / "mixed.json",CRISPMESH_INVALID_PROJECT);
   assert(mixed_result.find("insufficient_markers") != std::string::npos);
   assert(mixed_result.find("\"poses\"") == std::string::npos);
   std::string mixed_command = "\"" + cli.string() + "\" estimate-poses \"" +
@@ -144,25 +144,25 @@ int main(int argc, char **argv) {
   assert(mixed_cli.find("\"ok\":false") != std::string::npos);
   assert(mixed_cli.find("\"poses\"") == std::string::npos);
   write_text(root / "dimensions.json",project_json("synthetic-board.png",640,480));
-  assert(run_api(root / "dimensions.json",CRISP3DS_INVALID_PROJECT).find("image_dimensions") != std::string::npos);
+  assert(run_api(root / "dimensions.json",CRISPMESH_INVALID_PROJECT).find("image_dimensions") != std::string::npos);
   std::string huge = project_json("synthetic-board.png");
   size_t width_at = huge.find("\"width\":1280");
   assert(width_at != std::string::npos);
   huge.replace(width_at,std::string("\"width\":1280").size(),"\"width\":1e100");
   write_text(root / "huge-width.json",huge);
-  assert(run_api(root / "huge-width.json",CRISP3DS_INVALID_PROJECT).find("resource_limit") != std::string::npos);
+  assert(run_api(root / "huge-width.json",CRISPMESH_INVALID_PROJECT).find("resource_limit") != std::string::npos);
   fs::copy_file(root / "synthetic-board.png",root.parent_path() / "outside-synthetic-board.png",
                 fs::copy_options::overwrite_existing);
   std::error_code ec;
   fs::remove(root / "escape.png",ec);
   fs::create_symlink(root.parent_path() / "outside-synthetic-board.png",root / "escape.png");
   write_text(root / "escape.json",project_json("escape.png"));
-  assert(run_api(root / "escape.json",CRISP3DS_INVALID_PROJECT).find("path_escape") != std::string::npos);
+  assert(run_api(root / "escape.json",CRISPMESH_INVALID_PROJECT).find("path_escape") != std::string::npos);
   std::string oversized("\x89PNG\r\n\x1a\n",8);
   oversized += std::string("\0\0\0\rIHDR",8);
   oversized += std::string("\0\0\x27\x10\0\0\x27\x10",8);
   write_text(root / "oversized.png",oversized);
   write_text(root / "oversized.json",project_json("oversized.png",10000,10000));
-  assert(run_api(root / "oversized.json",CRISP3DS_INVALID_PROJECT).find("resource_limit") != std::string::npos);
+  assert(run_api(root / "oversized.json",CRISPMESH_INVALID_PROJECT).find("resource_limit") != std::string::npos);
   std::cout << "Synthetic detector-to-PnP fixture and failure cases passed; artifacts: " << root << '\n';
 }

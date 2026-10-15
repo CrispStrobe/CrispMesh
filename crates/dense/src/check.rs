@@ -70,7 +70,7 @@ fn score_view(triangles: &[Triangle], row: &ViewRow, sets: &[Option<&Path>], ove
     let size = read_gray(&first).map_err(|_| anyhow!("missing or mismatched mask {}", first.display()))?;
     let (width, height) = (size.width, size.height);
     let drawn = silhouette(triangles, row, width, height)?;
-    if let Ok(directory) = std::env::var("CRISP3DS_CHECK_DUMP") {
+    if let Ok(directory) = std::env::var("CRISPMESH_CHECK_DUMP") {
         // Diagnostic: the drawn silhouette of every checked view, for comparison with OpenCV.
         let path = Path::new(&directory).join(format!("{}.png", row.name));
         crate::storage::save_png(path, width, height, 1, &drawn)?;
@@ -287,9 +287,9 @@ fn checked(options: &Options, events: &EventLog, control: &crate::control::Contr
     Ok(report)
 }
 
-/// `crisp3ds-dense check --inputs DIR --mesh STL --output DIR [--repaired-masks DIR] [--preview-views N] [--check-views N] [--events FILE]`.
+/// `crispmesh-dense check --inputs DIR --mesh STL --output DIR [--repaired-masks DIR] [--preview-views N] [--check-views N] [--events FILE]`.
 pub fn main(arguments: &[String]) -> anyhow::Result<()> {
-    const USAGE: &str = "usage: crisp3ds-dense check --inputs DIR --mesh STL --output DIR [--repaired-masks DIR] [--preview-views N] [--check-views N] [--events FILE]";
+    const USAGE: &str = "usage: crispmesh-dense check --inputs DIR --mesh STL --output DIR [--repaired-masks DIR] [--preview-views N] [--check-views N] [--events FILE]";
     let mut values = std::collections::BTreeMap::new();
     let mut rest = arguments.iter();
     while let Some(flag) = rest.next() {

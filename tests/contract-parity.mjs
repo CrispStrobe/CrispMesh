@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { parseProject } from "../apps/desktop/src/project.ts";
 
-const binary = resolve(process.argv[2] ?? "build/crisp3ds");
+const binary = resolve(process.argv[2] ?? "build/crispmesh");
 const empty = JSON.parse(readFileSync(new URL("./contracts/empty-project.json", import.meta.url), "utf8"));
 const calibrated = JSON.parse(readFileSync(new URL("./contracts/calibrated-project.json", import.meta.url), "utf8"));
 const poseReady = JSON.parse(readFileSync(new URL("./contracts/pose-ready-project.json", import.meta.url), "utf8"));
@@ -57,7 +57,7 @@ poseMutation("marker size mismatch", p => p.board.markerSizeMm *= 2);
 poseMutation("rotated marker", p => {
   p.board.markers[0].cornersMm = p.board.markers[0].cornersMm.map(([x, y, z]) => [-y, x, z]);
 }, true);
-const temp = mkdtempSync(join(tmpdir(), "crisp3ds-contracts-"));
+const temp = mkdtempSync(join(tmpdir(), "crispmesh-contracts-"));
 try {
   for (const [name, project, expected] of cases) {
     const serialized = JSON.stringify(project);

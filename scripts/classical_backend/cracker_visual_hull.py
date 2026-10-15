@@ -27,7 +27,7 @@ from scripts.classical_backend.visual_hull_core import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = Path("/Volumes/backups/code/crisp3ds-data")
+DATA = Path("/Volumes/backups/code/crispmesh-data")
 SOURCE = DATA / "turntable-fresh-openmvs-005"
 OUTPUT = DATA / "cracker-visual-hull-001"
 RESULT_SHA256 = "dafc6ccb2a90f0c5a45748291571455237acd8ae08da01dd80adc10222a3625e"

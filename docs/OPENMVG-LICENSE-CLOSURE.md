@@ -49,7 +49,7 @@ of synthetic LiGT source/header paths. This is an **oracle-build fix only**.
 
 If approved later, copy the sealed source into a fresh local external
 fork-worktree under
-`/Volumes/backups/code/crisp3ds-data/openmvg-v21-ligt-off-oracle-001`,
+`/Volumes/backups/code/crispmesh-data/openmvg-v21-ligt-off-oracle-001`,
 verify base HEAD/gitlinks and patch hash, apply it there, and record the
 new commit/tree hash. Do not alter the preserved source or create a GitHub
 fork/PR. Keep a **1 GiB total new-tree cap**, both devices at least 11 GiB

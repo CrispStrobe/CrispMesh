@@ -60,8 +60,8 @@ jobs:
       - run: npm run build:release
       - name: The site carries the engine, the demo and only relative URLs
         run: |
-          test -s dist/engine/pkg/crisp3ds_dense_web_bg.wasm
-          test -s dist/engine/pkg-threads/crisp3ds_dense_web_bg.wasm
+          test -s dist/engine/pkg/crispmesh_dense_web_bg.wasm
+          test -s dist/engine/pkg-threads/crispmesh_dense_web_bg.wasm
           test -s dist/coi-worker.js
           grep -q '<script src="./coi-worker.js"></script>' dist/index.html
           test -s dist/demo/events.jsonl

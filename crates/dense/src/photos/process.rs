@@ -170,7 +170,7 @@ mod tests {
     }
 
     fn scratch(name: &str) -> std::path::PathBuf {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-process-{}-{name}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-process-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         folder
@@ -191,10 +191,10 @@ mod tests {
     fn output_exit_code_environment_deadline_and_cancel() {
         let folder = scratch("bounded");
         let shell = |script: &str| vec!["/bin/sh".to_string(), "-c".to_string(), script.to_string()];
-        let environment = [("CRISP3DS_TEST_VALUE".to_string(), "seven".to_string())];
+        let environment = [("CRISPMESH_TEST_VALUE".to_string(), "seven".to_string())];
         let log = folder.join("one.log");
         let outcome = bounded(
-            &shell("echo out $CRISP3DS_TEST_VALUE; pwd; echo err >&2; exit 3"),
+            &shell("echo out $CRISPMESH_TEST_VALUE; pwd; echo err >&2; exit 3"),
             &log,
             Duration::from_secs(20),
             &environment,

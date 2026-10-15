@@ -131,8 +131,8 @@ class binary:
 
 
 DATASET_CANDIDATES = (
-    Path("/kaggle/input/crisp3ds-bunny-3photo-research-smoke"),
-    Path("/kaggle/input/datasets/chr1str/crisp3ds-bunny-3photo-research-smoke"),
+    Path("/kaggle/input/crispmesh-bunny-3photo-research-smoke"),
+    Path("/kaggle/input/datasets/chr1str/crispmesh-bunny-3photo-research-smoke"),
 )
 MANIFEST_SHA256 = "e36fcbc214d76d3c29658c1b1595e4d6d3b2f0318c6523096de232d5e37483b9"
 PHOTOS = {
@@ -202,7 +202,7 @@ def main() -> None:
     signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError("20-minute deadline")))
     signal.alarm(MAX_SECONDS)
     report: dict = {"schema": "alicevision_three_photo_cpu_sparse_smoke_v1",
-                    "status": "running", "dataset_ref": "chr1str/crisp3ds-bunny-3photo-research-smoke",
+                    "status": "running", "dataset_ref": "chr1str/crispmesh-bunny-3photo-research-smoke",
                     "dataset_manifest_sha256": MANIFEST_SHA256,
                     "official_release_sha256": binary.SHA256,
                     "gpu_enabled": False, "scanner_or_supplied_poses_used": False,

@@ -9,8 +9,8 @@
 The root CMake now adds `core/depth` inside its OpenCV test conditional. Configure/build/test:
 
 ```sh
-cmake -S . -B build-opencv -DCRISP3DS_WITH_OPENCV=ON -DCRISP3DS_BUILD_TESTS=ON
-cmake --build build-opencv --target crisp3ds_depth_geometry_tests crisp3ds_depth_image_tests crisp3ds_depth_image_fusion_tests -j 4
+cmake -S . -B build-opencv -DCRISPMESH_WITH_OPENCV=ON -DCRISPMESH_BUILD_TESTS=ON
+cmake --build build-opencv --target crispmesh_depth_geometry_tests crispmesh_depth_image_tests crispmesh_depth_image_fusion_tests -j 4
 ctest --test-dir build-opencv -R 'depth_(geometry|image|image_fusion)_synthetic' --output-on-failure
 ```
 

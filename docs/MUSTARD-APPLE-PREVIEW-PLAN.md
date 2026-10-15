@@ -1,13 +1,13 @@
 # Mustard Apple Object Capture preview: frozen oracle plan
 
 Run one Apple-only evaluation of the exact sealed 48 TRAIN mustard RGB JPEGs
-at `/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/images` through
+at `/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/images` through
 the existing `scripts.apple_object_capture.launch` and compiled RealityKit
 probe. Request `.preview` with the default `PhotogrammetrySession`
 configuration. No masks, held-out photos, depth, reference mesh, supplied
 camera poses, or reconstructed poses enter the Apple input directory or the
 scoring stage. Apple Object Capture is an evaluation-only product oracle,
-not the cross-platform Crisp3DS backend.
+not the cross-platform CrispMesh backend.
 
 The stage report `mustard-sfm-train-001/stage-report.json` must retain SHA-256
 `bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0`.
@@ -22,7 +22,7 @@ The prior support result and cracker-box run used this probe binary, but
 neither predicts mustard completion or quality.
 
 Use the fresh external directory
-`/Volumes/backups/code/crisp3ds-data/apple-mustard48-preview-001`.
+`/Volumes/backups/code/crispmesh-data/apple-mustard48-preview-001`.
 The exact launcher options are `--max-output-mib 1024` and
 `--timeout-minutes 15`; the existing launcher also caps the stage log at
 16 MiB and sampled direct-child RSS at 8 GiB. Its child temporary directory

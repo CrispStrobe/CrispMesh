@@ -18,7 +18,7 @@
       "Record upstream revision, files, and modifications.",
       "Check dependencies, weights and assets separately."
     ],
-    "unchanged_project_license": "AGPL-3.0-only with existing owner store-build permission; this selection policy does not relicense Crisp3DS."
+    "unchanged_project_license": "AGPL-3.0-only with existing owner store-build permission; this selection policy does not relicense CrispMesh."
   },
   "decisions": {
     "colmap/colmap": "Preferred implementation reference: stereo file explicitly SPDX BSD-3-Clause; verify each adapted file and avoid unnecessary CUDA/library dependency imports.",

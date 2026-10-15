@@ -23,7 +23,7 @@ from scripts.object_motion.ycb_camera_reference import dataset
 
 
 ROOT = Path(__file__).resolve().parents[2]
-EXTERNAL_BASE = Path('/Volumes/backups/code/crisp3ds-data')
+EXTERNAL_BASE = Path('/Volumes/backups/code/crispmesh-data')
 CALIBRATION = EXTERNAL_BASE / 'mustard-pose-metadata-001/metadata/calibration.h5'
 CALIBRATION_SHA256 = 'b9ff8208e18cb16d3348ce07967f868bf64576a13dc36e3094497912f85817e0'
 RECEIPT = EXTERNAL_BASE / 'mustard-pose-metadata-001/receipt.json'

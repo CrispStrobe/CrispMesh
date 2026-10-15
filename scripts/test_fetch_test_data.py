@@ -120,8 +120,8 @@ class FetchTestDataTests(unittest.TestCase):
             self.assertFalse((root / "sample").exists())
 
     def test_local_measured_fixture_when_requested(self):
-        if os.getenv("CRISP3DS_TEST_REAL_DATA") != "1":
-            self.skipTest("set CRISP3DS_TEST_REAL_DATA=1 after --fetch")
+        if os.getenv("CRISPMESH_TEST_REAL_DATA") != "1":
+            self.skipTest("set CRISPMESH_TEST_REAL_DATA=1 after --fetch")
         piano_root = fetch.selected_root("piano")
         entries = fetch.validate_manifest(json.loads(fetch.MANIFEST.read_text()))
         for entry in entries:
@@ -146,8 +146,8 @@ class FetchTestDataTests(unittest.TestCase):
                 fetch.verify_legacy_scene(root, name, (434, 383) if name == "venus" else (450, 375))
 
     def test_eth3d_fixture_when_requested(self):
-        if os.getenv("CRISP3DS_TEST_ETH3D") != "1":
-            self.skipTest("set CRISP3DS_TEST_ETH3D=1 for noncommercial ETH3D local data")
+        if os.getenv("CRISPMESH_TEST_ETH3D") != "1":
+            self.skipTest("set CRISPMESH_TEST_ETH3D=1 for noncommercial ETH3D local data")
         root = fetch.selected_root("eth3d")
         archives, files = fetch.validate_eth3d_manifest(json.loads(fetch.MANIFEST_ETH3D.read_text()))
         for entry in archives:

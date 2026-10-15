@@ -11,7 +11,7 @@ use web_time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{json, Map, Value};
 
-pub const SCHEMA: &str = "crisp3ds_dense_events_v1";
+pub const SCHEMA: &str = "crispmesh_dense_events_v1";
 
 /// Receives every event as it is emitted, on the thread that emits it.
 pub type Observer = Arc<dyn Fn(&Value) + Send + Sync>;
@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn lines_are_json_with_stage_and_relative_paths() {
-        let dir = std::env::temp_dir().join(format!("crisp3ds-events-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("crispmesh-events-{}", std::process::id()));
         crate::storage::create_dir_all(dir.join("mesh")).unwrap();
         let log_path = dir.join("events.jsonl");
         let _ = crate::storage::remove_file(&log_path);
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn a_run_log_reaches_the_file_and_the_observer_under_every_stage() {
-        let dir = std::env::temp_dir().join(format!("crisp3ds-events-run-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("crispmesh-events-run-{}", std::process::id()));
         let _ = crate::storage::remove_dir_all(&dir);
         crate::storage::create_dir_all(&dir).unwrap();
         let seen = Arc::new(std::sync::Mutex::new(Vec::<Value>::new()));

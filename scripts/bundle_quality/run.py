@@ -36,10 +36,10 @@ def digest(path):
 
 def build_marker_reader(path):
     build=ROOT/"build-opencv"
-    flags=(build/"CMakeFiles/crisp3ds_pose_integration.dir/flags.make").read_text()
+    flags=(build/"CMakeFiles/crispmesh_pose_integration.dir/flags.make").read_text()
     includes=shlex.split(re.search(r"^CXX_INCLUDES = (.*)$",flags,re.M).group(1))
-    link=shlex.split((build/"CMakeFiles/crisp3ds_pose_integration.dir/link.txt").read_text())
-    libs=link[link.index("libcrisp3ds_core.a")+1:]
+    link=shlex.split((build/"CMakeFiles/crispmesh_pose_integration.dir/link.txt").read_text())
+    libs=link[link.index("libcrispmesh_core.a")+1:]
     command=["/usr/bin/c++","-O2","-std=c++20",*includes,str(HERE/"markers.cc"),"-o",str(path),*libs]
     subprocess.run(command,cwd=build,check=True,timeout=120,env=LOCAL_ENV)
     return command

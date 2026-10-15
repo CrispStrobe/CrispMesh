@@ -39,22 +39,22 @@ check. A failed gate does not authorize changing prompts, threshold or model.
 
 The supervisor requires native arm64 macOS, a mounted `/Volumes/backups`
 device distinct from the workspace's internal APFS Data volume, and output
-under `/Volumes/backups/code/crisp3ds-data`. The isolated Python environment,
+under `/Volumes/backups/code/crispmesh-data`. The isolated Python environment,
 pip cache/temp and checkpoint must reside under
-`/Volumes/backups/ai/crisp3ds-sam21-m1-002`; pinned source, photos/reference,
+`/Volumes/backups/ai/crispmesh-sam21-m1-002`; pinned source, photos/reference,
 and outputs reside on the mounted external code/data volume. Transfer/install steps remain
 separately gated to ≤2 GiB setup growth and ≥10 GiB free on both volumes.
 The completed setup's data staging locations are
-`/Volumes/backups/code/crisp3ds-data/sam21-m1-source-002` (contains `sam2/` and `LICENSE`) and
-`/Volumes/backups/code/crisp3ds-data/sam21-m1-three-train-002` (`photos/`,
+`/Volumes/backups/code/crispmesh-data/sam21-m1-source-002` (contains `sam2/` and `LICENSE`) and
+`/Volumes/backups/code/crispmesh-data/sam21-m1-three-train-002` (`photos/`,
 `prior/`, `package.json`, `prompts.json`) for the three photos plus all 16
 sealed reference mask pairs/manifests. Setup `001` stopped before pip
 installation because its source-inventory helper sorted relative path strings
 while the reviewed source digest sorted path components; all 78 local/remote
 file hashes remained unchanged. Fresh `002` is the approved setup attempt,
 and completed. The run used the exact staged paths above plus checkpoint
-`/Volumes/backups/ai/crisp3ds-sam21-m1-002/checkpoints/sam2.1_hiera_tiny.pt`
-and output `/Volumes/backups/code/crisp3ds-data/sam21-m1-parity-001`.
+`/Volumes/backups/ai/crispmesh-sam21-m1-002/checkpoints/sam2.1_hiera_tiny.pt`
+and output `/Volumes/backups/code/crispmesh-data/sam21-m1-parity-001`.
 
 The run uses SAM2's CPU predictor with two Torch/OMP/BLAS threads, ≤180 s
 worker wall time, ≤1.5 GiB worker RSS, ≤20 MiB output/log cap (log ≤1 MiB),
@@ -91,7 +91,7 @@ arrays were pixel-identical** to the corresponding sealed VPS arrays (IoU
 1.0; point membership `[1,0,0]` in each). The PNG **file hashes differ**,
 so this is pixel parity, not byte/encoding parity; the reason for different
 encoded bytes was not established. Cleanup removed 972 detached raw pixels
-in `000`, and zero in the other two. The [hash-bound RGB/raw/clean sheet](</Volumes/backups/code/crisp3ds-data/sam21-m1-parity-review-001/review_sheet.jpg>)
+in `000`, and zero in the other two. The [hash-bound RGB/raw/clean sheet](</Volumes/backups/code/crispmesh-data/sam21-m1-parity-review-001/review_sheet.jpg>)
 is 93,795 bytes, SHA-256
 `f5d84f9c09b6e7a51925572b400c549ff21264e5c69d2ee0824f2eb5dfaf7e4d`.
 The machine status remains `parity_observed_pending_visual_qa`. Root
@@ -112,7 +112,7 @@ class and exact contract hash. On resume, the shared validator checks the
 receipts and all previous invocation hash seals; extra/held-out or altered
 frames fail closed. The contract requires the tracked accepted three-view QA
 record, its setup/parity/sheet hashes, the sealed prior manifests/masks, and
-the independently staged [48-TRAIN report](</Volumes/backups/code/crisp3ds-data/sam21-m1-train48-001/stage-report.json>).
+the independently staged [48-TRAIN report](</Volumes/backups/code/crispmesh-data/sam21-m1-train48-001/stage-report.json>).
 The stage report SHA-256 is
 `d6e72143fc02ee3d18dd8961ae508417bf122cbdbc24ebc4465e207a30997861`;
 all 48 photo names and source hashes are rechecked from the frozen package.
@@ -132,7 +132,7 @@ Peer review cleared the code, not the masks or a live run.
 A read-only Mac preflight verified the 48 staged TRAIN photos, the exact 16
 sealed prior masks, accepted parity QA, source/checkpoint pins, and fresh
 proposed output
-`/Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-resume-001`.
+`/Volumes/backups/code/crispmesh-data/sam21-mustard-m1-resume-001`.
 The frozen Mac wrapper SHA-256 is
 `5a73121d54e6da121e5632f0a84e2159809c77950c2bf780c4717d54ef86c4ea`;
 shared core SHA-256 is
@@ -160,7 +160,7 @@ check of ≥4 GiB available-memory estimate. The immediate check passed at
 4,276,400 KiB, and all 23 existing receipts plus the prior invocation hash
 seal were revalidated before launch. `002` completed in 91.93 s, with seven
 bounded batches (maximum observed worker RSS 1,428,528 KiB) and zero RAM
-wait. The [completed inventory](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-resume-001/complete_inventory.json>)
+wait. The [completed inventory](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-resume-001/complete_inventory.json>)
 has SHA-256 `b47e8caec7d05fae7bb84ae9b3eec7d4a35b1457ca9df67a3b984cbaaeed8a98`;
 invocation `002` report SHA-256 is
 `91ec53c6387a4e8a604e23d3c3ac5e81accd94a5f8b1154ee5b8d3e6a8201b3e`.
@@ -169,7 +169,7 @@ Read-only validation confirmed all 48 photo names and cleaned-mask hashes,
 both invocation seals. The inventory's machine status is
 `generated_unreviewed`, not an acceptance claim.
 
-Root independently inspected the [48-view cleaned sheet](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-resume-001/review_cleaned_48_frames_002.jpg>)
+Root independently inspected the [48-view cleaned sheet](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-resume-001/review_cleaned_48_frames_002.jpg>)
 (SHA-256 `755fb40755f2c8aaca38ec7113a4a074645bc08eb59191d4ccc42fb44a0b4ca4`)
 and [recorded a full-set QA rejection](../tests/datasets/sam21_mustard_m1_full_review.json)
 (review record SHA-256
@@ -223,17 +223,17 @@ resource-limit change was made.
 
 Root later approved exactly one live run after a fresh preflight measured
 6,535,536 KiB available and ≥20,269,854,720 bytes free on the smaller disk.
-The fresh [board5 output](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-board5-001/manifest.json>)
+The fresh [board5 output](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-board5-001/manifest.json>)
 is **partial/unusable**, not a five-view mask set: `NP3_318`, `330` and `348`
 completed as unreviewed candidates; `NP3_336` still marked the new negative
 point as foreground (`[1,0,0,1]`), and `NP3_342` exceeded the predeclared 10%
 largest-component removal limit. All five raw masks and the
-[review sheet](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-board5-001/review_sheet.jpg>)
+[review sheet](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-board5-001/review_sheet.jpg>)
 are preserved; the two failed views have no cleaned masks. Manifest SHA-256 is
 `1008fc7bdbaa75ac33f17f8ddf44eaa275b3e98eb21466906060ebc3300c638c`,
 review-sheet SHA-256 is
 `610936086ea359290567d6627d1bd0309e1038c6e7b2f644f70b1e636c98b9fc`,
-and [supervisor report](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-board5-001/supervisor.json>)
+and [supervisor report](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-board5-001/supervisor.json>)
 SHA-256 is
 `b4485b72c539d59b6b3229917f0099ceb11359cdb8c9228bd0553208989619ce`
 with `status=failed`. The run took 27.78 s total with peak worker RSS
@@ -276,14 +276,14 @@ Root approved one fresh run after read-only preflight found 6,305,024 KiB
 available and 20,200,599,552 bytes free on the smaller volume. Both
 generated masks passed the frozen *numeric* point/area/cleanup checks, each
 with one 8-connected component and zero removed pixels. The
-[manifest](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-recipe-001/manifest.json>)
+[manifest](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-recipe-001/manifest.json>)
 SHA-256 is
 `361d32f4342fa193d5bfed68289f0a44151b3768b54d2a30998dd4a6b11c6f01`;
-the [supervisor](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-recipe-001/supervisor.json>)
+the [supervisor](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-recipe-001/supervisor.json>)
 SHA-256 is
 `c9124c9d1fe921396fda801f15a7f2cb9a7022a6d1829494aad9bc12ff7e703d`
 (`generated_unreviewed`, no failure reason, 8.34 s total, peak worker RSS
-1,430,416 KiB). The [broad-context review sheet](</Volumes/backups/code/crisp3ds-data/sam21-mustard-m1-recipe-001/review_sheet.jpg>)
+1,430,416 KiB). The [broad-context review sheet](</Volumes/backups/code/crispmesh-data/sam21-mustard-m1-recipe-001/review_sheet.jpg>)
 SHA-256 is
 `58a5c387d7204099197441282f467ad4093e3e2cf44de0d048680f99dacf85b1`.
 Root subsequently inspected that broad-context RGB/raw/cleaned sheet and

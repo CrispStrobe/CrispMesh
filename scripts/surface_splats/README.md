@@ -13,7 +13,7 @@ rendered images and of the projected splats, and the parameters' gradients.
 
 ```
 python splat_reference.py fixture.npz            # a PyTorch environment
-CRISP3DS_GPU_TESTS=1 CRISP3DS_SPLAT_FIXTURE=fixture.npz cargo test --release -p crisp3ds-dense --lib splats::
+CRISPMESH_GPU_TESTS=1 CRISPMESH_SPLAT_FIXTURE=fixture.npz cargo test --release -p crispmesh-dense --lib splats::
 ```
 
 Its projection and spherical harmonics equal gsplat's PyTorch implementation to float rounding (checked once by

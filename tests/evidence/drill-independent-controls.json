@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_drill_independent_controls_v1",
+  "schema": "crispmesh_drill_independent_controls_v1",
   "date": "2026-10-09",
   "conclusion": "Unresolved structural depth reconstruction failure; no tested replacement or confidence/completion control is acceptable. No reconstruction default changed.",
   "inputs": {
@@ -16,7 +16,7 @@
     ]
   },
   "surface_support": {
-    "schema": "crisp3ds_surface_support_v1",
+    "schema": "crispmesh_surface_support_v1",
     "reference_used": false,
     "samples": 100000,
     "seed": 236,

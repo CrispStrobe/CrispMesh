@@ -17,7 +17,7 @@ from scripts.object_motion import checkerboard_pose_reference_eval as shared
 
 
 ROOT = Path(__file__).resolve().parents[2]
-EXTERNAL_BASE = Path('/Volumes/backups/code/crisp3ds-data')
+EXTERNAL_BASE = Path('/Volumes/backups/code/crispmesh-data')
 POSE_REPORT = EXTERNAL_BASE / 'mustard-checkerboard-calibrated-pose-001.json'
 POSE_REPORT_SHA256 = '25f37be625cf4edd00bdf29c479529d341cd76d3dc748d8b966e482c4668619d'
 POSE_RUNNER_SHA256 = '6dad7bd210848480699c10348b00ec792ae5f017108a1f0ba9c74c83c218c705'

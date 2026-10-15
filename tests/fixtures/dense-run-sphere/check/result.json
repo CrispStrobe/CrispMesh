@@ -1,7 +1,7 @@
 {
-  "mesh": "/Users/christianstrobele/code/crisp3ds/.claude/worktrees/agent-aabd0c42b8c9008f4/.local-tools/turntable-mesh/native-stereo-parity-226/sph/fixture-run/mesh/mesh.stl",
+  "mesh": ".claude/worktrees/agent-aabd0c42b8c9008f4/.local-tools/turntable-mesh/native-stereo-parity-226/sph/fixture-run/mesh/mesh.stl",
   "note": "photo agreement only; not scanner accuracy or physical scale",
-  "preview": "/Users/christianstrobele/code/crisp3ds/.claude/worktrees/agent-aabd0c42b8c9008f4/.local-tools/turntable-mesh/native-stereo-parity-226/sph/fixture-run/check/preview.png",
+  "preview": ".claude/worktrees/agent-aabd0c42b8c9008f4/.local-tools/turntable-mesh/native-stereo-parity-226/sph/fixture-run/check/preview.png",
   "silhouette_iou_input_masks": {
     "maximum": 0.9536369256130228,
     "median": 0.9508937743990138,

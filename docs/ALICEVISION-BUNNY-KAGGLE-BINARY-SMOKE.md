@@ -2,7 +2,7 @@
 
 On 2026-09-28, a **private CPU-only** Kaggle script was run under account
 `chr1str` to test the official AliceVision Linux binary before any bunny data
-transfer. Kernel [versions 1–4](https://www.kaggle.com/code/chr1str/crisp3ds-alicevision-binary-smoke)
+transfer. Kernel [versions 1–4](https://www.kaggle.com/code/chr1str/crispmesh-alicevision-binary-smoke)
 progressed from a scratch-path preflight failure to both tested CLIs printing
 their help text with no unresolved shared libraries. The final strict gate
 remained `runtime_compatible=false` because both `--help` commands exited 1,
@@ -62,7 +62,7 @@ The supplied scanner remains evaluation-only.
 ## Private three-photo CPU sparse attempt: worker completion unverified
 
 A fresh external-SSD folder
-`/Volumes/backups/code/crisp3ds-data/alicevision-bunny-three-photo-dataset-001`
+`/Volumes/backups/code/crispmesh-data/alicevision-bunny-three-photo-dataset-001`
 contains only `frame_0000.png`, `frame_0022.png`, and `frame_0044.png`, plus
 dataset metadata, attribution/readme, and a selection manifest. These map
 to numeric `bunny_0`, `bunny_2`, and `bunny_4` in the sealed prepare manifest.
@@ -80,7 +80,7 @@ Stanford bunny derivative's uncleared commercial rights. No scanner, PRO
 poses, depth images, or supplied calibration are in the package.
 
 The dataset was created **private**, without Kaggle's public flag, at
-[version 1](https://www.kaggle.com/datasets/chr1str/crisp3ds-bunny-3photo-research-smoke).
+[version 1](https://www.kaggle.com/datasets/chr1str/crispmesh-bunny-3photo-research-smoke).
 The authenticated API read-back reported owner `chr1str`, `is_private=True`,
 and current version 1. Its remote file listing contains exactly the three
 PNG files, `README.md`, and `selection-manifest.json`; the dataset metadata
@@ -106,7 +106,7 @@ at commit `13dafc2`; the kernel metadata SHA-256 is
 All 15 relevant offline tests passed. This is neither a dense/GPU test nor
 a 73-photo result.
 
-The [private CPU-only kernel](https://www.kaggle.com/code/chr1str/crisp3ds-alicevision-bunny-three-photo-cpu-smoke)
+The [private CPU-only kernel](https://www.kaggle.com/code/chr1str/crispmesh-alicevision-bunny-three-photo-cpu-smoke)
 had three versions:
 
 1. Version 1 failed before running the script because Kaggle exposed only

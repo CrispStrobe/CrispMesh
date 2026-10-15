@@ -1,8 +1,8 @@
 # OpenMVG mustard TRAIN photo-only `-001`: registration gate failed
 
 The evaluation-only OpenMVG v2.1 run at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001` finished
-all five native CLI stages, but its sealed [receipt](/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001/receipt.json)
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001` finished
+all five native CLI stages, but its sealed [receipt](/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001/receipt.json)
 has status **`failed_registration_or_sparse_gate`**, not success. Receipt
 SHA-256: `e45c400dcf71a3ba86fa22f7af2138418d6dc511fddcd6d8470ef33599804744`.
 The SfM HTML report records **48 views, 46 poses, one intrinsic, 222 sparse
@@ -18,10 +18,10 @@ copies, all **170** receipt-inventoried output files, all five stage logs and
 required stage artifacts. The staged names equal the sealed TRAIN list,
 and stage commands contain only the photo pipeline's paths—no masks,
 Berkeley poses, scanner, mesh, reference, or held-out input. The
-[sparse model](/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001/sparse/sfm_data.bin)
+[sparse model](/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001/sparse/sfm_data.bin)
 is 67,169 bytes, SHA-256
 `dc11f9b3a74809ebc080260b360ff1dd0e6f9f9526ea151aac002ace75b2df8b`;
-the [HTML report](/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001/sparse/SfMReconstruction_Report.html)
+the [HTML report](/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001/sparse/SfMReconstruction_Report.html)
 is SHA-256 `2d071e87db65a987623c460c3168aafea3fbde334dbb6356ab4d5fe0af62307d`.
 
 | Completed stage | Wall time | Peak RSS | Log bytes | Verified log SHA-256 |

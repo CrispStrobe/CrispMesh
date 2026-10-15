@@ -1,6 +1,6 @@
 /**
  * Tuning options of the providers of the photos start, as the engine describes them
- * (`crisp3ds-dense run --describe`: flag, kind, default, choices, meaning), and how their
+ * (`crispmesh-dense run --describe`: flag, kind, default, choices, meaning), and how their
  * values become the option words of the photos stage. Nothing about any particular
  * provider is written here. No DOM.
  *

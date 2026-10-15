@@ -1,7 +1,7 @@
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
-#include "crisp3ds/core.h"
+#include "crispmesh/core.h"
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
@@ -108,12 +108,12 @@ std::string project_json(const std::vector<std::string> &paths, const std::vecto
   out << "]},\"stages\":{}}";
   return out.str();
 }
-std::string api(const fs::path &path, crisp3ds_status expected) {
+std::string api(const fs::path &path, crispmesh_status expected) {
   char *output = nullptr;
   size_t size = 0;
-  auto actual = crisp3ds_reconstruct_sparse_alloc(path.string().c_str(), &output, &size);
+  auto actual = crispmesh_reconstruct_sparse_alloc(path.string().c_str(), &output, &size);
   std::string report = output ? std::string(output) : std::string();
-  crisp3ds_free(output);
+  crispmesh_free(output);
   if (actual != expected) {
     std::cerr << "API status " << actual << " expected " << expected << " for " << path
               << " report: " << report.substr(0, 500) << '\n';
@@ -144,7 +144,7 @@ void expect_failure(const fs::path &root, const fs::path &cli, const std::string
                     const std::string &project, const std::string &expected_code) {
   const auto project_path = root / (stem + ".json");
   write_text(project_path, project);
-  const auto report = api(project_path, CRISP3DS_INVALID_PROJECT);
+  const auto report = api(project_path, CRISPMESH_INVALID_PROJECT);
   auto api_doc = parse(report);
   assert(static_cast<int>(api_doc["ok"]) == 0);
   assert(static_cast<std::string>(api_doc["error"]["code"]) == expected_code);
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
   write_text(root / "truth.json", truth.str());
   const auto project = project_json(paths, masks);
   write_text(root / "project.json", project);
-  const auto report = api(root / "project.json", CRISP3DS_OK);
+  const auto report = api(root / "project.json", CRISPMESH_OK);
   write_text(root / "sparse-report.json", report);
   auto doc = parse(report);
   assert(static_cast<int>(doc["ok"]) == 1);

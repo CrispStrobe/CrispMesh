@@ -43,7 +43,7 @@ function engineWith(worker: FakeWorker) {
   const revoked: string[] = [];
   let made = 0;
   const engine = new BrowserEngine({
-    module: "https://host/app/engine/crisp3ds-dense.js",
+    module: "https://host/app/engine/crispmesh-dense.js",
     createWorker: () => worker,
     clock: () => 1000,
     objectUrls: { create: () => `blob:${++made}`, revoke: (url) => revoked.push(url) },
@@ -59,7 +59,7 @@ describe("the engine in this browser", () => {
     const worker = new FakeWorker();
     const { engine } = engineWith(worker);
     const health = await engine.health();
-    expect(worker.sent[0]).toEqual({ type: "load", module: "https://host/app/engine/crisp3ds-dense.js" });
+    expect(worker.sent[0]).toEqual({ type: "load", module: "https://host/app/engine/crispmesh-dense.js" });
     expect(health).toMatchObject({ device: "WebGPU: apple metal-3 · single-threaded", canStartRuns: true, choosesDevice: false, scoresReference: false });
     expect(health.startPoints?.map((point) => point.id)).toEqual(["inputs", "photos"]);
     expect((await engine.settings())[0]?.name).toBe("grid");
@@ -173,9 +173,9 @@ describe("the engine in this browser", () => {
 
   it("starts from photos: picked images in capture order, a calibration, threshold and turntable, no previews by default", async () => {
     const worker = new FakeWorker();
-    const shipped = JSON.stringify({ schema: "crisp3ds_lens_calibration_v1", fx: 776 });
+    const shipped = JSON.stringify({ schema: "crispmesh_lens_calibration_v1", fx: 776 });
     const engine = new BrowserEngine({
-      module: "https://host/app/engine/crisp3ds-dense.js",
+      module: "https://host/app/engine/crispmesh-dense.js",
       createWorker: () => worker,
       clock: () => 1000,
       base: "https://host/app/",
@@ -280,7 +280,7 @@ describe("the engine in this browser", () => {
 });
 
 describe("the photos start", () => {
-  // In the shape of `crisp3ds-dense run --describe`, as the app hands it on.
+  // In the shape of `crispmesh-dense run --describe`, as the app hands it on.
   const setting = (name: string, kind: string, fallback: unknown, more: Record<string, unknown> = {}) => ({ name, flag: `--${name}`, kind, default: fallback, choices: [], repeated: false, meaning: `Meaning of ${name}`, ...more });
   const described = [
     {
@@ -445,7 +445,7 @@ describe("asking the page's own origin for an engine", () => {
     };
     expect(at("http://127.0.0.1:8765/")).toBe(true);
     expect(at("http://192.168.1.20:8765/index.html")).toBe(true);
-    expect(at("https://crispstrobe.github.io/crisp3ds/")).toBe(false);
+    expect(at("https://crispstrobe.github.io/CrispMesh/")).toBe(false);
     expect(at("https://someone.github.io/")).toBe(false);
     expect(at("https://example.org/studio/")).toBe(false);
     expect(at("tauri://localhost/")).toBe(false);

@@ -20,7 +20,7 @@ Explicit `--fetch --object <id>` downloads one object at a time into a fresh,
 hidden stage on the storage filesystem and publishes the final directory
 only by a same-filesystem atomic rename after validation. The default VPS
 destination is canonical
-`/mnt/akademie_storage/crisp3ds-data/ycb-expansion-001`; `/mnt/storage` is
+`/mnt/akademie_storage/crispmesh-data/ycb-expansion-001`; `/mnt/storage` is
 a symlink to `/mnt/akademie_storage` and the helper rejects symlinked
 destination ancestors. Large archives and extraction stay on storage;
 `/mnt/volume1` (about 6.5 GiB free) is not used for them. Bounds include a

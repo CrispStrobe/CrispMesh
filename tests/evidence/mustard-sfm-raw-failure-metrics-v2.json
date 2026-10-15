@@ -1,7 +1,7 @@
 {
   "accepted_sparse_export": false,
-  "database_snapshot": "/Volumes/backups/code/crisp3ds-data/mustard-sfm-diagnostics-001/raw-database-snapshot.db",
-  "database_source": "/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001/database.db",
+  "database_snapshot": "/Volumes/backups/code/crispmesh-data/mustard-sfm-diagnostics-001/raw-database-snapshot.db",
+  "database_source": "/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001/database.db",
   "geometry_metrics_interpretation": "unavailable",
   "matching_graph": {
     "component_count": 1,
@@ -65,23 +65,23 @@
   "model": null,
   "model_role": "unavailable_no_model",
   "producer_failure": "sfm failed: exit 1",
-  "producer_source": "/Volumes/backups/code/crisp3ds-data/mustard-sfm-source-001/run.py",
+  "producer_source": "/Volumes/backups/code/crispmesh-data/mustard-sfm-source-001/run.py",
   "producer_status": "failed",
   "quality_claim": false,
   "runner_sha256": "b7e266358812dc585cf23a241f51dd5404bc124372bdf07385ee6f8d8bf73b08",
   "schema": "mustard_train_sparse_failure_metrics_v1",
   "scope": "48 training RGB only; image-estimated SfM failure, no held-out/GT/depth/reference",
   "source_sha256": {
-    "/Users/christianstrobele/code/crisp3ds/build-opencv/ycb-evaluation-vps-001/mustard-package.json": "45b6ed1430627a747eaeb8d4dff7d2c49502083cca0a7914e25aacd45b594425",
-    "/Users/christianstrobele/code/crisp3ds/scripts/object_dataset/sparse_sfm_metrics.py": "b7e266358812dc585cf23a241f51dd5404bc124372bdf07385ee6f8d8bf73b08",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-diagnostics-001/raw-database-snapshot.db": "314e4ea4e817ef20e0b64b58eb83070d3af4286bab00aa9b6c9f86236d4386a7",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001/database.db": "314e4ea4e817ef20e0b64b58eb83070d3af4286bab00aa9b6c9f86236d4386a7",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001/features.log": "98f8f9c710ae7e4978eca853388d682c4fa820acef0da32fda8c404717c8b4e2",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001/matching.log": "5e247847b0f66a3c6f86b88640d26c307a36d8cba5abf1b2dc049bf603774b03",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001/pycolmap-options.json": "1157f55a7ac49b2547ca35f97a6ce94c54802ee0016e0bb850d29919525f5081",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001/result.json": "92a1d3b74bd5b28a92894f790c4536391f265afd28685f3c57ed90265c8b3732",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-raw-001/sfm.log": "f57f6e88bba49012235912a2578aed4083bba171124bbc14fef9eca81fec1f34",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-source-001/run.py": "eaf9592cabaf65e7d74f6456f731deb937343a0bb86708c3fb3bfbceb0f9d53c"
+    "build-opencv/ycb-evaluation-vps-001/mustard-package.json": "45b6ed1430627a747eaeb8d4dff7d2c49502083cca0a7914e25aacd45b594425",
+    "scripts/object_dataset/sparse_sfm_metrics.py": "b7e266358812dc585cf23a241f51dd5404bc124372bdf07385ee6f8d8bf73b08",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-diagnostics-001/raw-database-snapshot.db": "314e4ea4e817ef20e0b64b58eb83070d3af4286bab00aa9b6c9f86236d4386a7",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001/database.db": "314e4ea4e817ef20e0b64b58eb83070d3af4286bab00aa9b6c9f86236d4386a7",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001/features.log": "98f8f9c710ae7e4978eca853388d682c4fa820acef0da32fda8c404717c8b4e2",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001/matching.log": "5e247847b0f66a3c6f86b88640d26c307a36d8cba5abf1b2dc049bf603774b03",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001/pycolmap-options.json": "1157f55a7ac49b2547ca35f97a6ce94c54802ee0016e0bb850d29919525f5081",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001/result.json": "92a1d3b74bd5b28a92894f790c4536391f265afd28685f3c57ed90265c8b3732",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-raw-001/sfm.log": "f57f6e88bba49012235912a2578aed4083bba171124bbc14fef9eca81fec1f34",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-source-001/run.py": "eaf9592cabaf65e7d74f6456f731deb937343a0bb86708c3fb3bfbceb0f9d53c"
   },
   "status": "failed_no_model"
 }

@@ -18,7 +18,7 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, bail};
 
-/// Command line of `crisp3ds-dense stereo`, the counterpart of
+/// Command line of `crispmesh-dense stereo`, the counterpart of
 /// `python -m scripts.turntable_mesh.multiscale_stereo`.
 #[derive(Debug, Default)]
 pub struct Arguments {
@@ -33,7 +33,7 @@ pub struct Arguments {
     pub only: Option<String>,
 }
 
-pub const USAGE: &str = "usage: crisp3ds-dense stereo --inputs DIR --output DIR [--config FILE] [--set KEY=VALUE]... \
+pub const USAGE: &str = "usage: crispmesh-dense stereo --inputs DIR --output DIR [--config FILE] [--set KEY=VALUE]... \
 [--reuse-depths FILE] [--events FILE] [--previews] [--device NAME]";
 
 impl Arguments {

@@ -1,4 +1,4 @@
-#include "crisp3ds/core.h"
+#include "crispmesh/core.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -14,17 +14,17 @@ namespace {
 struct CommaDecimal : std::numpunct<char> {
   char do_decimal_point() const override { return ','; }
 };
-std::pair<crisp3ds_status,std::string> run(const std::string &s, bool reconstruct=false) {
-  auto fn = reconstruct ? crisp3ds_reconstruct_json : crisp3ds_validate_project_json;
+std::pair<crispmesh_status,std::string> run(const std::string &s, bool reconstruct=false) {
+  auto fn = reconstruct ? crispmesh_reconstruct_json : crispmesh_validate_project_json;
   size_t needed=0;
-  assert(fn(s.data(),s.size(),nullptr,0,&needed)==CRISP3DS_BUFFER_TOO_SMALL);
+  assert(fn(s.data(),s.size(),nullptr,0,&needed)==CRISPMESH_BUFFER_TOO_SMALL);
   std::vector<char> out(needed);
   auto status=fn(s.data(),s.size(),out.data(),out.size(),&needed);
   return {status,std::string(out.data())};
 }
 void check_invalid(const std::string &s, const std::string &fragment) {
   auto [status,json]=run(s);
-  if (status != CRISP3DS_INVALID_PROJECT || json.find(fragment)==std::string::npos) {
+  if (status != CRISPMESH_INVALID_PROJECT || json.find(fragment)==std::string::npos) {
     std::cerr << "Expected invalid project containing '" << fragment << "', got: " << json << '\n';
     std::abort();
   }
@@ -32,12 +32,12 @@ void check_invalid(const std::string &s, const std::string &fragment) {
 }
 
 int main() {
-  assert(crisp3ds_abi_version()==1);
+  assert(crispmesh_abi_version()==1);
   const std::string empty=R"({"schemaVersion":1,"id":"scan-1","name":"Test","units":"mm","images":[],"stages":{}})";
   auto [status,valid]=run(empty);
-  assert(status==CRISP3DS_OK && valid.find("\"imageCount\":0")!=std::string::npos);
+  assert(status==CRISPMESH_OK && valid.find("\"imageCount\":0")!=std::string::npos);
   auto [reconstruction,unavailable]=run(empty,true);
-  assert(reconstruction==CRISP3DS_UNAVAILABLE && unavailable.find("no mesh was produced")!=std::string::npos);
+  assert(reconstruction==CRISPMESH_UNAVAILABLE && unavailable.find("no mesh was produced")!=std::string::npos);
   check_invalid(R"({"schemaVersion":2,"id":"x","name":"x","units":"mm","images":[],"stages":{}})","schemaVersion");
   check_invalid(R"({"schemaVersion":1,"id":"x","name":"x","units":"mm","images":[{"id":"a","path":"../secret.jpg"}],"stages":{}})","unsafe path segment");
   check_invalid(R"({"schemaVersion":1,"id":"x","name":"x","units":"mm","images":[{"id":"a","path":"C:\\x.jpg"}],"stages":{}})","relative / separators");
@@ -50,7 +50,7 @@ int main() {
   const std::string numeric_suffix=R"(,"cy":240,"distortion":[]}})";
   for (const char *number : {"-0", "0e4000", "-0e-4000", "1e0", "1.7976931348623157e308", "4.9406564584124654e-324"}) {
     auto [numeric_status, numeric_report]=run(numeric_prefix+number+numeric_suffix);
-    if (numeric_status != CRISP3DS_OK) {
+    if (numeric_status != CRISPMESH_OK) {
       std::cerr << "Expected finite JSON number " << number << ", got: " << numeric_report << '\n';
       std::abort();
     }
@@ -63,7 +63,7 @@ int main() {
   std::locale::global(std::locale(std::locale::classic(), new CommaDecimal));
   auto [dot_status, dot_report] = run(numeric_prefix+"1.5"+numeric_suffix);
   std::locale::global(original_locale);
-  if (dot_status != CRISP3DS_OK) {
+  if (dot_status != CRISPMESH_OK) {
     std::cerr << "Expected JSON dot decimal under comma locale, got: " << dot_report << '\n';
     std::abort();
   }
@@ -74,23 +74,23 @@ int main() {
   malformed_utf8.replace(malformed_utf8.find("Test"),4,std::string(1,static_cast<char>(0xff)));
   check_invalid(malformed_utf8,"UTF-8");
   size_t required=0;
-  assert(crisp3ds_geometry_diagnostic_json(nullptr,0,&required)==CRISP3DS_BUFFER_TOO_SMALL);
+  assert(crispmesh_geometry_diagnostic_json(nullptr,0,&required)==CRISPMESH_BUFFER_TOO_SMALL);
   std::vector<char> short_buffer(required, '#');
-  assert(crisp3ds_geometry_diagnostic_json(short_buffer.data(),required-1,&required)==CRISP3DS_BUFFER_TOO_SMALL);
+  assert(crispmesh_geometry_diagnostic_json(short_buffer.data(),required-1,&required)==CRISPMESH_BUFFER_TOO_SMALL);
   assert(short_buffer.front()=='#');
   std::vector<char> diagnostic(required);
-  assert(crisp3ds_geometry_diagnostic_json(diagnostic.data(),diagnostic.size(),&required)==CRISP3DS_OK);
+  assert(crispmesh_geometry_diagnostic_json(diagnostic.data(),diagnostic.size(),&required)==CRISPMESH_OK);
   assert(std::strstr(diagnostic.data(),"\"ok\":true")!=nullptr);
-  assert(crisp3ds_capabilities_json(nullptr,0,nullptr)==CRISP3DS_INVALID_ARGUMENT);
+  assert(crispmesh_capabilities_json(nullptr,0,nullptr)==CRISPMESH_INVALID_ARGUMENT);
   char *sparse_report=nullptr;
   size_t sparse_size=0;
-  assert(crisp3ds_reconstruct_sparse_alloc(nullptr,&sparse_report,&sparse_size)==CRISP3DS_INVALID_ARGUMENT);
-  assert(crisp3ds_reconstruct_sparse_alloc("",&sparse_report,&sparse_size)==CRISP3DS_INVALID_ARGUMENT);
-#ifndef CRISP3DS_WITH_OPENCV
-  assert(crisp3ds_reconstruct_sparse_alloc("missing-project.json",&sparse_report,&sparse_size)==CRISP3DS_UNAVAILABLE);
+  assert(crispmesh_reconstruct_sparse_alloc(nullptr,&sparse_report,&sparse_size)==CRISPMESH_INVALID_ARGUMENT);
+  assert(crispmesh_reconstruct_sparse_alloc("",&sparse_report,&sparse_size)==CRISPMESH_INVALID_ARGUMENT);
+#ifndef CRISPMESH_WITH_OPENCV
+  assert(crispmesh_reconstruct_sparse_alloc("missing-project.json",&sparse_report,&sparse_size)==CRISPMESH_UNAVAILABLE);
   assert(sparse_report && sparse_size==std::strlen(sparse_report)+1);
   assert(std::strstr(sparse_report,"\"ok\":false")!=nullptr);
-  crisp3ds_free(sparse_report);
+  crispmesh_free(sparse_report);
 #endif
   std::cout << "core contract tests passed\n";
 }

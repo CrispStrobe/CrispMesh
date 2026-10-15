@@ -266,7 +266,7 @@ impl CameraProvider for Turntable {
             let keypoints: Vec<Vec<[f64; 2]>> = matches.keypoints.iter().map(|list| list.iter().map(unshrink).collect()).collect();
             util::write_json(
                 &out.join("sfm/photo-matches.json"),
-                &json!({"schema":"crisp3ds_turntable_matches_v1","keypoints":keypoints,"pairs":matches.pairs.iter().map(|(i,j,list)|json!({"first":i,"second":j,"matches":list})).collect::<Vec<_>>()}),
+                &json!({"schema":"crispmesh_turntable_matches_v1","keypoints":keypoints,"pairs":matches.pairs.iter().map(|(i,j,list)|json!({"first":i,"second":j,"matches":list})).collect::<Vec<_>>()}),
                 1,
             )?;
         }

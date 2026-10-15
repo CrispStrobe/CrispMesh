@@ -23,7 +23,7 @@ from scripts.classical_backend import openmvg_mustard_pose_export as prior
 from scripts.classical_backend import openmvg_photo_control as core
 
 GLOBAL = global_sfm.OUTPUT
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-global-pose-export-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-global-pose-export-001")
 RECEIPT_SHA = "612429ab5448fdf8bd71bcf6c03e6bafdedf2d38196dce8f51f27b277e8e19dc"
 MODEL_SHA = "eb5d96ce4379ee32bdef3f946f833fd2c7a85b0a5c818faa4ce799766f74fc00"
 SFM_LOG_SHA = "5bed68eb709c8e534262b0f0a5f0689512bcf288db18eb15c8ee4d2a629b1f3d"

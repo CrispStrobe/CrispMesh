@@ -54,7 +54,7 @@ is rerun; no new binary or library dependency is built.
 Default `python3 -m scripts.classical_backend.openmvg_mustard_global_sfm_control`
 is a read-only preflight. Explicit `--run` requires separate review and may
 write only to fresh external
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-global-sfm-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-global-sfm-001`.
 The prior output is never cleaned or overwritten. The same resource envelope
 as the fixed-intrinsic SfM-only control applies: at least 11 GiB free on the
 internal disk, 11 GiB free **plus** a full 256 MiB output reservation on the

@@ -124,7 +124,7 @@ fn random_token() -> Result<String, String> {
 /// True when `response` is the engine's answer to `GET /api/health`.
 pub fn is_healthy(response: &str) -> bool {
     let status_ok = response.lines().next().is_some_and(|line| line.split_whitespace().nth(1) == Some("200"));
-    status_ok && response.contains("crisp3ds_dense_events")
+    status_ok && response.contains("crispmesh_dense_events")
 }
 
 fn ask_health(port: u16, token: &str) -> bool {
@@ -163,8 +163,8 @@ fn spawn(resolved: &Resolved, port: u16, token: &str) -> std::io::Result<Child> 
         .current_dir(&resolved.repo.value)
         .env("PYTHONPATH", &resolved.repo.value)
         .env("PYTHONUNBUFFERED", "1")
-        .env("CRISP3DS_PYTHON", &resolved.python.value)
-        .env("CRISP3DS_TORCH_PYTHON", &resolved.torch_python.value)
+        .env("CRISPMESH_PYTHON", &resolved.python.value)
+        .env("CRISPMESH_TORCH_PYTHON", &resolved.torch_python.value)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -414,7 +414,7 @@ mod tests {
     fn resolved() -> Resolved {
         let value = |text: &str| Value { value: text.to_string(), source: Source::Setting };
         Resolved {
-            repo: value("/src/crisp3ds"),
+            repo: value("/src/crispmesh"),
             python: value("/venv/bin/python"),
             torch_python: value("/torch venv/bin/python"),
             runs_dir: value("/runs"),
@@ -438,14 +438,14 @@ mod tests {
     #[test]
     fn the_displayed_command_hides_the_token_and_quotes_spaces() {
         let shown = display_command(&resolved(), 8123);
-        assert!(shown.starts_with("PYTHONPATH=/src/crisp3ds /venv/bin/python -m scripts.turntable_mesh.engine_server"));
+        assert!(shown.starts_with("PYTHONPATH=/src/crispmesh /venv/bin/python -m scripts.turntable_mesh.engine_server"));
         assert!(shown.contains("--token <hidden>"));
         assert!(shown.contains("\"/torch venv/bin/python\""));
     }
 
     #[test]
     fn health_answers_are_recognised() {
-        let ok = "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n{\"schema\": \"crisp3ds_dense_events_v1\", \"device\": \"cpu\"}";
+        let ok = "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n{\"schema\": \"crispmesh_dense_events_v1\", \"device\": \"cpu\"}";
         assert!(is_healthy(ok));
         assert!(!is_healthy("HTTP/1.0 401 Unauthorized\r\n\r\n{\"error\": \"unauthorised\"}"));
         assert!(!is_healthy("HTTP/1.1 200 OK\r\n\r\n<html>some other server</html>"));
@@ -462,7 +462,7 @@ mod tests {
 
     #[test]
     fn a_missing_interpreter_fails_with_a_sentence_and_no_token() {
-        let repo = std::env::temp_dir().join(format!("crisp3ds-studio-engine-test-{}", std::process::id()));
+        let repo = std::env::temp_dir().join(format!("crispmesh-studio-engine-test-{}", std::process::id()));
         std::fs::create_dir_all(repo.join("scripts/turntable_mesh")).unwrap();
         std::fs::write(repo.join(crate::config::ENGINE_MODULE), "").unwrap();
         let mut settings = resolved();
@@ -491,7 +491,7 @@ mod tests {
     #[test]
     fn stopping_takes_the_whole_process_group() {
         use std::os::unix::process::CommandExt;
-        let marker = std::env::temp_dir().join(format!("crisp3ds-studio-group-{}.pid", std::process::id()));
+        let marker = std::env::temp_dir().join(format!("crispmesh-studio-group-{}.pid", std::process::id()));
         let _ = std::fs::remove_file(&marker);
         let script = format!("sleep 300 & echo $! > '{}'; wait", marker.display());
         let mut command = Command::new("sh");

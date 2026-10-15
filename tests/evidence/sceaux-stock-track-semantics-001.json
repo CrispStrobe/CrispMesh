@@ -1,7 +1,7 @@
 {
   "schema": "sceaux_stock_track_semantics_diagnostic_v1",
   "scope": "One-off read-only audit of the saved stock PyCOLMAP 3.11.1 Sceaux sparse model and its feature database. No model, database, photo, or native artifact was rewritten.",
-  "source_run": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001",
+  "source_run": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001",
   "source_report_sha256": "7fe6d661710e25e55fd6e5d54afab27a2bb517e6b3fe8b6c43fd3c0645e3d44d",
   "original_positive_control_pass": false,
   "source_report_photo_integrity": {

@@ -97,7 +97,7 @@ fresh/read-only input paths:
 ```sh
 PYTHONDONTWRITEBYTECODE=1 .local-tools/colmap-sparse/venv/bin/python \
   -m scripts.classical_backend.cracker_mask_qa \
-  --source /Volumes/backups/code/crisp3ds-data/turntable-fresh-openmvs-005 \
+  --source /Volumes/backups/code/crispmesh-data/turntable-fresh-openmvs-005 \
   --reviewed /path/to/exact-60-reviewed-masks \
   --repeat /path/to/exact-12-independent-masks
 ```

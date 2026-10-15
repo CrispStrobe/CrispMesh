@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_supported_fallback_review_v1",
+  "schema": "crispmesh_supported_fallback_review_v1",
   "date": "2026-10-09",
   "default_changed": false,
   "production_implemented": true,
@@ -13,7 +13,7 @@
     "replay_sha256": "1ddc563f70f6549559d7f8fa99730e5cc680cd347bb1de2d30687c30ca88a079"
   },
   "evaluation": {
-    "schema": "crisp3ds_drill_frozen_visibility_eval_v1",
+    "schema": "crispmesh_drill_frozen_visibility_eval_v1",
     "reference_used_only_posthoc": true,
     "samples_per_surface": 200000,
     "seed": 233,
@@ -651,7 +651,7 @@
     "render_review": "Eye/brow region somewhat cleaner, eyes/nose still weak; no convincing restoration of missing relief. Whole-object and local scanner improvements are not proof of detailed visual recovery."
   },
   "native_drill_evaluation": {
-    "schema": "crisp3ds_drill_frozen_visibility_eval_v1",
+    "schema": "crispmesh_drill_frozen_visibility_eval_v1",
     "reference_used_only_posthoc": true,
     "samples_per_surface": 200000,
     "seed": 233,

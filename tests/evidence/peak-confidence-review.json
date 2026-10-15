@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_peak_confidence_review_v1",
+  "schema": "crispmesh_peak_confidence_review_v1",
   "adopted": false,
   "dense_defaults_changed": false,
   "third_party_source_or_dependencies_added": false,

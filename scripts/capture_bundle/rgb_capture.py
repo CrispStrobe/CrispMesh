@@ -12,7 +12,7 @@ from pathlib import Path, PurePosixPath
 from PIL import Image
 
 
-SCHEMA = "crisp3ds_rgb_capture_bundle_v1"
+SCHEMA = "crispmesh_rgb_capture_bundle_v1"
 MOTIONS = {"stationary_object_moving_camera", "moving_object", "unknown"}
 POSE_SPACES = {"arkit_world_camera_to_world", "opencv_world_to_camera"}
 MAX_IMAGES = 1000
@@ -265,7 +265,7 @@ def validate(root, manifest):
             raise ValueError(f"original JPEG differs from manifest: {record['path']}")
     if manifest.read_bytes() != raw:
         raise ValueError("capture manifest changed during validation")
-    return {"schema": "crisp3ds_rgb_capture_validation_v1", "status": "valid",
+    return {"schema": "crispmesh_rgb_capture_validation_v1", "status": "valid",
             "manifest_sha256": hashlib.sha256(raw).hexdigest(),
             "image_count": len(bundle["images"]), "capture_motion": bundle["capture_motion"],
             "capture_motion_verified": False, "metric_scale_asserted": False,

@@ -93,7 +93,7 @@ jobs:
             python scripts/ci/fetch-example.py https://huggingface.co/datasets/cstr/gso-turntable-photos/resolve/main/manifest.json rhino "$RUNNER_TEMP/rhino"
             echo "SCENE_DIR=$RUNNER_TEMP/rhino" >> "$GITHUB_ENV"
           else
-            (cd ../../crates/dense && cargo run --release --locked --bin crisp3ds-dense -- synthetic --output "$RUNNER_TEMP/sphere")
+            (cd ../../crates/dense && cargo run --release --locked --bin crispmesh-dense -- synthetic --output "$RUNNER_TEMP/sphere")
             echo "SCENE_DIR=$RUNNER_TEMP/sphere" >> "$GITHUB_ENV"
           fi
       - name: Simulator build (debug)
@@ -154,13 +154,13 @@ jobs:
             python scripts/ci/fetch-example.py https://huggingface.co/datasets/cstr/gso-turntable-photos/resolve/main/manifest.json rhino "$RUNNER_TEMP/rhino"
             echo "SCENE_DIR=$RUNNER_TEMP/rhino" >> "$GITHUB_ENV"
           else
-            (cd ../../crates/dense && cargo run --release --locked --bin crisp3ds-dense -- synthetic --output "$RUNNER_TEMP/sphere")
+            (cd ../../crates/dense && cargo run --release --locked --bin crispmesh-dense -- synthetic --output "$RUNNER_TEMP/sphere")
             echo "SCENE_DIR=$RUNNER_TEMP/sphere" >> "$GITHUB_ENV"
           fi
       - name: Store variant (debug, sandboxed edition)
         run: npx tauri build --debug --no-bundle --ci --config src-tauri/tauri.appstore.conf.json -- --no-default-features --features native-engine --locked
       - name: Launch in the App Sandbox, run, photograph the window
-        run: sh scripts/ci/mac-check.sh src-tauri/target/debug/crisp3ds-studio "$SCENE_DIR" "$GITHUB_WORKSPACE/checks"
+        run: sh scripts/ci/mac-check.sh src-tauri/target/debug/crispmesh-studio "$SCENE_DIR" "$GITHUB_WORKSPACE/checks"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

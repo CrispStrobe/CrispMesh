@@ -121,7 +121,7 @@ pub fn alicevision_command(
         extra.extend(tools.environment.iter().cloned());
     } else if tools.location.extension().is_some_and(|e| e == "py") {
         let python = python
-            .ok_or_else(|| anyhow!("{location} is a Python wrapper; give --python / CRISP3DS_PYTHON, or an install prefix instead"))?;
+            .ok_or_else(|| anyhow!("{location} is a Python wrapper; give --python / CRISPMESH_PYTHON, or an install prefix instead"))?;
         command = vec![python.to_string(), location, tool.to_string()];
     } else {
         command = vec![location, tool.to_string()];
@@ -142,7 +142,7 @@ pub fn sensor_database(location: &Path, explicit: Option<&Path>) -> PathBuf {
 /// The AliceVision commands of a run, in the order they run.
 pub fn alicevision_commands(options: &Options, environment: &dyn Fn(&str) -> Option<String>) -> anyhow::Result<Vec<ExternalCommand>> {
     let av = &options.alicevision;
-    let tools = av.tools.as_ref().ok_or_else(|| anyhow!("missing tool locations: --alicevision / CRISP3DS_ALICEVISION"))?;
+    let tools = av.tools.as_ref().ok_or_else(|| anyhow!("missing tool locations: --alicevision / CRISPMESH_ALICEVISION"))?;
     let out = &options.output;
     let (work, sfm) = (out.join("work"), out.join("sfm"));
     let threads = options.threads.to_string();
@@ -273,7 +273,7 @@ impl CameraProvider for AliceVision {
     }
 
     fn check(&self, options: &Options) -> anyhow::Result<()> {
-        let Some(tools) = &options.alicevision.tools else { bail!("missing tool locations: --alicevision / CRISP3DS_ALICEVISION") };
+        let Some(tools) = &options.alicevision.tools else { bail!("missing tool locations: --alicevision / CRISPMESH_ALICEVISION") };
         let location = &tools.location;
         let hint = format!("AliceVision {EXTERNAL_HINT}; give its install prefix or a wrapper script (docs/PHOTOS-TO-INPUTS.md)");
         if location.stored_dir() {
@@ -289,7 +289,7 @@ impl CameraProvider for AliceVision {
             bail!("--alicevision {}: not found. {hint}", location.display());
         } else if location.extension().is_some_and(|e| e == "py") && options.python.is_none() {
             bail!(
-                "--alicevision {} is a Python wrapper; give --python / CRISP3DS_PYTHON, or an install prefix instead",
+                "--alicevision {} is a Python wrapper; give --python / CRISPMESH_PYTHON, or an install prefix instead",
                 location.display()
             );
         }
@@ -336,7 +336,7 @@ fn colmap_program(options: &Options) -> anyhow::Result<Vec<String>> {
     match &options.colmap.location {
         Some(location) if location.extension().is_some_and(|e| e == "py") => {
             let python = options.python.clone().ok_or_else(|| {
-                anyhow!("--colmap {} is a Python wrapper; give --python / CRISP3DS_PYTHON, or the executable", location.display())
+                anyhow!("--colmap {} is a Python wrapper; give --python / CRISPMESH_PYTHON, or the executable", location.display())
             })?;
             Ok(vec![python, text(location.clone())])
         }
@@ -488,7 +488,7 @@ impl CameraProvider for Colmap {
 
     fn check(&self, options: &Options) -> anyhow::Result<()> {
         let hint =
-            format!("COLMAP {EXTERNAL_HINT}; give the executable or a wrapper with --colmap / CRISP3DS_COLMAP (docs/PHOTOS-TO-INPUTS.md)");
+            format!("COLMAP {EXTERNAL_HINT}; give the executable or a wrapper with --colmap / CRISPMESH_COLMAP (docs/PHOTOS-TO-INPUTS.md)");
         match &options.colmap.location {
             Some(location) if !location.stored_file() => bail!("--colmap {}: not found. {hint}", location.display()),
             Some(_) => colmap_program(options).map(|_| ()),
@@ -700,7 +700,7 @@ mod tests {
             let options = resolve(&arguments(&folder, &all), &none).unwrap();
             camera_provider(&options).check(&options).err().map(|e| e.to_string()).unwrap_or_default()
         };
-        assert_eq!(check(&[]), "missing tool locations: --alicevision / CRISP3DS_ALICEVISION");
+        assert_eq!(check(&[]), "missing tool locations: --alicevision / CRISPMESH_ALICEVISION");
         assert!(check(&["--alicevision", "/no/such/prefix"]).contains("not found. AliceVision is an external program"));
         std::fs::create_dir_all(folder.join("prefix/bin")).unwrap();
         let prefix = folder.join("prefix").to_string_lossy().to_string();
@@ -792,7 +792,7 @@ mod tests {
 
     #[test]
     fn imported_views_take_the_capture_names() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-import-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-import-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         crate::photos::solution::tests::colmap_text_model(&root);
         let photos: Vec<String> = ["b_2.png", "b_10.png", "capture_0002.png", "extra.png"].map(String::from).to_vec();

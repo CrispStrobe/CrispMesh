@@ -22,73 +22,73 @@
     "timeout_minutes": 10.0,
     "min_free_bytes": 10737418240,
     "extra_reserve_paths": [
-      "/Users/christianstrobele/code/crisp3ds"
+      "."
     ]
   },
   "inputs": [
     {
       "name": "00000.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00000.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00000.jpg",
       "sha256": "0bbe50653c3fc935be97753e620c7568ec28287876f45a65efff07c0de35d473",
       "bytes": 3631631
     },
     {
       "name": "00001.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00001.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00001.jpg",
       "sha256": "7588b1a331315ef5f7cf8e042f153c4277887909e566170ea9b4cda4efac9b28",
       "bytes": 3211983
     },
     {
       "name": "00002.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00002.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00002.jpg",
       "sha256": "4ed58ac04793ea13d77622862e6e057fd8fba0fb351a9eaa3462a3ebe89afb04",
       "bytes": 3303045
     },
     {
       "name": "00003.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00003.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00003.jpg",
       "sha256": "92d0c24b0fad03ab207005beaa58587827ca878d7d2d468d957af02112a1b314",
       "bytes": 3078982
     },
     {
       "name": "00004.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00004.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00004.jpg",
       "sha256": "69e7420d358a762db13d42d2174efc6b16dffe58f06415cff0824504d2fd174d",
       "bytes": 2974191
     },
     {
       "name": "00005.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00005.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00005.jpg",
       "sha256": "b56992b73af59fbee80292e89911f52c6ef057fd3c97d1d430f862e2c446b396",
       "bytes": 3039836
     },
     {
       "name": "00006.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00006.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00006.jpg",
       "sha256": "c6ae63218780d47c211b350661f3802de6db003c46b4e6adbabfb9752fa22195",
       "bytes": 2975664
     },
     {
       "name": "00007.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00007.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00007.jpg",
       "sha256": "582b30fbbff66d940a50aaebc47aa5c67f5e7961149ad1178fbbf0ee0fe6968d",
       "bytes": 2628552
     },
     {
       "name": "00008.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00008.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00008.jpg",
       "sha256": "3af6abf68e1e84b626413c4509e1b1883ec993e0f6bd1c2e2dc2d4d3432be03b",
       "bytes": 2986965
     },
     {
       "name": "00009.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00009.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00009.jpg",
       "sha256": "25d79a1328a0a6c0d7f610e6531170d002c825b9c068e773498c010e5b5807ad",
       "bytes": 3083274
     },
     {
       "name": "00010.jpg",
-      "source": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/images/00010.jpg",
+      "source": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/images/00010.jpg",
       "sha256": "a9c1565722778908657eb64156a95cef0e80a01cf00e440129f3d270dd0c252b",
       "bytes": 4598325
     }
@@ -97,13 +97,13 @@
     {
       "name": "reuse_sfm",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.classical_backend.run",
         "--worker",
         "reuse_sfm",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001",
         "--max-image-size",
         "640",
         "--camera-model",
@@ -125,9 +125,9 @@
         "--sfm-intrinsics-policy",
         "refine",
         "--sparse-model",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/models/0"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/models/0"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/reuse_sfm.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/reuse_sfm.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 0.512,
@@ -159,13 +159,13 @@
     {
       "name": "undistort",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.classical_backend.run",
         "--worker",
         "undistort",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001",
         "--max-image-size",
         "640",
         "--camera-model",
@@ -187,9 +187,9 @@
         "--sfm-intrinsics-policy",
         "refine",
         "--sparse-model",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/models/0"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/models/0"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/undistort.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/undistort.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 1.054,
@@ -203,19 +203,19 @@
     {
       "name": "import",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/classical-backend/bin/InterfaceCOLMAP",
+        ".local-tools/classical-backend/bin/InterfaceCOLMAP",
         "-i",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/dense",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/dense",
         "-o",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/scene.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/scene.mvs",
         "--image-folder",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/dense/images",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/dense/images",
         "--max-threads",
         "2",
         "--working-folder",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/import.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/import.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 0.514,
@@ -229,19 +229,19 @@
     {
       "name": "densify",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/classical-backend/bin/DensifyPointCloud",
+        ".local-tools/classical-backend/bin/DensifyPointCloud",
         "-i",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/scene.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/scene.mvs",
         "-o",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/dense.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/dense.mvs",
         "--resolution-level",
         "2",
         "--max-threads",
         "2",
         "--working-folder",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/densify.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/densify.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 61.699,
@@ -255,19 +255,19 @@
     {
       "name": "mesh",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/classical-backend/bin/ReconstructMesh",
+        ".local-tools/classical-backend/bin/ReconstructMesh",
         "-i",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/dense.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/dense.mvs",
         "-p",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/dense.ply",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/dense.ply",
         "-o",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/mesh.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/mesh.mvs",
         "--max-threads",
         "2",
         "--working-folder",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/mesh.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/mesh.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 3.064,
@@ -281,13 +281,13 @@
     {
       "name": "refine",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/classical-backend/bin/RefineMesh",
+        ".local-tools/classical-backend/bin/RefineMesh",
         "-i",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/dense.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/dense.mvs",
         "-m",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/mesh.ply",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/mesh.ply",
         "-o",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/refined.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/refined.mvs",
         "--resolution-level",
         "1",
         "--scales",
@@ -295,9 +295,9 @@
         "--max-threads",
         "2",
         "--working-folder",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/refine.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/refine.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 25.518,
@@ -311,21 +311,21 @@
     {
       "name": "texture",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/classical-backend/bin/TextureMesh",
+        ".local-tools/classical-backend/bin/TextureMesh",
         "-i",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/dense.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/dense.mvs",
         "-m",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/refined.ply",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/refined.ply",
         "-o",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/textured.mvs",
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/textured.mvs",
         "--export-type",
         "obj",
         "--max-threads",
         "2",
         "--working-folder",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/texture.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/texture.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 4.066,
@@ -347,7 +347,7 @@
   "pose_masks": [],
   "sfm_source": {
     "kind": "external_unverified_model",
-    "path": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/models/0",
+    "path": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/models/0",
     "files_sha256": {
       "cameras.bin": "4bbca83da0f5bf47d3abccbccc72e15bbe79a0dd7a7b565b4669290a401fba4f",
       "images.bin": "6ffd6cd9959551a2872b0f8bc5bfa1943ad68b4dffb5b9eac704101d582ccaf7",

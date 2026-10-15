@@ -1,7 +1,7 @@
 # Mustard photo-only boundary candidate
 
 The input is the existing 48-training-view stage at
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001`. Its report SHA-256
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001`. Its report SHA-256
 is `bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0`;
 the previously accepted SAM inventory and visual-review SHA-256 values are
 `c341e3798a792c83abbacac8a7f882a761c878cdd9dba693c02c5877bbb75751`
@@ -25,7 +25,7 @@ or reconstruction score enters the rule or producer.
 
 An earlier **v1 unreviewed** trial used the same GrabCut rule without the
 `y < 435` cap protection. It produced 48 masks at
-`/Volumes/backups/code/crisp3ds-data/mustard-photo-refine-001`; the review
+`/Volumes/backups/code/crispmesh-data/mustard-photo-refine-001`; the review
 sheet showed cap-edge trimming. Its report SHA-256 is
 `088684da17e34185c40bc500c17c29331be7a8661a102446d8a49419615d01a0`.
 It remains untouched and is not accepted. This cap-preserving v2 is the one
@@ -38,10 +38,10 @@ front views `000/006/012`, side labels `060–216`, the checkerboard contact at
 ## Bounded v2 result and visual decision
 
 Three focused tests passed. The one v2 M1 run completed all 48 training views
-in 16.85 s at `/Volumes/backups/code/crisp3ds-data/mustard-photo-refine-002`
-(760 KiB, versus a 128 MiB cap). Its [report](</Volumes/backups/code/crisp3ds-data/mustard-photo-refine-002/report.json>) SHA-256 is
+in 16.85 s at `/Volumes/backups/code/crispmesh-data/mustard-photo-refine-002`
+(760 KiB, versus a 128 MiB cap). Its [report](</Volumes/backups/code/crispmesh-data/mustard-photo-refine-002/report.json>) SHA-256 is
 `0c47218e91f11f2499d618589fa91f6e4879a95ef0c89fb1681af57f677fb125`;
-the [48-view sheet](</Volumes/backups/code/crisp3ds-data/mustard-photo-refine-002/trim_review.jpg>) SHA-256 is
+the [48-view sheet](</Volumes/backups/code/crispmesh-data/mustard-photo-refine-002/trim_review.jpg>) SHA-256 is
 `bc316c53ed94c24f00563003d162f4f6f8af712f3d821b1da6d1d7ef9dc9b2a8`.
 Runner SHA-256 is `7c9b2f331d7a230f98253c3f1cf80fb4afe4d4a090396fb30480567d19ff367f`.
 Both internal and external disks still had 22 GiB and 16 GiB free, above the

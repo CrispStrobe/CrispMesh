@@ -17,12 +17,12 @@ base = manifest_url.rsplit("/", 1)[0] + "/"
 
 
 def get(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "crisp3ds-app-checks"}), timeout=120) as response:
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "crispmesh-app-checks"}), timeout=120) as response:
         return response.read()
 
 
 manifest = json.loads(get(manifest_url))
-assert manifest.get("schema") == "crisp3ds_example_objects_v1", "not a list of example objects"
+assert manifest.get("schema") == "crispmesh_example_objects_v1", "not a list of example objects"
 row = next(o for o in manifest["objects"] if o["name"] == name)
 calibration = next(c for c in manifest["calibration_files"] if c["path"] == row["calibration"])
 (out / "rgb").mkdir(parents=True, exist_ok=True)

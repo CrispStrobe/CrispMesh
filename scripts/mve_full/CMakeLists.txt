@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(crisp3ds_selected_mve LANGUAGES CXX)
+project(crispmesh_selected_mve LANGUAGES CXX)
 
 # This is a selected-target build of the pinned MVE source after sift_only.patch.
 # It intentionally never builds upstream's GPL sceneupgrade or SURF source.
@@ -67,8 +67,8 @@ foreach(codec IN ITEMS JPEG PNG TIFF)
   endif()
 endforeach()
 set(MVE_IMAGE_LIBS JPEG::JPEG PNG::PNG TIFF::TIFF Threads::Threads)
-option(CRISP3DS_MVE_OPENMP "Enable OpenMP for selected CPU tools (unmeasured)" OFF)
-if(CRISP3DS_MVE_OPENMP)
+option(CRISPMESH_MVE_OPENMP "Enable OpenMP for selected CPU tools (unmeasured)" OFF)
+if(CRISPMESH_MVE_OPENMP)
   find_package(OpenMP REQUIRED COMPONENTS CXX)
   list(APPEND MVE_IMAGE_LIBS OpenMP::OpenMP_CXX)
 endif()

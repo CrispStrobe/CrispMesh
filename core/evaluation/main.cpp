@@ -23,11 +23,11 @@
 #endif
 
 namespace fs = std::filesystem;
-using namespace crisp3ds::evaluation;
+using namespace crispmesh::evaluation;
 
 namespace {
 void usage() {
-  std::cerr << "Usage: crisp3ds_stereo_eval --gt disparity.pfm --output-dir DIR "
+  std::cerr << "Usage: crispmesh_stereo_eval --gt disparity.pfm --output-dir DIR "
                "[--left im0.png --right im1.png (--calib calib.txt | --fx N --baseline N --doffs N --ndisp N) "
                "| --prediction disparity.pfm] [--mask mask.png] [--downsample 1|2|4] [--prepare-only yes] [--profile baseline|quality|fast|full --threads N]\n";
 }

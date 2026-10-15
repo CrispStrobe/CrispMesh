@@ -20,8 +20,8 @@ from scripts.classical_backend.openmvg_photo_control import base as supervisor
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = Path("/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-cache-fusion-003")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-refine-004")
+SOURCE = Path("/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-cache-fusion-003")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-refine-004")
 BIN = ROOT / ".local-tools/classical-backend/bin"
 SCHEMA = "openmvg_bunny_high_refine_texture_v3"
 ROUGH_SCHEMA = "openmvg_bunny_high_cached73_fusion_rough_v1"

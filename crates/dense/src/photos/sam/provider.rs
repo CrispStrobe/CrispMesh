@@ -21,7 +21,7 @@ use super::prompts::{frozen_prompts, support, Prompt};
 use super::{segment, Settings};
 use crate::photos::MOST_PHOTOS;
 
-pub const SCHEMA: &str = "crisp3ds_sam_native_v1";
+pub const SCHEMA: &str = "crispmesh_sam_native_v1";
 
 /// The default model in the cache, fetched on first use, in builds that can run it.
 fn default_model() -> Option<PathBuf> {
@@ -49,7 +49,7 @@ pub fn readiness(model: Option<&Path>, runtime: Option<&Path>) -> Result<String,
     };
     let Some(directory) = model else {
         if let Some(reason) = backend::unavailable("onnx") {
-            return Err(format!("no model directory (--sam-model DIR or CRISP3DS_SAM_MODEL), and {reason}"));
+            return Err(format!("no model directory (--sam-model DIR or CRISPMESH_SAM_MODEL), and {reason}"));
         }
         let Some(cache) = default_model() else {
             return Err("no model directory (--sam-model DIR) and no cache directory to fetch the default model into".to_string());
@@ -282,12 +282,12 @@ mod tests {
             assert!(readiness(None, None).unwrap_err().contains("--sam-model"));
         } else {
             // Without a model directory the default model is fetched on first use; the runtime is still needed.
-            let library = std::env::temp_dir().join(format!("crisp3ds-sam-library-{}", std::process::id()));
+            let library = std::env::temp_dir().join(format!("crispmesh-sam-library-{}", std::process::id()));
             std::fs::write(&library, b"").unwrap();
             assert!(readiness(None, Some(&library)).unwrap().contains("fetched on first use"));
             std::fs::remove_file(&library).unwrap();
         }
-        let folder = std::env::temp_dir().join(format!("crisp3ds-sam-ready-{}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-sam-ready-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         assert!(readiness(Some(&folder), None).unwrap_err().contains("model.json"));
@@ -308,15 +308,15 @@ mod tests {
         std::fs::remove_dir_all(&folder).unwrap();
     }
 
-    /// The whole provider on real photos: set `CRISP3DS_SAM_TEST_MODEL` to a model directory,
-    /// `CRISP3DS_SAM_TEST_WORK` to the `work` directory of a `photos --keep-intermediates` run
+    /// The whole provider on real photos: set `CRISPMESH_SAM_TEST_MODEL` to a model directory,
+    /// `CRISPMESH_SAM_TEST_WORK` to the `work` directory of a `photos --keep-intermediates` run
     /// (`photos/`, `coarse-masks/`, and `sam/masks/` from `--masks external-sam` to compare with),
     /// and `ORT_DYLIB_PATH` to ONNX Runtime's shared library; or the model to a `.gguf` file and
     /// `CRISPEMBED_SAM2_LIB` to CrispEmbed's `libcrispembed-sam2` (feature `sam-ggml`).
     #[test]
     fn masks_agree_with_the_reference_route_when_a_model_is_given() {
-        let (Some(model), Some(work)) = (std::env::var_os("CRISP3DS_SAM_TEST_MODEL"), std::env::var_os("CRISP3DS_SAM_TEST_WORK")) else {
-            eprintln!("skipped: CRISP3DS_SAM_TEST_MODEL and CRISP3DS_SAM_TEST_WORK are not set");
+        let (Some(model), Some(work)) = (std::env::var_os("CRISPMESH_SAM_TEST_MODEL"), std::env::var_os("CRISPMESH_SAM_TEST_WORK")) else {
+            eprintln!("skipped: CRISPMESH_SAM_TEST_MODEL and CRISPMESH_SAM_TEST_WORK are not set");
             return;
         };
         let work = PathBuf::from(work);

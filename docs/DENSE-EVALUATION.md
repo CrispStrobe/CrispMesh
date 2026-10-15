@@ -8,13 +8,13 @@ An independent GPL stereo engine, libELAS, now runs as a separate local test exe
 
 ## Reproduce
 
-Build with `CRISP3DS_WITH_OPENCV=ON` and `CRISP3DS_BUILD_TESTS=ON` as described in the root README. The evaluator is a separate target and is not linked into the core or desktop application. Dataset fetches are never triggered by ordinary CMake/CTest runs.
+Build with `CRISPMESH_WITH_OPENCV=ON` and `CRISPMESH_BUILD_TESTS=ON` as described in the root README. The evaluator is a separate target and is not linked into the core or desktop application. Dataset fetches are never triggered by ordinary CMake/CTest runs.
 
 ```sh
 python3 scripts/fetch_test_data.py --fetch
 python3 scripts/fetch_test_data.py
 ctest --test-dir build-opencv --output-on-failure
-./build-opencv/bin/crisp3ds_stereo_eval \
+./build-opencv/bin/crispmesh_stereo_eval \
   --left .local-tools/test-data/middlebury-2014/Piano-perfect/im0.png \
   --right .local-tools/test-data/middlebury-2014/Piano-perfect/im1.png \
   --calib .local-tools/test-data/middlebury-2014/Piano-perfect/calib.txt \
@@ -29,7 +29,7 @@ For repeatable multi-engine comparison, `--prepare-only yes` writes the common g
 
 ```sh
 TMPDIR="$PWD/.local-tools/tmp" python3 core/evaluation/prepared_smoke.py \
-  build-opencv/bin/crisp3ds_stereo_eval .local-tools/tmp
+  build-opencv/bin/crispmesh_stereo_eval .local-tools/tmp
 ```
 
 The full 2820×1920 input is reduced to 705×480: image pixels use area resampling; reference disparities use nearest-neighbour samples and are divided by four. Focal length and principal-point disparity offset are likewise divided by four; baseline is unchanged. This is a locally derived resolution, **not** the official quarter-resolution leaderboard protocol. Errors below are in pixels at the derived resolution. No non-occlusion mask is applied. Do not compare these numbers directly with published leaderboard scores.

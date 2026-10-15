@@ -1,6 +1,6 @@
 # Apple Photogrammetry RGB-only oracle
 
-This is an optional **Apple-only comparison**, not the cross-platform Crisp3DS
+This is an optional **Apple-only comparison**, not the cross-platform CrispMesh
 reconstruction backend. The original, small Swift probe in
 `scripts/apple_object_capture/Probe.swift` uses RealityKit
 `PhotogrammetrySession` to check runtime support and, only when explicitly

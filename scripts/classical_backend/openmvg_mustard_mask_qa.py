@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-STAGE = Path('/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001')
+STAGE = Path('/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001')
 STAGE_SHA256 = 'bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0'
 APPROVED_SEMANTIC_MANIFEST_SHA256 = None  # No independently accepted labels exist yet.
 NAMES = tuple(f'NP3_{a:03d}.jpg' for a in range(0, 360, 6) if a % 30 != 24)

@@ -7,7 +7,7 @@
 #include <map>
 #include <set>
 
-namespace crisp3ds::depth {
+namespace crispmesh::depth {
 namespace {
 bool finite(const cv::Vec3d& v) {
   return std::isfinite(v[0]) && std::isfinite(v[1]) && std::isfinite(v[2]);
@@ -241,4 +241,4 @@ Result fuse_tracks(const std::vector<Candidate>& candidates,
     points.clear(); return {Status::invalid_input,e.what()};
   }
 }
-}  // namespace crisp3ds::depth
+}  // namespace crispmesh::depth

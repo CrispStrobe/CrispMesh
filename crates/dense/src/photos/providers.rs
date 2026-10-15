@@ -1,5 +1,5 @@
 //! The providers of the photo front stage and what each needs: the table
-//! behind `crisp3ds-dense photos --list-providers`, which an application reads
+//! behind `crispmesh-dense photos --list-providers`, which an application reads
 //! to offer only what its platform can run.
 
 use serde_json::{json, Value};
@@ -196,7 +196,7 @@ pub fn listing() -> Value {
     };
     let of = |module: &str| PROVIDERS.iter().filter(|p| p.module == module).map(row).collect::<Vec<_>>();
     json!({
-        "schema": "crisp3ds_photo_providers_v1", "platform": here, "masks": of("masks"), "cameras": of("cameras"),
+        "schema": "crispmesh_photo_providers_v1", "platform": here, "masks": of("masks"), "cameras": of("cameras"),
         "undistortion": {"name": "native", "summary": "radial k1, k2, k3: photos bilinear, masks nearest; in this crate on every platform",
                          "platforms": {"desktop": true, "mobile": true, "wasm": true}},
     })
@@ -209,7 +209,7 @@ mod tests {
     #[test]
     fn the_table_lists_every_provider_once_with_one_default_per_module() {
         let table = listing();
-        assert_eq!(table["schema"], "crisp3ds_photo_providers_v1");
+        assert_eq!(table["schema"], "crispmesh_photo_providers_v1");
         let expected: [(&str, &[&str]); 2] = [
             ("masks", &["threshold", "background", "import", "external-sam", "sam"]),
             ("cameras", &["turntable", "markers", "colmap", "alicevision", "import"]),

@@ -1,10 +1,10 @@
 # OpenMVG mustard posthoc camera check: both photo-only arms fail
 
 The evaluation-only receipt at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-gt-posthoc-001/receipt.json`
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-gt-posthoc-001/receipt.json`
 is SHA-256 `863472bc0af7e69d0b16602dd8ea05ed59ead1a106d076b1f8ad01f002a1643e`,
 status `posthoc_46_view_diagnostic_only`. Its report at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-gt-posthoc-001/report.json`
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-gt-posthoc-001/report.json`
 is SHA-256 `e6a791a8e16deba1ac6856b8f4eb90df7ce6ec4e2a092a53eb4b955892e8d035`.
 This independent audit was read-only; it did not rerun SfM, scoring, or a
 converter. Reference metadata entered **only after** both photo-derived SfM

@@ -22,7 +22,7 @@ export interface Prefs {
   diagnostics: boolean;
 }
 
-const KEY = "crisp3ds.studio.v1";
+const KEY = "crispmesh.studio.v1";
 
 const DEFAULTS: Prefs = {
   theme: "system",

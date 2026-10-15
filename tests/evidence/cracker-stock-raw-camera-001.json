@@ -1,7 +1,7 @@
 {
   "schema": "ycb_stock_berkeley_camera_diagnostic_v1",
   "interpretation": "evaluation-only named-camera and trajectory agreement after fitted Sim(3); Berkeley pose convention is not independently reprojected ground truth; no Google mesh transform or metric mesh accuracy claim",
-  "candidate_model_dir": "/Volumes/backups/code/crisp3ds-data/cracker-stock-raw-001/models/0",
+  "candidate_model_dir": "/Volumes/backups/code/crispmesh-data/cracker-stock-raw-001/models/0",
   "candidate_model_sha256": {
     "cameras.bin": "07689b54f9cdac43ccc49fd463913fea9d1306d227311ba539ce4387ffb7b7a4",
     "images.bin": "3af3ccf0db1647a974855b02746c5d31229502b4959f7d05490ea5c9d423bd35",

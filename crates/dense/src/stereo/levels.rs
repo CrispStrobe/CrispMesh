@@ -57,9 +57,9 @@ pub async fn match_levels(
     let mut coarser: Option<Vec<Plane<f32>>> = None;
     // Step of inverse depth per view. As in the reference, the step of the last
     // view swept at the coarsest level serves every view of the finer levels (its
-    // loop variable is overwritten). CRISP3DS_OWN_STEP=1 gives each view the step
+    // loop variable is overwritten). CRISPMESH_OWN_STEP=1 gives each view the step
     // of its own depth range instead; under evaluation.
-    let shared_step = !std::env::var("CRISP3DS_OWN_STEP").is_ok_and(|v| v == "1");
+    let shared_step = !std::env::var("CRISPMESH_OWN_STEP").is_ok_and(|v| v == "1");
     let mut steps = vec![0.0f64; count];
     let mut rows: Vec<Value> = Vec::new();
     for (li, &size) in sizes.iter().enumerate() {
@@ -231,7 +231,7 @@ pub async fn match_levels(
                 consistent(&level, &raw, &voters, tolerance, votes)
             };
             drop(normals);
-            if li + 1 == sizes.len() && std::env::var_os("CRISP3DS_STAGE_DEPTHS").is_some() {
+            if li + 1 == sizes.len() && std::env::var_os("CRISPMESH_STAGE_DEPTHS").is_some() {
                 // Opt-in diagnostics distinguish matching from cross-view rejection.
                 // These are the pipeline's own depths, before any coarse fallback.
                 super::run::write_depths(&output.join(format!("depths-pass-{p}-raw.npz")), &raw)?;
@@ -259,7 +259,7 @@ pub async fn match_levels(
             rows.push(row);
             depths = agreed;
         }
-        if std::env::var("CRISP3DS_LEVEL_DEPTHS").is_ok() {
+        if std::env::var("CRISPMESH_LEVEL_DEPTHS").is_ok() {
             // Diagnostic: every level's consistent depth, with the level's canvas geometry.
             super::run::write_depths(&output.join(format!("depths-level-{li}.npz")), &depths)?;
             let cameras: Vec<serde_json::Value> =

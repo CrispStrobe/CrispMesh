@@ -5,7 +5,7 @@ This was a separate diagnosis of the failed verified-track receipt, not a
 retry, parser relaxation, or track extraction.
 
 Pinned input is
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/database.db`,
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/database.db`,
 SHA-256 `5858be16dfa3f0fc50303d0eb4a001e21ee14036f67755a9997d5dac374b3075`.
 The audit checks the hash before and after, rejects SQLite sidecars and linked
 or oversized files, opens `mode=ro&immutable=1`, and sets `query_only=ON`.

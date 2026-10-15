@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_distinct_depth_modes_review_v1",
+  "schema": "crispmesh_distinct_depth_modes_review_v1",
   "date": "2026-10-09",
   "experimental_setting": {
     "peak_min_margin": 0.02,

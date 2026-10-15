@@ -586,7 +586,7 @@ fn glb(
     }
     let min: [f32; 3] = [0, 1, 2].map(|a| positions.iter().map(|p| p[a]).fold(f32::INFINITY, f32::min));
     let max: [f32; 3] = [0, 1, 2].map(|a| positions.iter().map(|p| p[a]).fold(f32::NEG_INFINITY, f32::max));
-    let mut doc = json!({"asset":{"version":"2.0","generator":"Crisp3DS photo texture"},"scene":0,"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0}],"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1,"TEXCOORD_0":2},"indices":3,"material":0}]}],"buffers":[{"byteLength":bin.len()}],"bufferViews":views,"accessors":[{"bufferView":0,"componentType":5126,"count":positions.len(),"type":"VEC3","min":min,"max":max},{"bufferView":1,"componentType":5126,"count":normals.len(),"type":"VEC3"},{"bufferView":2,"componentType":5126,"count":uv.len(),"type":"VEC2"},{"bufferView":3,"componentType":5125,"count":indices.len(),"type":"SCALAR"}],"images":[{"bufferView":4,"mimeType":"image/png"}],"samplers":[{"magFilter":9729,"minFilter":9729,"wrapS":33071,"wrapT":33071}],"textures":[{"source":0,"sampler":0}],"materials":[{"name":"Captured photo appearance","pbrMetallicRoughness":{"baseColorTexture":{"index":0},"metallicFactor":0,"roughnessFactor":1}}]});
+    let mut doc = json!({"asset":{"version":"2.0","generator":"CrispMesh photo texture"},"scene":0,"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0}],"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1,"TEXCOORD_0":2},"indices":3,"material":0}]}],"buffers":[{"byteLength":bin.len()}],"bufferViews":views,"accessors":[{"bufferView":0,"componentType":5126,"count":positions.len(),"type":"VEC3","min":min,"max":max},{"bufferView":1,"componentType":5126,"count":normals.len(),"type":"VEC3"},{"bufferView":2,"componentType":5126,"count":uv.len(),"type":"VEC2"},{"bufferView":3,"componentType":5125,"count":indices.len(),"type":"SCALAR"}],"images":[{"bufferView":4,"mimeType":"image/png"}],"samplers":[{"magFilter":9729,"minFilter":9729,"wrapS":33071,"wrapT":33071}],"textures":[{"source":0,"sampler":0}],"materials":[{"name":"Captured photo appearance","pbrMetallicRoughness":{"baseColorTexture":{"index":0},"metallicFactor":0,"roughnessFactor":1}}]});
     if let Some(text) = attribution {
         doc["asset"]["copyright"] = json!(text);
     }
@@ -614,7 +614,7 @@ fn glb(
 
 pub fn main(args: &[String]) -> Result<()> {
     if args.iter().any(|a| a == "--help" || a == "-h") {
-        println!("crisp3ds-dense texture --inputs DIR --mesh mesh.stl --output NEW_DIR [--views 12] [--tile-size 1024] [--coherent] [--color-balance]\nWrites atlas.png, self-contained mesh.glb and coverage report. Uses recovered cameras and photos; geometry is preserved.");
+        println!("crispmesh-dense texture --inputs DIR --mesh mesh.stl --output NEW_DIR [--views 12] [--tile-size 1024] [--coherent] [--color-balance]\nWrites atlas.png, self-contained mesh.glb and coverage report. Uses recovered cameras and photos; geometry is preserved.");
         return Ok(());
     }
     let (mut inputs, mut mesh, mut output) = (None, None, None);

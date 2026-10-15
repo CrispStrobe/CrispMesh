@@ -5,9 +5,9 @@ browser. No cloud, no upload, and since this release no external program is need
 
 ### What is new
 
-- **Photos to STL in one command, natively.** `crisp3ds-dense run --photos <folder> --calibration <lens.json> --output <run>` makes masks, recovers the cameras, computes depth, builds the closed surface and checks it against the photos. No Python, no AliceVision, no COLMAP. The 73-photo Bunny takes about 93 seconds on an Apple M1.
+- **Photos to STL in one command, natively.** `crispmesh-dense run --photos <folder> --calibration <lens.json> --output <run>` makes masks, recovers the cameras, computes depth, builds the closed surface and checks it against the photos. No Python, no AliceVision, no COLMAP. The 73-photo Bunny takes about 93 seconds on an Apple M1.
 - **The app reconstructs from photos** on the desktop (macOS, Windows, Linux) and on the phone (iOS, Android builds), with the engine built in. On a phone, photos and the lens calibration come in through the system's picker, and the STL goes out through the share sheet.
-- **The web page reconstructs in the browser**: https://crispstrobe.github.io/crisp3ds/ — choose the photos and a lens calibration, or an inputs folder; everything is computed on your device's graphics processor and nothing is uploaded. Where the page can share memory it uses up to four threads (the Bunny from photos in about 6 minutes in Chrome on an M1). Needs a browser with WebGPU (current Chrome or Edge) and up to 2 GiB of memory for 73 photos.
+- **The web page reconstructs in the browser**: https://crispstrobe.github.io/CrispMesh/ — choose the photos and a lens calibration, or an inputs folder; everything is computed on your device's graphics processor and nothing is uploaded. Where the page can share memory it uses up to four threads (the Bunny from photos in about 6 minutes in Chrome on an M1). Needs a browser with WebGPU (current Chrome or Edge) and up to 2 GiB of memory for 73 photos.
 - **Cameras** come from interchangeable providers: `turntable` (our own solver, the default, on every platform), `markers` (a printed marker mat, poses in millimetres), `colmap` and `alicevision` (external programs, desktop only), and `import` (an existing AliceVision or COLMAP solution).
 - **Masks**: `threshold` (dark object on a light backdrop, with the contact shadow taken out; the default) or SAM 2.1 (optional: through ONNX, CrispEmbed's ggml engine, or an external Python), or `import`.
 - The demo is the native pipeline's own sphere: round, not cut. The replay shows the same final surface at every speed, and the 3D view says which surface it shows.
@@ -38,7 +38,7 @@ Four objects of the 3DLF-Scan set (73 photos each, Apple M1, the default command
 | `Crisp-3D-Studio_*-windows-x64-setup.exe` | Desktop app, Windows installer (per user) |
 | `Crisp-3D-Studio_*-linux-x64.AppImage`, `.deb` | Desktop app, Linux |
 | `Crisp-3D-Studio_web-*.zip` | The web app as static files, with the demo and both browser engines; serve it over http(s) from any path |
-| `crisp3ds-dense-pipeline-*.tar.gz` | The Python reference pipeline (source); needed only for scoring against a reference scan and for comparisons |
+| `crispmesh-dense-pipeline-*.tar.gz` | The Python reference pipeline (source); needed only for scoring against a reference scan and for comparisons |
 | `Crisp-3D-Studio_*-android-arm64-debug.apk` | Android debug build (if present) |
 | `Crisp-3D-Studio_*-ios-simulator-arm64.app.zip` | iOS simulator build (if present) |
 | `THIRD-PARTY-NOTICES.txt` | The license, the store permission, and the licenses of everything the apps contain |

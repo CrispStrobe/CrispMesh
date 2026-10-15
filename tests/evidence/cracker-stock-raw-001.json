@@ -9,9 +9,9 @@
   "mask_manifest_sha256": null,
   "software": {
     "version": "3.11.1",
-    "core_path": "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/lib/python3.11/site-packages/pycolmap/_core.cpython-311-darwin.so",
+    "core_path": ".local-tools/colmap-sparse/venv/lib/python3.11/site-packages/pycolmap/_core.cpython-311-darwin.so",
     "core_sha256": "5e306a76bfb1a3a02139ea9d336770091a77376bb870a383ed3882b7250008a8",
-    "python_path": "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+    "python_path": ".local-tools/colmap-sparse/venv/bin/python",
     "runner_sha256": "a467352cc57e951a6275ce21721a493bec3e7a91e5fb62f01f978ce8de97e2aa",
     "stage_helper_sha256": "c65f73396e52a22e56d7edc358461c1f25a58f163d390a372e3b4c20e9b7441b",
     "sample_run_helper_sha256": "669eddfd327cae51237a6c1edc757538924fb2ba8c033a27f538f9411fb4a75d",
@@ -334,15 +334,15 @@
     {
       "name": "features",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.upstream_control.object_sparse",
         "--worker",
         "features",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/cracker-stock-raw-001"
+        "/Volumes/backups/code/crispmesh-data/cracker-stock-raw-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/cracker-stock-raw-001/features.log",
+      "log": "/Volumes/backups/code/crispmesh-data/cracker-stock-raw-001/features.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 37.855,
@@ -353,15 +353,15 @@
     {
       "name": "matching",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.upstream_control.object_sparse",
         "--worker",
         "matching",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/cracker-stock-raw-001"
+        "/Volumes/backups/code/crispmesh-data/cracker-stock-raw-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/cracker-stock-raw-001/matching.log",
+      "log": "/Volumes/backups/code/crispmesh-data/cracker-stock-raw-001/matching.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 143.743,
@@ -372,15 +372,15 @@
     {
       "name": "mapping",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.upstream_control.object_sparse",
         "--worker",
         "mapping",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/cracker-stock-raw-001"
+        "/Volumes/backups/code/crispmesh-data/cracker-stock-raw-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/cracker-stock-raw-001/mapping.log",
+      "log": "/Volumes/backups/code/crispmesh-data/cracker-stock-raw-001/mapping.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 90.25,

@@ -41,7 +41,7 @@ Default `python3 -m scripts.classical_backend.openmvg_mustard_three_arm_gt_posth
 is read-only and opens **no GT H5 datasets**; a NumPy-capable reviewed Python
 runtime and `h5dump` must be present for preflight. Scoring `--run` is
 separately gated and may write only receipt/report under fresh external
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-gt-posthoc-three-arm-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-gt-posthoc-three-arm-001`.
 It retains at least 11 GiB free externally **plus** a full 1 MiB output
 reservation and at least 11 GiB internally, checks disk during each H5 read,
 caps total wall time at 300 s, and preserves partial receipt/report on

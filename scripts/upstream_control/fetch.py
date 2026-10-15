@@ -43,7 +43,7 @@ def git_blob(path):
 
 def read_json(url):
     request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
-                                                 "User-Agent": "crisp3ds-upstream-control"})
+                                                 "User-Agent": "crispmesh-upstream-control"})
     with urllib.request.urlopen(request, timeout=20) as response:
         payload = response.read(2 * 1024 ** 2 + 1)
     if len(payload) > 2 * 1024 ** 2:
@@ -88,7 +88,7 @@ def fetch(output=OUTPUT):
             target = output / path
             target.parent.mkdir(parents=True, exist_ok=True)
             url = BASE + urllib.parse.quote(path, safe="/")
-            request = urllib.request.Request(url, headers={"User-Agent": "crisp3ds-upstream-control"})
+            request = urllib.request.Request(url, headers={"User-Agent": "crispmesh-upstream-control"})
             with urllib.request.urlopen(request, timeout=30) as response, target.open("xb") as stream:
                 count = 0
                 while block := response.read(1 << 20):

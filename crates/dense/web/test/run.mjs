@@ -144,13 +144,13 @@ if (tracePath) {
 await page.goto(`${origin}/index.html?${query}`);
 let state;
 try {
-  await page.waitForFunction(() => ["done", "error"].includes(window.crisp3ds?.status) && window.crisp3ds.uploading === 0, null, { timeout, polling: 500 });
+  await page.waitForFunction(() => ["done", "error"].includes(window.crispmesh?.status) && window.crispmesh.uploading === 0, null, { timeout, polling: 500 });
   state = await page.evaluate(() => {
-    const { kept, ...rest } = window.crisp3ds;
+    const { kept, ...rest } = window.crispmesh;
     return { ...rest, jsHeapBytes: performance.memory?.usedJSHeapSize ?? null };
   });
 } catch (error) {
-  state = await page.evaluate(() => ({ status: window.crisp3ds?.status ?? "no page state", events: window.crisp3ds?.events ?? [], wasmBytes: window.crisp3ds?.wasmBytes, error: "timeout" })).catch(() => ({ status: "crashed", events: [], error: String(error) }));
+  state = await page.evaluate(() => ({ status: window.crispmesh?.status ?? "no page state", events: window.crispmesh?.events ?? [], wasmBytes: window.crispmesh?.wasmBytes, error: "timeout" })).catch(() => ({ status: "crashed", events: [], error: String(error) }));
 }
 clearInterval(sampler);
 sampleMemory();

@@ -122,17 +122,17 @@ export function getShell(): Shell | null {
 export function sourceText(source: ValueSource, field: ConfigField): string {
   if (source === "environment") {
     const variable = {
-      repo: "CRISP3DS_REPO",
-      python: "CRISP3DS_PYTHON",
-      torch_python: "CRISP3DS_TORCH_PYTHON",
-      runs_dir: "CRISP3DS_RUNS_DIR",
-      data_dir: "CRISP3DS_DATA_DIR",
-      alicevision: "CRISP3DS_ALICEVISION",
-      alicevision_library_path: "CRISP3DS_ALICEVISION_LIBRARY_PATH",
-      colmap: "CRISP3DS_COLMAP",
-      sam_python: "CRISP3DS_SAM_PYTHON",
-      sam_source: "CRISP3DS_SAM_SOURCE",
-      sam_checkpoint: "CRISP3DS_SAM_CHECKPOINT",
+      repo: "CRISPMESH_REPO",
+      python: "CRISPMESH_PYTHON",
+      torch_python: "CRISPMESH_TORCH_PYTHON",
+      runs_dir: "CRISPMESH_RUNS_DIR",
+      data_dir: "CRISPMESH_DATA_DIR",
+      alicevision: "CRISPMESH_ALICEVISION",
+      alicevision_library_path: "CRISPMESH_ALICEVISION_LIBRARY_PATH",
+      colmap: "CRISPMESH_COLMAP",
+      sam_python: "CRISPMESH_SAM_PYTHON",
+      sam_source: "CRISPMESH_SAM_SOURCE",
+      sam_checkpoint: "CRISPMESH_SAM_CHECKPOINT",
     }[field as string];
     return variable !== undefined ? `from ${variable}` : "from the environment";
   }

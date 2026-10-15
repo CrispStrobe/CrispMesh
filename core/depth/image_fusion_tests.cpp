@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <vector>
 
-using namespace crisp3ds::depth;
+using namespace crispmesh::depth;
 namespace {
 // Frozen before the first measured run. These are experiment settings, not
 // parameters derived from the renderer's depth or expected error.

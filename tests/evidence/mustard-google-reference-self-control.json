@@ -92,7 +92,7 @@
     "geometry_faces_per_mesh": 2000000
   },
   "reference": {
-    "path": "/Volumes/backups/code/crisp3ds-data/mustard-eval-reference-001/google_geometry_f64.ply",
+    "path": "/Volumes/backups/code/crispmesh-data/mustard-eval-reference-001/google_geometry_f64.ply",
     "bytes": 409827,
     "vertices": 8194,
     "faces": 16384,
@@ -118,7 +118,7 @@
     "all_face_indices_valid": true
   },
   "output": {
-    "path": "/Volumes/backups/code/crisp3ds-data/mustard-eval-reference-001/google_geometry_f64.ply",
+    "path": "/Volumes/backups/code/crispmesh-data/mustard-eval-reference-001/google_geometry_f64.ply",
     "bytes": 409827,
     "vertices": 8194,
     "faces": 16384,

@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_learned_depth_drill_review_v1",
+  "schema": "crispmesh_learned_depth_drill_review_v1",
   "reconstruction_accepted": false,
   "production_dependency_added": false,
   "dense_defaults_changed": false,

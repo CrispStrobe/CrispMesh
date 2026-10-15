@@ -1,9 +1,9 @@
 # Opt-in OpenCV build and source inventory
 
-`CRISP3DS_WITH_OPENCV` defaults to `OFF`. Enable R01 image geometry with:
+`CRISPMESH_WITH_OPENCV` defaults to `OFF`. Enable R01 image geometry with:
 
 ```sh
-cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISP3DS_WITH_OPENCV=ON
+cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISPMESH_WITH_OPENCV=ON
 cmake --build build-opencv -j4
 ctest --test-dir build-opencv --output-on-failure
 ```

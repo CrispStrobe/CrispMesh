@@ -1,7 +1,7 @@
 # OpenMVG HIGH bunny sparse camera audit
 
 This is a diagnostic review of the frozen image-only HIGH sparse run at
-`/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-photo-sfm-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-photo-sfm-001`.
 No scanner geometry, supplied PRO poses, calibration, or mask was used by the
 SfM producer. Its receipt reports 73/73 poses, one intrinsic, 6,526 tracks,
 and 23,619 residuals. Those counts alone do not establish camera or mesh
@@ -10,7 +10,7 @@ before and after the diagnostic export.
 
 The existing sealed OpenMVG v2.1 `openMVG_main_ConvertSfM_DataFormat` binary
 exported **poses and intrinsics only** (`-V -I -E`) to fresh
-`/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-pose-audit-001/sfm_camera_poses.json`.
+`/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-pose-audit-001/sfm_camera_poses.json`.
 The invocation was capped at 120 seconds and 2 MiB output, with at least
 11 GiB free on both volumes. It finished with 102,755 bytes: 73 views,
 73 extrinsics, one intrinsic, and no structure or control points. The

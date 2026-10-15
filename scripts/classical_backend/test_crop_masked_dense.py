@@ -17,8 +17,8 @@ from scripts.classical_backend import crop_masked_dense as crop
 
 
 SCRATCH = Path(__file__).resolve().parents[2] / ".local-tools" / "tmp"
-REAL_MODEL = Path("/Volumes/backups/code/crisp3ds-data/mustard-sparse-repair-001/model")
-REAL_MASKS = Path("/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/masks")
+REAL_MODEL = Path("/Volumes/backups/code/crispmesh-data/mustard-sparse-repair-001/model")
+REAL_MASKS = Path("/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/masks")
 
 
 class CropTests(unittest.TestCase):

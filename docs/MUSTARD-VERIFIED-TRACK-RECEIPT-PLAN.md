@@ -3,7 +3,7 @@
 Status: two bounded attempts at `-001` failed without a receipt; the narrow
 zero-row correction was reviewed and one fresh `-002` counts-only diagnostic
 completed. Its receipt path was:
-`/Volumes/backups/code/crisp3ds-data/mustard-verified-tracks-002.json`.
+`/Volumes/backups/code/crispmesh-data/mustard-verified-tracks-002.json`.
 
 The runner pins the prior sealed exhaustive fixed-initial masked PyCOLMAP
 database SHA-256

@@ -1,7 +1,7 @@
 """Checks for the HTTP engine against a recorded run (standard library only).
 
 The recorded run is tests/fixtures/dense-run-sphere, copied into a temporary
-runs directory; no pipeline is started. Set CRISP3DS_TEST_ENGINE_RUN=1 to also
+runs directory; no pipeline is started. Set CRISPMESH_TEST_ENGINE_RUN=1 to also
 start one real run on the synthetic sphere through POST /api/runs (needs the
 pipeline requirements, about a minute on CPU).
 """
@@ -232,10 +232,10 @@ class EngineTokenTest(unittest.TestCase):
                     timeout=60)
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertIn("--token is required", result.stderr)
-                self.assertNotIn("crisp3ds engine on", result.stdout)
+                self.assertNotIn("crispmesh engine on", result.stdout)
 
 
-@unittest.skipUnless(os.environ.get("CRISP3DS_TEST_ENGINE_RUN") == "1", "set CRISP3DS_TEST_ENGINE_RUN=1 to start a real run")
+@unittest.skipUnless(os.environ.get("CRISPMESH_TEST_ENGINE_RUN") == "1", "set CRISPMESH_TEST_ENGINE_RUN=1 to start a real run")
 class EngineRealRunTest(unittest.TestCase):
     def test_started_run_completes_and_is_observable(self):
         from scripts.turntable_mesh import synthetic_scene

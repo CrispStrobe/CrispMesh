@@ -19,10 +19,10 @@ from scripts.object_motion import sam_point_trial as point
 
 ROOT = Path(__file__).resolve().parents[2]
 MOUNT = Path("/Volumes/backups")
-BASE_ROOT = MOUNT / "code/crisp3ds-data/sam21-mustard-m1-resume-001"
-OUTPUT = MOUNT / "code/crisp3ds-data/sam21-mustard-m1-candidate48-001"
-OUTPUT_V2 = MOUNT / "code/crisp3ds-data/sam21-mustard-m1-candidate48-002"
-TRAIN48_PHOTOS = MOUNT / "code/crisp3ds-data/sam21-m1-train48-001/photos"
+BASE_ROOT = MOUNT / "code/crispmesh-data/sam21-mustard-m1-resume-001"
+OUTPUT = MOUNT / "code/crispmesh-data/sam21-mustard-m1-candidate48-001"
+OUTPUT_V2 = MOUNT / "code/crispmesh-data/sam21-mustard-m1-candidate48-002"
+TRAIN48_PHOTOS = MOUNT / "code/crispmesh-data/sam21-m1-train48-001/photos"
 REJECTED_QA = ROOT / "tests/datasets/sam21_mustard_m1_full_review.json"
 BASE_SHA = "b47e8caec7d05fae7bb84ae9b3eec7d4a35b1457ca9df67a3b984cbaaeed8a98"
 REJECTED_QA_SHA = "4084e8e458b55c566dd138f9d4b8b853ab2c68bfc20f5f831447a0cc99e9528a"

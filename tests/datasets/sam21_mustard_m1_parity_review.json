@@ -9,7 +9,7 @@
   "parity_manifest_sha256": "bc99129f36654888b9b9fdbd7f9ac606b8527518d91424ca48e7283ac9f42741",
   "supervisor_sha256": "dc82764bb2363aa41597af7280ec3462d85e14e20dae4dbdd7e667b8f4b2cc86",
   "review_sheet_sha256": "f5d84f9c09b6e7a51925572b400c549ff21264e5c69d2ee0824f2eb5dfaf7e4d",
-  "review_sheet": "/Volumes/backups/code/crisp3ds-data/sam21-m1-parity-review-001/review_sheet.jpg",
+  "review_sheet": "/Volumes/backups/code/crispmesh-data/sam21-m1-parity-review-001/review_sheet.jpg",
   "independent_pixel_comparison": "Root decoded all six candidate/reference PNG pairs and verified exact array equality. PNG file hashes differ; no byte-identity claim.",
   "visual_observation": "Cleaned masks retain the bottle body, cap and visible labels in all three views. Cleanup removes detached background specks in NP3_000. Thin boundary fringes remain; these are coarse support masks, not certified exact silhouettes.",
   "scope": "M1 CPU execution and parity on three frozen training views only",

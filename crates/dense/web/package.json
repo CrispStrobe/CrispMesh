@@ -1,8 +1,8 @@
 {
-  "name": "crisp3ds-dense-web-test",
+  "name": "crispmesh-dense-web-test",
   "private": true,
   "type": "module",
-  "description": "Browser test of the crisp3ds-dense WebAssembly package (development only)",
+  "description": "Browser test of the crispmesh-dense WebAssembly package (development only)",
   "scripts": {
     "test": "node test/run.mjs"
   },

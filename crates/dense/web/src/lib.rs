@@ -5,7 +5,7 @@
 //! starts a run with a JSON options string whose paths point into the tree,
 //! receives every event as an object through a callback, and reads output files
 //! out of the tree, for example when an `artifact` event names one. See
-//! `crisp3ds-dense.js` for a wrapper that does this from a map of files.
+//! `crispmesh-dense.js` for a wrapper that does this from a map of files.
 //!
 //! Everything runs on the calling JavaScript thread. GPU work is awaited, so the
 //! thread returns to its event loop at every readback (once per view while
@@ -16,9 +16,9 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use crisp3ds_dense::events::Observer;
-use crisp3ds_dense::run::{run_async, RunOptions};
-use crisp3ds_dense::storage;
+use crispmesh_dense::events::Observer;
+use crispmesh_dense::run::{run_async, RunOptions};
+use crispmesh_dense::storage;
 use wasm_bindgen::prelude::*;
 
 thread_local! {
@@ -56,21 +56,21 @@ pub fn version() -> String {
 /// Name, group, meaning, kind and default of every setting: `{"settings": [...]}` as JSON text.
 #[wasm_bindgen(js_name = settingsSchema)]
 pub fn settings_schema() -> String {
-    crisp3ds_dense::config::settings_schema().to_string()
+    crispmesh_dense::config::settings_schema().to_string()
 }
 
 /// How a run may start in a browser, as JSON text: the start points (photos, an
 /// inputs directory), their fields, stages and the providers this build can run
-/// (no external programs), with their options. See `crisp3ds_dense::run::describe`.
+/// (no external programs), with their options. See `crispmesh_dense::run::describe`.
 #[wasm_bindgen]
 pub fn describe() -> String {
-    crisp3ds_dense::run::describe().to_string()
+    crispmesh_dense::run::describe().to_string()
 }
 
 /// The default settings as JSON text.
 #[wasm_bindgen(js_name = defaultSettings)]
 pub fn default_settings() -> String {
-    serde_json::to_string(&crisp3ds_dense::config::DenseConfig::default()).unwrap_or_default()
+    serde_json::to_string(&crispmesh_dense::config::DenseConfig::default()).unwrap_or_default()
 }
 
 /// Stores a file in the in-memory tree.

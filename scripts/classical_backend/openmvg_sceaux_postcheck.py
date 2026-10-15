@@ -17,7 +17,7 @@ import struct
 
 
 NAMES = tuple(f"{i:05}.jpg" for i in range(11))
-DEFAULT_OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-002")
+DEFAULT_OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-002")
 REPORT = "sparse/SfMReconstruction_Report.html"
 PLY = "sparse/cloud_and_poses.ply"
 MODEL = "sparse/sfm_data.bin"

@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_photo_texture_review_v1",
+  "schema": "crispmesh_photo_texture_review_v1",
   "date": "2026-10-08",
   "new_defaults": false,
   "new_production_dependencies": false,

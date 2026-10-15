@@ -1,14 +1,14 @@
 [package]
-name = "crisp3ds-studio"
+name = "crispmesh-studio"
 version = "0.2.0"
 license = "AGPL-3.0-only"
 description = "CrispMesh: watch a photo-to-STL reconstruction step by step"
-authors = ["Crisp3DS contributors"]
+authors = ["CrispMesh contributors"]
 edition = "2021"
 rust-version = "1.77.2"
 
 [lib]
-name = "crisp3ds_studio_lib"
+name = "crispmesh_studio_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -19,7 +19,7 @@ tauri = { version = "=2.11.6", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The reconstruction itself, in this process: no Python, no child process.
-crisp3ds-dense = { path = "../../../crates/dense", optional = true }
+crispmesh-dense = { path = "../../../crates/dense", optional = true }
 anyhow = { version = "1", optional = true }
 
 # Native pickers, and the token of the optional external Python engine, exist on desktop only.
@@ -37,11 +37,11 @@ libc = "0.2"
 #                in the App Sandbox, so store builds use --no-default-features --features native-engine.
 # Without either the app is a client: an engine elsewhere, recorded runs, the demo.
 default = ["native-engine", "local-engine"]
-native-engine = ["dep:crisp3ds-dense", "dep:anyhow"]
+native-engine = ["dep:crispmesh-dense", "dep:anyhow"]
 local-engine = ["dep:getrandom"]
 
 # The pipeline is far too slow unoptimised to try anything real in a debug build.
-[profile.dev.package.crisp3ds-dense]
+[profile.dev.package.crispmesh-dense]
 opt-level = 3
 [profile.dev.package.image]
 opt-level = 3

@@ -15,8 +15,8 @@ import time
 
 from scripts.classical_backend import openmvg_photo_control as base
 
-FAILED = Path("/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-001")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-sceaux-photo-sfm-002")
+FAILED = Path("/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-sceaux-photo-sfm-002")
 FAILED_SEALS = {
     "receipt.json": "555f394b32f565bf0232e16899193c638871d4f614d81b10969a3168ac6f230f",
     "logs/01-listing.log": "f4c22fa1badd2dc39a5086c1e4495f9b6736a3e2d55afc0205eaf28e5bce7687",

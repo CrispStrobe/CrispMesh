@@ -4,14 +4,14 @@ Status: **read-only preflight and synthetic review only; no mustard photo run**.
 The separate Sceaux `-002` run completed its five-stage, 11/11 camera control.
 That establishes the local OpenMVG executable path, not a rotating-object
 quality result. Mustard uses a new one-shot output at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001`; it does
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001`; it does
 not reuse or modify either Sceaux output. OpenMVG remains an evaluation-only
 oracle without a shipping-license conclusion.
 
 ## Sealed input and camera assumption
 
 Use exactly the 48 `NP3_*.jpg` TRAIN photographs in
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/images`.
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/images`.
 `train-names.txt` SHA-256 is
 `a81d1647109db27991c39c5fe1a9ae308c04081f8ada49d8b0f5ab1c15245544`;
 `stage-report.json` SHA-256 is

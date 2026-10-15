@@ -1,7 +1,7 @@
 {
   "schema": "ycb_stock_berkeley_camera_diagnostic_v1",
   "interpretation": "evaluation-only named-camera and trajectory agreement after fitted Sim(3); Berkeley pose convention is not independently reprojected ground truth; no Google mesh transform or metric mesh accuracy claim",
-  "candidate_model_dir": "/Users/christianstrobele/code/crisp3ds/build-opencv/object-motion/foreground/models/0",
+  "candidate_model_dir": "build-opencv/object-motion/foreground/models/0",
   "candidate_model_sha256": {
     "cameras.bin": "85fef68d12fca34c8a6c38bf1ebe96750f066ab4a86528cc0963a198abb21c17",
     "images.bin": "70adce7873872d2384f86fe1a9cf0045c411ce0975797e5a327bf23e6114b3bb",

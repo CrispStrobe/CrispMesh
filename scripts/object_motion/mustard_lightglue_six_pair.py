@@ -19,10 +19,10 @@ from scripts.object_motion.mustard_two_view_pose import fit_pair
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = Path("/Volumes/backups/code/crisp3ds-data")
+DATA = Path("/Volumes/backups/code/crispmesh-data")
 STAGE = DATA / "mustard-sfm-train-001"
 OUT = DATA / "mustard-lightglue-six-pair-001"
-AI = Path("/Volumes/backups/ai/crisp3ds-lightglue-sift-001")
+AI = Path("/Volumes/backups/ai/crispmesh-lightglue-sift-001")
 WEIGHT = AI / "weights/sift_lightglue.pth"
 STAGE_SHA = "bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0"
 NAMES_SHA = "a81d1647109db27991c39c5fe1a9ae308c04081f8ada49d8b0f5ab1c15245544"

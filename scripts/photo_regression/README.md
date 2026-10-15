@@ -8,7 +8,7 @@ photo provenance; the runner cannot establish it from a directory name.
 
 ```sh
 python scripts/photo_regression/run.py --manifest cases.json \
-  --binary /path/to/crisp3ds-dense --output /path/to/new-results --texture
+  --binary /path/to/crispmesh-dense --output /path/to/new-results --texture
 ```
 
 Example local manifest (paths resolve beside the manifest):
@@ -122,7 +122,7 @@ of original lens-undistorted RGB photos, using your own masks, recovered cameras
 and sparse points. It does not read native stereo depth as search data. OpenCV
 is an optional diagnostic dependency; it is not added to the app. Inputs must
 have a common pinhole canvas and native-resolution crop metadata from
-`CRISP3DS_STAGE_DEPTHS=1`. Keep original RGB paths in the control's
+`CRISPMESH_STAGE_DEPTHS=1`. Keep original RGB paths in the control's
 `cameras.json`, rather than contrast-preprocessed matching images.
 
 ```sh

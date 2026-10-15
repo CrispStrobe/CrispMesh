@@ -6,10 +6,10 @@
     "active": true,
     "category": "GraphicsAndDesign",
     "shortDescription": "Watch a photo-to-STL reconstruction step by step",
-    "longDescription": "CrispMesh shows a photo-to-STL reconstruction as it happens. The desktop app starts the Crisp3DS engine with a separately installed Python; it does not contain Python or PyTorch.",
+    "longDescription": "CrispMesh shows a photo-to-STL reconstruction as it happens. The desktop app starts the CrispMesh engine with a separately installed Python; it does not contain Python or PyTorch.",
     "license": "AGPL-3.0-only",
-    "copyright": "Crisp3DS contributors",
-    "homepage": "https://github.com/CrispStrobe/crisp3ds",
+    "copyright": "CrispMesh contributors",
+    "homepage": "https://github.com/CrispStrobe/CrispMesh",
     "macOS": {
       "signingIdentity": "-",
       "minimumSystemVersion": "11.0"

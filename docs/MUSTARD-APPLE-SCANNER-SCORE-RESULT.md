@@ -12,7 +12,7 @@ The unchanged aligner fitted one proper Sim(3) from 1,024 area-weighted
 samples per mesh, seed 2026. The fitted scale is `0.2488882276`; its final
 symmetric sampled-point RMS objective is `0.0173164` in reference-coordinate
 units, about 7.7% of the scanner bounding-box diagonal. The corrected
-[transform](/Volumes/backups/code/crisp3ds-data/apple-mustard48-scanner-002/apple-to-google-sim3.json)
+[transform](/Volumes/backups/code/crispmesh-data/apple-mustard48-scanner-002/apple-to-google-sim3.json)
 has SHA-256 `37885f2c61688a2430df3ccc77cdffecc3e5af6a196c9edf04ec4d1eb067d264`.
 The [shared-bounds overlay](../.local-tools/apple-mustard48-scanner-002-overlay.png)
 has SHA-256 `bc4baf3e171fb449f39c42915e31fb391f0a0ae70c8ffffd18febe007127f582`.

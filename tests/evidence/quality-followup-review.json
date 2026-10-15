@@ -69,7 +69,7 @@
     "head_sheet_sha256": "de58a1404d059d91b3ad6c718ce73c7ada75594cba5ad847740665af2f20293a"
   },
   "camera_holdout": {
-    "schema": "crisp3ds_camera_holdout_v1",
+    "schema": "crispmesh_camera_holdout_v1",
     "reference_used": false,
     "training_tracks_must_exclude_reserved_components": true,
     "reserved_tracks": 149,

@@ -14,7 +14,7 @@ from scripts.classical_backend import openmvg_mustard_json_pose_validator as pri
 from scripts.classical_backend import openmvg_sceaux_postcheck as shared
 
 
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-global-pose-export-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-global-pose-export-001")
 RECEIPT_SHA256 = "ac20487ca1932e7e42046c43b5fbae768383051f53a61729f4bb5d49dac7bebd"
 JSON_SHA256 = "6382b68e07815d730f5b428e23004bac99a210fced8b5c9a5706e8503a2da709"
 MODEL_SHA256 = "eb5d96ce4379ee32bdef3f946f833fd2c7a85b0a5c818faa4ce799766f74fc00"

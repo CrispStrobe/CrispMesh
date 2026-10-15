@@ -183,7 +183,7 @@ pub fn run(scene: &Path, prepared: &Path, raw_masks: &Path, output: &Path) -> an
     Ok(json!({"views": rows.len(), "sparse_points": points.len() / 3}))
 }
 
-/// `crisp3ds-dense inputs --scene F --prepared DIR --raw-masks DIR --output DIR`.
+/// `crispmesh-dense inputs --scene F --prepared DIR --raw-masks DIR --output DIR`.
 /// Makes an inputs directory self-contained: every photo and mask lies inside
 /// it (`images/`, `masks/`) and `cameras.json` names them by relative path, so
 /// the folder can be moved, archived or picked in a browser.
@@ -248,8 +248,8 @@ pub fn pack(source: &Path, output: Option<&Path>, link: bool) -> anyhow::Result<
     Ok(json!({"views": count, "copied": copied, "linked": linked, "copied_bytes": bytes, "output": target.to_string_lossy()}))
 }
 
-const USAGE: &str = "usage: crisp3ds-dense inputs --scene FILE --prepared DIR --raw-masks DIR --output DIR [--self-contained [--link]]
-       crisp3ds-dense inputs --pack DIR [--output DIR] [--link]
+const USAGE: &str = "usage: crispmesh-dense inputs --scene FILE --prepared DIR --raw-masks DIR --output DIR [--self-contained [--link]]
+       crispmesh-dense inputs --pack DIR [--output DIR] [--link]
 --self-contained   copy the prepared photos into the inputs directory and name them by relative path (default: the
                    photos stay where they are and cameras.json holds their absolute paths)
 --pack DIR         make an existing inputs directory self-contained, in place or as a copy in --output
@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn packing_copies_the_photos_in_and_makes_the_paths_relative() {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-pack-{}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-pack-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(folder.join("inputs/masks")).unwrap();
         std::fs::create_dir_all(folder.join("prepared")).unwrap();

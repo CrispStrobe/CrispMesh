@@ -24,7 +24,7 @@ from scripts.classical_backend import openmvg_photo_control as core
 from scripts.classical_backend import openmvg_sceaux_photo_control_v2 as cli
 
 SOURCE = shared.SOURCE
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-global-sfm-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-global-sfm-001")
 SFM_BINARY_SHA = shared.SFM_BINARY_SHA
 OUTPUT_CAP = shared.OUTPUT_CAP
 LOG_CAP = shared.LOG_CAP

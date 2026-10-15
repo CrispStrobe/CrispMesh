@@ -1,4 +1,4 @@
-# Crisp3DS desktop workspace
+# CrispMesh desktop workspace
 
 This Tauri 2 shell serves the same TypeScript workspace that can run in a browser. It creates, imports, validates, edits, and downloads project manifest v1 JSON. It keeps a local browser storage library of valid projects; download the JSON to keep a portable copy. Images and masks are referenced by paths relative to that file and are not embedded in the JSON or inspected by this workspace.
 

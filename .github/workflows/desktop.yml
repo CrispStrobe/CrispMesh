@@ -55,12 +55,12 @@ jobs:
       - name: Typecheck and static bundle
         run: npm run build
       # The bundle uses Vite's default base "/", so it is served correctly from
-      # a site root. Publishing it to GitHub Pages under /crisp3ds/ needs
-      # `vite build --base=./` (or /crisp3ds/) and Pages enabled in the
+      # a site root. Publishing it to GitHub Pages under /crispmesh/ needs
+      # `vite build --base=./` (or /crispmesh/) and Pages enabled in the
       # repository settings; neither is done here.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-web
+          name: crispmesh-web
           if-no-files-found: error
           path: apps/desktop/dist
 
@@ -111,13 +111,13 @@ jobs:
         run: ls -la src-tauri/target/release | head -40
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-desktop-${{ matrix.os }}-unsigned
+          name: crispmesh-desktop-${{ matrix.os }}-unsigned
           if-no-files-found: error
           path: |
-            apps/desktop/src-tauri/target/release/crisp3ds-desktop
-            apps/desktop/src-tauri/target/release/crisp3ds-desktop.exe
-            apps/desktop/src-tauri/target/release/Crisp3DS
-            apps/desktop/src-tauri/target/release/Crisp3DS.exe
+            apps/desktop/src-tauri/target/release/crispmesh-desktop
+            apps/desktop/src-tauri/target/release/crispmesh-desktop.exe
+            apps/desktop/src-tauri/target/release/CrispMesh
+            apps/desktop/src-tauri/target/release/CrispMesh.exe
 
   # TODO(mobile): Tauri 2 mobile builds. Not part of push/PR CI.
   #
@@ -176,7 +176,7 @@ jobs:
       - run: npx tauri android build --debug --apk --target aarch64 --ci
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-android-debug-apk
+          name: crispmesh-android-debug-apk
           if-no-files-found: error
           path: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
 
@@ -207,7 +207,7 @@ jobs:
         run: npx tauri ios build --debug --target aarch64-sim --ci
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-ios-simulator
+          name: crispmesh-ios-simulator
           if-no-files-found: warn
           path: |
             apps/desktop/src-tauri/gen/apple/build/**/*.app

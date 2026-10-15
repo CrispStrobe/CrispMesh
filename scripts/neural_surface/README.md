@@ -5,7 +5,7 @@ A research prototype, not part of the pipeline: the reference surface method (Ne
 Apple GPUs, so that its results can be reproduced here before native versions (WebGPU in the Rust engine, and
 MLX through its C API) are written against a fixed recipe. The shipped pipeline must not depend on Python.
 
-The native version is `crisp3ds-dense surface` (WebGPU, [crate README](../../crates/dense/README.md)), checked
+The native version is `crispmesh-dense surface` (WebGPU, [crate README](../../crates/dense/README.md)), checked
 against this prototype with `export_fixture.py`; on the drill it reaches 0.932 / 0.976 / 0.995 in 95 minutes.
 
 The model follows the configuration of `neus-facto` in

@@ -18,7 +18,7 @@ import time
 
 from scripts.classical_backend import openmvg_mustard_json_pose_validator as poses
 
-BASE = Path("/Volumes/backups/code/crisp3ds-data")
+BASE = Path("/Volumes/backups/code/crispmesh-data")
 OUTPUT = BASE / "openmvg-mustard-gt-posthoc-001"
 ADJUST = BASE / "openmvg-mustard-photo-pose-export-001"
 FIXED = BASE / "openmvg-mustard-photo-sfm-fixed-pose-export-003"

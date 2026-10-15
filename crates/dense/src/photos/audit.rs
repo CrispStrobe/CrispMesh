@@ -298,7 +298,7 @@ mod tests {
     fn audit(data: &Value, policy: &Policy) -> anyhow::Result<Value> {
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("crisp3ds-audit-{}-{n}.sfm", std::process::id()));
+        let path = std::env::temp_dir().join(format!("crispmesh-audit-{}-{n}.sfm", std::process::id()));
         std::fs::write(&path, serde_json::to_vec(data).unwrap()).unwrap();
         let before = util::sha256_file(&path).unwrap();
         let out = audit_scene(&path, policy);

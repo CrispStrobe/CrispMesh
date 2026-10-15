@@ -1,4 +1,4 @@
-//! Rendered turntable captures of textured meshes: `crisp3ds-dense render`.
+//! Rendered turntable captures of textured meshes: `crispmesh-dense render`.
 //!
 //! A textured Wavefront `.obj` (as the Google Scanned Objects come, CC BY 4.0)
 //! stands on a light, faintly textured disc in front of a light backdrop; a
@@ -12,7 +12,7 @@
 //! Writes `photos/shot_NNN.png`, `masks/shot_NNN.png` (the exact object silhouette, where at least
 //! half of a pixel's samples meet the object; for `--masks import:DIR` when the masks are not the
 //! question), `lens.json` (the lens the photos were made
-//! with, `crisp3ds_lens_calibration_v1`), `truth.json` (cameras, placement)
+//! with, `crispmesh_lens_calibration_v1`), `truth.json` (cameras, placement)
 //! and `reference.ply` (the mesh as placed, for `scan_evaluate --no-platform`;
 //! evaluation only). Without `--mesh`, `--sphere` renders a tessellated unit
 //! sphere with the texture of `synthetic --capture`, to check the renderer
@@ -571,10 +571,10 @@ pub fn render(mesh: &Mesh, settings: &Settings, output: &Path, source: &str) -> 
         truth_views.push(json!({"photo": name, "centre": centre, "rotation": rotation}));
     }
     let calibration = json!({
-        "schema": "crisp3ds_lens_calibration_v1", "model": "radialk3", "calibration_width": settings.width, "calibration_height": settings.height,
+        "schema": "crispmesh_lens_calibration_v1", "model": "radialk3", "calibration_width": settings.width, "calibration_height": settings.height,
         "fx": lens.fx, "fy": lens.fy, "cx": lens.cx, "cy": lens.cy, "k1": lens.k[0], "k2": lens.k[1], "k3": lens.k[2],
         "principal_point_convention": "pixel_centre", "sensor_width_mm": 36.0,
-        "provenance": {"source": "crisp3ds-dense render: the lens the photos were rendered with"},
+        "provenance": {"source": "crispmesh-dense render: the lens the photos were rendered with"},
     });
     std::fs::write(output.join("lens.json"), serde_json::to_string_pretty(&calibration)? + "\n")?;
     write_ply(&output.join("reference.ply"), &placed, &mesh.triangles)?;
@@ -635,7 +635,7 @@ fn blur(source: &[f32], width: usize, height: usize, sigma: f64) -> Vec<f32> {
     pass(&pass(source, true), false)
 }
 
-const USAGE: &str = "usage: crisp3ds-dense render (--mesh MODEL.obj | --sphere) --output DIR [--views N (72)] [--elevation DEG (20)]
+const USAGE: &str = "usage: crispmesh-dense render (--mesh MODEL.obj | --sphere) --output DIR [--views N (72)] [--elevation DEG (20)]
        [--width W (1749)] [--height H (1155)] [--fill F (0.7)] [--calibration LENS.json] [--distance D]
        [--samples 1|4 (4)] [--blur SIGMA_PX (0)] [--noise SIGMA (0)] [--backdrop GREY (0.86)] [--flat] [--threads N (4)]";
 

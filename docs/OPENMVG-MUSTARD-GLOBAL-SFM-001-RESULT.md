@@ -1,7 +1,7 @@
 # Mustard GLOBAL SfM control -001: sealed result audit
 
 Read-only audit of the completed evaluation-only GLOBAL trial at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-global-sfm-001`.
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-global-sfm-001`.
 The one-shot process exited 0 in 7.011 s (sampled peak RSS 23,408 KiB), but
 the supervisor correctly marked `failed_registration_or_sparse_gate`:
 **48 views, 46 poses, one intrinsic, 69 tracks, 1,375 HTML residuals**. The

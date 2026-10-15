@@ -40,10 +40,10 @@ def main():
         parser.error(f"output parent does not exist: {output.parent}")
     if shutil.disk_usage(output.parent).free < RESERVE_BYTES + 64 * 1024**2:
         parser.error("10 GiB free-space reserve plus fixture headroom required")
-    flags = (BUILD / "CMakeFiles/crisp3ds_pose_integration.dir/flags.make").read_text()
+    flags = (BUILD / "CMakeFiles/crispmesh_pose_integration.dir/flags.make").read_text()
     includes = shlex.split(re.search(r"^CXX_INCLUDES = (.*)$", flags, re.M).group(1))
-    link = shlex.split((BUILD / "CMakeFiles/crisp3ds_pose_integration.dir/link.txt").read_text())
-    libraries = link[link.index("libcrisp3ds_core.a") + 1:]
+    link = shlex.split((BUILD / "CMakeFiles/crispmesh_pose_integration.dir/link.txt").read_text())
+    libraries = link[link.index("libcrispmesh_core.a") + 1:]
     source = ROOT / "scripts/quality_gate/pose_fixture.cpp"
     scratch = ROOT / ".local-tools" / "tmp"
     scratch.mkdir(parents=True, exist_ok=True)

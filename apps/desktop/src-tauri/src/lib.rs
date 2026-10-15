@@ -8,5 +8,5 @@ pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![desktop_capabilities])
         .run(tauri::generate_context!())
-        .expect("error while running Crisp3DS");
+        .expect("error while running CrispMesh");
 }

@@ -1,5 +1,5 @@
 {
- "schema": "crisp3ds_noise_matched_truncation_v1",
+ "schema": "crispmesh_noise_matched_truncation_v1",
  "date": "2026-10-10",
  "setting": {
   "name": "truncation_noise",

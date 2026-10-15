@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_lens_calibration_v1",
+  "schema": "crispmesh_lens_calibration_v1",
   "model": "radialk3",
   "calibration_width": 583,
   "calibration_height": 385,

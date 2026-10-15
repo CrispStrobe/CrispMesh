@@ -202,14 +202,14 @@
   "schema": "mustard_train_sparse_sfm_metrics_v1",
   "scope": "48 training RGB only; image-estimated SfM, no held-out/GT/depth/reference",
   "source_sha256": {
-    "/Users/christianstrobele/code/crisp3ds/build-opencv/ycb-evaluation-vps-001/mustard-package.json": "45b6ed1430627a747eaeb8d4dff7d2c49502083cca0a7914e25aacd45b594425",
-    "/Users/christianstrobele/code/crisp3ds/scripts/object_dataset/sparse_sfm_metrics.py": "b7e266358812dc585cf23a241f51dd5404bc124372bdf07385ee6f8d8bf73b08",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/database.db": "5858be16dfa3f0fc50303d0eb4a001e21ee14036f67755a9997d5dac374b3075",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/result.json": "5a83c3e05e2b66887411799ecc8c5f3f41e3b8af3bbd775d308055ef7ee0041e",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/sfm.json": "2895d4bd75d41813508af3ba38f2ea65dc526d2ed78826b44d5d400387aae895",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/sparse/0/cameras.bin": "ebc18fcca6fa2dacf0b6ff16cfae700d62d44626530d48dcecc7e72767a24348",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/sparse/0/images.bin": "67a1e75744aad52eef299a59c5a91ec1ec06d45b0f98ffff96fcb65698d1cfa6",
-    "/Volumes/backups/code/crisp3ds-data/mustard-sfm-masked-fixed-exhaustive-001/sparse/0/points3D.bin": "eb60667d3e4145fb423e1fa7ec37169830ef19e49a56fe620efa9c7322803b02"
+    "build-opencv/ycb-evaluation-vps-001/mustard-package.json": "45b6ed1430627a747eaeb8d4dff7d2c49502083cca0a7914e25aacd45b594425",
+    "scripts/object_dataset/sparse_sfm_metrics.py": "b7e266358812dc585cf23a241f51dd5404bc124372bdf07385ee6f8d8bf73b08",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/database.db": "5858be16dfa3f0fc50303d0eb4a001e21ee14036f67755a9997d5dac374b3075",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/result.json": "5a83c3e05e2b66887411799ecc8c5f3f41e3b8af3bbd775d308055ef7ee0041e",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/sfm.json": "2895d4bd75d41813508af3ba38f2ea65dc526d2ed78826b44d5d400387aae895",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/sparse/0/cameras.bin": "ebc18fcca6fa2dacf0b6ff16cfae700d62d44626530d48dcecc7e72767a24348",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/sparse/0/images.bin": "67a1e75744aad52eef299a59c5a91ec1ec06d45b0f98ffff96fcb65698d1cfa6",
+    "/Volumes/backups/code/crispmesh-data/mustard-sfm-masked-fixed-exhaustive-001/sparse/0/points3D.bin": "eb60667d3e4145fb423e1fa7ec37169830ef19e49a56fe620efa9c7322803b02"
   },
   "status": "complete"
 }

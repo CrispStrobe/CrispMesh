@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace crisp3ds::depth {
+namespace crispmesh::depth {
 
 // X_camera = rotation * X_object + translation_mm.
 struct Pose {
@@ -78,4 +78,4 @@ Result fuse_tracks(const std::vector<Candidate>& candidates,
                    const std::vector<DepthView>& views, double tolerance_mm,
                    std::vector<FusedPoint>& points, FusionStats& stats);
 
-}  // namespace crisp3ds::depth
+}  // namespace crispmesh::depth

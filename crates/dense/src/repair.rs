@@ -297,7 +297,7 @@ mod gpu_tests {
     use crate::hull::build_hull;
     use crate::stereo::{options, synthetic};
 
-    /// GPU cover against the scalar splat; repair leaves a clean scene alone (`CRISP3DS_GPU_TESTS=1`).
+    /// GPU cover against the scalar splat; repair leaves a clean scene alone (`CRISPMESH_GPU_TESTS=1`).
     #[test]
     fn gpu_cover_matches_the_scalar_splat() {
         if !crate::gpu::tests_enabled() {

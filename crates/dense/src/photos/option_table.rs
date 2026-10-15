@@ -1,6 +1,6 @@
-//! The options of `crisp3ds-dense photos` as one table: the command-line parser
+//! The options of `crispmesh-dense photos` as one table: the command-line parser
 //! takes its flags, kinds and defaults from here, and `listing` gives the same
-//! rows as JSON for generated forms (`crisp3ds-dense run --describe`).
+//! rows as JSON for generated forms (`crispmesh-dense run --describe`).
 
 use serde_json::{json, Value};
 
@@ -70,7 +70,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "provider",
         default: Some("threshold"),
         choices: &[],
-        variable: Some("CRISP3DS_MASKS"),
+        variable: Some("CRISPMESH_MASKS"),
         repeated: false,
         meaning: "Mask provider: threshold, background, import:DIR, external-sam or sam",
     },
@@ -80,7 +80,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "provider",
         default: Some("turntable"),
         choices: &[],
-        variable: Some("CRISP3DS_CAMERAS"),
+        variable: Some("CRISPMESH_CAMERAS"),
         repeated: false,
         meaning: "Camera provider: turntable, markers, colmap, alicevision or import:PATH",
     },
@@ -150,7 +150,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "executable",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_SAM_PYTHON"),
+        variable: Some("CRISPMESH_SAM_PYTHON"),
         repeated: false,
         meaning: "Python interpreter with PyTorch for SAM 2.1",
     },
@@ -160,7 +160,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "directory",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_SAM_SOURCE"),
+        variable: Some("CRISPMESH_SAM_SOURCE"),
         repeated: false,
         meaning: "Checkout of the SAM 2 source",
     },
@@ -170,7 +170,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "path",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_SAM_CHECKPOINT"),
+        variable: Some("CRISPMESH_SAM_CHECKPOINT"),
         repeated: false,
         meaning: "SAM 2.1 checkpoint file",
     },
@@ -180,7 +180,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "text",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_SAM_CONFIG"),
+        variable: Some("CRISPMESH_SAM_CONFIG"),
         repeated: false,
         meaning: "Name of the SAM model configuration",
     },
@@ -190,7 +190,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "path_list",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_SAM_PYTHONPATH"),
+        variable: Some("CRISPMESH_SAM_PYTHONPATH"),
         repeated: false,
         meaning: "Extra module directories for the interpreter, separated like PATH",
     },
@@ -200,7 +200,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "directory",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_REPOSITORY"),
+        variable: Some("CRISPMESH_REPOSITORY"),
         repeated: false,
         meaning: "Checkout with scripts/turntable_mesh/segment.py",
     },
@@ -260,7 +260,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "directory",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_SAM_MODEL"),
+        variable: Some("CRISPMESH_SAM_MODEL"),
         repeated: false,
         meaning: "The model: a directory with model.json and the ONNX graphs (crates/dense/tools/sam2_export_onnx.py), or a GGUF file for the ggml backend (cstr/sam2.1-hiera-tiny-GGUF). Default: SAM 2.1 Hiera-tiny from huggingface.co/cstr/sam2.1-hiera-tiny-ONNX, fetched into the cache on first use and checked against pinned SHA-256",
     },
@@ -270,7 +270,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "path",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_SAM_RUNTIME"),
+        variable: Some("CRISPMESH_SAM_RUNTIME"),
         repeated: false,
         meaning: "The runtime library: ONNX Runtime's for ONNX models (default: ORT_DYLIB_PATH), CrispEmbed's libcrispembed-sam2 for GGUF models (default: CRISPEMBED_SAM2_LIB)",
     },
@@ -350,7 +350,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "directory",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_ALICEVISION"),
+        variable: Some("CRISPMESH_ALICEVISION"),
         repeated: false,
         meaning: "Install prefix with bin/aliceVision_*, or a wrapper script called as `wrapper TOOL args`",
     },
@@ -360,7 +360,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "path_list",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_ALICEVISION_LIBRARY_PATH"),
+        variable: Some("CRISPMESH_ALICEVISION_LIBRARY_PATH"),
         repeated: false,
         meaning: "Extra library directories for a prefix, separated like PATH",
     },
@@ -370,7 +370,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "text",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_ALICEVISION_ENV"),
+        variable: Some("CRISPMESH_ALICEVISION_ENV"),
         repeated: true,
         meaning: "Extra variable NAME=VALUE for the tools of a prefix",
     },
@@ -380,7 +380,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "path",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_ALICEVISION_SENSOR_DB"),
+        variable: Some("CRISPMESH_ALICEVISION_SENSOR_DB"),
         repeated: false,
         meaning: "cameraSensors.db (default: <prefix>/share/aliceVision/)",
     },
@@ -450,7 +450,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "executable",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_COLMAP"),
+        variable: Some("CRISPMESH_COLMAP"),
         repeated: false,
         meaning: "The colmap executable, or a wrapper called as `wrapper COMMAND args` (default: colmap on the PATH)",
     },
@@ -595,9 +595,9 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "path",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_MARKERS_MAT"),
+        variable: Some("CRISPMESH_MARKERS_MAT"),
         repeated: false,
-        meaning: "Description of the printed mat, as `crisp3ds-dense mat` writes it",
+        meaning: "Description of the printed mat, as `crispmesh-dense mat` writes it",
     },
     OptionSpec {
         flag: "markers-minimum",
@@ -625,7 +625,7 @@ pub const OPTIONS: &[OptionSpec] = &[
         kind: "executable",
         default: None,
         choices: &[],
-        variable: Some("CRISP3DS_PYTHON"),
+        variable: Some("CRISPMESH_PYTHON"),
         repeated: false,
         meaning: "Interpreter for .py wrappers",
     },
@@ -851,7 +851,7 @@ fn row(option: &OptionSpec) -> Value {
 
 /// Every option as JSON, in the order of the table.
 pub fn listing() -> Value {
-    json!({"schema": "crisp3ds_photo_options_v1", "options": OPTIONS.iter().map(row).collect::<Vec<_>>()})
+    json!({"schema": "crispmesh_photo_options_v1", "options": OPTIONS.iter().map(row).collect::<Vec<_>>()})
 }
 
 /// The options of one provider (`module` is `masks` or `cameras`), as JSON rows.
@@ -902,7 +902,7 @@ mod tests {
         assert_eq!(rows["options"].as_array().unwrap().len(), OPTIONS.len());
         let colmap = of_provider("cameras", "colmap");
         assert_eq!(colmap[0]["flag"], "--colmap");
-        assert_eq!((colmap[0]["kind"].as_str(), colmap[0]["variable"].as_str()), (Some("executable"), Some("CRISP3DS_COLMAP")));
+        assert_eq!((colmap[0]["kind"].as_str(), colmap[0]["variable"].as_str()), (Some("executable"), Some("CRISPMESH_COLMAP")));
         assert_eq!(colmap.iter().find(|row| row["name"] == "colmap-overlap").unwrap()["default"], 10);
         assert_eq!(of_group("cameras").iter().find(|row| row["name"] == "open-turn").unwrap()["default"], false);
         assert!(of_provider("masks", "import").is_empty());

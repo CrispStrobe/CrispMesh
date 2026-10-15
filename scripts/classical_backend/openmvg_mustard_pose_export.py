@@ -22,8 +22,8 @@ import time
 
 from scripts.classical_backend import openmvg_converter_build as build
 
-FAILED = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-001")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-pose-export-001")
+FAILED = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-001")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-pose-export-001")
 INPUT = FAILED / "sparse/sfm_data.bin"
 FAIL_RECEIPT_SHA = "e45c400dcf71a3ba86fa22f7af2138418d6dc511fddcd6d8470ef33599804744"
 INPUT_SHA = "dc11f9b3a74809ebc080260b360ff1dd0e6f9f9526ea151aac002ace75b2df8b"

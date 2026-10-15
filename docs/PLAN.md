@@ -1,4 +1,4 @@
-# Crisp3DS implementation plan
+# CrispMesh implementation plan
 
 ## Active roadmap (2026-09-27)
 

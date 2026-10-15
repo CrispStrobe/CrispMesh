@@ -37,7 +37,7 @@ def _exact(value: object, expected: set[str], label: str) -> dict:
 
 def validate_lock(lock: object) -> dict:
     root = _exact(lock, {"schema", "code", "model"}, "lock")
-    if root["schema"] != "crisp3ds_mapanything_artifact_lock_v1":
+    if root["schema"] != "crispmesh_mapanything_artifact_lock_v1":
         raise ValueError("unsupported lock schema")
     code = _exact(root["code"], {"repo", "revision", "license", "license_path", "license_sha256"}, "code")
     model = _exact(root["model"], {"repo", "revision", "card_license", "card_sha256", "config_sha256", "gated", "artifact"}, "model")
@@ -136,7 +136,7 @@ def placement_check(destination: Path, *, profile: str, artifact_bytes: int,
         external_device = mount.stat().st_dev
         if external_device == workspace.stat().st_dev:
             raise ValueError("Mac external model volume shares the internal device")
-        expected = mount / "ai" / "crisp3ds" / "map-anything-apache" / MODEL_REVISION
+        expected = mount / "ai" / "crispmesh" / "map-anything-apache" / MODEL_REVISION
         if (destination.parent != expected or parent != expected.resolve(strict=True) or
                 not parent.is_relative_to(mount) or parent.stat().st_dev != external_device):
             raise ValueError("Mac weights require exact versioned path on mounted backups volume")

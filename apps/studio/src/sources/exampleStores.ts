@@ -64,7 +64,7 @@ export class AppExampleStore implements ExampleStore {
   }
 }
 
-const CACHE = "crisp3ds-example-objects";
+const CACHE = "crispmesh-example-objects";
 
 /** The browser's Cache Storage, keyed by the files' URLs: kept across visits, deletable. */
 export class BrowserExampleStore implements ExampleStore {

@@ -1,7 +1,7 @@
 {
   "schema": "sceaux_colmap_camera_software_agreement_v1",
   "interpretation": "evaluation-only named-camera agreement with upstream software poses; not ground truth or metric accuracy",
-  "candidate_model_dir": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/models/0",
+  "candidate_model_dir": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/models/0",
   "candidate_model_sha256": {
     "cameras.bin": "4bbca83da0f5bf47d3abccbccc72e15bbe79a0dd7a7b565b4669290a401fba4f",
     "images.bin": "6ffd6cd9959551a2872b0f8bc5bfa1943ad68b4dffb5b9eac704101d582ccaf7",

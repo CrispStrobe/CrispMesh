@@ -62,6 +62,6 @@ Run only after root reviews the source/panel/API preflight. One bounded batch
 has a 30-second process alarm, at most 12 pair-arm fits (three RANSAC seeds
 each), <20 MiB report, and a 10 GiB free-space floor on both workspace and
 backup volumes. New output is external under
-`/Volumes/backups/code/crisp3ds-data`; no large `/tmp` artifacts. Hash the
+`/Volumes/backups/code/crispmesh-data`; no large `/tmp` artifacts. Hash the
 input database and producer reports before and after. Do not change the panel,
 seeds, threshold, or gates after observing a pose result.

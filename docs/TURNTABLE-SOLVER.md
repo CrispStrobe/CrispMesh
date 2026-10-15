@@ -1,6 +1,6 @@
 # The `turntable` camera provider
 
-`crisp3ds-dense photos --cameras turntable`: cameras for one turn of ordered
+`crispmesh-dense photos --cameras turntable`: cameras for one turn of ordered
 turntable photos with a known lens, from this crate's own code
 (`crates/dense/src/photos/turntable/`). No external program, no random choice,
 plain Rust that builds for WebAssembly, so it is the camera provider for
@@ -129,7 +129,7 @@ were overwritten, so the gate was not run on them.
 
 ## From photos to a scored STL in one command
 
-`crisp3ds-dense run --photos DIR --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json
+`crispmesh-dense run --photos DIR --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json
 --output RUN`, masks and cameras left at their defaults: threshold masks, this
 solver, the dense stages, nothing else started. 73 photos each, Apple M1
 with 16 GB, one run per object; the scans are used for scoring only (F1 at

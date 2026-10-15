@@ -96,7 +96,7 @@ def fetch_one(root: Path, relative: str, item: dict, *, remaining: int) -> dict:
     digest = hashlib.sha256()
     received = 0
     started = time.monotonic()
-    request = urllib.request.Request(BASE + relative, headers={"User-Agent": "crisp3ds-bounded-subset/1"})
+    request = urllib.request.Request(BASE + relative, headers={"User-Agent": "crispmesh-bounded-subset/1"})
     try:
         with os.fdopen(fd, "wb") as output, urllib.request.urlopen(request, timeout=45) as response:
             length = response.headers.get("Content-Length")

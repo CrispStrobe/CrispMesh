@@ -31,7 +31,7 @@ use settings::MeshSettings;
 
 pub const TAUBIN_LAMBDA: f64 = 0.5;
 pub const TAUBIN_MU: f64 = -0.53;
-pub const STL_HEADER: &str = "crisp3ds tsdf hull mesh";
+pub const STL_HEADER: &str = "crispmesh tsdf hull mesh";
 
 /// Content of `result.json`, keys in the order the reference writes them.
 #[derive(Debug, Clone, Serialize)]
@@ -288,7 +288,7 @@ fn extract(
     Ok(report)
 }
 
-pub const USAGE: &str = "usage: crisp3ds-dense mesh --volume volume.npz --output DIR [--config config.json] [--set KEY=VALUE ...]
+pub const USAGE: &str = "usage: crispmesh-dense mesh --volume volume.npz --output DIR [--config config.json] [--set KEY=VALUE ...]
                            [--step N] [--events events.jsonl] [--label TEXT] [--threads N]
 
 Extracts a closed surface from fused TSDF evidence bounded by the silhouette hull
@@ -351,7 +351,7 @@ fn parse(arguments: &[String]) -> Result<Arguments> {
     })
 }
 
-/// `crisp3ds-dense mesh ...`: prints the report as JSON, like the Python module.
+/// `crispmesh-dense mesh ...`: prints the report as JSON, like the Python module.
 pub fn command(arguments: &[String]) -> ExitCode {
     if arguments.iter().any(|a| a == "-h" || a == "--help") {
         println!("{USAGE}");
@@ -360,7 +360,7 @@ pub fn command(arguments: &[String]) -> ExitCode {
     let parsed = match parse(arguments) {
         Ok(parsed) => parsed,
         Err(error) => {
-            eprintln!("crisp3ds-dense mesh: {error}\n{USAGE}");
+            eprintln!("crispmesh-dense mesh: {error}\n{USAGE}");
             return ExitCode::from(2);
         }
     };
@@ -386,7 +386,7 @@ pub fn command(arguments: &[String]) -> ExitCode {
             ExitCode::SUCCESS
         }
         Err(error) => {
-            eprintln!("crisp3ds-dense mesh: {error:#}");
+            eprintln!("crispmesh-dense mesh: {error:#}");
             ExitCode::FAILURE
         }
     }
@@ -402,7 +402,7 @@ mod tests {
 
     impl Scratch {
         fn new(name: &str) -> Self {
-            let path = std::env::temp_dir().join(format!("crisp3ds-mesh-{}-{name}", std::process::id()));
+            let path = std::env::temp_dir().join(format!("crispmesh-mesh-{}-{name}", std::process::id()));
             let _ = crate::storage::remove_dir_all(&path);
             crate::storage::create_dir_all(&path).unwrap();
             Scratch(path)

@@ -54,7 +54,7 @@ claim that local original files were rehashed.
 Root subsequently ran full validation on the VPS after reviewing the helper
 and tests. Both objects passed all 62 asset size/SHA-256 checks (60 original
 photographs, original scanner PLY, converted scanner PLY). Outputs live in
-`/mnt/storage/crisp3ds-data/ycb-evaluation-001/`; small report copies are in
+`/mnt/storage/crispmesh-data/ycb-evaluation-001/`; small report copies are in
 `build-opencv/ycb-evaluation-vps-001/`. The helper SHA-256 was
 `b7dcecd236c7c3644f15a5ddd9fe6b148be74f87ebc9d41aa3277315dc427d5f`.
 Mustard report SHA-256: `45b6ed1430627a747eaeb8d4dff7d2c49502083cca0a7914e25aacd45b594425`;

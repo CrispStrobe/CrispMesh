@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace crisp3ds::evaluation {
+namespace crispmesh::evaluation {
 namespace {
 constexpr std::size_t kMaxPixels = 100'000'000;
 
@@ -302,4 +302,4 @@ cv::Mat disparity_to_depth(const cv::Mat& disparity, double fx, double baseline,
   }
   return depth;
 }
-} // namespace crisp3ds::evaluation
+} // namespace crispmesh::evaluation

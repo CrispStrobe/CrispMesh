@@ -1,6 +1,6 @@
 {
-  "id": "chr1str/crisp3ds-alicevision-binary-smoke",
-  "title": "crisp3ds-alicevision-binary-smoke",
+  "id": "chr1str/crispmesh-alicevision-binary-smoke",
+  "title": "crispmesh-alicevision-binary-smoke",
   "code_file": "alicevision_binary_smoke.py",
   "language": "python",
   "kernel_type": "script",

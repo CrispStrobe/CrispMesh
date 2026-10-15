@@ -22,7 +22,7 @@ import time
 from scripts.classical_backend import openmvg_m1_supervisor as base
 
 
-ROOT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-v21-ligt-off-oracle-001")
+ROOT = Path("/Volumes/backups/code/crispmesh-data/openmvg-v21-ligt-off-oracle-001")
 OLD_SOURCE = base.DEFAULT_ROOT / "source"
 INTERNAL = base.DEFAULT_INTERNAL
 PATCH = INTERNAL / "scripts/classical_backend/openmvg_v21_ligt_off.patch"

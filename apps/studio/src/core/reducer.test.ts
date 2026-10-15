@@ -143,7 +143,7 @@ describe("reduce on the recorded sphere run", () => {
 
 describe("reduce on things the contract allows to change", () => {
   it("ignores unknown event types, artifact kinds and fields", () => {
-    const started = reduce(initialState(), event("run_started", { schema: "crisp3ds_dense_events_v1", brand_new_field: [1, 2] }));
+    const started = reduce(initialState(), event("run_started", { schema: "crispmesh_dense_events_v1", brand_new_field: [1, 2] }));
     let state = started;
     state = reduce(state, event("telemetry_burst", { stage: "stereo", payload: { deep: true } }, 1));
     state = reduce(state, event("artifact", { stage: "stereo", kind: "preview_volume", path: "stereo/preview/00-hull.npz", label: "x" }, 2));
@@ -171,7 +171,7 @@ describe("reduce on things the contract allows to change", () => {
   });
 
   it("flags an unknown schema but carries on", () => {
-    const state = reduce(initialState(), event("run_started", { schema: "crisp3ds_dense_events_v2" }));
+    const state = reduce(initialState(), event("run_started", { schema: "crispmesh_dense_events_v2" }));
     expect(state.schemaUnknown).toBe(true);
     expect(state.status).toBe("running");
   });

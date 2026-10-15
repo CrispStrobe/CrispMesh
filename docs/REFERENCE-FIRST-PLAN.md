@@ -90,7 +90,7 @@ before viewing new outputs; preserve whole-reference results as well.
    until camera/input validity and a useful classical baseline are established.
 
 P0 sparse budget: one fresh external directory
-`/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001`, at most 600 seconds,
+`/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001`, at most 600 seconds,
 512 MiB output, sampled child RSS 4 GiB, bounded logs 16 MiB per stage, and at
 least 10 GiB free on **both** internal and external volumes. Preserve partial
 models on failure. No supplied scene/mesh/camera file enters the worker inputs.

@@ -15,13 +15,13 @@ The package builder accepts only a JSON array of explicit repository-relative pa
 ]
 ```
 
-Run `python3 scripts/remote_quality/package.py --selection selection.json --output /path/outside/crisp3ds-quality.zip`. The output parent must exist. The builder rejects symlinks, traversal, build/data directories, credential-like names and common token patterns in contents; it caps files at 256 and compressed/uncompressed bytes at 250 MiB, demands a fresh output and a 10 GiB free-space reserve. It deliberately does not collect the whole workspace or any local datasets. For photo inputs, create a separate explicit allowlist and verify their ownership, size and consent before transport. Never copy `../kaggle_usage.md`, local `.env`, tokens or Kaggle credential datasets into this repository or package.
+Run `python3 scripts/remote_quality/package.py --selection selection.json --output /path/outside/crispmesh-quality.zip`. The output parent must exist. The builder rejects symlinks, traversal, build/data directories, credential-like names and common token patterns in contents; it caps files at 256 and compressed/uncompressed bytes at 250 MiB, demands a fresh output and a 10 GiB free-space reserve. It deliberately does not collect the whole workspace or any local datasets. For photo inputs, create a separate explicit allowlist and verify their ownership, size and consent before transport. Never copy `../kaggle_usage.md`, local `.env`, tokens or Kaggle credential datasets into this repository or package.
 
 On the VPS, transfer the archive by the user's normal approved channel to an existing path under `/mnt/storage`. No transfer command is run by this tooling. A runner config contains only nonsecret paths and an explicit command array, e.g.:
 
 ```json
 {
-  "input_archive": "/mnt/storage/quality-input/crisp3ds-quality.zip",
+  "input_archive": "/mnt/storage/quality-input/crispmesh-quality.zip",
   "work_dir": "/mnt/volume1/quality-run-r01",
   "output_dir": "/mnt/storage/quality-results/r01",
   "command": ["/usr/bin/python3", "scripts/your_experiment.py", "--output", "/mnt/storage/quality-results/r01/metrics.json"],
@@ -44,10 +44,10 @@ Example staging config (replace all identifiers with real, verified values):
 ```json
 {
   "account": "example-account",
-  "slug": "crisp3ds-quality-r01",
+  "slug": "crispmesh-quality-r01",
   "run_id": "quality-r01-unique",
-  "input_dataset": "example-account/crisp3ds-quality-input",
-  "archive_name": "crisp3ds-quality.zip",
+  "input_dataset": "example-account/crispmesh-quality-input",
+  "archive_name": "crispmesh-quality.zip",
   "command": ["/usr/bin/python3", "scripts/your_experiment.py"],
   "timeout_seconds": 1800,
   "hf_downloads": []

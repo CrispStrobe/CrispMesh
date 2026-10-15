@@ -1,7 +1,7 @@
 # Mustard TRAIN-only independent two-view pose result
 
 The one approved batch used the [frozen six-pair plan](MUSTARD-TWO-VIEW-POSE-PLAN.md).
-Its [external report](/Volumes/backups/code/crisp3ds-data/mustard-two-view-pose-001.json)
+Its [external report](/Volumes/backups/code/crispmesh-data/mustard-two-view-pose-001.json)
 completed in 0.065 seconds, is 45,337 bytes, and has SHA-256
 `c4c17d85d8c61f06201009bbe8d59fe0d15d5bd8c9b63169890b47f8531beece`.
 The fixed runner SHA-256 is

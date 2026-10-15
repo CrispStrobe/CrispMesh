@@ -1,11 +1,11 @@
 {
   "schema": "apple_usdz_mesh_review_v1",
   "scope": "structural geometry and neutral preview only; no quality acceptance",
-  "source_usdz": "/Volumes/backups/code/crisp3ds-data/apple-crackerbox60-preview-001/model.usdz",
+  "source_usdz": "/Volumes/backups/code/crispmesh-data/apple-crackerbox60-preview-001/model.usdz",
   "source_usdz_sha256": "00e6e5bc15a79634ffb7b0bd42492c8df5ebe575d63b228f53f737d4f23e1ae7",
   "usdcat_command": [
     "/usr/bin/usdcat",
-    "/Volumes/backups/code/crisp3ds-data/apple-crackerbox60-preview-001/model.usdz"
+    "/Volumes/backups/code/crispmesh-data/apple-crackerbox60-preview-001/model.usdz"
   ],
   "usdcat_sha256": "8df691ad0cf83bb3767ea03b45f8aa4b78c62fed3c0bee93164d05b8f72c483f",
   "usdcat_stderr": "",
@@ -14,12 +14,12 @@
   "up_axis": "Y",
   "transform_handling": "no authored xformOp; coordinates copied unchanged",
   "ply": {
-    "path": "/Volumes/backups/code/crisp3ds-data/apple-review-001/mesh-untextured.ply",
+    "path": "/Volumes/backups/code/crispmesh-data/apple-review-001/mesh-untextured.ply",
     "sha256": "87fda156ab32c63bf708d65d52c894dc0051cc9307964b33552b89d7f6630f9e",
     "bytes": 40020
   },
   "preview": {
-    "path": "/Volumes/backups/code/crisp3ds-data/apple-review-001/preview-neutral.png",
+    "path": "/Volumes/backups/code/crispmesh-data/apple-review-001/preview-neutral.png",
     "sha256": "0ec97eb1e1350fb3046fe6404a92fa2a2d68e9f25e3170f202499d06a73e4795",
     "bytes": 36393,
     "samples": 10000,
@@ -30,7 +30,7 @@
     ]
   },
   "mesh_stats": {
-    "path": "/Volumes/backups/code/crisp3ds-data/apple-review-001/mesh-untextured.ply",
+    "path": "/Volumes/backups/code/crispmesh-data/apple-review-001/mesh-untextured.ply",
     "bytes": 40020,
     "vertices": 1054,
     "faces": 2092,

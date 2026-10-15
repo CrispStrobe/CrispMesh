@@ -1,4 +1,4 @@
-Crisp3DS (CrispMesh)
+CrispMesh (CrispMesh)
 Copyright (C) 2026 Christian Ströbele
 
 This program is free software: you can redistribute it and/or modify it under
@@ -9,7 +9,7 @@ the terms of the GNU Affero General Public License, version 3 only
 
 App Store / Google Play additional permission (AGPL-3.0 section 7)
 ------------------------------------------------------------------
-As the sole copyright holder of the original Crisp3DS source code, the author
+As the sole copyright holder of the original CrispMesh source code, the author
 additionally distributes official binary builds of CrispMesh through app
 stores (e.g. the Apple App Store, the Mac App Store and Google Play) under
 those stores' standard distribution terms and end-user license agreements.

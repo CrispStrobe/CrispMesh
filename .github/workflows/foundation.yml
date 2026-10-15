@@ -38,12 +38,12 @@ jobs:
       - name: Pinned OpenCV backend
         if: runner.os == 'macOS'
         run: |
-          cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISP3DS_WITH_OPENCV=ON
+          cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISPMESH_WITH_OPENCV=ON
           cmake --build build-opencv --config Release --parallel 4
           ctest --test-dir build-opencv --build-config Release --output-on-failure
       - name: Stereo evaluator CLI regression
         if: runner.os == 'macOS'
-        run: CRISP3DS_TEST_STEREO_EVAL=1 python3 -m unittest scripts/test_stereo_eval_cli.py
+        run: CRISPMESH_TEST_STEREO_EVAL=1 python3 -m unittest scripts/test_stereo_eval_cli.py
       - name: Desktop web
         if: runner.os == 'macOS'
         working-directory: apps/desktop
@@ -54,7 +54,7 @@ jobs:
           npm run build
       - name: Shared contract parity
         if: runner.os == 'macOS'
-        run: node tests/contract-parity.mjs build/crisp3ds
+        run: node tests/contract-parity.mjs build/crispmesh
       - name: Locked dependency inventory
         if: runner.os == 'macOS'
         run: |

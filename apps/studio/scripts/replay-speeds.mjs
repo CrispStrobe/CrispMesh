@@ -16,7 +16,7 @@ for (const [speed, stored] of [["1×", 1], ["4×", 4], ["16×", 16], ["Instant",
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   // The replay starts at the remembered speed: set it before the page loads, so the whole
   // run is played at that speed from its first event.
-  await page.addInitScript((value) => localStorage.setItem("crisp3ds.studio.v1", JSON.stringify({ replaySpeed: value })), stored);
+  await page.addInitScript((value) => localStorage.setItem("crispmesh.studio.v1", JSON.stringify({ replaySpeed: value })), stored);
   await page.goto(base + "#/replay");
   await page.getByRole("group", { name: "Playback speed" }).waitFor();
   await page.locator(".run-meta .badge.status-complete").waitFor({ timeout: 300000 });

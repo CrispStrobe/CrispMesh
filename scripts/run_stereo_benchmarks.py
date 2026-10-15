@@ -28,7 +28,7 @@ import uuid
 
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_EVALUATOR = ROOT / "build-opencv/bin/crisp3ds_stereo_eval"
+DEFAULT_EVALUATOR = ROOT / "build-opencv/bin/crispmesh_stereo_eval"
 DEFAULT_OUTPUT = ROOT / "build-opencv/benchmarks"
 RESERVE_BYTES = 10 * 1024**3
 

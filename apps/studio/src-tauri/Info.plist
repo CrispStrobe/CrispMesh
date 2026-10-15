@@ -14,6 +14,6 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>CrispMesh connects to the Crisp3DS engine you name, which may run on a computer on your local network.</string>
+	<string>CrispMesh connects to the CrispMesh engine you name, which may run on a computer on your local network.</string>
 </dict>
 </plist>

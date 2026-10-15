@@ -78,7 +78,7 @@ pub fn command(arguments: &[String]) -> std::process::ExitCode {
         return ExitCode::SUCCESS;
     }
     let usage = |error: anyhow::Error| {
-        eprintln!("crisp3ds-dense photos: {error:#}\n(crisp3ds-dense photos --help lists the options)");
+        eprintln!("crispmesh-dense photos: {error:#}\n(crispmesh-dense photos --help lists the options)");
         ExitCode::from(2)
     };
     let options = match options::resolve(arguments, &|name| std::env::var(name).ok()) {
@@ -106,7 +106,7 @@ pub fn command(arguments: &[String]) -> std::process::ExitCode {
             ExitCode::from(finished.code)
         }
         Err(error) => {
-            eprintln!("crisp3ds-dense photos: {error:#}");
+            eprintln!("crispmesh-dense photos: {error:#}");
             ExitCode::from(1)
         }
     }

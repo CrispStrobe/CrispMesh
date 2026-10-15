@@ -1,12 +1,12 @@
 {
   "schema": "sceaux_stock_dense_review_v1",
   "scope": "Independent read-only audit of the completed stock-COLMAP-camera/OpenMVS dense run, plus fresh geometry-only export and untextured preview. No original run artifact was rewritten; no surface fit, surface score, cleanup, or dense rerun was performed.",
-  "source_run": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001",
-  "dense_run": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001",
+  "source_run": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001",
+  "dense_run": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001",
   "dense_report_sha256": "cbfcc463650b8ab76401a42dfac66b6fa8dded6e9dc92d17654cc225f8edfcbd",
   "source_sparse_report_sha256": "7fe6d661710e25e55fd6e5d54afab27a2bb517e6b3fe8b6c43fd3c0645e3d44d",
   "dense_run_status": "complete",
-  "camera_alignment_report": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-camera-001.json",
+  "camera_alignment_report": "/Volumes/backups/code/crispmesh-data/sceaux-stock-camera-001.json",
   "camera_alignment_report_sha256": "6f2c09f8a5445d37870f168b01680bb1a6f40a308015ede9199f7c17a08035d9",
   "alignment_basis": "Frozen named-camera proper Sim(3) from the image-only COLMAP model into the pinned upstream Sceaux software scene; no mesh or surface was used to fit it.",
   "source_and_copied_sparse_model_sha256": {
@@ -30,9 +30,9 @@
     }
   },
   "artifacts": {
-    "rough_ply": {"path": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/mesh.ply", "sha256": "767e88c81aedc9c6cd6d2235b3d8a7d77911e34f8d50b634718c0da532d97815", "vertices": 61088, "faces": 122085, "zero_area_faces": 0},
-    "refined_ply": {"path": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/refined.ply", "sha256": "d510f5d8071165725dfd0eec06f1ee2d03c8bf92205aee332af82b47de63a9af", "vertices": 20147, "faces": 40097, "zero_area_faces": 0},
-    "textured_obj": {"path": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-dense-001/textured.obj", "sha256": "30dfc75dd6cdc60d5fe77a6957f97027b4f7cf988ef8afc036504904eb494361", "vertices": 20147, "faces": 40097, "material_sha256": "b8902637c63297454ddb431b2026a46e4ad4bf71108852853610c04a2e356d2d", "atlas_sha256": "a1b4d920c20c3857d8fa39a78112705b7e02fe6f990fdd0054556373146db2fe"},
+    "rough_ply": {"path": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/mesh.ply", "sha256": "767e88c81aedc9c6cd6d2235b3d8a7d77911e34f8d50b634718c0da532d97815", "vertices": 61088, "faces": 122085, "zero_area_faces": 0},
+    "refined_ply": {"path": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/refined.ply", "sha256": "d510f5d8071165725dfd0eec06f1ee2d03c8bf92205aee332af82b47de63a9af", "vertices": 20147, "faces": 40097, "zero_area_faces": 0},
+    "textured_obj": {"path": "/Volumes/backups/code/crispmesh-data/sceaux-stock-dense-001/textured.obj", "sha256": "30dfc75dd6cdc60d5fe77a6957f97027b4f7cf988ef8afc036504904eb494361", "vertices": 20147, "faces": 40097, "material_sha256": "b8902637c63297454ddb431b2026a46e4ad4bf71108852853610c04a2e356d2d", "atlas_sha256": "a1b4d920c20c3857d8fa39a78112705b7e02fe6f990fdd0054556373146db2fe"},
     "normalized_refined_geometry": {"path": ".local-tools/sceaux-stock-dense-review-001/refined-geometry.ply", "sha256": "7a8ba21a8f658f03aaf3574bfed0895c8ff231e72b980acc15eb38cdd9e1c08d", "vertices": 20147, "faces": 40097, "operation": "Geometry-only export: exact coordinates promoted to float64; triangles preserved."},
     "upstream_software_reference_geometry": {"path": "build-opencv/upstream-comparison/sceaux-oracle-geometry.ply", "sha256": "4a5a858dadfc00672d8b08353364bc95ddc62066d69261bfa66b012b64410d8d", "vertices": 363631, "faces": 726814}
   },

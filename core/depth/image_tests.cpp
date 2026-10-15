@@ -12,7 +12,7 @@
 #include <sstream>
 #include <stdexcept>
 
-using namespace crisp3ds::depth;
+using namespace crispmesh::depth;
 namespace {
 void check(bool ok,const char* msg) { if (!ok) throw std::runtime_error(msg); }
 Camera camera(double center_x) {

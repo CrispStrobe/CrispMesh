@@ -14,7 +14,7 @@ import stat
 
 WORKSPACE = Path(__file__).resolve().parents[2]
 MOUNT = Path("/Volumes/backups")
-DEST_ROOT = MOUNT / "code/crisp3ds-data/build-opencv"
+DEST_ROOT = MOUNT / "code/crispmesh-data/build-opencv"
 ALLOWLIST = frozenset({
     "classical-ycb-native-masked-009",
     "classical-ycb-native-masked-011-continuation",
@@ -137,7 +137,7 @@ def relocate(name: str, *, workspace: Path = WORKSPACE,
         raise ValueError("external 10 GiB floor reached; original and copy retained")
     audit.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
-        "schema": "crisp3ds_verified_relocation_v1",
+        "schema": "crispmesh_verified_relocation_v1",
         "name": name,
         "source": str(source),
         "destination": str(dest),

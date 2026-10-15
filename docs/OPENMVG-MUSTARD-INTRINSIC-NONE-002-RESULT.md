@@ -1,7 +1,7 @@
 # OpenMVG mustard intrinsic-`NONE` `-002`: same registration failure
 
 The evaluation-only, photo-derived SfM ablation at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002`
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002`
 finished its single incremental SfM stage but **failed the 48/48 camera gate**.
 Its sealed receipt has status `failed_registration_or_sparse_gate`, SHA-256
 `5445b512ac6d171e8097134d9c86d84e6428b1d958a3088593d6234e5bb1fa24`.

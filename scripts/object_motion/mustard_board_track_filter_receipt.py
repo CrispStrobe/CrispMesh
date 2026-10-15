@@ -29,7 +29,7 @@ from scripts.object_motion.verified_track_adapter import extract_candidate_track
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = Path('/Volumes/backups/code/crisp3ds-data')
+DATA = Path('/Volumes/backups/code/crispmesh-data')
 FILTER_SHA256 = 'dc45b9aef580661f3a38ca030e57af3d17a4db778946822ff24b43f7f82c19c3'
 PREFLIGHT_SHA256 = '49129f5009dc221dd78e06221383a264a9cb777ab565297df24457d9afd2862f'
 ADAPTER_SHA256 = '0ff9d78b055e8c5b5f806dbe8fb86a9501845154b4f42f0ef4e6f4a9017bfc7a'

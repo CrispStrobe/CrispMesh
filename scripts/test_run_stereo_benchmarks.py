@@ -13,7 +13,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNNER = ROOT / "scripts/run_stereo_benchmarks.py"
-EVALUATOR = ROOT / "build-opencv/bin/crisp3ds_stereo_eval"
+EVALUATOR = ROOT / "build-opencv/bin/crispmesh_stereo_eval"
 CENSUS = ROOT / ".local-tools/oracles/census/census"
 SCRATCH = Path(os.environ["TMPDIR"]) if os.environ.get("TMPDIR") else ROOT / ".local-tools/tmp"
 

@@ -149,9 +149,9 @@ pub fn sphere_depth(view: &LevelView) -> Plane<f32> {
 }
 
 #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
-const USAGE: &str = "usage: crisp3ds-dense synthetic --output DIR [--views N] [--size PIXELS]      an inputs directory (sphere)
-       crisp3ds-dense synthetic --capture --output DIR [--views N] [--width W] [--height H] [--asymmetric]   raw photos, lens.json, truth.json
-       crisp3ds-dense synthetic --verify RUN --truth CAPTURE_DIR      check a run made from such a capture";
+const USAGE: &str = "usage: crispmesh-dense synthetic --output DIR [--views N] [--size PIXELS]      an inputs directory (sphere)
+       crispmesh-dense synthetic --capture --output DIR [--views N] [--width W] [--height H] [--asymmetric]   raw photos, lens.json, truth.json
+       crispmesh-dense synthetic --verify RUN --truth CAPTURE_DIR      check a run made from such a capture";
 
 /// The `synthetic` command: an inputs directory of the analytic sphere (and the
 /// settings sized for it), or a capture of raw photos with its lens, or the
@@ -197,7 +197,7 @@ pub fn main(arguments: &[String]) -> anyhow::Result<()> {
 
 /// A fresh scene in a temporary directory; the caller removes it.
 pub fn temporary(tag: &str, views: usize, size: usize) -> anyhow::Result<std::path::PathBuf> {
-    let root = std::env::temp_dir().join(format!("crisp3ds-synthetic-{tag}-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("crispmesh-synthetic-{tag}-{}", std::process::id()));
     let _ = crate::storage::remove_dir_all(&root);
     write(&root.join("inputs"), views, size)?;
     Ok(root)

@@ -735,7 +735,7 @@ pub async fn train_with(
         log(&start, &format!("hull mesh: {triangles} triangles"));
     }
     let end = if settings.stop > 0 { settings.stop } else { settings.steps };
-    let mut profile = Profile::new(std::env::var("CRISP3DS_SURFACE_PROFILE").is_ok_and(|v| v == "1"));
+    let mut profile = Profile::new(std::env::var("CRISPMESH_SURFACE_PROFILE").is_ok_and(|v| v == "1"));
     let mut history = Vec::new();
     for step in first_step..end {
         check()?;
@@ -882,11 +882,11 @@ async fn save_checkpoint(gpu: &Gpu, model: &Model, step: u32, path: &Path) -> Re
     crate::npz::write(path, &[("table", &t), ("parameters", &p), ("step", &s)], false)
 }
 
-/// `crisp3ds-dense surface SOURCE OUT [quality=fast|standard|best] [NAME=VALUE ...]`
+/// `crispmesh-dense surface SOURCE OUT [quality=fast|standard|best] [NAME=VALUE ...]`
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main(arguments: &[String]) -> Result<()> {
     const USAGE: &str =
-        "usage: crisp3ds-dense surface SOURCE OUT [quality=fast|standard|best] [steps=N stop=N rays=N parts=N hull=N band=X \
+        "usage: crispmesh-dense surface SOURCE OUT [quality=fast|standard|best] [steps=N stop=N rays=N parts=N hull=N band=X \
 coarse=N added=N width=N features=N table=LOG2 mesh=N snapshot=N log=N seed=N] [hull_mesh=STL photos=DIR masks=DIR div=N crop=PIXELS]
 SOURCE: a pack of scripts/neural_surface/pack_scene.py (scene.json), or an inputs directory (cameras.json) with
 hull_mesh (our silhouette mesh), optionally photos and masks (folders replacing the inputs' original photos and

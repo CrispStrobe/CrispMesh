@@ -11,7 +11,7 @@ remaining GPU allowance have not been established.
 ## Exact inputs and software boundary
 
 Use only the 73 contrast-prepared PNGs in
-`/Users/christianstrobele/code/crisp3ds/build-opencv/bunny-gamma05-clahe2/`,
+`build-opencv/bunny-gamma05-clahe2/`,
 totaling **121,809,661 bytes** (116.2 MiB), bound to
 `prepare-manifest.json` SHA-256
 `eca0bfa60badd7fa5c9b5311e7f413a3f337159c158f856066086e44b0a90ecd`.

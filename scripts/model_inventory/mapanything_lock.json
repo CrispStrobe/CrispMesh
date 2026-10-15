@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_mapanything_artifact_lock_v1",
+  "schema": "crispmesh_mapanything_artifact_lock_v1",
   "code": {
     "repo": "facebookresearch/map-anything",
     "revision": "3d10cf7a3016fc0f9bb13a071ee66c47b10be0d9",

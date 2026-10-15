@@ -6,9 +6,9 @@
   "sample_commit": "8855e0405b2c80c8286338ff21f3c09f22e9be16",
   "software": {
     "version": "3.11.1",
-    "core_path": "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/lib/python3.11/site-packages/pycolmap/_core.cpython-311-darwin.so",
+    "core_path": ".local-tools/colmap-sparse/venv/lib/python3.11/site-packages/pycolmap/_core.cpython-311-darwin.so",
     "core_sha256": "5e306a76bfb1a3a02139ea9d336770091a77376bb870a383ed3882b7250008a8",
-    "python_path": "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+    "python_path": ".local-tools/colmap-sparse/venv/bin/python",
     "runner_sha256": "c527ca02828cba67f1a975fa06e6715f645d79c9bab9e34728d182eeb6f42af3",
     "stage_helper_sha256": "c65f73396e52a22e56d7edc358461c1f25a58f163d390a372e3b4c20e9b7441b",
     "sample_run_helper_sha256": "669eddfd327cae51237a6c1edc757538924fb2ba8c033a27f538f9411fb4a75d",
@@ -84,15 +84,15 @@
     {
       "name": "features",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.upstream_control.image_only",
         "--worker",
         "features",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/features.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/features.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 46.52,
@@ -103,15 +103,15 @@
     {
       "name": "matching",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.upstream_control.image_only",
         "--worker",
         "matching",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/matching.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/matching.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 15.278,
@@ -122,15 +122,15 @@
     {
       "name": "mapping",
       "command": [
-        "/Users/christianstrobele/code/crisp3ds/.local-tools/colmap-sparse/venv/bin/python",
+        ".local-tools/colmap-sparse/venv/bin/python",
         "-m",
         "scripts.upstream_control.image_only",
         "--worker",
         "mapping",
         "--output",
-        "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001"
+        "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001"
       ],
-      "log": "/Volumes/backups/code/crisp3ds-data/sceaux-stock-sfm-001/mapping.log",
+      "log": "/Volumes/backups/code/crispmesh-data/sceaux-stock-sfm-001/mapping.log",
       "status": "complete",
       "exit_code": 0,
       "seconds": 8.149,

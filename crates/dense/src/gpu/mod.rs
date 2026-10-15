@@ -26,7 +26,7 @@ pub const WORKGROUP: u32 = 64;
 pub const ROW_GROUPS: u32 = 16384;
 pub const ROW: u32 = ROW_GROUPS * WORKGROUP;
 
-/// Commands recorded per submit in a browser (see `Gpu::pending`). `CRISP3DS_GPU_BATCH` is not
+/// Commands recorded per submit in a browser (see `Gpu::pending`). `CRISPMESH_GPU_BATCH` is not
 /// read: a browser has no environment; change it here to measure.
 const BATCH: usize = usize::MAX;
 /// Commands per submit with native batching: enough to amortise a submit, few enough to keep the GPU busy.
@@ -48,7 +48,7 @@ pub struct Gpu {
     pending: std::sync::Mutex<(Option<wgpu::CommandEncoder>, usize)>,
     /// Natively: record into `pending` as in a browser ([`Gpu::set_batching`]).
     batching: std::sync::atomic::AtomicBool,
-    /// Natively with `CRISP3DS_GPU_PROFILE=1`: seconds and dispatches per kernel (each dispatch waited for).
+    /// Natively with `CRISPMESH_GPU_PROFILE=1`: seconds and dispatches per kernel (each dispatch waited for).
     profile: Option<std::sync::Mutex<std::collections::BTreeMap<String, (f64, u64)>>>,
     /// Storage buffers made since [`Gpu::track`], for [`Gpu::release_tracked`].
     tracked: std::sync::Mutex<Option<Vec<wgpu::Buffer>>>,
@@ -56,7 +56,7 @@ pub struct Gpu {
 
 impl Gpu {
     /// The system's preferred adapter with default WebGPU limits (or the adapter's, where lower).
-    /// `CRISP3DS_GPU_FALLBACK=1` asks for a software adapter instead (for CI).
+    /// `CRISPMESH_GPU_FALLBACK=1` asks for a software adapter instead (for CI).
     #[cfg(not(target_arch = "wasm32"))]
     pub fn new() -> anyhow::Result<Self> {
         block_on(Self::request())
@@ -65,7 +65,7 @@ impl Gpu {
     /// [`Gpu::new`] without blocking; the only way to get a device in a browser.
     pub async fn request() -> anyhow::Result<Self> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
-        let fallback = std::env::var("CRISP3DS_GPU_FALLBACK").map(|v| v == "1").unwrap_or(false);
+        let fallback = std::env::var("CRISPMESH_GPU_FALLBACK").map(|v| v == "1").unwrap_or(false);
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -81,7 +81,7 @@ impl Gpu {
         let limits = wgpu::Limits::default().or_worse_values_from(&adapter.limits());
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
-                label: Some("crisp3ds-dense"),
+                label: Some("crispmesh-dense"),
                 required_features: wgpu::Features::empty(),
                 required_limits: limits.clone(),
                 ..Default::default()
@@ -102,7 +102,7 @@ impl Gpu {
             uncaptured,
             pending: std::sync::Mutex::new((None, 0)),
             batching: std::sync::atomic::AtomicBool::new(false),
-            profile: (!cfg!(target_arch = "wasm32") && std::env::var("CRISP3DS_GPU_PROFILE").is_ok_and(|v| v == "1"))
+            profile: (!cfg!(target_arch = "wasm32") && std::env::var("CRISPMESH_GPU_PROFILE").is_ok_and(|v| v == "1"))
                 .then(|| std::sync::Mutex::new(Default::default())),
             tracked: std::sync::Mutex::new(None),
         })
@@ -384,7 +384,7 @@ impl Gpu {
         Ok(())
     }
 
-    /// Seconds and dispatches per kernel since the last report (`CRISP3DS_GPU_PROFILE=1`, native), slowest first.
+    /// Seconds and dispatches per kernel since the last report (`CRISPMESH_GPU_PROFILE=1`, native), slowest first.
     pub fn profile_report(&self) -> Option<String> {
         let profile = self.profile.as_ref()?;
         let mut table = profile.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -464,9 +464,9 @@ pub fn pack_bits(values: impl ExactSizeIterator<Item = bool>) -> Vec<u32> {
     words
 }
 
-/// True when GPU tests should run (`CRISP3DS_GPU_TESTS=1`); they need an adapter.
+/// True when GPU tests should run (`CRISPMESH_GPU_TESTS=1`); they need an adapter.
 pub fn tests_enabled() -> bool {
-    std::env::var("CRISP3DS_GPU_TESTS").map(|v| v == "1").unwrap_or(false)
+    std::env::var("CRISPMESH_GPU_TESTS").map(|v| v == "1").unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -552,7 +552,7 @@ mod tests {
         }
     }
 
-    /// Names the adapter the GPU tests run on (CRISP3DS_GPU_TESTS=1), for CI logs.
+    /// Names the adapter the GPU tests run on (CRISPMESH_GPU_TESTS=1), for CI logs.
     #[test]
     fn adapter() {
         if !super::tests_enabled() {

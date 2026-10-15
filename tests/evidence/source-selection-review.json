@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_source_selection_review_v1",
+  "schema": "crispmesh_source_selection_review_v1",
   "date": "2026-10-09",
   "baseline_revision": "3de1973f99c6734f1fa827caddb0596ae6dab9d6",
   "production_implementation": false,

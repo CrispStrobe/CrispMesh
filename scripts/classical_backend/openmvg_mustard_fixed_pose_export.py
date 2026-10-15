@@ -21,8 +21,8 @@ import time
 from scripts.classical_backend import openmvg_mustard_pose_export as prior
 from scripts.classical_backend import openmvg_photo_control as core
 
-FIXED = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-002")
-OUTPUT = Path("/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-sfm-fixed-pose-export-003")
+FIXED = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-002")
+OUTPUT = Path("/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-sfm-fixed-pose-export-003")
 RECEIPT_SHA = "5445b512ac6d171e8097134d9c86d84e6428b1d958a3088593d6234e5bb1fa24"
 MODEL_SHA = "4147cd6ea9e0848dd97210701535371c100425125dc83df07a67482ebd8eca55"
 SFM_LOG_SHA = "7eaab977dddc6f1dc748fffc1d1c0affebf150bd762f56e333fdf9308898513d"

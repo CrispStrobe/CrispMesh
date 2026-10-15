@@ -4,7 +4,7 @@
   "decision": "rejected_for_reconstruction",
   "review_scope": "All 48 training-view masked and overlay contact-sheet panels; not full-resolution pixel annotation",
   "candidate_manifest_sha256": "7afdb0064ef9cd4601ced19938ada6f1c7d813906118f4d395616a1892aaf7e1",
-  "candidate_manifest_vps": "/mnt/storage/crisp3ds-data/ycb-mustard-envelope-001/manifest.json",
+  "candidate_manifest_vps": "/mnt/storage/crispmesh-data/ycb-mustard-envelope-001/manifest.json",
   "local_review_directory": ".local-tools/ycb-mustard-envelope-review-001",
   "reason": "The envelope preserves label bands but includes checkerboard background, prominently a leftward patch at NP3_282 and board fragments behind the bottle cap in other views. Numerical envelope bounds do not establish object-only feature support.",
   "example_training_images": ["NP3_000.jpg", "NP3_006.jpg", "NP3_012.jpg", "NP3_282.jpg", "NP3_300.jpg", "NP3_330.jpg", "NP3_348.jpg"],

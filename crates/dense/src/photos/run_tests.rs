@@ -47,7 +47,7 @@ fn threshold_backdrop_masks_stop_before_cameras_and_keep_the_sheet() {
 fn synthetic(root: &Path) {
     let _ = std::fs::remove_dir_all(root);
     std::fs::create_dir_all(root.join("photos")).unwrap();
-    let lens = json!({"schema": "crisp3ds_lens_calibration_v1", "model": "radialk3", "calibration_width": 48, "calibration_height": 36,
+    let lens = json!({"schema": "crispmesh_lens_calibration_v1", "model": "radialk3", "calibration_width": 48, "calibration_height": 36,
                       "fx": 60.0, "fy": 60.5, "cx": 23.25, "cy": 17.5, "k1": -0.05, "k2": 0.01, "k3": 0.002});
     util::write_json(&root.join("lens.json"), &lens, 1).unwrap();
     let scaled = scale_calibration(&parse_calibration(&lens).unwrap(), SIZE.0, SIZE.1).unwrap();
@@ -122,7 +122,7 @@ fn start(root: &Path, output: &str, more: &[&str]) -> (Finished, Vec<Value>) {
 
 #[test]
 fn whole_stage_with_threshold_masks_and_imported_cameras() {
-    let root = std::env::temp_dir().join(format!("crisp3ds-photos-run-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("crispmesh-photos-run-{}", std::process::id()));
     synthetic(&root);
     let (finished, events) = start(&root, "out", &[]);
     let out = root.join("out");
@@ -206,15 +206,15 @@ fn whole_stage_with_threshold_masks_and_imported_cameras() {
     std::fs::remove_dir_all(&root).unwrap();
 }
 
-/// With `CRISP3DS_ALICEVISION_TESTS=1` and `CRISP3DS_ALICEVISION` (plus what the build needs, e.g.
-/// `CRISP3DS_ALICEVISION_LIBRARY_PATH`): the real `cameraInit` lists the synthetic photos and its
+/// With `CRISPMESH_ALICEVISION_TESTS=1` and `CRISPMESH_ALICEVISION` (plus what the build needs, e.g.
+/// `CRISPMESH_ALICEVISION_LIBRARY_PATH`): the real `cameraInit` lists the synthetic photos and its
 /// scene takes the declared lens.
 #[test]
 fn alicevision_lists_views_when_installed() {
-    if std::env::var("CRISP3DS_ALICEVISION_TESTS").as_deref() != Ok("1") {
+    if std::env::var("CRISPMESH_ALICEVISION_TESTS").as_deref() != Ok("1") {
         return;
     }
-    let root = std::env::temp_dir().join(format!("crisp3ds-photos-alicevision-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("crispmesh-photos-alicevision-{}", std::process::id()));
     synthetic(&root);
     let out = root.join("out");
     std::fs::create_dir_all(out.join("work/contrast")).unwrap();

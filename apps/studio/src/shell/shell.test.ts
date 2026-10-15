@@ -23,9 +23,9 @@ describe("the native shell, seen from the web side", () => {
   });
 
   it("words where a value comes from", () => {
-    expect(sourceText("environment", "repo")).toBe("from CRISP3DS_REPO");
-    expect(sourceText("environment", "torch_python")).toBe("from CRISP3DS_TORCH_PYTHON");
-    expect(sourceText("environment", "data_dir")).toBe("from CRISP3DS_DATA_DIR");
+    expect(sourceText("environment", "repo")).toBe("from CRISPMESH_REPO");
+    expect(sourceText("environment", "torch_python")).toBe("from CRISPMESH_TORCH_PYTHON");
+    expect(sourceText("environment", "data_dir")).toBe("from CRISPMESH_DATA_DIR");
     expect(sourceText("environment", "device")).toBe("from the environment");
     expect(sourceText("found", "repo")).toBe("found automatically");
     expect(sourceText("default", "torch_python")).toBe("same as the interpreter above");

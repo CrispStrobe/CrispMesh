@@ -1,5 +1,5 @@
 //! The WebGPU splats against the dense PyTorch reference (`scripts/surface_splats/splat_reference.py`).
-//! They need a GPU (`CRISP3DS_GPU_TESTS=1`) and the reference's output (`CRISP3DS_SPLAT_FIXTURE=path.npz`).
+//! They need a GPU (`CRISPMESH_GPU_TESTS=1`) and the reference's output (`CRISPMESH_SPLAT_FIXTURE=path.npz`).
 
 use super::*;
 use crate::gpu::block_on;
@@ -9,7 +9,7 @@ fn fixture() -> Option<Npz> {
     if !crate::gpu::tests_enabled() {
         return None;
     }
-    let path = std::env::var("CRISP3DS_SPLAT_FIXTURE").ok()?;
+    let path = std::env::var("CRISPMESH_SPLAT_FIXTURE").ok()?;
     Some(Npz::read(std::path::Path::new(&path)).expect("fixture"))
 }
 

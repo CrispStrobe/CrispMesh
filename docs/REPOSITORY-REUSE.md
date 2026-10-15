@@ -6,7 +6,7 @@ Inspected [lvonasek/3DLiveScanner](https://github.com/lvonasek/3DLiveScanner/tre
 
 **Decision:** useful reference for capture, recorded datasets, texture projection and export. It is not a portable replacement for our calibrated photograph-to-depth stage.
 
-| Area | Evidence in repository | Relevance to Crisp3DS |
+| Area | Evidence in repository | Relevance to CrispMesh |
 | --- | --- | --- |
 | Mobile capture and depth | `common/arcore/arcore.cc` configures AR depth, obtains camera matrices and calls depth/confidence image APIs | Useful native mobile adapter reference; depends on platform SDK behavior and supported devices |
 | Recorded sessions | `common/data/dataset.cc` reads/writes camera state, poses and point clouds; Linux dataset extractor exports recorded data | Useful replay/import design and a possible later interoperability task, not a measured golden dataset |

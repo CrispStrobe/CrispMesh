@@ -4,7 +4,7 @@ Frozen before the next live run, 2026-09-27. The subject is the same original
 60 Berkeley NP3 cracker-box photographs and the existing photo-derived coarse
 masks. Reconstruction inputs exclude the Berkeley pose/calibration metadata and
 Google reference mesh. All large artifacts and scratch go to
-`/Volumes/backups/code/crisp3ds-data`, with at least 10 GiB free on both the
+`/Volumes/backups/code/crispmesh-data`, with at least 10 GiB free on both the
 Mac internal volume and external SSD throughout.
 
 ## Fresh image-only camera stage
@@ -60,8 +60,8 @@ and a camera-gated high-resolution masked continuation.
 
 The unchanged historical foreground worker was rerun from the original 60 JPEGs
 and coarse photo-derived masks in the fresh external folder
-`/Volumes/backups/code/crisp3ds-data/turntable-sparse-profile-001`. Its
-[`turntable-profile.json`](/Volumes/backups/code/crisp3ds-data/turntable-sparse-profile-001/turntable-profile.json)
+`/Volumes/backups/code/crispmesh-data/turntable-sparse-profile-001`. Its
+[`turntable-profile.json`](/Volumes/backups/code/crispmesh-data/turntable-sparse-profile-001/turntable-profile.json)
 records 2/60 registered images, 127 points, 40.425 s wall time, and a verified
 but rejected binary model. The source inputs and pinned PyCOLMAP 3.11.1 binary,
 all mapping/feature/matching options, feature counts (40,600), 444 pair rows,
@@ -80,15 +80,15 @@ fixed. PyCOLMAP changed the copied SQLite file bytes during mapping while its
 six logical tables and schema remained identical; the first
 `turntable-sparse-fixed-cache-002` attempt stopped on an overstrict byte-level
 assertion after making a 60-view model. The corrected fresh output
-[`turntable-sparse-fixed-cache-003/turntable-profile.json`](/Volumes/backups/code/crisp3ds-data/turntable-sparse-fixed-cache-003/turntable-profile.json)
+[`turntable-sparse-fixed-cache-003/turntable-profile.json`](/Volumes/backups/code/crispmesh-data/turntable-sparse-fixed-cache-003/turntable-profile.json)
 sealed 60/60, 3,923 points, and 12.106 s worker time, with final
 `f=1126.16 px, k=-0.0890`. The separate post hoc
-[`independent-camera-gate.json`](/Volumes/backups/code/crisp3ds-data/turntable-sparse-fixed-cache-003/independent-camera-gate.json)
+[`independent-camera-gate.json`](/Volumes/backups/code/crispmesh-data/turntable-sparse-fixed-cache-003/independent-camera-gate.json)
 passed the frozen rig thresholds: center RMS/radius 2.0014% (<5%) and p95
 orientation 3.016° (<10°). This cached-DB diagnostic is not the one-command
 fresh pipeline and contributes no Berkeley metadata to reconstruction.
 
-The next [`turntable-sparse-fresh-fixed-004/turntable-profile.json`](/Volumes/backups/code/crisp3ds-data/turntable-sparse-fresh-fixed-004/turntable-profile.json)
+The next [`turntable-sparse-fresh-fixed-004/turntable-profile.json`](/Volumes/backups/code/crispmesh-data/turntable-sparse-fresh-fixed-004/turntable-profile.json)
 is a genuinely fresh one-command photo/mask → feature extraction → sequential
 matching → fixed-initial-intrinsics automatic mapping → delayed BA run. It
 registered 60/60 with 3,917 points in 42.375 s; the final shared camera is
@@ -96,7 +96,7 @@ registered 60/60 with 3,917 points in 42.375 s; the final shared camera is
 feature/match tables are sealed. Its image-only orbit diagnostic has 59/59
 steps in one direction and radius coefficient of variation 0.00690. These are
 structural checks only. A separate post hoc
-[`independent-camera-gate.json`](/Volumes/backups/code/crisp3ds-data/turntable-sparse-fresh-fixed-004/independent-camera-gate.json)
+[`independent-camera-gate.json`](/Volumes/backups/code/crispmesh-data/turntable-sparse-fresh-fixed-004/independent-camera-gate.json)
 (SHA-256 `1656ac8aea32650953f4ec83413cd9022f28ad85ef69cf91af0c46026f868214`)
 compared the sealed 60 named cameras to Berkeley rig metadata and passed the
 frozen gate: center RMS/radius `0.01894131485` (<0.05) and p95 orientation
@@ -107,7 +107,7 @@ continuation and bare-shape review remain separate gates.
 
 ## Fresh complete OpenMVS oracle and shape result
 
-The camera-gated [fresh native result](/Volumes/backups/code/crisp3ds-data/turntable-fresh-openmvs-005/result.json)
+The camera-gated [fresh native result](/Volumes/backups/code/crispmesh-data/turntable-fresh-openmvs-005/result.json)
 (SHA-256 `dafc6ccb2a90f0c5a45748291571455237acd8ae08da01dd80adc10222a3625e`)
 used exactly the sealed `004` model and all 60 original photos. It undistorted
 the images, reprojected all 60 coarse object masks, and ran OpenMVS v2.4.0 CPU
@@ -126,7 +126,7 @@ bytes free afterward, above the 10 GiB floor. These timings include the slower
 external SSD and are not an optimized throughput claim. The prepared level-1
 fallback was not run.
 
-The separate [frozen surface score](/Volumes/backups/code/crisp3ds-data/turntable-fresh-openmvs-score-005/score.json)
+The separate [frozen surface score](/Volumes/backups/code/crispmesh-data/turntable-fresh-openmvs-score-005/score.json)
 (SHA-256 `165b8d5169e8bdb917f008864b01c434f4e03455b6ffe688d8ae8a824b2847c9`)
 used the independent Google scanner mesh **only after** reconstruction. Its
 proper-Sim(3) reference-fitted F1 is **22.09%, 42.23%, 58.66%** at 0.5%, 1%,
@@ -140,7 +140,7 @@ transform. The earlier full-resolution `011` yielded 42.06% independently
 fitted and 35.52% in the `006` gauge at 1%; therefore this run does **not**
 establish a meaningful shape improvement, despite better fresh-run provenance.
 
-The [neutral three-view preview](/Volumes/backups/code/crisp3ds-data/turntable-fresh-openmvs-score-005/refined-three-view.png)
+The [neutral three-view preview](/Volumes/backups/code/crispmesh-data/turntable-fresh-openmvs-score-005/refined-three-view.png)
 and a manually rendered common-gauge preview show a recognizable box, but its
 common-gauge axis-aligned extent is about 20% and 33% larger than the scanner
 mesh on two axes and about 3% smaller on the third. Those ratios depend on the
@@ -150,7 +150,7 @@ cameras, a closed-looking textured box, nor a complete native pipeline is
 equivalent to KIRI-level surface fidelity. OpenMVS remains an AGPL evaluation
 oracle and is not part of the approved App Store backend.
 
-A subsequent [read-only stage diagnostic](/Volumes/backups/code/crisp3ds-data/turntable-fresh-stage-diagnostic-005/report.json)
+A subsequent [read-only stage diagnostic](/Volumes/backups/code/crispmesh-data/turntable-fresh-stage-diagnostic-005/report.json)
 (SHA-256 `5f6b1a6bf769516d2b0ff211cc4eb6204828b364fe5d98b7279032b41b6e48e2`)
 kept the same transported `006` gauge and scoring settings. Rough-mesh
 F1@1% is 31.79%; refinement lowers it only to 30.92%. A uniform sample of

@@ -2,13 +2,13 @@
   "schema": "mustard_dense_failure_diagnostic_v1",
   "status": "failed_no_dense_points_or_mesh",
   "producer": {
-    "path": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-002/result.json",
+    "path": "/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-002/result.json",
     "sha256": "f950939ffd555e33059cbd678bce29a5522b52404a887613e8e1262e3008ddcd",
     "runner_sha256": "056300dec95c87d1ab0285839ee7e24727e6251cb17246946cb81c40e60cd87c",
     "openmvs_binary_sha256": "8ea970b0349270754d23f31a11dea87417c06d1001fa1ef437ee69b6146a1ce0"
   },
   "native_log": {
-    "path": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-002/DensifyPointCloud-26092713533400C2B7.log",
+    "path": "/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-002/DensifyPointCloud-26092713533400C2B7.log",
     "sha256": "9b5cd933f0cd182343e2755f7fde22a2d8ab558433bf53e5f7ce078c0dd2a923",
     "calibrated_images": 48,
     "sparse_points": 939,
@@ -22,7 +22,7 @@
     "missing_neighbor_dmap": "depth0003.dmap"
   },
   "one_depth_map": {
-    "path": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-002/depth0001.dmap",
+    "path": "/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-002/depth0001.dmap",
     "sha256": "29a7ccf4fd2b245af18f3439f9fd61df32a0c419fc738d33bddf8cac1d11b563",
     "image": "NP3_000.jpg",
     "width": 1280,
@@ -33,7 +33,7 @@
     "positive_depths_outside_native_mask": 0
   },
   "one_native_mask": {
-    "path": "/Volumes/backups/code/crisp3ds-data/mustard-sparse-masked-dense-002/masks/NP3_000.mask.png",
+    "path": "/Volumes/backups/code/crispmesh-data/mustard-sparse-masked-dense-002/masks/NP3_000.mask.png",
     "sha256": "7bae05530cffbf49c6621bab0c9d7136ab686a0cd62ea8f6233e6f029c489079",
     "positive_pixels": 20460,
     "fraction_of_full_image": 0.0156097412109375

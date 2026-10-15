@@ -14,7 +14,7 @@ from .preflight import MIN_FREE, sha256, validate_dataset
 
 ROOT = Path(__file__).resolve().parents[2]
 MOUNT = Path("/Volumes/backups")
-OUTPUT = MOUNT / "code/crisp3ds-data/brush-ycb-masked-input-001"
+OUTPUT = MOUNT / "code/crispmesh-data/brush-ycb-masked-input-001"
 SOURCE = RUN_008 / "dense"
 MASKS = RUN_008 / "masks"
 MAX_BYTES = 256 * 1024**2

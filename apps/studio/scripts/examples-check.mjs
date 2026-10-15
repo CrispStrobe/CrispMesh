@@ -2,7 +2,7 @@
 // (WebGPU) and reconstructs it in the browser: what is shown before the download, the time the
 // download took, the run, and the attribution kept with it.
 //
-//   STUDIO_URL=https://crispstrobe.github.io/crisp3ds/ STUDIO_OBJECT=Dragon node scripts/examples-check.mjs
+//   STUDIO_URL=https://crispstrobe.github.io/CrispMesh/ STUDIO_OBJECT=Dragon node scripts/examples-check.mjs
 
 import { chromium } from "playwright";
 import { statSync } from "node:fs";

@@ -373,7 +373,7 @@ mod tests {
     #[test]
     fn images_round_trip_in_memory_and_on_disk() {
         let pixels: Vec<u8> = (0..4 * 3 * 3).map(|n| (n * 7) as u8).collect();
-        let disk = std::env::temp_dir().join(format!("crisp3ds-storage-{}.png", std::process::id()));
+        let disk = std::env::temp_dir().join(format!("crispmesh-storage-{}.png", std::process::id()));
         for path in [PathBuf::from(format!("mem:/storage-image-{}.png", std::process::id())), disk] {
             save_png(&path, 4, 3, 3, &pixels).unwrap();
             assert_eq!(open_image(&path).unwrap().to_rgb8().into_raw(), pixels);

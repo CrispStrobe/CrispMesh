@@ -746,7 +746,7 @@ mod tests {
     }
 
     /// Planes of the exact sphere score near 1, a plane displaced along the ray scores lower, and
-    /// the GPU kernel agrees with the scalar implementation (`CRISP3DS_GPU_TESTS=1` for the GPU part).
+    /// the GPU kernel agrees with the scalar implementation (`CRISPMESH_GPU_TESTS=1` for the GPU part).
     #[test]
     fn plane_scores_match_the_scalar_implementation() {
         let root = synthetic::temporary("patchmatch", 24, 128).unwrap();

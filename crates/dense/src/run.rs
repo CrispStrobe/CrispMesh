@@ -50,7 +50,7 @@ pub struct RunOptions {
     /// and its scene is the inputs directory. In a browser, or with an output in
     /// the in-memory tree, only providers without external programs can run.
     pub photos: Option<PathBuf>,
-    /// Command-line options of the photos stage (`crisp3ds-dense photos --help`):
+    /// Command-line options of the photos stage (`crispmesh-dense photos --help`):
     /// `--calibration FILE`, `--masks PROVIDER`, `--cameras PROVIDER` and the
     /// providers' own options, one word per element.
     pub photo_options: Vec<String>,
@@ -90,7 +90,7 @@ pub struct RunOptions {
 }
 
 /// An optional photo-optimised surface of a run: its quality level (`fast`, `standard`, `best`) and single settings
-/// (`NAME=VALUE`, as for `crisp3ds-dense surface` / `splats`) applied after the level's.
+/// (`NAME=VALUE`, as for `crispmesh-dense surface` / `splats`) applied after the level's.
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct Method {
@@ -542,7 +542,7 @@ pub async fn run_async(options: &RunOptions, observer: Option<Observer>, cancel:
     #[cfg(not(target_arch = "wasm32"))]
     let worker = {
         let mesher = mesher.clone();
-        std::thread::Builder::new().name("crisp3ds-previews".into()).spawn(move || mesher.work())?
+        std::thread::Builder::new().name("crispmesh-previews".into()).spawn(move || mesher.work())?
     };
     let outcome = stages(options, photo_stage.as_ref(), &config, &output, &mut driver, source_name).await;
     let outcome = close(outcome, &events, &mut driver);
@@ -635,7 +635,7 @@ async fn stages(
             let cancelled = Control::new(driver.cancel.clone(), Some(output.join("cancel")), None, None)?.cancelled();
             let code = finished.as_ref().map(|f| f.code).unwrap_or(1);
             driver.report["stages"]["photos"] = json!({
-                "command": std::iter::once("crisp3ds-dense photos".to_string()).chain(options.photo_options.iter().cloned()).collect::<Vec<_>>(),
+                "command": std::iter::once("crispmesh-dense photos".to_string()).chain(options.photo_options.iter().cloned()).collect::<Vec<_>>(),
                 "exit_code": if cancelled { Value::Null } else { json!(code) },
                 "timed_out": false, "cancelled": cancelled, "seconds": seconds,
                 "log": text(&output.join("frontend/logs")),
@@ -678,7 +678,7 @@ async fn stages(
             );
             let inputs = output.join("inputs");
             let command =
-                ["crisp3ds-dense", "inputs", "--scene", &text(&scene), "--prepared", &text(&prepared), "--raw-masks", &text(&raw_masks)]
+                ["crispmesh-dense", "inputs", "--scene", &text(&scene), "--prepared", &text(&prepared), "--raw-masks", &text(&raw_masks)]
                     .map(String::from)
                     .to_vec();
             let stage = driver.begin("inputs", command, Some(600.0))?;
@@ -716,7 +716,7 @@ async fn stages(
         previews: options.live_previews,
         ..Default::default()
     };
-    let mut command = vec!["crisp3ds-dense".to_string(), "stereo".to_string(), "--inputs".to_string(), text(&inputs)];
+    let mut command = vec!["crispmesh-dense".to_string(), "stereo".to_string(), "--inputs".to_string(), text(&inputs)];
     if let Some(depths) = &options.reuse_depths {
         command.extend(["--reuse-depths".to_string(), text(depths)]);
     }
@@ -739,7 +739,7 @@ async fn stages(
     driver.previews.settle(false);
 
     let volume = output.join("stereo/volume.npz");
-    let command = ["crisp3ds-dense", "mesh", "--volume", &text(&volume)].map(String::from).to_vec();
+    let command = ["crispmesh-dense", "mesh", "--volume", &text(&volume)].map(String::from).to_vec();
     let threads = options.threads.max(1);
     let stage = driver.begin("mesh", command, Some(900.0))?;
     // The silhouette came first when the stereo stage says so (it knows the cameras) or the setting asks for it.
@@ -779,7 +779,7 @@ async fn stages(
     #[cfg(not(target_arch = "wasm32"))]
     for (name, method) in [("surface", &options.surface), ("splats", &options.splats)] {
         let Some(method) = method else { continue };
-        let command = ["crisp3ds-dense", name, &text(&inputs), &text(&output.join(name))]
+        let command = ["crispmesh-dense", name, &text(&inputs), &text(&output.join(name))]
             .map(String::from)
             .into_iter()
             .chain(method.arguments())
@@ -799,7 +799,7 @@ async fn stages(
     if options.check {
         let stl = output.join("mesh/mesh.stl");
         let repaired = output.join("stereo/masks-repaired");
-        let command = ["crisp3ds-dense", "check", "--inputs", &text(&inputs), "--mesh", &text(&stl)].map(String::from).to_vec();
+        let command = ["crispmesh-dense", "check", "--inputs", &text(&inputs), "--mesh", &text(&stl)].map(String::from).to_vec();
         let stage = driver.begin("check", command, Some(900.0))?;
         let check_options = check::Options {
             inputs: &inputs,
@@ -818,7 +818,7 @@ async fn stages(
     if options.texture {
         let texture_output = output.join("texture");
         let stl = output.join("mesh/mesh.stl");
-        let command = ["crisp3ds-dense", "texture", "--inputs", &text(&inputs), "--mesh", &text(&stl)].map(String::from).to_vec();
+        let command = ["crispmesh-dense", "texture", "--inputs", &text(&inputs), "--mesh", &text(&stl)].map(String::from).to_vec();
         let stage = driver.begin("texture", command, Some(900.0))?;
         let result = crate::texture::run_with(&inputs, &stl, &texture_output, 12, 1024, &stage.control);
         if result.is_ok() {
@@ -1004,11 +1004,11 @@ pub fn describe_with(photo_options: &[String]) -> Value {
     }
     let presets: Vec<Value> =
         PRESETS.iter().map(|(name, settings, meaning)| json!({"name": name, "settings": settings, "meaning": meaning})).collect();
-    json!({"schema": "crisp3ds_start_points_v1", "platform": table["platform"], "start_points": points, "presets": presets, "methods": methods()})
+    json!({"schema": "crispmesh_start_points_v1", "platform": table["platform"], "start_points": points, "presets": presets, "methods": methods()})
 }
 
-pub const USAGE: &str = "usage: crisp3ds-dense run --output DIR (--photos DIR --calibration JSON [--masks PROVIDER] [--cameras PROVIDER] \
-[options of `crisp3ds-dense photos`] | --inputs DIR | --scene FILE --prepared DIR --raw-masks DIR) \
+pub const USAGE: &str = "usage: crispmesh-dense run --output DIR (--photos DIR --calibration JSON [--masks PROVIDER] [--cameras PROVIDER] \
+[options of `crispmesh-dense photos`] | --inputs DIR | --scene FILE --prepared DIR --raw-masks DIR) \
 [--config FILE] [--preset detail] [--set KEY=VALUE]... [--threads N] [--stereo-timeout SECONDS] [--minimum-free-gib G] [--reuse-depths FILE] \
 [--texture] [--surface QUALITY] [--surface-set NAME=VALUE]... [--splats QUALITY] [--splats-set NAME=VALUE]... [--no-live-previews] [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]";
 
@@ -1051,7 +1051,7 @@ pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
             "--photos" => options.photos = Some(PathBuf::from(value()?)),
             "--photos-option" => options.photo_options.push(value()?),
             "--reference" => bail!("--reference: scoring against a scan is done by scripts/turntable_mesh/scan_evaluate.py; run it on mesh/mesh.stl afterwards"),
-            // Everything else belongs to the photos stage (`crisp3ds-dense photos --help`); it checks the names.
+            // Everything else belongs to the photos stage (`crispmesh-dense photos --help`); it checks the names.
             other => {
                 options.photo_options.push(match &inline {
                     Some(value) => format!("{other}={value}"),
@@ -1072,7 +1072,7 @@ pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
     Ok(options)
 }
 
-/// `crisp3ds-dense run ...`: prints the summary the Python driver prints.
+/// `crispmesh-dense run ...`: prints the summary the Python driver prints.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main(arguments: &[String]) -> anyhow::Result<()> {
     if arguments.iter().any(|a| a == "--describe") {
@@ -1099,14 +1099,14 @@ mod tests {
     use super::*;
 
     /// Photos to STL entirely in the in-memory tree: photos and lens copied into `mem:`, the run directory in
-    /// `mem:`, the mesh and the reports written out to `CRISP3DS_MEMORY_RUN_OUT`. Runs only when
-    /// `CRISP3DS_MEMORY_RUN_PHOTOS` (a photo folder) and `CRISP3DS_MEMORY_RUN_CALIBRATION` are set.
+    /// `mem:`, the mesh and the reports written out to `CRISPMESH_MEMORY_RUN_OUT`. Runs only when
+    /// `CRISPMESH_MEMORY_RUN_PHOTOS` (a photo folder) and `CRISPMESH_MEMORY_RUN_CALIBRATION` are set.
     #[test]
     fn a_photos_run_in_memory() {
         let (Ok(photos), Ok(calibration), Ok(out)) = (
-            std::env::var("CRISP3DS_MEMORY_RUN_PHOTOS"),
-            std::env::var("CRISP3DS_MEMORY_RUN_CALIBRATION"),
-            std::env::var("CRISP3DS_MEMORY_RUN_OUT"),
+            std::env::var("CRISPMESH_MEMORY_RUN_PHOTOS"),
+            std::env::var("CRISPMESH_MEMORY_RUN_CALIBRATION"),
+            std::env::var("CRISPMESH_MEMORY_RUN_OUT"),
         ) else {
             return;
         };
@@ -1156,7 +1156,8 @@ mod tests {
         assert_eq!(options.splats, Some(Method { quality: "standard".into(), settings: vec!["steps=5000".into()] }));
         assert!(parse(&words("--inputs in --output out --surface quick")).is_err());
         let options: RunOptions =
-            serde_json::from_value(json!({"output": "out", "inputs": "in", "splats": {"quality": "best", "settings": ["mesh=640"]}})).unwrap();
+            serde_json::from_value(json!({"output": "out", "inputs": "in", "splats": {"quality": "best", "settings": ["mesh=640"]}}))
+                .unwrap();
         assert_eq!(options.splats.unwrap().settings, vec!["mesh=640".to_string()]);
         let methods = methods();
         assert_eq!(methods.as_array().unwrap().iter().map(|m| m["id"].as_str().unwrap()).collect::<Vec<_>>(), ["surface", "splats"]);
@@ -1244,7 +1245,7 @@ mod tests {
 
     #[test]
     fn refuses_before_anything_is_written() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-run-refuse-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-run-refuse-{}", std::process::id()));
         let _ = crate::storage::remove_dir_all(&root);
         let options = RunOptions { output: root.clone(), ..Default::default() };
         assert!(run(&options, None, None).is_err());
@@ -1257,7 +1258,7 @@ mod tests {
     /// A directory without a camera table fails after `run_started`, and the log is still closed (no GPU needed).
     #[test]
     fn a_failure_between_stages_closes_the_event_log() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-run-fail-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-run-fail-{}", std::process::id()));
         let _ = crate::storage::remove_dir_all(&root);
         crate::storage::create_dir_all(root.join("in")).unwrap();
         let options = RunOptions { output: root.join("run"), inputs: Some(root.join("in")), ..Default::default() };
@@ -1278,7 +1279,7 @@ mod tests {
         events.iter().filter(|e| e["type"] == "artifact" && e["kind"] == kind).count()
     }
 
-    /// The whole pipeline on the analytic sphere, then a cancelled run (CRISP3DS_GPU_TESTS=1).
+    /// The whole pipeline on the analytic sphere, then a cancelled run (CRISPMESH_GPU_TESTS=1).
     #[test]
     fn gpu_run_completes_and_can_be_cancelled() {
         if !crate::gpu::tests_enabled() {

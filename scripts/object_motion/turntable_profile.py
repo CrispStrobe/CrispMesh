@@ -22,7 +22,7 @@ from scripts.object_motion import run
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_EXTERNAL_ROOT = Path("/Volumes/backups/code/crisp3ds-data")
+DEFAULT_EXTERNAL_ROOT = Path("/Volumes/backups/code/crispmesh-data")
 OUTPUT_CAP = 512 * 1024**2
 FREE_FLOOR = 10 * 1024**3
 LOG_CAP = 4 * 1024**2

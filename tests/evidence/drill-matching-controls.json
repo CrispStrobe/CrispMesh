@@ -1,5 +1,5 @@
 {
-  "schema": "crisp3ds_drill_matching_controls_v1",
+  "schema": "crispmesh_drill_matching_controls_v1",
   "source": "60 own-calibrated RGB captures, own SAM masks and recovered cameras; no supplied extrinsics/masks/depth or scanner geometry",
   "experiments": [
     {

@@ -2,9 +2,9 @@
 
     python prepare_dataset.py OUT NAME:TITLE:MODEL:CAPTURE_DIR [...]
 
-CAPTURE_DIR holds photos/shot_NNN.png and lens.json from `crisp3ds-dense render`. Writes
+CAPTURE_DIR holds photos/shot_NNN.png and lens.json from `crispmesh-dense render`. Writes
 OUT/<name>/rgb/<name>_<n>_rgb.png, OUT/calibration/render-3dlf-lens.json, OUT/manifest.json
-(schema crisp3ds_example_objects_v1, as cstr/3dlf-scan-photos) and OUT/README.md (dataset card).
+(schema crispmesh_example_objects_v1, as cstr/3dlf-scan-photos) and OUT/README.md (dataset card).
 """
 import hashlib
 import json
@@ -16,7 +16,7 @@ ATTRIBUTION = (
     "Rendered from Google Scanned Objects by Google LLC (Copyright 2020 Google LLC), licensed CC BY 4.0 "
     "(https://creativecommons.org/licenses/by/4.0/); Downs et al., \"Google Scanned Objects: A High-Quality "
     "Dataset of 3D Scanned Household Items\", ICRA 2022. Changes: the scanned meshes were rendered as turntable "
-    "photo sequences by Crisp3DS (crisp3ds-dense render); the photos are synthetic, not photographs."
+    "photo sequences by CrispMesh (crispmesh-dense render); the photos are synthetic, not photographs."
 )
 
 
@@ -60,7 +60,7 @@ def main():
         rows.append((name, title, model, len(files), sum(f["size"] for f in files)))
     lens = json.loads(lens_text)
     lens["provenance"] = {
-        "source": "crisp3ds-dense render: the lens the photos were rendered with",
+        "source": "crispmesh-dense render: the lens the photos were rendered with",
         "note": "The 3DLF apiCAM PRO lens (cstr/3dlf-scan-photos calibration/3dlf-pro.json) scaled to 1749 x 1155; "
                 "the photos were rendered through exactly this model, so it is exact for them.",
     }
@@ -69,7 +69,7 @@ def main():
     for o in objects:
         o["bytes"] += calibration.stat().st_size
     manifest = {
-        "schema": "crisp3ds_example_objects_v1",
+        "schema": "crispmesh_example_objects_v1",
         "source": "https://goo.gle/scanned-objects",
         "license": "CC-BY-4.0",
         "attribution": ATTRIBUTION,
@@ -102,8 +102,8 @@ without a camera. The photos are synthetic: each scanned, textured mesh stands o
 front of a light backdrop and is seen from one ring of 72 cameras 20 degrees above it (5 degree
 steps), through a real lens model (the 3DLF apiCAM PRO lens with its radial distortion), at
 1749 x 1155 pixels, with one light that keeps its place relative to the camera, a cast shadow,
-1 px Gaussian blur and mild noise. Rendered by `crisp3ds-dense render` of
-[CrispMesh](https://github.com/CrispStrobe/crisp3ds), which uses them as downloadable
+1 px Gaussian blur and mild noise. Rendered by `crispmesh-dense render` of
+[CrispMesh](https://github.com/CrispStrobe/CrispMesh), which uses them as downloadable
 example objects.
 
 | Object | Title | Source model | Photos | Size |
@@ -111,8 +111,8 @@ example objects.
 {table}
 
 Layout: `<object>/rgb/<object>_<n>_rgb.png` in capture order and
-`calibration/render-3dlf-lens.json` (the lens the photos were rendered with, in Crisp3DS's
-`crisp3ds_lens_calibration_v1` format; exact for these photos). `manifest.json` lists every file
+`calibration/render-3dlf-lens.json` (the lens the photos were rendered with, in CrispMesh's
+`crispmesh_lens_calibration_v1` format; exact for these photos). `manifest.json` lists every file
 with its size and SHA-256.
 
 ## Source and license

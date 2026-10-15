@@ -70,5 +70,5 @@ Keep the 10 GiB Mac reserve; use `/mnt/storage` for large assets and
 `/mnt/volume1` for fast scratch only after checking available space. Do not use
 `/tmp`. A staging manifest is not a completed download or inference result.
 Any Kaggle submission separately requires the local usage guide and quota checks.
-On the Mac, large reconstruction artifacts use `/Volumes/backups/code/crisp3ds-data`
+On the Mac, large reconstruction artifacts use `/Volumes/backups/code/crispmesh-data`
 and weights use `/Volumes/backups/ai`; see [storage policy](STORAGE.md).

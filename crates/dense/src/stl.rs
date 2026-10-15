@@ -62,15 +62,15 @@ mod tests {
 
     #[test]
     fn round_trip_with_unit_normals_and_no_overwrite() {
-        let path = std::env::temp_dir().join(format!("crisp3ds-stl-{}.stl", std::process::id()));
+        let path = std::env::temp_dir().join(format!("crispmesh-stl-{}.stl", std::process::id()));
         let _ = crate::storage::remove_file(&path);
         let vertices = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0], [0.0, 0.0, 0.0]];
         let faces = [[0, 1, 2], [0, 2, 1], [0, 3, 3]];
-        write_binary(&path, "crisp3ds tsdf hull mesh", &vertices, &faces).unwrap();
+        write_binary(&path, "crispmesh tsdf hull mesh", &vertices, &faces).unwrap();
         assert!(write_binary(&path, "again", &vertices, &faces).is_err(), "an existing file must not be replaced");
         let bytes = crate::storage::read(&path).unwrap();
         assert_eq!(bytes.len(), 84 + 3 * 50);
-        assert!(bytes.starts_with(b"crisp3ds tsdf hull mesh ") && bytes[79] == b' ');
+        assert!(bytes.starts_with(b"crispmesh tsdf hull mesh ") && bytes[79] == b' ');
         let (triangles, normals) = read_binary(&path).unwrap();
         crate::storage::remove_file(&path).unwrap();
         assert_eq!(triangles[0], [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]]);

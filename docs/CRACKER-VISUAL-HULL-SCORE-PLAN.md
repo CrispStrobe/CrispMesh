@@ -50,7 +50,7 @@ measurement. The scanner does not change the grid or mesh.
 ## Bounded execution proposal
 
 Fresh external output only:
-`/Volumes/backups/code/crisp3ds-data/cracker-visual-hull-score-001`.
+`/Volumes/backups/code/crispmesh-data/cracker-visual-hull-score-001`.
 The supervisor fully rehashes inputs before creating the directory, then
 supervises a revalidating worker. Bound worker to 270 seconds, whole stage to
 300 seconds, sampled RSS to 2 GiB, all new output to 20 MiB, log to 2 MiB,
@@ -60,7 +60,7 @@ download, rerun, alternative threshold or second candidate is authorized.
 Proposed command only after explicit code review and approval:
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 .local-tools/colmap-sparse/venv/bin/python -m scripts.classical_backend.score_cracker_visual_hull --output /Volumes/backups/code/crisp3ds-data/cracker-visual-hull-score-001
+PYTHONDONTWRITEBYTECODE=1 .local-tools/colmap-sparse/venv/bin/python -m scripts.classical_backend.score_cracker_visual_hull --output /Volumes/backups/code/crispmesh-data/cracker-visual-hull-score-001
 ```
 
 The [synthetic tests](../scripts/classical_backend/test_score_cracker_visual_hull.py)

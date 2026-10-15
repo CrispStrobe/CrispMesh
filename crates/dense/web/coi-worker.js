@@ -5,7 +5,7 @@
 // cross-origin isolated. As the service worker it adds the two headers to every response of its
 // scope, so the reloaded page may use shared memory and the threaded package. Where service
 // workers are unavailable, or a reload did not help, the page stays as it is and the engine falls
-// back to the single-threaded package (`crisp3ds-dense.js` checks `crossOriginIsolated`).
+// back to the single-threaded package (`crispmesh-dense.js` checks `crossOriginIsolated`).
 //
 // The same approach as coi-serviceworker (MIT), written here in a few lines. Every cross-origin
 // resource the page loads must then allow embedding (CORS or Cross-Origin-Resource-Policy);
@@ -34,7 +34,7 @@ if (typeof window === "undefined") {
   });
 } else if (!window.crossOriginIsolated && window.isSecureContext && "serviceWorker" in navigator) {
   // The page: register, then reload once under the worker's control.
-  const key = "crisp3ds-coi-reloaded";
+  const key = "crispmesh-coi-reloaded";
   let tried = false;
   try {
     tried = sessionStorage.getItem(key) === "1";
@@ -42,7 +42,7 @@ if (typeof window === "undefined") {
     // no session storage: a reload loop is still prevented by the controller check below
   }
   if (!tried) {
-    window.crisp3dsReloading = true;
+    window.crispmeshReloading = true;
     navigator.serviceWorker.register(document.currentScript.src).then((registration) => {
       const reload = () => {
         try {
@@ -56,8 +56,8 @@ if (typeof window === "undefined") {
       else if (registration.active) reload();
       else navigator.serviceWorker.addEventListener("controllerchange", reload, { once: true });
     }, () => {
-      window.crisp3dsReloading = false;
-      window.dispatchEvent(new Event("crisp3ds-coi-settled"));
+      window.crispmeshReloading = false;
+      window.dispatchEvent(new Event("crispmesh-coi-settled"));
     });
   }
 }

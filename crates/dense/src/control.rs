@@ -95,7 +95,7 @@ mod tests {
     fn stops_on_flag_file_and_deadline() {
         assert!(Control::none().check().is_ok());
         let flag = Arc::new(AtomicBool::new(false));
-        let file = std::env::temp_dir().join(format!("crisp3ds-cancel-{}", std::process::id()));
+        let file = std::env::temp_dir().join(format!("crispmesh-cancel-{}", std::process::id()));
         let _ = crate::storage::remove_file(&file);
         let control = Control::new(Some(flag.clone()), Some(file.clone()), None, None).unwrap();
         assert!(control.check().is_ok());

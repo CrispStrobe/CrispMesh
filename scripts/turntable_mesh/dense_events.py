@@ -29,7 +29,7 @@ import os
 from pathlib import Path
 import time
 
-SCHEMA = "crisp3ds_dense_events_v1"
+SCHEMA = "crispmesh_dense_events_v1"
 STAGES = ("masks", "cameras", "inputs", "stereo", "mesh", "check", "evaluate")
 ARTIFACT_KINDS = ("mask_sheet", "sparse_overlay", "input_sheet", "mask_repair_sheet", "hull_mask_sheet", "depth_sheet", "preview_volume",
                   "preview_mesh", "final_mesh", "photo_overlay", "preview_render", "scan_overlay", "report")

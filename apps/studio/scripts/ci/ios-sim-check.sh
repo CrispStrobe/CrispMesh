@@ -68,7 +68,7 @@ script="$OUT/.autopilot-$tag.js"
   echo "window.AUTOPILOT = { $options, up: \"${STUDIO_UP:-+Y}\", marks: true, hold: 4000, linger: 3000, timeout: 3000000 };"
   cat "$HERE/../autopilot-run.js"
 } > "$script"
-SIMCTL_CHILD_CRISP3DS_STUDIO_AUTOPILOT="$script" xcrun simctl launch --terminate-running-process "$udid" "$BUNDLE" >/dev/null
+SIMCTL_CHILD_CRISPMESH_STUDIO_AUTOPILOT="$script" xcrun simctl launch --terminate-running-process "$udid" "$BUNDLE" >/dev/null
 
 shots=""
 seen=""

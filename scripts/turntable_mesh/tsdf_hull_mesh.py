@@ -119,7 +119,7 @@ def write_stl(path, vertices, faces):
     record = np.zeros(len(faces), dtype=[("normal", "<f4", (3,)), ("vertices", "<f4", (3, 3)), ("attr", "<u2")])
     record["normal"], record["vertices"] = normals, triangles
     with open(path, "xb") as stream:
-        stream.write(b"crisp3ds tsdf hull mesh".ljust(80, b" "))
+        stream.write(b"crispmesh tsdf hull mesh".ljust(80, b" "))
         stream.write(struct.pack("<I", len(faces)))
         stream.write(record.tobytes())
 

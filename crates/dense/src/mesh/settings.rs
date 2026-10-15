@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn a_result_file_configures_a_run() {
-        let path = std::env::temp_dir().join(format!("crisp3ds-settings-{}.json", std::process::id()));
+        let path = std::env::temp_dir().join(format!("crispmesh-settings-{}.json", std::process::id()));
         crate::storage::write(&path, r#"{"closed": true, "configuration": {"mesh_smooth": 1.5, "mesh_fill_sigmas": [3.0]}}"#).unwrap();
         let c = build(Some(&path), &["mesh_smooth=1.25".to_string()]).unwrap();
         crate::storage::remove_file(&path).unwrap();

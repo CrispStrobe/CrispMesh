@@ -1,6 +1,6 @@
 //! The WebGPU network against the MLX prototype: `scripts/neural_surface/export_fixture.py` saves the prototype's
 //! parameters, per-sample values, losses and gradients for fixed rays; these tests run the same rays here.
-//! They need a GPU (`CRISP3DS_GPU_TESTS=1`) and the fixture (`CRISP3DS_SURFACE_FIXTURE=path.npz`).
+//! They need a GPU (`CRISPMESH_GPU_TESTS=1`) and the fixture (`CRISPMESH_SURFACE_FIXTURE=path.npz`).
 
 use super::*;
 use crate::gpu::block_on;
@@ -10,7 +10,7 @@ fn fixture() -> Option<Npz> {
     if !crate::gpu::tests_enabled() {
         return None;
     }
-    let path = std::env::var("CRISP3DS_SURFACE_FIXTURE").ok()?;
+    let path = std::env::var("CRISPMESH_SURFACE_FIXTURE").ok()?;
     Some(Npz::read(std::path::Path::new(&path)).expect("fixture"))
 }
 
@@ -170,7 +170,7 @@ fn nearest_points_are_exact() {
     }
 }
 
-/// The matrix product in its three modes against a CPU product, with its speed (`CRISP3DS_GPU_TESTS=1`).
+/// The matrix product in its three modes against a CPU product, with its speed (`CRISPMESH_GPU_TESTS=1`).
 #[test]
 fn matrix_products_are_exact_and_fast() {
     if !crate::gpu::tests_enabled() {
@@ -275,11 +275,11 @@ fn band_sampler_matches_mlx() {
     assert!(largest < 1e-2 && off * 50 <= reference.len(), "largest edge difference {largest}, {off} edges");
 }
 
-/// Our hull grid against the prototype's (needs the pack the fixture was made from: CRISP3DS_SURFACE_PACK).
+/// Our hull grid against the prototype's (needs the pack the fixture was made from: CRISPMESH_SURFACE_PACK).
 #[test]
 fn hull_grid_matches_mlx() {
     let Some(npz) = fixture() else { return };
-    let Ok(pack) = std::env::var("CRISP3DS_SURFACE_PACK") else { return };
+    let Ok(pack) = std::env::var("CRISPMESH_SURFACE_PACK") else { return };
     let scene = train::load_pack(std::path::Path::new(&pack)).expect("pack");
     let reference = get(&npz, "hull_grid");
     let ours = train::hull_grid(&scene, 160);
@@ -359,16 +359,19 @@ fn training_steps_match_mlx() {
 }
 
 /// A scene made from an inputs directory against the pack `pack_scene.py` made from the same files
-/// (CRISP3DS_SURFACE_INPUTS, _MASKS, _HULL and _INPUTS_PACK; the pack's photos are JPEG, its hull samples random).
+/// (CRISPMESH_SURFACE_INPUTS, _MASKS, _HULL and _INPUTS_PACK; the pack's photos are JPEG, its hull samples random).
 #[test]
 fn scene_from_inputs_matches_the_pack() {
     let var = |name: &str| std::env::var(name).ok().map(std::path::PathBuf::from);
-    let (Some(inputs), Some(masks), Some(hull), Some(pack)) =
-        (var("CRISP3DS_SURFACE_INPUTS"), var("CRISP3DS_SURFACE_MASKS"), var("CRISP3DS_SURFACE_HULL"), var("CRISP3DS_SURFACE_INPUTS_PACK"))
-    else {
+    let (Some(inputs), Some(masks), Some(hull), Some(pack)) = (
+        var("CRISPMESH_SURFACE_INPUTS"),
+        var("CRISPMESH_SURFACE_MASKS"),
+        var("CRISPMESH_SURFACE_HULL"),
+        var("CRISPMESH_SURFACE_INPUTS_PACK"),
+    ) else {
         return;
     };
-    let ours = train::scene_from_inputs(&inputs, var("CRISP3DS_SURFACE_PHOTOS").as_deref(), Some(&masks), &hull, 2, 0, 0).expect("scene");
+    let ours = train::scene_from_inputs(&inputs, var("CRISPMESH_SURFACE_PHOTOS").as_deref(), Some(&masks), &hull, 2, 0, 0).expect("scene");
     let theirs = train::load_pack(&pack).expect("pack");
     assert_eq!(ours.views.len(), theirs.views.len());
     let radius = |s: &train::Scene| 1.0 / (1.15 * s.unit);

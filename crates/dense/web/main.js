@@ -1,5 +1,5 @@
 // Minimal test page: runs the engine in a worker on files it fetches and shows
-// status text and the final triangle count. `window.crisp3ds` holds the state
+// status text and the final triangle count. `window.crispmesh` holds the state
 // for automated tests: { status, events, report, files, kept, error, ... }.
 
 const query = new URLSearchParams(location.search);
@@ -11,7 +11,7 @@ const element = (id) => document.getElementById(id);
 element("base").textContent = base;
 
 const state = { status: "starting", events: [], memoryAtEvents: [], kept: {}, uploading: 0, report: null, error: null };
-window.crisp3ds = state;
+window.crispmesh = state;
 
 const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
 element("cancel").onclick = () => worker.postMessage({ type: "cancel" });
@@ -60,7 +60,7 @@ worker.onmessage = ({ data }) => {
 const start = () =>
   worker.postMessage({ type: "run", base: new URL(base, location.href).href.replace(/\/$/, ""), options, keep, mode: query.get("mode") ?? "inputs", threads: query.get("threads") ? Number(query.get("threads")) : undefined });
 // coi-worker.js may be about to reload the page under its service worker (cross-origin isolation).
-if (window.crisp3dsReloading) window.addEventListener("crisp3ds-coi-settled", start, { once: true });
+if (window.crispmeshReloading) window.addEventListener("crispmesh-coi-settled", start, { once: true });
 else start();
 
 function fail(message, data = {}) {

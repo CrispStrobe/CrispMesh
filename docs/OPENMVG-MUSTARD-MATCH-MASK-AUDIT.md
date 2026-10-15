@@ -39,7 +39,7 @@ Input seals independently checked in the script are: `-001` SfM receipt
 `8a61622cc22f76a6bb7dbcbf5a4e00725afd6a57b1e20095dabafab931112033`;
 the 48 individual `.feat` hashes in the `-001` receipt; and the 48 mask
 hashes in the TRAIN stage report at
-`/Volumes/backups/code/crisp3ds-data/mustard-sfm-train-001/stage-report.json`,
+`/Volumes/backups/code/crispmesh-data/mustard-sfm-train-001/stage-report.json`,
 SHA-256 `bbcba624f6a51f82e0ebdebf6e7e4cda10804bc8df34cfd0d5b3242983a225d0`.
 The 60-slot [capture-order profile](../tests/datasets/ycb_np3_full_turn_profile.json)
 is SHA-256 `bb00d17e1940f121dc12f7ddb31d4adf80b7e9a935f18e5535cfc1a2cde1998d`.

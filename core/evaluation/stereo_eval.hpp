@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <string>
 
-namespace crisp3ds::evaluation {
+namespace crispmesh::evaluation {
 
 struct Calibration {
   double fx = 0;
@@ -62,4 +62,4 @@ cv::Mat compute_sgbm(const cv::Mat& left, const cv::Mat& right, int ndisp,
                      int block_size = 5);
 cv::Mat disparity_to_depth(const cv::Mat& disparity, double fx, double baseline, double doffs);
 
-} // namespace crisp3ds::evaluation
+} // namespace crispmesh::evaluation

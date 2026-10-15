@@ -17,7 +17,7 @@ from .preflight import MIN_FREE, RELEASE_SHA256, sha256, validate_dataset
 
 ROOT = Path(__file__).resolve().parents[2]
 MOUNT = Path("/Volumes/backups")
-OUTPUT = MOUNT / "code/crisp3ds-data/brush-smoke-001"
+OUTPUT = MOUNT / "code/crispmesh-data/brush-smoke-001"
 BINARY = ROOT / ".local-tools/brush-v030/brush-app-aarch64-apple-darwin/brush_app"
 DATASET = RUN_008 / "dense"
 MAX_OUTPUT = 512 * 1024**2

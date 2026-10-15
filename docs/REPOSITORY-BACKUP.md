@@ -8,7 +8,7 @@ remain excluded by the existing ignore rules.
 
 The initial private-backup record below is historical.
 
-Created 2026-09-26: https://github.com/CrispStrobe/crisp3ds (private).
+Created 2026-09-26: https://github.com/CrispStrobe/CrispMesh (private).
 
 The initial `main` commit is `3e6466ea90b09524790d75bcdadc867466179ba7`.
 It contains 293 source, test, configuration, small application-asset, and

@@ -70,7 +70,7 @@ jobs:
           cargo run --locked --quiet -- settings --schema > /dev/null
       # Studio links this crate and builds with its own lockfile. A dependency change here
       # that the lockfile does not cover fails this step: update apps/studio/src-tauri/Cargo.lock
-      # (cargo update -p crisp3ds-dense --manifest-path apps/studio/src-tauri/Cargo.toml) in the same change.
+      # (cargo update -p crispmesh-dense --manifest-path apps/studio/src-tauri/Cargo.toml) in the same change.
       - name: Studio lockfile still resolves
         if: runner.os == 'Linux'
         run: cargo fetch --locked --manifest-path ../../apps/studio/src-tauri/Cargo.toml
@@ -95,8 +95,8 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       CARGO_INCREMENTAL: '0'
-      CRISP3DS_GPU_TESTS: '1'
-      CRISP3DS_GPU_FALLBACK: '1'
+      CRISPMESH_GPU_TESTS: '1'
+      CRISPMESH_GPU_FALLBACK: '1'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Rust toolchain
@@ -140,7 +140,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       CARGO_INCREMENTAL: '0'
-      CRISP3DS_GPU_FALLBACK: '1'
+      CRISPMESH_GPU_FALLBACK: '1'
       QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -166,14 +166,14 @@ jobs:
       - name: Build
         run: cargo build --locked --release
       - name: Synthetic capture
-        run: ./target/release/crisp3ds-dense synthetic --capture --output capture
+        run: ./target/release/crispmesh-dense synthetic --capture --output capture
       - name: Photos to mesh with COLMAP cameras
         run: >
-          ./target/release/crisp3ds-dense run --output run --photos capture/photos --calibration capture/lens.json
+          ./target/release/crispmesh-dense run --output run --photos capture/photos --calibration capture/lens.json
           --masks threshold --cameras colmap --threads 4 --minimum-free-gib 2
           --set sizes=128,256 --set grid=128
       - name: Recovered orbit and mesh
-        run: ./target/release/crisp3ds-dense synthetic --verify run --truth capture
+        run: ./target/release/crispmesh-dense synthetic --verify run --truth capture
       - name: Reports
         if: always()
         run: |

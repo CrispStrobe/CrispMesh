@@ -3,7 +3,7 @@
 Status: **implemented, synthetic-tested, and run read-only on the sealed export**.
 No converter, SfM, dense, or reference process was run by this validator. The
 output is at
-`/Volumes/backups/code/crisp3ds-data/openmvg-mustard-photo-pose-export-001/`
+`/Volumes/backups/code/crispmesh-data/openmvg-mustard-photo-pose-export-001/`
 with `sfm_camera_poses.json` and `receipt.json`. After the one-shot export was
 reviewed, the validator pinned receipt SHA-256
 `ab73c2b729adb8abd1f84d97f1908b26635cd8caa6d2d1756185d9a31a34dac3`,

@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn writes_cameras_images_masks_and_points() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-scene-writer-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-scene-writer-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(root.join("photos")).unwrap();
         std::fs::create_dir_all(root.join("masks")).unwrap();

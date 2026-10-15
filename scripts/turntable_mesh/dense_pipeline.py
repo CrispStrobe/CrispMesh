@@ -15,8 +15,8 @@ its undistorted images and one mask per source photo; ``--inputs`` starts from
 an existing inputs directory.
 
 Interpreters: ``--python`` runs inputs/mesh/check, ``--torch-python`` runs
-stereo. Both default to the environment variables CRISP3DS_PYTHON and
-CRISP3DS_TORCH_PYTHON, then to the interpreter running this script.
+stereo. Both default to the environment variables CRISPMESH_PYTHON and
+CRISPMESH_TORCH_PYTHON, then to the interpreter running this script.
 """
 
 import argparse
@@ -113,8 +113,8 @@ def run(args):
         raise RuntimeError(f"only {free / 2**30:.1f} GiB free; need {args.minimum_free_gib} (see --minimum-free-gib)")
     output.mkdir(parents=True)
     (output / "config.json").write_text(json.dumps(config.to_json(), indent=2) + "\n")
-    python = args.python or os.environ.get("CRISP3DS_PYTHON") or sys.executable
-    torch_python = args.torch_python or os.environ.get("CRISP3DS_TORCH_PYTHON") or sys.executable
+    python = args.python or os.environ.get("CRISPMESH_PYTHON") or sys.executable
+    torch_python = args.torch_python or os.environ.get("CRISPMESH_TORCH_PYTHON") or sys.executable
     environment = {**os.environ, "PYTHONPATH": str(REPOSITORY), "PYTORCH_ENABLE_MPS_FALLBACK": "0"}
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
         environment[name] = str(args.threads)
@@ -189,7 +189,7 @@ def stages(args, config, output, python, torch_python, environment, events, even
 
     # The surface stage exists twice: the Python reference and the native port
     # (crates/dense), which reads and writes the same files.
-    native = args.native or os.environ.get("CRISP3DS_NATIVE")
+    native = args.native or os.environ.get("CRISPMESH_NATIVE")
     mesher = [str(native), "mesh", "--threads", str(args.threads)] if native else [str(python), "-m", "scripts.turntable_mesh.tsdf_hull_mesh"]
     matcher = [str(native), "stereo"] if native else [str(torch_python), "-m", "scripts.turntable_mesh.multiscale_stereo"]
     report["native_stages"] = ["stereo", "mesh"] if native else []
@@ -272,8 +272,8 @@ def main():
     parser.add_argument("--device", choices=("mps", "cuda", "cpu"), default="mps")
     parser.add_argument("--python", help="interpreter with NumPy, SciPy, scikit-image, OpenCV, Pillow")
     parser.add_argument("--torch-python", help="interpreter with Torch, NumPy, Pillow")
-    parser.add_argument("--native", type=Path, help="crisp3ds-dense binary; the stereo and mesh stages then run "
-                        "natively (WebGPU) instead of in Python, and no Torch is needed [CRISP3DS_NATIVE]")
+    parser.add_argument("--native", type=Path, help="crispmesh-dense binary; the stereo and mesh stages then run "
+                        "natively (WebGPU) instead of in Python, and no Torch is needed [CRISPMESH_NATIVE]")
     parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--stereo-timeout", type=int, default=3600, help="seconds")
     parser.add_argument("--minimum-free-gib", type=float, default=2.0)

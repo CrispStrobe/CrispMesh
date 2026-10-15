@@ -62,13 +62,13 @@ Example, only after a positive camera receipt exists and its SHA is known:
 
 ```sh
 python3 -m scripts.classical_backend.openmvg_bunny_high_openmvs \
-  --source-receipt /Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-photo-sfm-001/receipt.json \
+  --source-receipt /Volumes/backups/code/crispmesh-data/openmvg-bunny-high-photo-sfm-001/receipt.json \
   --camera-gate /absolute/path/to/independent-camera-review.json \
   --camera-gate-sha256 REVIEW_RECEIPT_SHA256 \
-  --expected-images /Users/christianstrobele/code/crisp3ds/build-opencv/bunny-gamma05-clahe2 \
-  --openmvg-binary /Volumes/backups/code/crisp3ds-data/openmvg-v21-ligt-off-oracle-001/build/Darwin-arm64-Release/openMVG_main_openMVG2openMVS \
-  --openmvs-binary-dir /Users/christianstrobele/code/crisp3ds/.local-tools/classical-backend/bin \
-  --output /Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-001
+  --expected-images build-opencv/bunny-gamma05-clahe2 \
+  --openmvg-binary /Volumes/backups/code/crispmesh-data/openmvg-v21-ligt-off-oracle-001/build/Darwin-arm64-Release/openMVG_main_openMVG2openMVS \
+  --openmvs-binary-dir .local-tools/classical-backend/bin \
+  --output /Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-001
 ```
 
 The selected output must be a fresh directory name. The final `result.json`

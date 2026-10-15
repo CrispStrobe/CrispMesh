@@ -75,7 +75,7 @@ jobs:
           scripts.turntable_mesh.test_alicevision_cameras
         env:
           # also start one real run through POST /api/runs of the HTTP engine
-          CRISP3DS_TEST_ENGINE_RUN: '1'
+          CRISPMESH_TEST_ENGINE_RUN: '1'
       # Same commands as the "Quick start" of scripts/turntable_mesh/README.md,
       # with the output under the workspace instead of /tmp.
       - name: End-to-end smoke on the synthetic sphere

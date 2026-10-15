@@ -24,12 +24,12 @@ pub const FILES: [(&str, u64, &str); 3] = [
     ("encoder.onnx", 109_473_919, "4fda6e68561e27808cedffa8689749a622bba5f11ba66f4ca4e3a8a9f6360db5"),
 ];
 
-/// The platform's cache directory for this program: `CRISP3DS_CACHE_DIR`, else
-/// `~/Library/Caches/crisp3ds` (macOS), `%LOCALAPPDATA%\crisp3ds` (Windows),
-/// `$XDG_CACHE_HOME/crisp3ds` or `~/.cache/crisp3ds` (others).
+/// The platform's cache directory for this program: `CRISPMESH_CACHE_DIR`, else
+/// `~/Library/Caches/crispmesh` (macOS), `%LOCALAPPDATA%\crispmesh` (Windows),
+/// `$XDG_CACHE_HOME/crispmesh` or `~/.cache/crispmesh` (others).
 pub fn cache_directory(variable: &dyn Fn(&str) -> Option<String>) -> Option<PathBuf> {
     let given = |name: &str| variable(name).filter(|v| !v.is_empty()).map(PathBuf::from);
-    if let Some(directory) = given("CRISP3DS_CACHE_DIR") {
+    if let Some(directory) = given("CRISPMESH_CACHE_DIR") {
         return Some(directory);
     }
     let base = if cfg!(target_os = "macos") {
@@ -39,7 +39,7 @@ pub fn cache_directory(variable: &dyn Fn(&str) -> Option<String>) -> Option<Path
     } else {
         given("XDG_CACHE_HOME").or_else(|| given("HOME").map(|home| home.join(".cache")))
     };
-    base.map(|base| base.join("crisp3ds"))
+    base.map(|base| base.join("crispmesh"))
 }
 
 /// Where the default model lives in the cache.
@@ -111,19 +111,19 @@ mod tests {
         let only = |pairs: &'static [(&'static str, &'static str)]| {
             move |name: &str| pairs.iter().find(|(n, _)| *n == name).map(|(_, v)| v.to_string())
         };
-        assert_eq!(cache_directory(&only(&[("CRISP3DS_CACHE_DIR", "/c"), ("HOME", "/h")])), Some(PathBuf::from("/c")));
+        assert_eq!(cache_directory(&only(&[("CRISPMESH_CACHE_DIR", "/c"), ("HOME", "/h")])), Some(PathBuf::from("/c")));
         let home = cache_directory(&only(&[("HOME", "/h"), ("LOCALAPPDATA", "/l")]));
         let expected = if cfg!(target_os = "macos") {
-            "/h/Library/Caches/crisp3ds"
+            "/h/Library/Caches/crispmesh"
         } else if cfg!(windows) {
-            "/l/crisp3ds"
+            "/l/crispmesh"
         } else {
-            "/h/.cache/crisp3ds"
+            "/h/.cache/crispmesh"
         };
         assert_eq!(home, Some(PathBuf::from(expected)));
         assert_eq!(total_bytes(), 2740 + 20_655_795 + 109_473_919);
         // A directory with the right files of the wrong size is not taken as present.
-        let folder = std::env::temp_dir().join(format!("crisp3ds-sam-fetch-{}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-sam-fetch-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         for (name, _, _) in FILES {
@@ -133,11 +133,11 @@ mod tests {
         std::fs::remove_dir_all(&folder).unwrap();
     }
 
-    /// Downloads the default model (about 130 MB): set `CRISP3DS_SAM_TEST_DOWNLOAD` to a fresh directory.
+    /// Downloads the default model (about 130 MB): set `CRISPMESH_SAM_TEST_DOWNLOAD` to a fresh directory.
     #[test]
     fn the_default_model_downloads_and_verifies_when_asked() {
-        let Some(directory) = std::env::var_os("CRISP3DS_SAM_TEST_DOWNLOAD") else {
-            eprintln!("skipped: CRISP3DS_SAM_TEST_DOWNLOAD is not set");
+        let Some(directory) = std::env::var_os("CRISPMESH_SAM_TEST_DOWNLOAD") else {
+            eprintln!("skipped: CRISPMESH_SAM_TEST_DOWNLOAD is not set");
             return;
         };
         let directory = PathBuf::from(directory);

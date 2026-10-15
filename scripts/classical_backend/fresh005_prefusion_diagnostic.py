@@ -15,7 +15,7 @@ import numpy as np
 from scripts.classical_backend.run import digest
 
 
-SOURCE = Path("/Volumes/backups/code/crisp3ds-data/turntable-fresh-openmvs-005")
+SOURCE = Path("/Volumes/backups/code/crispmesh-data/turntable-fresh-openmvs-005")
 RESULT_SHA256 = "dafc6ccb2a90f0c5a45748291571455237acd8ae08da01dd80adc10222a3625e"
 HEADER = struct.Struct("<HBBIIIIff")
 QUANTILES = (0.01, 0.5, 0.99)

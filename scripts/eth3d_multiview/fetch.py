@@ -133,7 +133,7 @@ def fetch_one(root: Path, name: str, size: int, opener, deadline: float) -> dict
     if target.exists() or partial.exists():
         raise FileExistsError(f"refusing to replace existing download: {name}")
     request = urllib.request.Request(f"{ORIGIN}/data/{name}",
-                                     headers={"User-Agent": "crisp3ds-eth3d-reference/1"})
+                                     headers={"User-Agent": "crispmesh-eth3d-reference/1"})
     digest = hashlib.sha256()
     count = 0
     started = time.monotonic()

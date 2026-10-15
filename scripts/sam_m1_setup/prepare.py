@@ -21,15 +21,15 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 MOUNT = Path("/Volumes/backups")
-AI = MOUNT / "ai/crisp3ds-sam21-m1-002"
-CODE = MOUNT / "code/crisp3ds-data"
+AI = MOUNT / "ai/crispmesh-sam21-m1-002"
+CODE = MOUNT / "code/crispmesh-data"
 SOURCE = CODE / "sam21-m1-source-002"
 DATA = CODE / "sam21-m1-three-train-002"
 LOCK = Path(__file__).with_name("wheels.lock")
 LOCK_SHA = "3c07dc415436bf22c09d597ca39aead5709f935e04729a9ad6aa25deed9b9a3d"
 PACKAGE = ROOT / "build-opencv/ycb-evaluation-vps-001/mustard-package.json"
 PROMPTS = ROOT / "tests/datasets/sam21_mustard_point48_prompts.json"
-REMOTE = "/mnt/storage/crisp3ds-data"
+REMOTE = "/mnt/storage/crispmesh-data"
 PREREQ = REMOTE + "/sam21-tiny-prereq-001"
 PRIOR = REMOTE + "/sam21-mustard-point-full-001"
 PHOTOS = REMOTE + "/ycb-expansion-001/006_mustard_bottle/photos"

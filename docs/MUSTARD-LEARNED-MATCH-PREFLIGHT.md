@@ -140,15 +140,15 @@ the first comparison. [PyTorch MPS notes](https://docs.pytorch.org/docs/main/not
 
 At preflight, the internal disk had 23,557,620 KiB free and the shared
 `/Volumes/backups` device 16,615,312 KiB free (about 15.84 GiB); `/Volumes/backups/ai`
-and `/Volumes/backups/code/crisp3ds-data` are on that same device. Leave at
+and `/Volumes/backups/code/crispmesh-data` are on that same device. Leave at
 least 10 GiB free on **both** devices throughout, including package caches,
 temporary files and logs. The external device has only about 5.84 GiB of
 headroom above that floor. Fresh paths and caps on that **shared** external
-device: `/Volumes/backups/ai/crisp3ds-lightglue-sift-001/overlay` plus
+device: `/Volumes/backups/ai/crispmesh-lightglue-sift-001/overlay` plus
 `cache`, **512 MiB combined** for Kornia/OpenCV/LightGlue code and their
 download caches, with no new Torch wheel; the same root's
 `weights/sift_lightglue.pth`, **64 MiB** (release asset about 45.4 MiB);
-`/Volumes/backups/code/crisp3ds-data/mustard-lightglue-six-pair-001`,
+`/Volumes/backups/code/crispmesh-data/mustard-lightglue-six-pair-001`,
 **512 MiB** including both arms, extracted features and logs; a later
 `mustard-lightglue-full-001`, **1.5 GiB** only after six-pair review. Total
 reservation is under 2.6 GiB, leaving over 3 GiB above the 10 GiB floor at
@@ -181,7 +181,7 @@ asserts that exact exception. The upstream release still does not establish
 separate commercial distribution rights for this weight, so it remains
 **evaluation-only**.
 
-The fresh [external report](/Volumes/backups/code/crisp3ds-data/mustard-lightglue-six-pair-001/report.json)
+The fresh [external report](/Volumes/backups/code/crispmesh-data/mustard-lightglue-six-pair-001/report.json)
 completed in 3.50 seconds; its SHA-256 is
 `57945c2a70bb71a4dba15b7b51bde6e1c9cbbc4e934f747291f9c7a7e41c2797`.
 The nine TRAIN images each produced one serialized float RootSIFT artifact,

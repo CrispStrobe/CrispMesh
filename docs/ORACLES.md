@@ -3,7 +3,7 @@
 This is a reproducible, CPU-only comparison of the OpenCV SGBM evaluator,
 external libELAS, and a small project-authored Census/Hamming reference matcher.
 These are two independent codebases plus the reference matcher. Only libELAS is
-an external oracle. None is linked into the Crisp3DS application. The comparison
+an external oracle. None is linked into the CrispMesh application. The comparison
 uses rectified stereo pairs and does not establish turntable-scan accuracy.
 
 ## Data, storage, and licensing
@@ -44,8 +44,8 @@ arrays; it was not used in the matrix.
 ## Build and prepare
 
 ```sh
-cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISP3DS_WITH_OPENCV=ON
-cmake --build build-opencv --target crisp3ds_stereo_eval --parallel 4
+cmake -S . -B build-opencv -DCMAKE_BUILD_TYPE=Release -DCRISPMESH_WITH_OPENCV=ON
+cmake --build build-opencv --target crispmesh_stereo_eval --parallel 4
 sh scripts/oracles/elas/build.sh
 python3 scripts/oracles/census/build.py
 python3 -m unittest tests/oracles/census_test.py scripts/test_run_stereo_benchmarks.py
@@ -60,7 +60,7 @@ camera depth is inferred for those scenes. The scene names and paths are stable
 from `scripts/fetch_test_data.py`.
 
 ```sh
-eval=build-opencv/bin/crisp3ds_stereo_eval
+eval=build-opencv/bin/crispmesh_stereo_eval
 data=.local-tools/test-data
 prep=.local-tools/oracles/prepared
 

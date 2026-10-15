@@ -3,10 +3,10 @@
 The single approved Apple-only `.preview` run followed the
 [frozen plan](MUSTARD-APPLE-PREVIEW-PLAN.md). The launcher returned
 `complete` on the exact 48 sealed TRAIN JPEGs in 16.908 seconds. Its
-[external result](/Volumes/backups/code/crisp3ds-data/apple-mustard48-preview-001/result.json)
+[external result](/Volumes/backups/code/crispmesh-data/apple-mustard48-preview-001/result.json)
 is 9,432 bytes, SHA-256
 `98b4e9b09dd96f5d999acad0f4fbbc060966c595cf658bb83d96e551659b4a59`.
-The [USDZ](/Volumes/backups/code/crisp3ds-data/apple-mustard48-preview-001/model.usdz)
+The [USDZ](/Volumes/backups/code/crispmesh-data/apple-mustard48-preview-001/model.usdz)
 is 339,420 bytes, SHA-256
 `f0542aab70b34e8036376adfb5f6afe79d2360b1284aa7b3312840cf09049905`.
 The launcher recorded 351,419 bytes in the entire run directory, below its
@@ -29,7 +29,7 @@ external free space remained above 10 GiB after the run.
 Installed `usdchecker --arkit` exited successfully and printed `Success!`,
 with two preceding USD plugin-registration diagnostics. `usdtree` found one
 Mesh under `/ObjectCapture/Geometry`. The bounded
-[structural review](/Volumes/backups/code/crisp3ds-data/apple-mustard48-review-001/result.json)
+[structural review](/Volumes/backups/code/crispmesh-data/apple-mustard48-review-001/result.json)
 is SHA-256 `3ba1dc17ee04b7db501a173afe08522760d0456584c3eaf015bd98e9e6595c7d`.
 It exported the exact mesh to a 35,406-byte untextured PLY, SHA-256
 `c460f11fea76f9f2a64e8d60a9ec3ddcc6241f503aedc89745ab1c8a6b430004`:
@@ -38,7 +38,7 @@ no repeated-index faces, and no zero-area triangles. The authored extents
 are approximately 0.787 × 0.319 × 0.719 in USD units; authored
 `metersPerUnit=1` is not independently verified metric scale.
 
-The [neutral three-view preview](/Volumes/backups/code/crisp3ds-data/apple-mustard48-review-001/preview-neutral.png)
+The [neutral three-view preview](/Volumes/backups/code/crispmesh-data/apple-mustard48-review-001/preview-neutral.png)
 shows a broad, thin surface with a much smaller upright central form.
 Against the original TRAIN photo, this is consistent with the turntable or
 support surface being reconstructed along with the mustard bottle. The

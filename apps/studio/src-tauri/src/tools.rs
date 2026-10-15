@@ -11,7 +11,7 @@
 
 use std::path::PathBuf;
 
-use crisp3ds_dense::photos::{availability, option_table};
+use crispmesh_dense::photos::{availability, option_table};
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -114,7 +114,7 @@ fn inputs_of(module: &str, provider: &str) -> Vec<Value> {
         })],
         ("cameras", "markers") => vec![json!({
             "key": "markers_mat", "label": "Marker mat description", "kind": "file",
-            "help": "The file that `crisp3ds-dense mat` wrote for the printed mat under the object.",
+            "help": "The file that `crispmesh-dense mat` wrote for the printed mat under the object.",
         })],
         _ => Vec::new(),
     }
@@ -132,7 +132,7 @@ fn tunable(settings: &mut Value) {
 /// needs an external program is unavailable where the app cannot start one.
 pub fn start_points(tools: &Tools, repo: &str, contained: bool) -> Value {
     let words = if contained { Vec::new() } else { location_words(None, tools, repo) };
-    let mut points = crisp3ds_dense::run::describe_with(&words)["start_points"].clone();
+    let mut points = crispmesh_dense::run::describe_with(&words)["start_points"].clone();
     for point in points.as_array_mut().into_iter().flatten() {
         for choice in point["providers"].as_array_mut().into_iter().flatten() {
             let module = choice["module"].as_str().unwrap_or_default().to_string();
@@ -210,7 +210,7 @@ pub struct Calibration {
     pub path: String,
 }
 
-/// Lens calibration files (`crisp3ds_lens_calibration_v1`) in the usual places.
+/// Lens calibration files (`crispmesh_lens_calibration_v1`) in the usual places.
 pub fn calibrations(folders: &[PathBuf]) -> Vec<Calibration> {
     let mut found = Vec::new();
     for folder in folders {
@@ -224,7 +224,7 @@ pub fn calibrations(folders: &[PathBuf]) -> Vec<Calibration> {
             }
             let Ok(text) = std::fs::read_to_string(&path) else { continue };
             let Ok(value) = serde_json::from_str::<Value>(&text) else { continue };
-            if value["schema"] != "crisp3ds_lens_calibration_v1" {
+            if value["schema"] != "crispmesh_lens_calibration_v1" {
                 continue;
             }
             let name = path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
@@ -245,7 +245,7 @@ mod tests {
     use crate::config::{Source, Value as Setting};
 
     fn scratch(name: &str) -> PathBuf {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-studio-tools-{}-{name}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-studio-tools-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         std::fs::canonicalize(folder).unwrap()
@@ -375,8 +375,8 @@ mod tests {
     #[test]
     fn calibration_files_are_found_by_their_schema() {
         let root = scratch("calibrations");
-        std::fs::write(root.join("3dlf-pro.json"), r#"{"schema": "crisp3ds_lens_calibration_v1", "camera": "3DLF Pro"}"#).unwrap();
-        std::fs::write(root.join("plain.json"), r#"{"schema": "crisp3ds_lens_calibration_v1"}"#).unwrap();
+        std::fs::write(root.join("3dlf-pro.json"), r#"{"schema": "crispmesh_lens_calibration_v1", "camera": "3DLF Pro"}"#).unwrap();
+        std::fs::write(root.join("plain.json"), r#"{"schema": "crispmesh_lens_calibration_v1"}"#).unwrap();
         std::fs::write(root.join("other.json"), r#"{"schema": "something else"}"#).unwrap();
         std::fs::write(root.join("broken.json"), "{").unwrap();
         std::fs::write(root.join("notes.txt"), "x").unwrap();

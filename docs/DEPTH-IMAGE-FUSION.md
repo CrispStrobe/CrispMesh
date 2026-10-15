@@ -15,7 +15,7 @@ The first two-candidate run on the same fixture produced 8,822 outputs (92.7%). 
 Build and run using the existing OpenCV build:
 
 ```sh
-cmake --build build-opencv --target crisp3ds_depth_image_fusion_tests -j 4
+cmake --build build-opencv --target crispmesh_depth_image_fusion_tests -j 4
 TMPDIR=.local-tools/tmp ctest --test-dir build-opencv -R '^depth_image_fusion_synthetic$' --output-on-failure
 ```
 

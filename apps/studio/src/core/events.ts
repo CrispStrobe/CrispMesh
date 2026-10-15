@@ -4,7 +4,7 @@
  * and are ignored by the reducer.
  */
 
-export const SCHEMA = "crisp3ds_dense_events_v1";
+export const SCHEMA = "crispmesh_dense_events_v1";
 
 /** One line of `events.jsonl`. Only `type` is guaranteed after parsing; the reducer checks the rest. */
 export interface RunEvent {

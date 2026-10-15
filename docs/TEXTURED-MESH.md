@@ -5,9 +5,9 @@ embedded photo atlas. This is an opt-in first implementation; it preserves the
 input geometry and does not resolve the outstanding loss of facial relief.
 
 ```sh
-crisp3ds-dense run --photos PHOTOS --calibration LENS.json --output RUN --texture
+crispmesh-dense run --photos PHOTOS --calibration LENS.json --output RUN --texture
 # Or texture an existing result using its own recovered cameras:
-crisp3ds-dense texture --inputs RUN/frontend/inputs --mesh RUN/mesh/mesh.stl \
+crispmesh-dense texture --inputs RUN/frontend/inputs --mesh RUN/mesh/mesh.stl \
   --output TEXTURE --views 12 --tile-size 1024
 ```
 
@@ -103,7 +103,7 @@ remove spatial lighting, estimate albedo, or blend chart boundaries. Both
 options are off unless requested.
 
 ```sh
-crisp3ds-dense texture --inputs recovered-inputs --mesh mesh.stl \
+crispmesh-dense texture --inputs recovered-inputs --mesh mesh.stl \
   --output texture-review --coherent --color-balance
 ```
 

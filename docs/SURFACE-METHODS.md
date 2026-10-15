@@ -29,7 +29,7 @@ Reading:
 
 ### Photometric refinement
 
-First a NumPy prototype outside the repository, now a pipeline stage (`photo_refine`, `crisp3ds-dense refine`;
+First a NumPy prototype outside the repository, now a pipeline stage (`photo_refine`, `crispmesh-dense refine`;
 see the crate README). Anchor vertices of the hull mesh search
 along their normal for the offset at which the photos agree: a 5 x 5 patch on the mesh's tangent
 plane is projected into the most frontal view that sees the vertex and into up to five views 8 to
@@ -129,7 +129,7 @@ no camera saw is rough or open, where our flat base is clean. Held-out views of 
 | nerfstudio (Apache-2.0) | external | re-rendering loss | none (density or splats) | novel views |
 | SDFStudio, NeuS family | external | re-rendering loss | signed distance function | mesh |
 | Augenblick (`porto-photogrammetry`, CC BY-NC) | COLMAP or VGGT, then an exact turntable rig | re-rendering loss with surface penalties (SuGaR, 2DGS, PGSR, Gaussian Wrapping) | flattened splats, hull start | mesh |
-| Crisp3DS | own turntable solver | patch matching per view | silhouette hull with a smoothed correction | mesh |
+| CrispMesh | own turntable solver | patch matching per view | silhouette hull with a smoothed correction | mesh |
 
 What they have and we do not: a surface model that is optimised as a whole (signed distance function,
 flattened splats) or a global surface extraction over the depth maps (graph cut). Our voxel fusion
@@ -157,11 +157,11 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
    original NeuS sampler limited to a band around the hull, and a smaller network (2 x 64). After the whole
    schedule (20 000 steps, 3.9 h on an M1) the drill scores 0.944 / 0.979 / 0.995 (mean 0.0017) against the
    reference's 0.892 / 0.964 / 0.992 (0.0024), and side by side it shows the same relief. Second step: the
-   same model on WebGPU in the engine (`crisp3ds-dense surface`, [crate README](../crates/dense/README.md)),
+   same model on WebGPU in the engine (`crispmesh-dense surface`, [crate README](../crates/dense/README.md)),
    with hand-written backward kernels checked against the prototype number for number, 0.25 s per step on the
    M1 (MLX 0.6 s): the whole schedule in 95 minutes, 0.932 / 0.976 / 0.995 (mean 0.0019), the same relief.
    It reads a scene straight from an inputs directory, without Python. Mustard bottle from its inputs: 0.795 /
-   0.907 / 0.965 (reference 0.789 / 0.909 / 0.980). 2D splats on WebGPU (`crisp3ds-dense splats`), checked against a
+   0.907 / 0.965 (reference 0.789 / 0.909 / 0.980). 2D splats on WebGPU (`crispmesh-dense splats`), checked against a
    PyTorch reference of gsplat's 2DGS: drill 0.877 / 0.944 / 0.992, held-out 25.44 dB (gsplat 0.881 / 0.947 / 0.992,
    25.71 dB), mustard 0.779 / 0.896 / 0.986, 24.51 dB (gsplat 0.791 / 0.899 / 0.969, 24.26 dB); about an hour per
    object on the M1. Both are run stages with quality levels (`--surface` / `--splats fast|standard|best`) and in the

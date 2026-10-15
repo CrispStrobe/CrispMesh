@@ -15,7 +15,7 @@ name: studio
 #            runners have no GPU that wgpu accepts everywhere, so that run either
 #            completes or must fail cleanly (error + run_finished); both pass.
 #            A change to the dependencies of crates/dense needs
-#            `cargo update -p crisp3ds-dense` in apps/studio/src-tauri (the build
+#            `cargo update -p crispmesh-dense` in apps/studio/src-tauri (the build
 #            uses --locked), which is why crates/dense is among the paths.
 #   android, ios
 #            manual only (workflow_dispatch with mobile=true), non-blocking,
@@ -110,14 +110,14 @@ jobs:
         run: |
           test -s dist/demo/events.jsonl
           test -s dist/demo/mesh/mesh.stl
-          test -s dist/engine/crisp3ds-dense.js
-          test -s dist/engine/pkg/crisp3ds_dense_web_bg.wasm
-          test -s dist/engine/pkg-threads/crisp3ds_dense_web_bg.wasm
+          test -s dist/engine/crispmesh-dense.js
+          test -s dist/engine/pkg/crispmesh_dense_web_bg.wasm
+          test -s dist/engine/pkg-threads/crispmesh_dense_web_bg.wasm
           test -s dist/coi-worker.js
           ! grep -E '(src|href)="/' dist/index.html
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-studio
+          name: crispmesh-studio
           if-no-files-found: error
           path: apps/studio/dist
 
@@ -171,11 +171,11 @@ jobs:
         run: ls -la src-tauri/target/release | head -40
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-studio-${{ matrix.os }}-unsigned
+          name: crispmesh-studio-${{ matrix.os }}-unsigned
           if-no-files-found: error
           path: |
-            apps/studio/src-tauri/target/release/crisp3ds-studio
-            apps/studio/src-tauri/target/release/crisp3ds-studio.exe
+            apps/studio/src-tauri/target/release/crispmesh-studio
+            apps/studio/src-tauri/target/release/crispmesh-studio.exe
 
   # Mobile: manual, non-blocking, unsigned. The generated projects
   # (src-tauri/gen/) are git-ignored, so each run starts with `tauri <os> init`.
@@ -213,7 +213,7 @@ jobs:
       - run: npx tauri android build --debug --apk --target aarch64 --ci
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-studio-android-debug-apk
+          name: crispmesh-studio-android-debug-apk
           if-no-files-found: error
           path: apps/studio/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
 
@@ -246,7 +246,7 @@ jobs:
         run: npx tauri ios build --debug --target aarch64-sim --ci
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crisp3ds-studio-ios-simulator
+          name: crispmesh-studio-ios-simulator
           if-no-files-found: warn
           path: |
             apps/studio/src-tauri/gen/apple/build/**/*.app

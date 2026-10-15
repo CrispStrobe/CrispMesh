@@ -17,7 +17,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crisp3ds_dense::run::RunOptions;
+use crispmesh_dense::run::RunOptions;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 
@@ -83,7 +83,7 @@ fn is_calibration(path: &Path) -> bool {
     std::fs::read_to_string(path)
         .ok()
         .and_then(|text| serde_json::from_str::<Value>(&text).ok())
-        .is_some_and(|value| value["schema"] == "crisp3ds_lens_calibration_v1")
+        .is_some_and(|value| value["schema"] == "crispmesh_lens_calibration_v1")
 }
 
 #[derive(Debug, Serialize)]
@@ -127,9 +127,9 @@ pub struct StartBody {
     pub settings: Map<String, Value>,
     pub texture: bool,
     /// The neural surface and the 2D splats after the mesh (`{"quality": "standard", "settings": ["crop=600"]}`), as
-    /// `crisp3ds-dense run --surface` / `--splats` with their `-set` options; absent: not run.
-    pub surface: Option<crisp3ds_dense::run::Method>,
-    pub splats: Option<crisp3ds_dense::run::Method>,
+    /// `crispmesh-dense run --surface` / `--splats` with their `-set` options; absent: not run.
+    pub surface: Option<crispmesh_dense::run::Method>,
+    pub splats: Option<crispmesh_dense::run::Method>,
     pub reference: Option<String>,
     /// Accepted and ignored: the built-in engine uses the system's GPU through wgpu.
     pub device: Option<String>,
@@ -152,7 +152,7 @@ pub struct Native {
     active: Mutex<HashMap<String, Active>>,
     /// Paths the user picked in a native dialog during this session.
     granted: Mutex<HashSet<PathBuf>>,
-    /// Where the external programs of the photos start are, and the crisp3ds checkout.
+    /// Where the external programs of the photos start are, and the crispmesh checkout.
     tools: Mutex<Option<(crate::config::Tools, String)>>,
     /// The start points with the tools looked at, kept until the tools change: looking
     /// may start a program to ask for its version.
@@ -596,7 +596,7 @@ impl Native {
         };
         for (name, method) in [("surface", &options.surface), ("splats", &options.splats)] {
             if let Some(method) = method {
-                crisp3ds_dense::run::Method::parse(&method.quality).map_err(|e| format!("{name}: {e}"))?;
+                crispmesh_dense::run::Method::parse(&method.quality).map_err(|e| format!("{name}: {e}"))?;
                 // Numbers only: the methods' path settings (hull mesh, photos, masks, start splats) would reach past
                 // the folders chosen in the app.
                 let numeric = |item: &String| item.split_once('=').is_some_and(|(_, value)| value.trim().parse::<f64>().is_ok());
@@ -617,7 +617,7 @@ impl Native {
             let mut arguments = vec!["--photos".to_string(), folder.to_string_lossy().into_owned()];
             arguments.extend(["--output".to_string(), options.output.join("frontend").to_string_lossy().into_owned()]);
             arguments.extend(options.photo_options.iter().cloned());
-            crisp3ds_dense::photos::options::resolve(&arguments, &|name| std::env::var(name).ok()).map_err(|error| format!("photos: {error:#}"))?;
+            crispmesh_dense::photos::options::resolve(&arguments, &|name| std::env::var(name).ok()).map_err(|error| format!("photos: {error:#}"))?;
             options.photos = Some(folder);
         } else if let Some(inputs) = given(&body.inputs) {
             let folder = self.resolve_source("inputs", &inputs)?;
@@ -660,13 +660,13 @@ impl Native {
             return Err("attribution: too long".into());
         }
         // The pipeline writes source credit before emitting its first event.
-        self.start_with(id, options, crisp3ds_dense::run::run)
+        self.start_with(id, options, crispmesh_dense::run::run)
     }
 
     /// The same with the pipeline passed in, so tests can run without a GPU.
     pub fn start_with<F>(self: &Arc<Self>, id: String, options: RunOptions, pipeline: F) -> Result<String, String>
     where
-        F: FnOnce(&RunOptions, Option<crisp3ds_dense::events::Observer>, Option<Arc<AtomicBool>>) -> anyhow::Result<Value> + Send + 'static,
+        F: FnOnce(&RunOptions, Option<crispmesh_dense::events::Observer>, Option<Arc<AtomicBool>>) -> anyhow::Result<Value> + Send + 'static,
     {
         let cancel = Arc::new(AtomicBool::new(false));
         let done = Arc::new(AtomicBool::new(false));
@@ -679,7 +679,7 @@ impl Native {
             let marker = folder.join(MARKER);
             let announced = AtomicBool::new(false);
             let first_event = Mutex::new(first.clone());
-            let observer: crisp3ds_dense::events::Observer = Arc::new(move |_event: &Value| {
+            let observer: crispmesh_dense::events::Observer = Arc::new(move |_event: &Value| {
                 if !announced.swap(true, Ordering::SeqCst) {
                     let _ = std::fs::write(&marker, format!("{{\"pid\": {}}}\n", std::process::id()));
                     let _ = first_event.lock().unwrap().send(Ok(()));
@@ -749,13 +749,13 @@ impl Native {
 
 /// Name, group, meaning, kind and default of every setting, from the crate.
 pub fn settings_schema() -> Value {
-    crisp3ds_dense::config::settings_schema()
+    crispmesh_dense::config::settings_schema()
 }
 
 /// How a run may start in this build, from the crate: the "New run" form is built from this
 /// list, including the photos start with its mask and camera providers.
 pub fn start_points() -> Value {
-    crisp3ds_dense::run::describe()["start_points"].clone()
+    crispmesh_dense::run::describe()["start_points"].clone()
 }
 
 #[cfg(test)]
@@ -763,7 +763,7 @@ mod tests {
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
-        let folder = std::env::temp_dir().join(format!("crisp3ds-studio-native-{}-{name}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("crispmesh-studio-native-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         std::fs::canonicalize(folder).unwrap()
@@ -938,7 +938,7 @@ mod tests {
         std::fs::create_dir_all(root.join("data/shoot/two")).unwrap();
         std::fs::write(root.join("data/shoot/two/a.jpg"), "").unwrap();
         std::fs::write(root.join("data/shoot/two/b.jpg"), "").unwrap();
-        std::fs::write(root.join("data/shoot/lens.json"), r#"{"schema":"crisp3ds_lens_calibration_v1"}"#).unwrap();
+        std::fs::write(root.join("data/shoot/lens.json"), r#"{"schema":"crispmesh_lens_calibration_v1"}"#).unwrap();
         std::fs::write(root.join("data/shoot/other.json"), r#"{"schema":"something_else"}"#).unwrap();
         let shoot = engine.list_data("shoot").unwrap();
         let marks: Vec<(&str, bool, bool)> = shoot.entries.iter().map(|e| (e.name.as_str(), e.photos, e.calibration)).collect();
@@ -987,12 +987,12 @@ mod tests {
     /// A stand-in pipeline: writes a log like the crate does, then waits to be cancelled.
     fn waiting_pipeline(
         options: &RunOptions,
-        observer: Option<crisp3ds_dense::events::Observer>,
+        observer: Option<crispmesh_dense::events::Observer>,
         cancel: Option<Arc<AtomicBool>>,
     ) -> anyhow::Result<Value> {
         std::fs::create_dir_all(&options.output)?;
-        let events = crisp3ds_dense::events::EventLog::for_run(&options.output, observer);
-        events.emit("run_started", json!({"schema": "crisp3ds_dense_events_v1"}))?;
+        let events = crispmesh_dense::events::EventLog::for_run(&options.output, observer);
+        events.emit("run_started", json!({"schema": "crispmesh_dense_events_v1"}))?;
         events.stage("stereo").emit("stage_started", json!({}))?;
         let cancel = cancel.expect("a cancel flag is always passed");
         let deadline = Instant::now() + Duration::from_secs(20);
@@ -1045,9 +1045,9 @@ mod tests {
     #[test]
     fn a_log_is_always_closed_even_when_the_pipeline_dies_or_gives_up() {
         let (engine, root) = engine("closed");
-        let dying = |options: &RunOptions, observer: Option<crisp3ds_dense::events::Observer>, _: Option<Arc<AtomicBool>>| {
+        let dying = |options: &RunOptions, observer: Option<crispmesh_dense::events::Observer>, _: Option<Arc<AtomicBool>>| {
             std::fs::create_dir_all(&options.output).unwrap();
-            crisp3ds_dense::events::EventLog::for_run(&options.output, observer).emit("run_started", json!({})).unwrap();
+            crispmesh_dense::events::EventLog::for_run(&options.output, observer).emit("run_started", json!({})).unwrap();
             if options.output.ends_with("panics") {
                 panic!("boom");
             }
@@ -1090,7 +1090,7 @@ mod tests {
     fn the_settings_schema_comes_from_the_crate_and_matches_its_defaults() {
         let schema = settings_schema();
         let rows = schema["settings"].as_array().unwrap();
-        let mut native = serde_json::to_value(crisp3ds_dense::config::DenseConfig::default()).unwrap();
+        let mut native = serde_json::to_value(crispmesh_dense::config::DenseConfig::default()).unwrap();
         // The normal engine build excludes the research-only PatchMatch controls.
         for key in ["patchmatch", "patchmatch_iterations", "patchmatch_normal_agreement"] {
             assert!(native.as_object_mut().unwrap().remove(key).is_some());
@@ -1110,9 +1110,9 @@ mod tests {
     #[test]
     fn a_real_run_completes_or_fails_cleanly_without_a_gpu() {
         let (engine, root) = engine("real");
-        crisp3ds_dense::stereo::synthetic::write(&root.join("data/sphere"), 24, 128).unwrap();
+        crispmesh_dense::stereo::synthetic::write(&root.join("data/sphere"), 24, 128).unwrap();
         let mut body = StartBody { inputs: Some("sphere".into()), name: Some("ci sphere".into()), ..StartBody::default() };
-        for item in crisp3ds_dense::stereo::synthetic::SMALL {
+        for item in crispmesh_dense::stereo::synthetic::SMALL {
             let (key, value) = item.split_once('=').unwrap();
             let numbers: Vec<Value> = value.split(',').map(|text| serde_json::from_str(text).unwrap()).collect();
             body.settings.insert(key.into(), if numbers.len() == 1 { numbers[0].clone() } else { Value::Array(numbers) });
@@ -1197,15 +1197,15 @@ mod tests {
         request.texture = true;
         request.attribution = Some("Photo source credit".into());
         request.photo_options = ["--threshold-level", "otsu", "--turntable-span", "6"].map(String::from).to_vec();
-        request.surface = Some(crisp3ds_dense::run::Method { quality: "fast".into(), settings: vec!["crop=600".into()] });
+        request.surface = Some(crispmesh_dense::run::Method { quality: "fast".into(), settings: vec!["crop=600".into()] });
         let options = engine.options(&request, "id").unwrap();
         assert_eq!(options.surface.as_ref().map(|m| m.quality.as_str()), Some("fast"));
         assert_eq!(options.splats, None);
         // Only numeric single settings: the methods' path settings would reach past the chosen folders.
         let mut bad = request.clone();
-        bad.splats = Some(crisp3ds_dense::run::Method { quality: "standard".into(), settings: vec!["init=/etc/passwd".into()] });
+        bad.splats = Some(crispmesh_dense::run::Method { quality: "standard".into(), settings: vec!["init=/etc/passwd".into()] });
         assert!(engine.options(&bad, "id").unwrap_err().contains("NAME=NUMBER"));
-        bad.splats = Some(crisp3ds_dense::run::Method { quality: "quick".into(), settings: Vec::new() });
+        bad.splats = Some(crispmesh_dense::run::Method { quality: "quick".into(), settings: Vec::new() });
         assert!(engine.options(&bad, "id").is_err());
         assert!(options.texture);
         assert_eq!(options.attribution.as_deref(), Some("Photo source credit"));

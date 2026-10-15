@@ -21,7 +21,7 @@ class ThreePhotoSmokeTests(unittest.TestCase):
         self.assertEqual(metadata["is_private"], "true")
         self.assertEqual(metadata["enable_gpu"], "false")
         self.assertEqual(metadata["dataset_sources"],
-                         ["chr1str/crisp3ds-bunny-3photo-research-smoke"])
+                         ["chr1str/crispmesh-bunny-3photo-research-smoke"])
         for key in ("competition_sources", "kernel_sources", "model_sources"):
             self.assertEqual(metadata[key], [])
 

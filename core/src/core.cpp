@@ -1,4 +1,4 @@
-#include "crisp3ds/core.h"
+#include "crispmesh/core.h"
 
 #include <algorithm>
 #include <array>
@@ -21,7 +21,7 @@
 #include <string_view>
 #include <vector>
 
-#ifdef CRISP3DS_WITH_OPENCV
+#ifdef CRISPMESH_WITH_OPENCV
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -449,11 +449,11 @@ void validate(const Value &p) {
   }
 }
 
-crisp3ds_status copy(std::string_view value, char *output, size_t capacity, size_t *required,
-                     crisp3ds_status status = CRISP3DS_OK) {
-  if (!required || (capacity && !output)) return CRISP3DS_INVALID_ARGUMENT;
+crispmesh_status copy(std::string_view value, char *output, size_t capacity, size_t *required,
+                     crispmesh_status status = CRISPMESH_OK) {
+  if (!required || (capacity && !output)) return CRISPMESH_INVALID_ARGUMENT;
   *required = value.size() + 1;
-  if (capacity < *required) return CRISP3DS_BUFFER_TOO_SMALL;
+  if (capacity < *required) return CRISPMESH_BUFFER_TOO_SMALL;
   std::memcpy(output, value.data(), value.size());
   output[value.size()] = '\0';
   return status;
@@ -521,7 +521,7 @@ std::vector<unsigned char> read_bounded(const std::filesystem::path &path, size_
   return bytes;
 }
 
-#ifdef CRISP3DS_WITH_OPENCV
+#ifdef CRISPMESH_WITH_OPENCV
 std::pair<int, int> encoded_dimensions(const std::vector<unsigned char> &bytes,
                                        const std::string &image_id) {
   if (bytes.size() >= 24 && std::memcmp(bytes.data(), "\x89PNG\r\n\x1a\n", 8) == 0 &&
@@ -994,17 +994,17 @@ std::string reconstruct_sparse(const Value &project, const std::filesystem::path
 
 } // namespace
 
-extern "C" uint32_t crisp3ds_abi_version(void) { return CRISP3DS_ABI_VERSION; }
+extern "C" uint32_t crispmesh_abi_version(void) { return CRISPMESH_ABI_VERSION; }
 
-extern "C" crisp3ds_status crisp3ds_capabilities_json(char *out, size_t cap, size_t *needed) {
+extern "C" crispmesh_status crispmesh_capabilities_json(char *out, size_t cap, size_t *needed) {
   return copy("{\"abiVersion\":1,\"projectSchemaVersion\":1,\"geometryDiagnostic\":true,\"projectValidation\":true,\"reconstruction\":{\"available\":false,\"reason\":\"No calibrated reconstruction backend is integrated\"},\"stages\":{\"calibration\":false,\"poses\":"
-#ifdef CRISP3DS_WITH_OPENCV
+#ifdef CRISPMESH_WITH_OPENCV
               "true"
 #else
               "false"
 #endif
               ",\"sparse\":"
-#ifdef CRISP3DS_WITH_OPENCV
+#ifdef CRISPMESH_WITH_OPENCV
               "true"
 #else
               "false"
@@ -1013,10 +1013,10 @@ extern "C" crisp3ds_status crisp3ds_capabilities_json(char *out, size_t cap, siz
 }
 
 namespace {
-std::pair<crisp3ds_status,std::string> pose_result(const char *project_path) {
-#ifndef CRISP3DS_WITH_OPENCV
+std::pair<crispmesh_status,std::string> pose_result(const char *project_path) {
+#ifndef CRISPMESH_WITH_OPENCV
   (void)project_path;
-  return {CRISP3DS_UNAVAILABLE, error("unavailable", "Pose estimation requires an OpenCV-enabled build")};
+  return {CRISPMESH_UNAVAILABLE, error("unavailable", "Pose estimation requires an OpenCV-enabled build")};
 #else
   try {
     std::error_code ec;
@@ -1027,22 +1027,22 @@ std::pair<crisp3ds_status,std::string> pose_result(const char *project_path) {
             "project JSON is not valid UTF-8");
     Value project = Parser(reinterpret_cast<const char *>(bytes.data()), bytes.size()).parse();
     validate(project);
-    return {CRISP3DS_OK, estimate_poses(project, path.parent_path())};
+    return {CRISPMESH_OK, estimate_poses(project, path.parent_path())};
   } catch (const PoseError &e) {
-    return {CRISP3DS_INVALID_PROJECT, pose_error(e)};
+    return {CRISPMESH_INVALID_PROJECT, pose_error(e)};
   } catch (const ParseError &e) {
-    return {CRISP3DS_INVALID_PROJECT, error("invalid_project", e.what())};
+    return {CRISPMESH_INVALID_PROJECT, error("invalid_project", e.what())};
   } catch (const cv::Exception &e) {
-    return {CRISP3DS_INTERNAL_ERROR, error("backend_error", e.what())};
+    return {CRISPMESH_INTERNAL_ERROR, error("backend_error", e.what())};
   } catch (const std::exception &e) {
-    return {CRISP3DS_INTERNAL_ERROR, error("internal_error", e.what())};
+    return {CRISPMESH_INTERNAL_ERROR, error("internal_error", e.what())};
   }
 #endif
 }
-std::pair<crisp3ds_status,std::string> sparse_result(const char *project_path) {
-#ifndef CRISP3DS_WITH_OPENCV
+std::pair<crispmesh_status,std::string> sparse_result(const char *project_path) {
+#ifndef CRISPMESH_WITH_OPENCV
   (void)project_path;
-  return {CRISP3DS_UNAVAILABLE,error("unavailable","Sparse reconstruction requires an OpenCV-enabled build")};
+  return {CRISPMESH_UNAVAILABLE,error("unavailable","Sparse reconstruction requires an OpenCV-enabled build")};
 #else
   try {
     std::error_code ec;
@@ -1053,35 +1053,35 @@ std::pair<crisp3ds_status,std::string> sparse_result(const char *project_path) {
             "project JSON is not valid UTF-8");
     Value project=Parser(reinterpret_cast<const char *>(bytes.data()),bytes.size()).parse();
     validate(project);
-    return {CRISP3DS_OK,reconstruct_sparse(project,path.parent_path())};
+    return {CRISPMESH_OK,reconstruct_sparse(project,path.parent_path())};
   } catch (const PoseError &e) {
-    return {CRISP3DS_INVALID_PROJECT,pose_error(e)};
+    return {CRISPMESH_INVALID_PROJECT,pose_error(e)};
   } catch (const ParseError &e) {
-    return {CRISP3DS_INVALID_PROJECT,error("invalid_project",e.what())};
+    return {CRISPMESH_INVALID_PROJECT,error("invalid_project",e.what())};
   } catch (const cv::Exception &e) {
-    return {CRISP3DS_INTERNAL_ERROR,error("backend_error",e.what())};
+    return {CRISPMESH_INTERNAL_ERROR,error("backend_error",e.what())};
   } catch (const std::exception &e) {
-    return {CRISP3DS_INTERNAL_ERROR,error("internal_error",e.what())};
+    return {CRISPMESH_INTERNAL_ERROR,error("internal_error",e.what())};
   }
 #endif
 }
 } // namespace
 
-extern "C" crisp3ds_status crisp3ds_estimate_poses_json(const char *project_path,
+extern "C" crispmesh_status crispmesh_estimate_poses_json(const char *project_path,
                                                            char *out, size_t cap, size_t *needed) {
-  if (!project_path || !*project_path || !needed) return CRISP3DS_INVALID_ARGUMENT;
+  if (!project_path || !*project_path || !needed) return CRISPMESH_INVALID_ARGUMENT;
   auto [status, value] = pose_result(project_path);
   return copy(value, out, cap, needed, status);
 }
 
-extern "C" crisp3ds_status crisp3ds_estimate_poses_alloc(const char *project_path,
+extern "C" crispmesh_status crispmesh_estimate_poses_alloc(const char *project_path,
                                                             char **out, size_t *size) {
-  if (!project_path || !*project_path || !out || !size) return CRISP3DS_INVALID_ARGUMENT;
+  if (!project_path || !*project_path || !out || !size) return CRISPMESH_INVALID_ARGUMENT;
   *out = nullptr;
   *size = 0;
   auto [status, value] = pose_result(project_path);
   char *buffer = static_cast<char *>(std::malloc(value.size() + 1));
-  if (!buffer) return CRISP3DS_INTERNAL_ERROR;
+  if (!buffer) return CRISPMESH_INTERNAL_ERROR;
   std::memcpy(buffer,value.data(),value.size());
   buffer[value.size()] = '\0';
   *out = buffer;
@@ -1089,14 +1089,14 @@ extern "C" crisp3ds_status crisp3ds_estimate_poses_alloc(const char *project_pat
   return status;
 }
 
-extern "C" crisp3ds_status crisp3ds_reconstruct_sparse_alloc(const char *project_path,
+extern "C" crispmesh_status crispmesh_reconstruct_sparse_alloc(const char *project_path,
                                                                char **out, size_t *size) {
-  if (!project_path || !*project_path || !out || !size) return CRISP3DS_INVALID_ARGUMENT;
+  if (!project_path || !*project_path || !out || !size) return CRISPMESH_INVALID_ARGUMENT;
   *out=nullptr;
   *size=0;
   auto [status,value]=sparse_result(project_path);
   char *buffer=static_cast<char *>(std::malloc(value.size()+1));
-  if (!buffer) return CRISP3DS_INTERNAL_ERROR;
+  if (!buffer) return CRISPMESH_INTERNAL_ERROR;
   std::memcpy(buffer,value.data(),value.size());
   buffer[value.size()]='\0';
   *out=buffer;
@@ -1104,11 +1104,11 @@ extern "C" crisp3ds_status crisp3ds_reconstruct_sparse_alloc(const char *project
   return status;
 }
 
-extern "C" void crisp3ds_free(void *pointer) { std::free(pointer); }
+extern "C" void crispmesh_free(void *pointer) { std::free(pointer); }
 
-extern "C" crisp3ds_status crisp3ds_validate_project_json(const char *input, size_t length,
+extern "C" crispmesh_status crispmesh_validate_project_json(const char *input, size_t length,
                                                               char *out, size_t cap, size_t *needed) {
-  if (!input || length > 16*1024*1024 || !needed) return CRISP3DS_INVALID_ARGUMENT;
+  if (!input || length > 16*1024*1024 || !needed) return CRISPMESH_INVALID_ARGUMENT;
   try {
     require(valid_utf8(input, length), "project JSON is not valid UTF-8");
     auto project = Parser(input, length).parse();
@@ -1116,13 +1116,13 @@ extern "C" crisp3ds_status crisp3ds_validate_project_json(const char *input, siz
     return copy("{\"ok\":true,\"schemaVersion\":1,\"imageCount\":" +
                 std::to_string(project.o.at("images").a.size()) + ",\"reconstructionReady\":false}", out, cap, needed);
   } catch (const ParseError &e) {
-    return copy(error("invalid_project", e.what()), out, cap, needed, CRISP3DS_INVALID_PROJECT);
+    return copy(error("invalid_project", e.what()), out, cap, needed, CRISPMESH_INVALID_PROJECT);
   } catch (const std::exception &e) {
-    return copy(error("internal_error", e.what()), out, cap, needed, CRISP3DS_INTERNAL_ERROR);
+    return copy(error("internal_error", e.what()), out, cap, needed, CRISPMESH_INTERNAL_ERROR);
   }
 }
 
-extern "C" crisp3ds_status crisp3ds_geometry_diagnostic_json(char *out, size_t cap, size_t *needed) {
+extern "C" crispmesh_status crispmesh_geometry_diagnostic_json(char *out, size_t cap, size_t *needed) {
   try {
     constexpr double fx=1000, fy=980, cx=640, cy=360;
     Vec3 truth{35,-20,620}, c1{0,0,0}, c2{120,0,0};
@@ -1137,21 +1137,21 @@ extern "C" crisp3ds_status crisp3ds_geometry_diagnostic_json(char *out, size_t c
     std::snprintf(result,sizeof result,
       "{\"ok\":%s,\"diagnostic\":\"synthetic_two_view_triangulation\",\"units\":\"mm\",\"baselineMm\":120,\"positionErrorMm\":%.12g,\"maxReprojectionErrorPx\":%.12g}",
       passed ? "true" : "false", position, reprojection);
-    return copy(result,out,cap,needed,passed ? CRISP3DS_OK : CRISP3DS_INTERNAL_ERROR);
+    return copy(result,out,cap,needed,passed ? CRISPMESH_OK : CRISPMESH_INTERNAL_ERROR);
   } catch (const std::exception &e) {
-    return copy(error("geometry_failure",e.what()),out,cap,needed,CRISP3DS_INTERNAL_ERROR);
+    return copy(error("geometry_failure",e.what()),out,cap,needed,CRISPMESH_INTERNAL_ERROR);
   }
 }
 
-extern "C" crisp3ds_status crisp3ds_reconstruct_json(const char *input, size_t length,
+extern "C" crispmesh_status crispmesh_reconstruct_json(const char *input, size_t length,
                                                         char *out, size_t cap, size_t *needed) {
-  if (!input || !needed) return CRISP3DS_INVALID_ARGUMENT;
+  if (!input || !needed) return CRISPMESH_INVALID_ARGUMENT;
   size_t validation_size=0;
-  auto result=crisp3ds_validate_project_json(input,length,nullptr,0,&validation_size);
-  if (result != CRISP3DS_BUFFER_TOO_SMALL) return result;
+  auto result=crispmesh_validate_project_json(input,length,nullptr,0,&validation_size);
+  if (result != CRISPMESH_BUFFER_TOO_SMALL) return result;
   std::string validation(validation_size,'\0');
-  result=crisp3ds_validate_project_json(input,length,validation.data(),validation.size(),&validation_size);
-  if (result != CRISP3DS_OK) return copy(validation.c_str(),out,cap,needed,result);
+  result=crispmesh_validate_project_json(input,length,validation.data(),validation.size(),&validation_size);
+  if (result != CRISPMESH_OK) return copy(validation.c_str(),out,cap,needed,result);
   return copy(error("unavailable","Reconstruction requires a calibrated backend; no mesh was produced"),
-              out,cap,needed,CRISP3DS_UNAVAILABLE);
+              out,cap,needed,CRISPMESH_UNAVAILABLE);
 }

@@ -203,13 +203,13 @@ async fn native_health(app: AppHandle) -> Result<Value, String> {
     {
         let (runs, data) = built_in(&app).folders();
         Ok(serde_json::json!({
-            "schema": crisp3ds_dense::events::SCHEMA,
+            "schema": crispmesh_dense::events::SCHEMA,
             "device": "wgpu",
             "can_start_runs": true,
             "runs_dir": runs.to_string_lossy(),
             "data_dir": data.to_string_lossy(),
             "start_points": built_in(&app).start_points(),
-            "methods": crisp3ds_dense::run::methods(),
+            "methods": crispmesh_dense::run::methods(),
             "sandboxed": tools::contained(),
             // Phones have no folder dialog of the app's own: files come in through the system's picker.
             "imports": cfg!(any(target_os = "ios", target_os = "android")),
@@ -429,7 +429,7 @@ fn percent_decode(text: &str) -> Option<String> {
     String::from_utf8(out).ok()
 }
 
-/// Lens calibration files found next to the app: in the crisp3ds checkout and in the data
+/// Lens calibration files found next to the app: in the crispmesh checkout and in the data
 /// folder. What is listed may be used as a run's calibration.
 #[tauri::command]
 async fn native_calibrations(app: AppHandle) -> Result<Value, String> {
@@ -543,13 +543,13 @@ pub fn run() {
         #[cfg(local_engine)]
         engine::install_signal_handlers();
         if let Err(error) = configure_native(app.handle()) {
-            eprintln!("crisp3ds studio: {error}");
+            eprintln!("crispmesh studio: {error}");
         }
-        // Debug builds only: CRISP3DS_STUDIO_AUTORUN=<start request as JSON> starts that run on
+        // Debug builds only: CRISPMESH_STUDIO_AUTORUN=<start request as JSON> starts that run on
         // the built-in engine without the window taking part, reports on stderr and quits.
         // For measuring the engine inside the app when no screen is available to drive the UI.
         #[cfg(all(debug_assertions, native_engine))]
-        if let Some(body) = std::env::var("CRISP3DS_STUDIO_AUTORUN").ok().and_then(|text| serde_json::from_str::<native::StartBody>(&text).ok()) {
+        if let Some(body) = std::env::var("CRISPMESH_STUDIO_AUTORUN").ok().and_then(|text| serde_json::from_str::<native::StartBody>(&text).ok()) {
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 let engine = built_in(&handle);
@@ -582,14 +582,14 @@ pub fn run() {
         Ok(())
     });
 
-    // Debug builds only: CRISP3DS_STUDIO_AUTOPILOT=<file.js> runs that script in the window
+    // Debug builds only: CRISPMESH_STUDIO_AUTOPILOT=<file.js> runs that script in the window
     // once the page has loaded, so the real app can be driven end to end without a human.
     #[cfg(debug_assertions)]
     let builder = builder.on_page_load(|webview, payload| {
         if payload.event() != tauri::webview::PageLoadEvent::Finished {
             return;
         }
-        if let Some(script) = std::env::var_os("CRISP3DS_STUDIO_AUTOPILOT").and_then(|file| std::fs::read_to_string(file).ok()) {
+        if let Some(script) = std::env::var_os("CRISPMESH_STUDIO_AUTOPILOT").and_then(|file| std::fs::read_to_string(file).ok()) {
             let _ = webview.eval(script);
         }
     });

@@ -31,7 +31,7 @@ license inventory, not legal certification.
 The CPU VPS had Python 3.12.3, PyTorch 2.7.0+cpu, torchvision 0.22.0+cpu,
 Pillow, and NumPy. Missing SAM2 runtime dependencies `hydra-core==1.3.2` and
 `iopath==0.1.10` plus their dependencies were installed with `pip --target`
-under `/mnt/storage/crisp3ds-data/sam21-tiny-prereq-001/deps`; the attempted
+under `/mnt/storage/crispmesh-data/sam21-tiny-prereq-001/deps`; the attempted
 venv on that storage mount failed because it could not create a `lib64`
 symlink. No global package install, Mac model download, fast-volume scratch,
 model conversion, or GPU was used. The source checkout occupied 65 MiB and
@@ -53,7 +53,7 @@ The machine status is `complete_unreviewed`, never QA acceptance.
 
 ## Actual smoke and visual limitation
 
-The first fresh run, `/mnt/storage/crisp3ds-data/sam21-mustard-smoke-001`,
+The first fresh run, `/mnt/storage/crispmesh-data/sam21-mustard-smoke-001`,
 failed before writing a mask because the official predictor returns binary
 float32 values while the initial validator accepted only bool/uint8. Its
 failure manifest and supervisor report remain intact; elapsed 22.2 s and peak
@@ -63,7 +63,7 @@ model, checkpoint, prompt, and three photos did not change. Three unit tests
 pass with an injected fake predictor, including exact binary output and fresh
 output rejection.
 
-The fresh run `/mnt/storage/crisp3ds-data/sam21-mustard-smoke-002` completed
+The fresh run `/mnt/storage/crispmesh-data/sam21-mustard-smoke-002` completed
 all three masks in 28.96 s, peak worker RSS 1,014,004 KiB (~0.97 GiB). Mask
 support areas were 20,805, 20,694, and 20,579 pixels; inference took about
 5.0–5.6 s per image. The [local copied review sheet](../.local-tools/sam21-mustard-review-002/smoke_overlay.jpg)
@@ -94,7 +94,7 @@ guarantee: a truly detached visible object part would be removed. Both raw
 byte-identical copies and cleaned masks are retained in separate directories.
 
 One fresh VPS cleanup run completed at
-`/mnt/storage/crisp3ds-data/sam21-mustard-cleanup-smoke-001/`; manifest SHA-256
+`/mnt/storage/crispmesh-data/sam21-mustard-cleanup-smoke-001/`; manifest SHA-256
 `789fe5a942d21b32a0967d2e8479a67873240ec6f5382a69651a5c7347aa3c07`.
 It removed 5 pixels from `NP3_000`, 3 from `NP3_006`, and 31 from `NP3_012`
 (the latter is one detached component); the retained fractions all exceed
@@ -121,7 +121,7 @@ hashes are rebound before and after each batch. Review sheets are hash-checked
 against batch manifests and show failed/missing tiles explicitly. Eight
 focused SAM tests passed before this VPS run.
 
-The fresh output is `/mnt/storage/crisp3ds-data/sam21-mustard-full-001/`.
+The fresh output is `/mnt/storage/crispmesh-data/sam21-mustard-full-001/`.
 Batch 0 attempted 16 views in 113.97 s, peak RSS 1,120,960 KiB;
 batch 1 attempted 16 in 116.50 s, peak RSS 1,122,640 KiB. Both respected
 their bounds. The 48-view supervisor stopped **before launching batch 2**
@@ -181,7 +181,7 @@ two CPU threads, available-RAM≥2.5 GiB, worker RSS≤1.5 GiB, wall≤120 s,
 output≤20 MiB, and disk floor≥10 GiB apply. Nine focused SAM tests passed.
 
 The one fresh VPS run at
-`/mnt/storage/crisp3ds-data/sam21-mustard-point-smoke-001/` completed in
+`/mnt/storage/crispmesh-data/sam21-mustard-point-smoke-001/` completed in
 34.52 s, peak worker RSS 1,033,008 KiB. Its manifest SHA-256 is
 `09bdd382bc23d26d9306f1e0698f55ad6b8ce7fb92f230ac1a8acc982f2c38ae`.
 All three raw masks obeyed point memberships `[1,0,0]`, formed a single
@@ -218,7 +218,7 @@ are never treated as approved masks. The reviewed model/source, package,
 prompt and helper hashes are rebound throughout. The runner and synthetic
 resource-exit guard tests passed independent peer review before launch.
 
-The fresh VPS run at `/mnt/storage/crisp3ds-data/sam21-mustard-point-full-001/`
+The fresh VPS run at `/mnt/storage/crispmesh-data/sam21-mustard-point-full-001/`
 stopped at its **third batch's 90-second wall cap**, not at a RAM limit.
 Batch 0 sealed eight views in 58.33 s (peak RSS 1,096,116 KiB); batch 1 sealed
 eight in 63.91 s (peak RSS 1,068,244 KiB). All 16 sealed masks passed exact
@@ -286,7 +286,7 @@ validated exactly 48 frozen training rows and 16 sealed prior masks
 At that preflight, `/proc/meminfo` reported 1,900,824 KiB available RAM, below
 the 2,621,440 KiB inference gate. **No continuation inference was launched**
 at that point. The proposed fresh VPS output is
-`/mnt/storage/crisp3ds-data/sam21-mustard-point-resume-001/`; it remains
+`/mnt/storage/crispmesh-data/sam21-mustard-point-resume-001/`; it remains
 nonexistent until a passing immediate RAM preflight. Root subsequently
 approved exactly one bounded invocation conditional on the gate. The single
 immediate launch check returned only 1,301,820 KiB, so the runner was **not
@@ -308,8 +308,8 @@ little margin above the 10 GiB reserve. Any approved setup must place its
 isolated environment, pip/cache/temp files, pinned source, checkpoint and
 outputs entirely on external storage, with a ≤2 GiB setup cap and ≥10 GiB
 free on **both** volumes throughout. Intended locations are
-`/Volumes/backups/ai/crisp3ds-sam21-m1-002` for the fresh environment/model setup attempt and
-`/Volumes/backups/code/crisp3ds-data` for artifacts. The pinned checkpoint is
+`/Volumes/backups/ai/crispmesh-sam21-m1-002` for the fresh environment/model setup attempt and
+`/Volumes/backups/code/crispmesh-data` for artifacts. The pinned checkpoint is
 156,008,466 bytes; the VPS source tree is about 120 MiB and runtime additions
 about 10 MiB. [PyPI lists a CPython 3.11 macOS arm64 PyTorch 2.7.0 wheel](https://pypi.org/project/torch/2.7.0/)
 at 68.6 MB; PyTorch's [version-pair guidance](https://docs.pytorch.org/get-started/previous-versions/)
@@ -346,13 +346,13 @@ The approved external-only Mac setup `002` completed (report SHA-256
 setup `001` remained a preserved pre-install inventory-order failure. The
 single frozen-source CPU parity run finished in 15.61 s, peak RSS 1,222,672
 KiB, under unchanged 180 s/1.5 GiB/20 MiB and 10 GiB disk bounds. Its
-[manifest](</Volumes/backups/code/crisp3ds-data/sam21-m1-parity-001/manifest.json>)
+[manifest](</Volumes/backups/code/crispmesh-data/sam21-m1-parity-001/manifest.json>)
 SHA-256 is `bc99129f36654888b9b9fdbd7f9ac606b8527518d91424ca48e7283ac9f42741`;
 the supervisor SHA-256 is
 `dc82764bb2363aa41597af7280ec3462d85e14e20dae4dbdd7e667b8f4b2cc86`.
 For all three selected training frames, the six decoded M1 raw/clean mask
 arrays are **pixel-identical** to sealed VPS arrays (IoU 1.0, membership
-`[1,0,0]`), although encoded PNG file hashes differ. The [RGB/raw/clean sheet](</Volumes/backups/code/crisp3ds-data/sam21-m1-parity-review-001/review_sheet.jpg>)
+`[1,0,0]`), although encoded PNG file hashes differ. The [RGB/raw/clean sheet](</Volumes/backups/code/crispmesh-data/sam21-m1-parity-review-001/review_sheet.jpg>)
 SHA-256 is `f5d84f9c09b6e7a51925572b400c549ff21264e5c69d2ee0824f2eb5dfaf7e4d`.
 Root independently reviewed the sheet and decoded pairs, accepting only the
 three-view M1 CPU parity/coarse-support evidence in the [tracked QA record](../tests/datasets/sam21_mustard_m1_parity_review.json).

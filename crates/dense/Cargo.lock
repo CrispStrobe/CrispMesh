@@ -167,7 +167,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crisp3ds-dense"
+name = "crispmesh-dense"
 version = "0.1.0"
 dependencies = [
  "anyhow",

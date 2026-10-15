@@ -145,10 +145,10 @@ impl MaskProvider for ExternalSam {
     fn check(&self, options: &Options) -> anyhow::Result<()> {
         let sam = &options.sam;
         let missing: Vec<&str> = [
-            ("--sam-python / CRISP3DS_SAM_PYTHON", sam.python.is_some()),
-            ("--sam-source / CRISP3DS_SAM_SOURCE", sam.source.is_some()),
-            ("--sam-checkpoint / CRISP3DS_SAM_CHECKPOINT", sam.checkpoint.is_some()),
-            ("--sam-repository / CRISP3DS_REPOSITORY (the checkout with scripts/turntable_mesh/segment.py)", sam.repository.is_some()),
+            ("--sam-python / CRISPMESH_SAM_PYTHON", sam.python.is_some()),
+            ("--sam-source / CRISPMESH_SAM_SOURCE", sam.source.is_some()),
+            ("--sam-checkpoint / CRISPMESH_SAM_CHECKPOINT", sam.checkpoint.is_some()),
+            ("--sam-repository / CRISPMESH_REPOSITORY (the checkout with scripts/turntable_mesh/segment.py)", sam.repository.is_some()),
         ]
         .iter()
         .filter(|(_, given)| !given)
@@ -204,9 +204,9 @@ mod tests {
     fn sam_command_is_the_reference_command() {
         let folder = scratch("sam");
         let variables = |name: &str| match name {
-            "CRISP3DS_SAM_PYTHON" => Some("/sam/python".to_string()),
-            "CRISP3DS_SAM_SOURCE" => Some("/sam/source".to_string()),
-            "CRISP3DS_REPOSITORY" => Some("/repo".to_string()),
+            "CRISPMESH_SAM_PYTHON" => Some("/sam/python".to_string()),
+            "CRISPMESH_SAM_SOURCE" => Some("/sam/source".to_string()),
+            "CRISPMESH_REPOSITORY" => Some("/repo".to_string()),
             _ => None,
         };
         let more = [
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(provider.info().name, "external-sam");
         assert_eq!(
             provider.check(&options).unwrap_err().to_string(),
-            "missing tool locations: --sam-checkpoint / CRISP3DS_SAM_CHECKPOINT (or choose --masks threshold, which needs none)"
+            "missing tool locations: --sam-checkpoint / CRISPMESH_SAM_CHECKPOINT (or choose --masks threshold, which needs none)"
         );
         let options = resolve(&arguments(&folder, &[&more[..], &["--sam-checkpoint", "/sam/tiny.pt"]].concat()), &variables).unwrap();
         provider.check(&options).unwrap();
@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn imported_masks_are_found_by_capture_or_photo_name() {
-        let root = std::env::temp_dir().join(format!("crisp3ds-import-masks-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("crispmesh-import-masks-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(root.join("given")).unwrap();
         let mask = |level: u8| image::GrayImage::from_fn(8, 6, |x, _| image::Luma([if x < 4 { level } else { 0 }]));

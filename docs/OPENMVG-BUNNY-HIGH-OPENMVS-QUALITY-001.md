@@ -1,7 +1,7 @@
 # OpenMVG HIGH bunny to OpenMVS: quality evaluation status
 
 The continuation at
-`/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-001`
+`/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-001`
 stopped during `DensifyPointCloud`. No `dense.ply`, `mesh.ply`, or native
 refined mesh exists, so **there is no candidate surface to inspect or score**.
 No OpenMVG-to-OpenMVS shape claim or ranking is available from this run.
@@ -21,7 +21,7 @@ the promised 20-minute real wall limit. This is a supervised resource stop,
 not evidence of a native OpenMVS crash. The partial output is preserved.
 
 A separate, fresh-root rough-mesh cache continuation ran at
-`/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-cache-resume-002`.
+`/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-cache-resume-002`.
 The [preflight and runner](../scripts/classical_backend/openmvg_bunny_high_cache_rough.py)
 seal the failed receipt, scene, all 73 converted images, 46 completed base
 depth maps, binaries, and original sparse/camera-review lineage. They copy
@@ -45,7 +45,7 @@ mesh. The supervisor stopped it on its configured output cap; this is not a
 native crash. Both failed roots remain preserved.
 
 A third, separately labeled cached-fusion arm is prepared at the fresh root
-`/Volumes/backups/code/crisp3ds-data/openmvg-bunny-high-openmvs-cache-fusion-003`.
+`/Volumes/backups/code/crispmesh-data/openmvg-bunny-high-openmvs-cache-fusion-003`.
 Its [runner](../scripts/classical_backend/openmvg_bunny_high_cache_fusion.py)
 seals the 73 converted images, 73 completed base maps, source receipt, scene,
 and binaries. It clones these inputs as distinct APFS copy-on-write inodes,

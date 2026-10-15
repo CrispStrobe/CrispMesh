@@ -1,13 +1,13 @@
 [package]
-name = "crisp3ds-desktop"
+name = "crispmesh-desktop"
 version = "0.1.0"
 license = "AGPL-3.0-only"
-description = "Crisp3DS scan workspace"
-authors = ["Crisp3DS contributors"]
+description = "CrispMesh scan workspace"
+authors = ["CrispMesh contributors"]
 edition = "2021"
 
 [lib]
-name = "crisp3ds_desktop_lib"
+name = "crispmesh_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
