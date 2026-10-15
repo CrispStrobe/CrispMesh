@@ -1323,7 +1323,10 @@ Status: experimental; in a run on request (see *Quality levels* below). Drill (3
 PSNR in the mask 25.44 dB, mesh 0.877 / 0.944 / 0.992 at 0.5 / 1 / 2 % (mean 0.0031); the reference run with gsplat
 on a Tesla T4: 168 835 splats, 25.71 dB, 0.881 / 0.947 / 0.992 (0.0026). Side by side the same relief and the same
 rough skin; one thin fin beside the chuck here, which came from the hull grid and is gone since (below). That run took about 1.7 h on the M1; since then a step at 170 000
-splats takes 0.12 s instead of 0.21 s (about an hour for the whole schedule; gsplat on the T4: 21 min). Mustard
+splats takes 0.12 s instead of 0.21 s (about an hour for the whole schedule; gsplat on the T4: 21 min). The step is
+bound by GPU work, not by its one wait for the intersection count: the kernels' times add up to the step's, half of it
+the backward rasterizer. That kernel now replays only the tile rows its batch of splats reaches, which saved about
+10 % of a step (two alternating pairs on the drill model, 19 s against 17 s per 100 steps on a loaded machine). Mustard
 bottle: 148 983 splats, 24.51 dB, 0.779 / 0.896 / 0.986 (gsplat: 24.26 dB, 0.791 / 0.899 / 0.969), 75 min.
 2D Gaussian splatting (flat Gaussian disks) after
 gsplat's 2DGS (Apache-2.0, commit `937e299`) and our trainer after its example (the reference run on a Tesla T4),

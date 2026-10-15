@@ -35,6 +35,8 @@ var<workgroup> front_w: array<f32, 256>;
 var<workgroup> front_distort: array<f32, 256>;
 var<workgroup> furthest: atomic<u32>;
 var<workgroup> range: array<u32, 2>;
+// The tile rows the current batch's splats reach (first, last + 1); the replay walks only these.
+var<workgroup> rows: array<atomic<u32>, 2>;
 
 fn read3(base: u32) -> vec3<f32> {
     return vec3<f32>(projected[base], projected[base + 1u], projected[base + 2u]);
@@ -84,6 +86,11 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
     for (var b = 0u; b < batches; b++) {
         let index = start + b * BATCH + t;
         let live = index < end;
+        if (t == 0u) {
+            atomicStore(&rows[0], 16u);
+            atomicStore(&rows[1], 0u);
+        }
+        workgroupBarrier();
         var g = 0u;
         var xy = vec2<f32>(0.0);
         var opacity = 0.0;
@@ -107,6 +114,22 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
             opacity = projected[base + 18u];
             // Beyond the projected radius (3.33 extents) alpha stays below 1/255; one pixel of margin.
             reach = vec2<f32>(projected[base + 19u], projected[base + 20u]) + 1.0;
+            // Rows of this tile within reach (pixel centres y + 0.5 with |y + 0.5 - centre| <= reach).
+            let top = f32(ty * 16u);
+            let first = clamp(ceil(xy.y - reach.y - 0.5 - top), 0.0, 16.0);
+            let last = clamp(floor(xy.y + reach.y - 0.5 - top) + 1.0, 0.0, 16.0);
+            if (last > first) {
+                atomicMin(&rows[0], u32(first));
+                atomicMax(&rows[1], u32(last));
+            }
+        }
+        let row_first = workgroupUniformLoad(&rows[0]);
+        let row_last = workgroupUniformLoad(&rows[1]);
+        var steps_from = 0u;
+        var steps_to = 0u;
+        if (row_last > row_first) {
+            steps_from = row_first * 16u;
+            steps_to = row_last * 16u + BATCH - 1u;
         }
         var d_colour = vec3<f32>(0.0);
         var d_depth = 0.0;
@@ -116,7 +139,7 @@ fn main(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invocation_index
         var d_w = vec3<f32>(0.0);
         var d_xy = vec2<f32>(0.0);
         var d_opacity = 0.0;
-        for (var step = 0u; step < PIXELS + BATCH - 1u; step++) {
+        for (var step = steps_from; step < steps_to; step++) {
             let k = step - t;                         // wraps past PIXELS when step < t
             if (live && step >= t && k < PIXELS) {
                 let x = tx * 16u + k % 16u;
