@@ -247,6 +247,11 @@ main:focus {
   color: var(--accent);
 }
 
+.brand-mark {
+  display: block;
+  border-radius: 5px;
+}
+
 .brand strong {
   font-weight: 700;
 }

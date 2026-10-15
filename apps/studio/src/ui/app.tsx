@@ -15,6 +15,7 @@ import { Notices } from "./notices";
 import { Runs } from "./runs";
 import { RunView } from "./runView";
 import { LocalEngineGate, ShellSettingsScreen, useLocalEngine } from "./shellScreens";
+import brandMark from "./brand-mark.png";
 
 /** Hash routes, so the app works from any base path and on static hosts without rewrites. */
 export type Route =
@@ -195,7 +196,7 @@ export function App() {
       </a>
       <header class="topbar">
         <a class="brand" href="#/" aria-label="CrispMesh, connection">
-          <Icon name="cube" size={20} />
+          <img class="brand-mark" src={brandMark} alt="" width={22} height={22} />
           <span>
             Crisp<strong>Mesh</strong>
           </span>

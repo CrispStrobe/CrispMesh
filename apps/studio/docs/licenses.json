@@ -7722,7 +7722,7 @@
   },
   "assets": [
     {
-      "what": "App icons (src-tauri/icons)",
+      "what": "App icons (src-tauri/icons) and the header mark (src/ui/brand-mark.png)",
       "origin": "CrispMesh's icon, the same set as apps/desktop: generated with FLUX 1.1 [pro] through the Black Forest Labs API for the project (apps/desktop/src-tauri/icons/source.png; source-desktop.png is its rounded desktop form)",
       "license": "project (the owner's, under the Black Forest Labs API terms for generated output)"
     },
