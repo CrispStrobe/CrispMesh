@@ -14,6 +14,9 @@
 	<!-- Outgoing connections only, for the optional engine on another computer. No server, no child processes. -->
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Incoming connections, only while "Let other devices use this computer" is on (local network, token). -->
+	<key>com.apple.security.network.server</key>
+	<true/>
 	<!-- The app and its team, as the Mac App Store provisioning profile states them (needed for TestFlight). -->
 	<key>com.apple.application-identifier</key>
 	<string>N9XSJ4M3GT.com.crispstrobe.crisp3ds</string>

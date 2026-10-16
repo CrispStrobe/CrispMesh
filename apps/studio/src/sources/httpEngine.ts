@@ -9,6 +9,7 @@
 import { normaliseEvent, type RunEvent } from "../core/events";
 import { parseSettingsSchema, type SettingSpec } from "../core/settings";
 import { parseStartPoints } from "../core/startPoints";
+import { parseMethods } from "./localEngine";
 import { browserFetch, describe, encodePath, headSize, isAbort, readBytes, request, type FetchLike } from "./transport";
 import {
   EngineError,
@@ -90,17 +91,40 @@ export class HttpEngine implements Engine {
     return response.json();
   }
 
+  /**
+   * Photos taken on this device, sent to the engine's data folder one by one (`POST /api/uploads`, an engine that
+   * says `uploads` in its health answer, such as a desktop app that lets other devices use it). Set by `health`.
+   */
+  saveCapture?: (folder: string, files: File[], onProgress?: (done: number, total: number) => void) => Promise<string>;
+
+  private async upload(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string> {
+    let last = "";
+    for (const [index, file] of files.entries()) {
+      const answer = (await this.json(`uploads?folder=${encodeURIComponent(folder)}&name=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: file,
+      })) as { path?: unknown } | null;
+      if (typeof answer?.path !== "string") throw new EngineError("The engine did not keep the photo.", 0);
+      last = answer.path;
+      onProgress?.(index + 1, files.length);
+    }
+    return last;
+  }
+
   async health(signal?: AbortSignal): Promise<EngineHealth> {
     const body = (await this.json("health", { signal })) as Record<string, unknown> | null;
     if (typeof body !== "object" || body === null || (body.schema === undefined && body.can_start_runs === undefined)) {
       throw new EngineError("Something answered at this address, but it is not a CrispMesh engine.", 0);
     }
+    this.saveCapture = body.uploads === true ? (folder, files, onProgress) => this.upload(folder, files, onProgress) : undefined;
     return {
       schema: typeof body.schema === "string" ? body.schema : undefined,
       device: typeof body.device === "string" ? body.device : undefined,
       canStartRuns: body.can_start_runs === true,
       // An engine may say how runs can start there; otherwise the contract's three ways apply.
       startPoints: parseStartPoints(body.start_points).length > 0 ? parseStartPoints(body.start_points) : undefined,
+      ...(Array.isArray(body.methods) ? { methods: parseMethods(body.methods) } : {}),
     };
   }
 

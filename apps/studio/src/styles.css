@@ -2051,3 +2051,29 @@ fieldset.panel > legend {
   height: 48px;
   border-radius: 4px;
 }
+
+/* "Let other devices use this computer" (shareEngine.tsx). */
+.share-engine {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.share-details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.share-details dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  overflow-wrap: anywhere;
+}

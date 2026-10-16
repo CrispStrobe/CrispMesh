@@ -37,7 +37,7 @@ libc = "0.2"
 #                in the App Sandbox, so store builds use --no-default-features --features native-engine.
 # Without either the app is a client: an engine elsewhere, recorded runs, the demo.
 default = ["native-engine", "local-engine"]
-native-engine = ["dep:crispmesh-dense", "dep:anyhow"]
+native-engine = ["dep:crispmesh-dense", "dep:anyhow", "dep:getrandom"]
 local-engine = ["dep:getrandom"]
 
 # The pipeline is far too slow unoptimised to try anything real in a debug build.

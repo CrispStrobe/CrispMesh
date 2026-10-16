@@ -82,6 +82,31 @@ describe("HttpEngine", () => {
     expect(String((failure as Error).message)).not.toContain("s3cret");
   });
 
+  it("sends captured photos to an engine that takes uploads, one request per photo, with the token", async () => {
+    const { fetcher, requests } = fakeFetch((request) => {
+      if (request.url.endsWith("/api/health")) return json({ schema: "crispmesh_dense_events_v1", can_start_runs: true, uploads: true });
+      const name = new URL(request.url).searchParams.get("name");
+      return json({ path: `capture-1/${name}` }, 201);
+    });
+    const engine = new HttpEngine("http://computer:8766", { fetcher, token: "s3cret" });
+    expect(engine.saveCapture).toBeUndefined();
+    await engine.health();
+    const photos = ["capture_0001.jpg", "capture_0002.jpg"].map((name) => new File([new Uint8Array([1, 2, 3])], name, { type: "image/jpeg" }));
+    const progress: number[] = [];
+    expect(await engine.saveCapture!("capture-1", photos, (done) => progress.push(done))).toBe("capture-1/capture_0002.jpg");
+    expect(progress).toEqual([1, 2]);
+    const uploads = requests.filter((request) => request.url.includes("/api/uploads"));
+    expect(uploads.map((request) => [request.method, request.url, request.headers.Authorization])).toEqual([
+      ["POST", "http://computer:8766/api/uploads?folder=capture-1&name=capture_0001.jpg", "Bearer s3cret"],
+      ["POST", "http://computer:8766/api/uploads?folder=capture-1&name=capture_0002.jpg", "Bearer s3cret"],
+    ]);
+    // An engine that does not say so gets no Take photos.
+    const { fetcher: plain } = fakeFetch(() => json({ schema: "crispmesh_dense_events_v1", can_start_runs: true }));
+    const other = new HttpEngine("http://e", { fetcher: plain });
+    await other.health();
+    expect(other.saveCapture).toBeUndefined();
+  });
+
   it("does not mistake another web server for an engine", async () => {
     const { fetcher } = fakeFetch(() => json({ hello: "world" }));
     await expect(new HttpEngine("http://e", { fetcher }).health()).rejects.toThrow(/not a CrispMesh engine/);

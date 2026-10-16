@@ -19,6 +19,8 @@ mod config;
 mod engine;
 #[cfg(native_engine)]
 mod native;
+#[cfg(all(native_engine, desktop))]
+mod share;
 #[cfg(native_engine)]
 mod tools;
 
@@ -457,6 +459,40 @@ async fn native_calibrations(app: AppHandle) -> Result<Value, String> {
 
 // ---------------------------------------------------------------------------------------------
 
+/// "Let other devices use this computer" (desktop): `on` true starts serving the built-in engine on the local
+/// network with a new token, false stops; absent, only says. Answers `{running, port, token, addresses}`.
+#[tauri::command]
+fn share_engine(app: AppHandle, on: Option<bool>, port: Option<u16>) -> Result<Value, String> {
+    #[cfg(all(native_engine, desktop))]
+    {
+        let state = app.state::<share::Shared>();
+        let mut current = state.0.lock().map_err(|_| "the sharing state is not available".to_string())?;
+        match on {
+            Some(true) => {
+                if let Some(running) = current.take() {
+                    running.stop();
+                }
+                let mut bytes = [0u8; 16];
+                getrandom::fill(&mut bytes).map_err(|error| format!("No random numbers from the system: {error}"))?;
+                let token: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
+                *current = Some(share::Sharing::start(built_in(&app), port.unwrap_or(8766), token)?);
+            }
+            Some(false) => {
+                if let Some(running) = current.take() {
+                    running.stop();
+                }
+            }
+            None => {}
+        }
+        Ok(current.as_ref().map(share::Sharing::describe).unwrap_or_else(|| serde_json::json!({ "running": false })))
+    }
+    #[cfg(not(all(native_engine, desktop)))]
+    {
+        let _ = (app, on, port);
+        Err("Only the desktop app can share its engine.".into())
+    }
+}
+
 /// Debug builds only: lets a test script that the shell injected report back on stderr.
 #[cfg(debug_assertions)]
 #[tauri::command]
@@ -538,6 +574,8 @@ pub fn run() {
     let builder = builder.manage(engine::Engine::default());
     #[cfg(native_engine)]
     let builder = builder.manage(std::sync::Arc::new(native::Native::default()));
+    #[cfg(all(native_engine, desktop))]
+    let builder = builder.manage(share::Shared::default());
 
     let builder = builder.setup(|app| {
         #[cfg(local_engine)]
@@ -614,6 +652,7 @@ pub fn run() {
         native_data,
         native_calibrations,
         native_import,
+        share_engine,
         native_delete_example,
         native_free_space,
         check_tool,
@@ -643,6 +682,7 @@ pub fn run() {
         native_data,
         native_calibrations,
         native_import,
+        share_engine,
         native_delete_example,
         native_free_space,
         check_tool

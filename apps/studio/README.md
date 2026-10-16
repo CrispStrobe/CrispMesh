@@ -423,6 +423,17 @@ undistorted photos and masks") and then runs the dense stages.
   App Store variant also `com.apple.security.device.camera`).
   `scripts/capture-check.mjs` checks the whole path in headless Chrome with a
   video file as the camera.
+- **Photos on the phone, reconstruction on a computer.** On the computer (the
+  desktop app): Connection, This computer, *Let other devices use this
+  computer*; it shows an address such as `http://192.168.1.20:8766` and a
+  token. On the phone or tablet: Connection, Another engine, that address and
+  token, Connect; then New run, Turntable photos, *Take photos*. The photos are
+  sent to the computer one by one (`POST /api/uploads`), the run starts there
+  and the phone shows it as it goes, with the STL and GLB downloads. Local
+  network, plain HTTP with the token: for a network you trust. The Mac App
+  Store variant declares `com.apple.security.network.server` for this.
+  `scripts/handoff-check.mjs` checks it in headless Chrome against the app's
+  server (`share.rs`, test `serve_for_checks`).
 - **Providers.** One choice for masks (`threshold`, `import`,
   `external-sam`) and one for cameras (`alicevision`, `colmap`, `markers`,
   `import`), from the crate's list. `markers` (a printed marker mat under the

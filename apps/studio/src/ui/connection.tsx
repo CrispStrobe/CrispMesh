@@ -7,6 +7,7 @@ import type { Prefs } from "./prefs";
 import type { EngineStatus } from "../shell/shell";
 import type { BrowserMode, EngineMode } from "./app";
 import { servedByEngine } from "./served";
+import { ShareEngine } from "./shareEngine";
 
 interface Props {
   prefs: Prefs;
@@ -120,6 +121,7 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
                 Folders
               </a>
             </div>
+            <ShareEngine />
           </section>
         )}
         {localEngine?.python && (

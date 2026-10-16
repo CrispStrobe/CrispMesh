@@ -96,7 +96,12 @@ Rules a front end can rely on:
 
 ## 3. HTTP engine
 
-`python -m scripts.turntable_mesh.engine_server --runs <dir> --data <dir> [--static <built front end>]`
+`python -m scripts.turntable_mesh.engine_server --runs <dir> --data <dir> [--static <built front end>]`, or the
+desktop app with "Let other devices use this computer" on (Connection, This computer): the built-in engine on
+port 8766 of every interface, with a new random token each time it is switched on, shown in the app
+(`apps/studio/src-tauri/src/share.rs`). The app's server also answers `start_points`, `methods` and
+`"uploads": true` in its health answer and takes photo uploads; it is how a phone or tablet hands its photos to
+a stronger computer (Studio: connect to it as "Another engine", then Take photos).
 
 | Request | Answer |
 | --- | --- |
@@ -108,6 +113,7 @@ Rules a front end can rely on:
 | `GET /api/runs/<id>/events?since=N` | `{"events": [...], "next": M}`; poll with `since=M`, about once a second |
 | `POST /api/runs/<id>/cancel` | `{"id", "cancel_requested": true}`; the run ends with `run_finished` status `cancelled` |
 | `GET /api/runs/<id>/files/<path>` | The file, or 404 |
+| `POST /api/uploads?folder=<name>&name=<file>` | Raw file bytes as the body; written to `<data>/<folder>/<file>` (plain names, the folder up to four levels deep). `201 {"path"}`, relative to the data folder. Only engines whose health answer says `"uploads": true` |
 
 Start body:
 
@@ -138,8 +144,8 @@ end on another port can reach it.
 
 ## 4. Not in the contract yet
 
-- **Photo upload and capture.** A phone cannot yet send photos; runs start from
-  data already on the engine's machine. Planned as `POST /api/uploads`.
+- **Discovery.** The phone needs the computer's address and token typed in (or pasted); no Bonjour or QR code
+  yet. The Python engine server does not take uploads.
 - **Push transport.** Clients poll. Server-sent events may be added; polling
   will keep working.
 - **Mesh formats.** Only binary STL. A compact preview format (for example GLB
