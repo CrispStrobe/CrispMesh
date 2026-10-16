@@ -41,7 +41,10 @@ also takes several turns (`--turntable-rings`, next section).
 0.5 % above the support): 73 photos 0.964, 37 photos 0.961, 25 photos 0.926 (cameras still found; the
 Dragon's 25 were refused for too few points per view). Every 4th, 5th or 6th Bunny photo (19, 15, 13) is
 refused by the camera stage: at 19 the views share too few points (median 23 observations per view
-against the gate's 20, the worst 9), at 13 the turn is not found at all. So: at least about 25, better 36.
+against the gate's 20, the worst 9), at 13 the turn is not found at all. The gate is right there: with it
+lowered to 8, the 19 photos give F1 0.676 / 0.802 / 0.897 (whole) and 0.728 / 0.851 / 0.936 above the support,
+against 0.902 / 0.938 / 0.956 and 0.961 / 0.995 / 1.000 from 37. So: at least about 25, better 36; fewer
+would need more matches between views 20 degrees and more apart, not a looser gate.
 
 **With the app's camera.** *Take photos* (photos start, every platform: browser, Mac, iPhone, iPad) uses
 the device's camera. The camera stands still on a stand, the object turns. With *Auto* on, a photo is
