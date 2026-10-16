@@ -84,6 +84,8 @@ export function NewRun({ engine, prefs, onChange }: Props) {
   const missing = missingFields(point, values, providers);
   const optionProblems = point.providers.length > 0 ? startOptionErrors(point, providers, providerOptions) : {};
   const methods = (health?.methods ?? []).filter((method) => method.available);
+  // The engines built from this crate texture meshes: this device's, the browser's, and another computer's app.
+  const texturing = engine.kind === "browser" || engine.kind === "local" || health?.methods !== undefined;
   const methodErrors: Record<string, string> = {};
   for (const method of methods) {
     if ((methodQuality[method.id] ?? "") === "") continue;
@@ -131,7 +133,7 @@ export function NewRun({ engine, prefs, onChange }: Props) {
     setBusy(true);
     try {
       const start = { name, device: choosesDevice ? device : "", reference: scoresReference ? reference : "", values, providers, options: providerOptions };
-      const id = await engine.startRun({ ...startBody(point, start, diff.changed), ...(engine.kind === "browser" || engine.kind === "local" ? { texture } : {}), ...methodBody() });
+      const id = await engine.startRun({ ...startBody(point, start, diff.changed), ...(texturing ? { texture } : {}), ...methodBody() });
       if (engine.kind !== "browser") onChange({ inputs: (values.inputs ?? "").trim(), device });
       navigate(`#/engine/run/${encodeURIComponent(id)}`);
     } catch (problem) {
@@ -350,7 +352,7 @@ export function NewRun({ engine, prefs, onChange }: Props) {
           </div>
         </fieldset>
 
-        {(engine.kind === "browser" || engine.kind === "local") && (
+        {texturing && (
           <label class="field">
             <span><input type="checkbox" checked={texture} onChange={(event) => setTexture(event.currentTarget.checked)} /> Export textured GLB (experimental)</span>
             <span class="sub">Adds photo colours to the mesh. Uses more memory and time; photo seams may remain.</span>
