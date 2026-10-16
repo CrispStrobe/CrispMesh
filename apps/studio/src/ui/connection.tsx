@@ -8,6 +8,7 @@ import type { EngineStatus } from "../shell/shell";
 import type { BrowserMode, EngineMode } from "./app";
 import { servedByEngine } from "./served";
 import { ShareEngine } from "./shareEngine";
+import { PairScanner } from "./pairScanner";
 
 interface Props {
   prefs: Prefs;
@@ -33,6 +34,7 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
   const [error, setError] = useState("");
   const [bundleError, setBundleError] = useState("");
   const [sameOrigin, setSameOrigin] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   // If this page is being served by an engine (`engine_server.py --static`), offer it.
   useEffect(() => {
@@ -48,14 +50,15 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
     return () => abort.abort();
   }, []);
 
-  const connect = async (event: Event) => {
-    event.preventDefault();
+  const connect = async (event: Event | null, given?: { url: string; token: string }) => {
+    event?.preventDefault();
     setError("");
     let engine: HttpEngine;
     let address: string;
+    const chosenToken = given?.token ?? token;
     try {
-      address = normaliseEngineUrl(url);
-      engine = new HttpEngine(address, { token: token || undefined });
+      address = normaliseEngineUrl(given?.url ?? url);
+      engine = new HttpEngine(address, { token: chosenToken || undefined });
     } catch (problem) {
       setError(describe(problem));
       return;
@@ -63,7 +66,7 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
     setBusy(true);
     try {
       await engine.health();
-      onChange({ engineUrl: address, engineToken: token, engineChoice: "remote" });
+      onChange({ engineUrl: address, engineToken: chosenToken, engineChoice: "remote" });
       navigate("#/engine");
     } catch (problem) {
       setError(describe(problem));
@@ -205,7 +208,7 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
             Connect to a running engine to watch its runs live and start new ones.
             {sameOrigin && " An engine is serving this page."}
           </p>
-          <form onSubmit={connect} novalidate>
+          <form onSubmit={(event) => void connect(event)} novalidate>
             <label class="field">
               <span class="field-label">Address</span>
               <input
@@ -242,6 +245,9 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
               <button type="submit" class="button primary" disabled={busy}>
                 {busy ? "Connecting..." : "Connect"}
               </button>
+              <button type="button" class="button" disabled={busy} onClick={() => setScanning(true)}>
+                Scan the computer's code
+              </button>
               {prefs.engineUrl !== "" && (
                 <button
                   type="button"
@@ -257,6 +263,17 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
               )}
             </div>
           </form>
+          {scanning && (
+            <PairScanner
+              onCancel={() => setScanning(false)}
+              onFound={(pairing) => {
+                setScanning(false);
+                setUrl(pairing.url);
+                setToken(pairing.token);
+                void connect(null, pairing);
+              }}
+            />
+          )}
         </section>
 
         <section class="card" aria-labelledby="c-bundle">

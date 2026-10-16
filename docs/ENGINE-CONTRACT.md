@@ -144,8 +144,8 @@ end on another port can reach it.
 
 ## 4. Not in the contract yet
 
-- **Discovery.** The phone needs the computer's address and token typed in (or pasted); no Bonjour or QR code
-  yet. The Python engine server does not take uploads.
+- **Discovery.** The phone gets the computer's address and token from a QR code the desktop app shows (or they
+  are typed in); there is no Bonjour discovery. The Python engine server does not take uploads.
 - **Push transport.** Clients poll. Server-sent events may be added; polling
   will keep working.
 - **Mesh formats.** Only binary STL. A compact preview format (for example GLB

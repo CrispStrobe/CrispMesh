@@ -1,4 +1,6 @@
-import { useEffect, useState } from "preact/hooks";
+import qrcode from "qrcode-generator";
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { pairingText } from "../core/pairing";
 import { getShell } from "../shell/shell";
 import { describe } from "../sources/transport";
 
@@ -27,6 +29,16 @@ export function ShareEngine() {
     void shell.bridge<Sharing>("share_engine", {}).then(setSharing, () => setSharing({ running: false }));
   }, []);
 
+  // The pairing code for the phone: the first address and the token.
+  const code = useMemo(() => {
+    const address = sharing?.addresses?.[0];
+    if (!sharing?.running || address === undefined || sharing.token === undefined) return "";
+    const qr = qrcode(0, "M");
+    qr.addData(pairingText({ url: address, token: sharing.token }));
+    qr.make();
+    return qr.createDataURL(5, 4);
+  }, [sharing?.running, sharing?.token, sharing?.addresses?.[0]]);
+
   if (shell === null || mobile || sharing === null) return null;
   const turn = (on: boolean) => {
     setBusy(true);
@@ -49,6 +61,12 @@ export function ShareEngine() {
         phone. On the phone: Connection, Another engine, with this address and token. Local network only, no encryption:
         use it on a network you trust.
       </span>
+      {code !== "" && (
+        <figure class="share-code">
+          <img src={code} alt="Pairing code: address and token of this computer's engine" />
+          <figcaption class="help">On the phone: Connection, Another engine, Scan the computer's code.</figcaption>
+        </figure>
+      )}
       {sharing.running && (
         <dl class="share-details">
           <dt>Address</dt>

@@ -33,8 +33,8 @@
   },
   "counts": {
     "npm_shipped": {
-      "MIT": 2,
-      "Apache-2.0": 1
+      "MIT": 3,
+      "Apache-2.0": 2
     },
     "rust_linked_macos_or_ios": {
       "MIT": 194,
@@ -104,8 +104,22 @@
         "chosen": "Apache-2.0"
       },
       {
+        "name": "jsqr",
+        "version": "1.4.0",
+        "license": "Apache-2.0",
+        "category": "permissive",
+        "chosen": "Apache-2.0"
+      },
+      {
         "name": "preact",
         "version": "11.0.0",
+        "license": "MIT",
+        "category": "permissive",
+        "chosen": "MIT"
+      },
+      {
+        "name": "qrcode-generator",
+        "version": "2.0.4",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT"

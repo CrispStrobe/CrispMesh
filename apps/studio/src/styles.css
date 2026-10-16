@@ -2077,3 +2077,17 @@ fieldset.panel > legend {
   align-items: center;
   overflow-wrap: anywhere;
 }
+
+.share-code {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.share-code img {
+  image-rendering: pixelated;
+  background: #fff;
+  border-radius: var(--radius-small);
+}

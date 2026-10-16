@@ -62,8 +62,8 @@ Linked into the app and not third-party: CrispMesh's own code, AGPL-3.0-only, co
 
 | License relied on | Packages |
 | --- | --- |
-| MIT | 2 |
-| Apache-2.0 | 1 |
+| MIT | 3 |
+| Apache-2.0 | 2 |
 
 ### Rust crates linked into the macOS or iOS app
 
@@ -110,7 +110,9 @@ Where a crate offers a choice (`MIT OR Apache-2.0`), the first permissive option
 | Package | Version | License |
 | --- | --- | --- |
 | @tauri-apps/api | 2.11.1 | Apache-2.0 OR MIT |
+| jsqr | 1.4.0 | Apache-2.0 |
 | preact | 11.0.0 | MIT |
+| qrcode-generator | 2.0.4 | MIT |
 | three | 0.186.1 | MIT |
 
 ## MPL-2.0 crates (source availability applies to these)
