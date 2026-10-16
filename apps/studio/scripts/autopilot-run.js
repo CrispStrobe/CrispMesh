@@ -63,6 +63,25 @@
 
   try {
     await log(`origin ${location.origin}, hash ${location.hash || "(none)"}`);
+    // Whether this web view could use a camera (Take photos): the API exists only on a secure page. A simulator
+    // has no camera, so "NotFoundError" there means the API is usable; a missing API means it is not.
+    {
+      const media = navigator.mediaDevices;
+      let answer = "no API";
+      if (media?.getUserMedia) {
+        answer = await Promise.race([
+          media.getUserMedia({ video: true, audio: false }).then(
+            (stream) => {
+              stream.getTracks().forEach((track) => track.stop());
+              return "a camera stream";
+            },
+            (error) => `refused: ${error?.name ?? error}`,
+          ),
+          new Promise((done) => setTimeout(() => done("no answer within 5 s (a permission prompt?)"), 5000)),
+        ]);
+      }
+      await log(`camera: secure page ${globalThis.isSecureContext}, mediaDevices ${media !== undefined}, getUserMedia: ${answer}`);
+    }
     await until("the runs screen of the local engine", () => location.hash.startsWith("#/engine") && one("h1", "Runs"), 90000);
     await log(`runs screen: ${one(".page-head .sub").textContent.trim()}`);
 
