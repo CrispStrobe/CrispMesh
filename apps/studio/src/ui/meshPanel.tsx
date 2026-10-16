@@ -243,7 +243,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
               class="button primary"
               onClick={() => setApproved((current) => new Set(current).add(selected.path))}
             >
-              Load {selected.label.toLowerCase()}
+              Load {selected.label.charAt(0).toLowerCase() + selected.label.slice(1)}
               {consentBytes !== undefined && ` (${formatBytes(consentBytes)})`}
             </button>
           </div>

@@ -55,6 +55,8 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
 
   if (snapshot === null) return null;
   const { run, link } = snapshot;
+  // The run's own textured mesh first (the preview shows it), then the neural surface's and the splats'.
+  const downloads = [...run.downloads].sort((a, b) => Number(a.stage === "surface" || a.stage === "splats") - Number(b.stage === "surface" || b.stage === "splats"));
 
   const requestCancel = async () => {
     if (source.cancel === undefined) return;
@@ -170,18 +172,18 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
       {link.state !== "failed" && (
         <>
           <Timeline run={run} now={now} />
-          {run.downloads.length > 0 && (
+          {downloads.length > 0 && (
             <section class="panel">
               <h2>Textured model</h2>
               <p class="sub">GLB includes the photo texture and the same reconstructed geometry.</p>
-              {run.downloads.map((file) => (
+              {downloads.map((file) => (
                 <button key={file.path} type="button" class="button primary" disabled={!canDownload(source) && !canShareFiles()}
                   onClick={() => void (canDownload(source) ? downloadFile(source, file.path) : shareFile(source, file.path)).catch((problem) => setDownloadError(describe(problem)))}>
                   {(canDownload(source) ? "Download textured GLB" : "Share textured GLB") + glbOf(file.stage)}
                 </button>
               ))}
-              {run.downloads[0] && <TexturePreview source={source} path={run.downloads[0].path} themeTick={themeTick} />}
-              {source.kind === "local" && <p class="sub">Saved in this run’s folder as texture/mesh.glb{run.downloads.length > 1 ? " (the other surfaces’ in surface/texture and splats/texture)" : ""}.</p>}
+              {downloads[0] && <TexturePreview source={source} path={downloads[0].path} themeTick={themeTick} />}
+              {source.kind === "local" && <p class="sub">Saved in this run’s folder as texture/mesh.glb{downloads.length > 1 ? " (the other surfaces’ in surface/texture and splats/texture)" : ""}.</p>}
               {downloadError && <p role="alert" class="field-error">{downloadError}</p>}
             </section>
           )}

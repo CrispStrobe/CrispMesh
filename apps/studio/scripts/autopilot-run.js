@@ -39,7 +39,9 @@
   }
 
   // A wrapper may set window.AUTOPILOT before this script: { settings: {...} or null for the
-  // defaults, cancel: true to cancel the run once its first surface shows, linger: ms }.
+  // defaults, cancel: true to cancel the run once its first surface shows, linger: ms,
+  // texture: true to tick "Export textured GLB", methods: { surface: { quality: "fast", steps: "300" }, ... } for the
+  // neural surface / 2D splats (their meshes must then be among the run's surfaces) }.
   const options = window.AUTOPILOT ?? {};
   const SMALL = {
     sizes: "64, 128", grid: "96", planes: "48", neighbours: "4", best_of: "2", vote_neighbours: "4",
@@ -111,6 +113,25 @@
       if (!inputs) throw new Error("no inputs were chosen");
     }
     for (const [name, value] of Object.entries(SETTINGS)) type(`#s-${name}`, value);
+    if (options.texture) one("label", "Export textured GLB")?.querySelector("input").click();
+    for (const [id, { quality, ...values }] of Object.entries(options.methods ?? {})) {
+      const select = document.querySelector(`#f-method-${id}`);
+      if (!select) throw new Error(`the form offers no ${id}`);
+      select.value = quality;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      await sleep(300);
+      const field = select.closest(".field");
+      if (Object.keys(values).length > 0) field.querySelector("details").open = true;
+      await sleep(300);
+      for (const [name, value] of Object.entries(values)) {
+        const label = [...field.querySelectorAll("label.field")].find((row) => row.querySelector(".field-label").textContent === name);
+        if (!label) throw new Error(`${id} has no setting ${name}`);
+        const input = label.querySelector("input");
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      await log(`method ${id}: ${quality} ${JSON.stringify(values)}`);
+    }
     type("#f-name", options.name ?? "native app check");
     const device = document.querySelector("#f-device");
     if (device) {
@@ -205,7 +226,12 @@
     await log(`surface: ${document.querySelector("#mesh-heading + .sub").textContent}; canvas ${canvas.width}x${canvas.height}`);
     await log(`sheets loaded: ${loaded} of ${document.querySelectorAll(".sheet").length}; reports: ${reports.join(", ")}`);
     await log(`CSP violations: ${violations.length === 0 ? "none" : violations.join(" | ")}`);
-    const ok = status === "Complete" && loaded > 0 && loaded === images.length && violations.length === 0 && drawn;
+    const steps = [...document.querySelectorAll(".step-strip .step .step-label")].map((label) => label.textContent.trim());
+    const glbs = [...document.querySelectorAll("button")].map((button) => button.textContent.trim()).filter((text) => text.includes("textured GLB"));
+    await log(`surfaces of the run: ${steps.join(" | ")}; GLB buttons: ${glbs.join(" | ") || "none"}`);
+    const methodsShown = Object.keys(options.methods ?? {}).every((id) => steps.some((step) => step.startsWith(id === "surface" ? "Neural surface" : "2D splats")));
+    if (!methodsShown) await log("a chosen method's mesh is not among the run's surfaces");
+    const ok = status === "Complete" && loaded > 0 && loaded === images.length && violations.length === 0 && drawn && methodsShown;
     if (!drawn) await log("the 3D view draws nothing");
     // With `marks`, the screens a person sees are shown one after another, each announced as
     // "MARK <name>" and held, so whoever started the app can photograph them (CI screenshots).
