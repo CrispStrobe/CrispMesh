@@ -4,7 +4,8 @@ import { describe } from "../sources/transport";
 import { navigate } from "./app";
 import { Icon } from "./icons";
 import type { Prefs } from "./prefs";
-import type { EngineStatus } from "../shell/shell";
+import { getShell, type EngineStatus } from "../shell/shell";
+import { remoteFetcher } from "../shell/remoteFetch";
 import type { BrowserMode, EngineMode } from "./app";
 import { servedByEngine } from "./served";
 import { ShareEngine } from "./shareEngine";
@@ -58,7 +59,8 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
     const chosenToken = given?.token ?? token;
     try {
       address = normaliseEngineUrl(given?.url ?? url);
-      engine = new HttpEngine(address, { token: chosenToken || undefined });
+      const shell = getShell();
+      engine = new HttpEngine(address, { token: chosenToken || undefined, ...(shell !== null ? { fetcher: remoteFetcher(shell) } : {}) });
     } catch (problem) {
       setError(describe(problem));
       return;

@@ -15,6 +15,7 @@
 //! can name is relative to the runs or the data folder and checked to stay inside.
 
 mod config;
+mod remote;
 #[cfg(local_engine)]
 mod engine;
 #[cfg(native_engine)]
@@ -459,6 +460,31 @@ async fn native_calibrations(app: AppHandle) -> Result<Value, String> {
 
 // ---------------------------------------------------------------------------------------------
 
+/// A request to an engine at a plain `http://` address, made by the app instead of the web view (see remote.rs).
+/// The request: headers `x-url`, `x-method`, `x-headers` (percent-encoded JSON object), the body raw. The answer:
+/// `remote::frame` of status, headers and body.
+#[tauri::command]
+async fn remote_fetch(request: tauri::ipc::Request<'_>) -> Result<tauri::ipc::Response, String> {
+    let header = |name: &str| -> Result<String, String> {
+        let raw = request.headers().get(name).and_then(|value| value.to_str().ok()).ok_or(format!("{name} is missing"))?;
+        percent_decode(raw).ok_or(format!("{name} is not valid"))
+    };
+    let (url, method) = (header("x-url")?, header("x-method")?);
+    let headers: Vec<(String, String)> = serde_json::from_str::<serde_json::Map<String, Value>>(&header("x-headers")?)
+        .map_err(|error| error.to_string())?
+        .into_iter()
+        .filter_map(|(name, value)| value.as_str().map(|value| (name, value.to_string())))
+        .collect();
+    let body = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
+        _ => Vec::new(),
+    };
+    let answer = tauri::async_runtime::spawn_blocking(move || remote::fetch(&method, &url, &headers, &body))
+        .await
+        .map_err(|error| error.to_string())??;
+    Ok(tauri::ipc::Response::new(remote::frame(answer.0, &answer.1, &answer.2)))
+}
+
 /// "Let other devices use this computer" (desktop): `on` true starts serving the built-in engine on the local
 /// network with a new token, false stops; absent, only says. Answers `{running, port, token, addresses}`.
 #[tauri::command]
@@ -653,6 +679,7 @@ pub fn run() {
         native_calibrations,
         native_import,
         share_engine,
+        remote_fetch,
         native_delete_example,
         native_free_space,
         check_tool,
@@ -683,6 +710,7 @@ pub fn run() {
         native_calibrations,
         native_import,
         share_engine,
+        remote_fetch,
         native_delete_example,
         native_free_space,
         check_tool

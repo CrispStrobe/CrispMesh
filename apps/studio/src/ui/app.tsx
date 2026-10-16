@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { getShell, type ShellInfo } from "../shell/shell";
+import { remoteFetcher } from "../shell/remoteFetch";
 import type { WorkerLike } from "../browser/protocol";
 import { BrowserEngine } from "../sources/browserEngine";
 import { LocalEngine } from "../sources/localEngine";
@@ -157,7 +158,10 @@ export function App() {
       if (mode === "python") {
         return localUrl !== null ? new HttpEngine(localUrl, { token: localToken ?? undefined, label: "this computer" }) : null;
       }
-      return prefs.engineUrl !== "" ? new HttpEngine(prefs.engineUrl, { token: prefs.engineToken || undefined }) : null;
+      // In the apps, plain-http engines are reached through the app itself (shell/remoteFetch.ts).
+      return prefs.engineUrl !== ""
+        ? new HttpEngine(prefs.engineUrl, { token: prefs.engineToken || undefined, ...(shell !== null ? { fetcher: remoteFetcher(shell) } : {}) })
+        : null;
     } catch {
       return null;
     }

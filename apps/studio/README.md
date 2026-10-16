@@ -433,7 +433,11 @@ undistorted photos and masks") and then runs the dense stages.
   with qrcode-generator, read with jsQR). The photos are
   sent to the computer one by one (`POST /api/uploads`), the run starts there
   and the phone shows it as it goes, with the STL and GLB downloads. Local
-  network, plain HTTP with the token: for a network you trust. The Mac App
+  network, plain HTTP with the token: for a network you trust. Inside the
+  apps, requests to a plain `http://` engine are made by the app itself
+  (`remote_fetch`, `src-tauri/src/remote.rs`, `shell/remoteFetch.ts`), not by
+  the web view, whose secure page could block plain HTTP to the local network;
+  `https://` engines stay with the web view. The Mac App
   Store variant declares `com.apple.security.network.server` for this.
   `scripts/handoff-check.mjs` checks it in headless Chrome against the app's
   server (`share.rs`, test `serve_for_checks`).
