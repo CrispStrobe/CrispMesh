@@ -44,7 +44,10 @@ refused by the camera stage: at 19 the views share too few points (median 23 obs
 against the gate's 20, the worst 9), at 13 the turn is not found at all. The gate is right there: with it
 lowered to 8, the 19 photos give F1 0.676 / 0.802 / 0.897 (whole) and 0.728 / 0.851 / 0.936 above the support,
 against 0.902 / 0.938 / 0.956 and 0.961 / 0.995 / 1.000 from 37. So: at least about 25, better 36; fewer
-would need more matches between views 20 degrees and more apart, not a looser gate.
+would need more matches between views 20 degrees and more apart, not a looser gate. More features do not give
+them: a four times lower contrast threshold found four times the features on the 19 Bunny photos (4 495
+against 1 118 per photo) but only 1.8 times the matches, and the weakest views kept 8 to 9 observations; the
+descriptors do not recognise the points across that much rotation.
 
 **With the app's camera.** *Take photos* (photos start, every platform: browser, Mac, iPhone, iPad) uses
 the device's camera. The camera stands still on a stand, the object turns. With *Auto* on, a photo is
