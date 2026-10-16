@@ -79,7 +79,11 @@ scan's diagonal, whole object):
 The Happy Buddha is the case where it goes wrong: even with its lens file the raw steps add up to only 281
 degrees (rotation and translation are hard to tell apart on it, TURNTABLE-SOLVER.md), so the focal length found
 is 28 % too long; the mesh still comes out, 0.010 lower at 0.5 % (0.013 above the support). Nothing in the run
-tells this case from a right one yet.
+tells this case from a right one yet. Tried and withdrawn: measuring the turn after the adjustment of an open
+turn instead of the raw steps (with the lens file it is closer to a turn: Bunny 360.9 against 355.4 degrees).
+As a focal length signal it is worse: the adjustment takes up much of a wrong focal length in the geometry,
+the turn hardly changes, and the search ended 9 to 13 % short on the Bunny, Dragon, Lucy and Armadillo (the
+Happy Buddha +16 % instead of +28 %).
 
 On the Bunny the start does not matter: 45, 65 and 90 degree first guesses (focal lengths 0.37 to 1.15
 times the right one) all end at 2 306 to 2 308 px. Limits: the focal length is found to a few percent
