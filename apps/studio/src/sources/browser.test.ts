@@ -6,7 +6,7 @@ import { activeOptions, chosenProviders, importFields, missingFields, parseStart
 import { event, fixtureEvents, settle } from "../testing/fixture";
 import { downloadName } from "../ui/download";
 import { servedByEngine } from "../ui/served";
-import { BrowserEngine, browserStartPoints, checkCalibration, describeInputs, methodOptions, photoFiles, PREVIEW_LIMIT_MEGAPIXELS, previewAdvice, relativeFiles } from "./browserEngine";
+import { AUTOMATIC_LENS, BrowserEngine, browserStartPoints, checkCalibration, describeInputs, methodOptions, photoFiles, PREVIEW_LIMIT_MEGAPIXELS, previewAdvice, relativeFiles } from "./browserEngine";
 import { RunStore } from "./runStore";
 
 /** A stand-in for the worker: records what it is sent and lets the test answer. */
@@ -219,6 +219,14 @@ describe("the engine in this browser", () => {
     expect(sent.photos.map(([name]) => name)).toEqual(["capture_1.jpg", "capture_2.png", "capture_10.png"]);
     // A refusal from the engine (photos out of order, say) ends the run with its sentence.
     worker.answer({ type: "finished", id, ok: false, message: "the photos are not in capture order", seconds: 1, peakWasmBytes: 1 });
+    await settle();
+    // Without a lens file: "auto" goes to the engine, which finds the focal length from the turn.
+    expect(photosPoint.fields.find((field) => field.key === "calibration")?.automatic).toBe(true);
+    engine.useAutomaticLens();
+    expect(engine.pickedCalibration()?.label).toBe(AUTOMATIC_LENS);
+    const auto = await engine.startRun({ photos: "bunny" });
+    expect((worker.sent.at(-1) as Extract<ToWorker, { type: "run-photos" }>).calibration).toBe("auto");
+    worker.answer({ type: "finished", id: auto, ok: false, message: "stopped", seconds: 1, peakWasmBytes: 1 });
     await settle();
     const source = engine.openRun(id);
     const store = new RunStore(source);

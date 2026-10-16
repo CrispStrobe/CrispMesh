@@ -1,18 +1,25 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { checkCalibration, photoFiles, type BrowserEngine, type PickedPhotos } from "../sources/browserEngine";
+import { AUTOMATIC_LENS, checkCalibration, photoFiles, type BrowserEngine, type PickedPhotos } from "../sources/browserEngine";
 import { describe } from "../sources/transport";
+import { CaptureScreen } from "./capture";
+import { importFolderName } from "./deviceImport";
 
 interface Props {
   engine: BrowserEngine;
   error?: string;
   /** Called with a name once something usable is chosen, or "" when it is not. */
   onPicked(name: string): void;
+  /** Photos taken with the camera come without a lens file: called when the automatic lens was chosen for them. */
+  onAutomaticLens?(label: string): void;
+  /** The calibration field's value, so a choice made elsewhere shows here. */
+  value?: string;
 }
 
 /** The photos for a run in this browser: several image files, or a folder of them. */
-export function PhotosPicker({ engine, error, onPicked }: Props) {
+export function PhotosPicker({ engine, error, onPicked, onAutomaticLens }: Props) {
   const files = useRef<HTMLInputElement>(null);
   const folder = useRef<HTMLInputElement>(null);
+  const [capturing, setCapturing] = useState(false);
   const [picked, setPicked] = useState<PickedPhotos | null>(() => engine.pickedPhotos());
   const [previews, setPreviews] = useState(false);
   const [problem, setProblem] = useState("");
@@ -45,6 +52,9 @@ export function PhotosPicker({ engine, error, onPicked }: Props) {
         </button>
         <button type="button" class="button" onClick={() => folder.current?.click()}>
           Choose a folder
+        </button>
+        <button type="button" class="button" onClick={() => setCapturing(true)}>
+          Take photos
         </button>
         <input
           ref={files}
@@ -81,6 +91,20 @@ export function PhotosPicker({ engine, error, onPicked }: Props) {
       <span class="help">
         One photo per turntable position, one turn, in capture order by name (PNG or JPEG). They are read here; nothing is uploaded.
       </span>
+      {capturing && (
+        <CaptureScreen
+          onCancel={() => setCapturing(false)}
+          onDone={(taken) => {
+            setCapturing(false);
+            accept(taken, importFolderName(new Date()).replace("photos-", "capture-"));
+            // A camera of this device has no lens file here: the focal length is found from the turn.
+            if (engine.pickedCalibration() === null) {
+              engine.useAutomaticLens();
+              onAutomaticLens?.(AUTOMATIC_LENS);
+            }
+          }}
+        />
+      )}
       {picked !== null && (
         <>
           <span class="picked" role="status">
@@ -112,10 +136,13 @@ export function PhotosPicker({ engine, error, onPicked }: Props) {
 }
 
 /** The lens calibration for a run in this browser: one that comes with the app, or a file from this device. */
-export function CalibrationPicker({ engine, error, onPicked }: Props) {
+export function CalibrationPicker({ engine, error, onPicked, value }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [shipped, setShipped] = useState<{ label: string; path: string }[]>([]);
   const [current, setCurrent] = useState(() => engine.pickedCalibration()?.label ?? "");
+  useEffect(() => {
+    if (value !== undefined && value !== "" && value !== current) setCurrent(value);
+  }, [value]);
   const [problem, setProblem] = useState("");
   useEffect(() => {
     let alive = true;
@@ -185,7 +212,24 @@ export function CalibrationPicker({ engine, error, onPicked }: Props) {
           })}
         </div>
       )}
-      <span class="help">Focal length, principal point and radial distortion of the camera's lens.</span>
+      <div class="calibrations" role="group" aria-label="Without a calibration file">
+        <span class="help">No file?</span>
+        <button
+          type="button"
+          class="button small"
+          aria-pressed={current === AUTOMATIC_LENS}
+          onClick={() => {
+            engine.useAutomaticLens();
+            done(AUTOMATIC_LENS);
+          }}
+        >
+          Automatic
+        </button>
+      </div>
+      <span class="help">
+        Focal length, principal point and radial distortion of the camera's lens. Automatic finds the focal length from the
+        turn itself (centred lens, distortion left out): good for phone cameras and webcams.
+      </span>
       {current !== "" && (
         <span class="picked" role="status">
           Calibration: <strong>{current}</strong>

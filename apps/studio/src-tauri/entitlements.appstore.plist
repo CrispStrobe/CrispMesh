@@ -8,6 +8,9 @@
 	<!-- Photos, calibrations and models are files and folders the user picks. -->
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
+	<!-- The camera, for photos taken inside the app (Take photos). -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
 	<!-- Outgoing connections only, for the optional engine on another computer. No server, no child processes. -->
 	<key>com.apple.security.network.client</key>
 	<true/>

@@ -367,11 +367,17 @@ impl Native {
     /// programs are (from the settings), then the request's tuning options.
     fn photo_options(&self, body: &StartBody) -> Result<Vec<String>, String> {
         let given = |text: &Option<String>| text.as_deref().map(str::trim).filter(|text| !text.is_empty()).map(str::to_string);
-        let calibration = given(&body.calibration).ok_or("calibration: a lens calibration file is needed to start from photos")?;
-        let calibration = self.resolve_source("calibration", &calibration)?;
-        if !calibration.is_file() {
-            return Err("calibration: that is not a file".into());
-        }
+        let calibration = given(&body.calibration).ok_or("calibration: a lens calibration file, or auto, is needed to start from photos")?;
+        // `auto`: no lens file; the turntable solver finds the focal length from the closed turn.
+        let calibration = if calibration == "auto" {
+            calibration
+        } else {
+            let path = self.resolve_source("calibration", &calibration)?;
+            if !path.is_file() {
+                return Err("calibration: that is not a file".into());
+            }
+            path.to_string_lossy().into_owned()
+        };
         let points = self.start_points();
         let guard = self.tools.lock().unwrap();
         let (tools, repo) = guard.as_ref().ok_or("the tools of the photos start are not configured")?;
@@ -402,7 +408,7 @@ impl Native {
             chosen.push((name, selector));
         }
         crate::tools::check_tokens(&body.photo_options)?;
-        let mut options = vec!["--calibration".to_string(), calibration.to_string_lossy().into_owned()];
+        let mut options = vec!["--calibration".to_string(), calibration];
         options.extend(["--masks".to_string(), chosen[0].1.clone(), "--cameras".to_string(), chosen[1].1.clone()]);
         if chosen[1].0 == "markers" {
             // The mat is a place: it comes from its own field, checked like every other path.
@@ -1213,6 +1219,12 @@ mod tests {
         assert_eq!(options.inputs, None);
         let lens = root.join("data/lens.json").to_string_lossy().into_owned();
         assert_eq!(options.photo_options, ["--calibration", lens.as_str(), "--masks", "threshold", "--cameras", "turntable", "--threshold-level", "otsu", "--turntable-span", "6"]);
+        // No lens file: `auto` goes through as it is (the solver finds the focal length); a missing file does not.
+        let mut automatic = body(json!({}));
+        automatic.calibration = Some("auto".into());
+        assert_eq!(engine.options(&automatic, "id").unwrap().photo_options[..2], ["--calibration", "auto"]);
+        automatic.calibration = Some("auto.json".into());
+        assert!(engine.options(&automatic, "id").is_err());
         // Nothing chosen: the app's defaults, which need nothing external.
         let defaults = engine.options(&body(json!({})), "id").unwrap().photo_options;
         assert_eq!(defaults[2..6], ["--masks", "threshold", "--cameras", "turntable"]);

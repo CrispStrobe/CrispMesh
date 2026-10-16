@@ -150,6 +150,15 @@ export class LocalEngine implements Engine {
    */
   async importFiles(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string> {
     if (!this.imports) throw new EngineError("This engine takes files from the data folder; it has no import.", 0);
+    return this.copyFiles(folder, files, onProgress);
+  }
+
+  /** Photos taken with the camera (`Take photos`), saved into `<data folder>/<folder>/` on every platform. */
+  async saveCapture(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string> {
+    return this.copyFiles(folder, files, onProgress);
+  }
+
+  private async copyFiles(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string> {
     let last = "";
     for (const [index, file] of files.entries()) {
       const bytes = new Uint8Array(await file.arrayBuffer());

@@ -120,7 +120,7 @@ const BROWSER_START: StartPoint[] = [
     meaning: "Photos of an object on a turntable, one turn, and the calibration of the lens. Masks and cameras are made first, here in the browser; nothing is uploaded.",
     fields: [
       { key: "photos", label: "Photos", kind: "folder", required: true, help: "One photo per turntable position, in capture order by name (PNG or JPEG)." },
-      { key: "calibration", label: "Lens calibration", kind: "file", required: true, help: "Focal length, principal point and radial distortion of the lens (crispmesh_lens_calibration_v1)." },
+      { key: "calibration", label: "Lens calibration", kind: "file", required: true, automatic: true, help: "Focal length, principal point and radial distortion of the lens (crispmesh_lens_calibration_v1), or automatic." },
     ],
     providers: [
       {
@@ -219,6 +219,9 @@ export function photoFiles(files: { name: string; file: File }[]): [string, File
   return unique.sort((a, b) => collator.compare(a.name, b.name)).map(({ name, file }) => [name, file]);
 }
 
+/** The label of the automatic lens in the calibration picker and the run's record. */
+export const AUTOMATIC_LENS = "automatic (focal length found from the turn)";
+
 /** A calibration file is JSON that says what it is. Throws a sentence otherwise. */
 export function checkCalibration(text: string): string {
   let parsed: { schema?: unknown };
@@ -309,6 +312,11 @@ export class BrowserEngine implements Engine {
 
   pickedCalibration(): { label: string; text: string } | null {
     return this.calibration;
+  }
+
+  /** No lens file: the turntable solver finds the focal length (centred principal point, no distortion). */
+  useAutomaticLens(): void {
+    this.calibration = { label: AUTOMATIC_LENS, text: "auto" };
   }
 
   /** Lens calibrations shipped with the app (calibrations/index.json next to it). */

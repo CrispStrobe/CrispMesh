@@ -172,5 +172,7 @@ export interface Engine {
   /** Lens calibration files the engine found on its computer, for the photos start. */
   /** Copies picked files into `<data folder>/<folder>/`; returns the last one's path relative to the data folder. */
   importFiles?(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string>;
+  /** Saves photos taken with the camera into the data folder; returns the last file's path relative to it. */
+  saveCapture?(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string>;
   calibrations?(): Promise<{ label: string; path: string }[]>;
 }

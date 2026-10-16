@@ -409,7 +409,20 @@ undistorted photos and masks") and then runs the dense stages.
 - **Lens calibration.** Calibration files found in the data folder, in
   `calibrations/` under it and, from a checkout, in
   `scripts/turntable_mesh/calibrations/` are offered as buttons; any other
-  file can be typed or picked.
+  file can be typed or picked. **Automatic** (`--calibration auto`) needs no
+  file: the turntable solver finds the focal length from the closed turn
+  (measured in `docs/PHOTOS-TO-INPUTS.md`, "Without a lens file").
+- **Take photos.** Next to the photos field (in a browser, on the Mac, iPhone
+  and iPad): the device's camera, full frames as `capture_NNNN.jpg`. *Auto*
+  takes a photo each time the picture has changed from the last photo and then
+  stood still for 0.6 s (`core/autoCapture.ts`); a target of 24 to 72 photos
+  for the turn, *Delete last*, *Use N photos* (at least 8). In a browser the
+  photos go straight into the run; in the apps they are saved into a new
+  `capture-<time>` folder of the data folder. The lens then defaults to
+  Automatic. The apps declare the camera (`NSCameraUsageDescription`; the Mac
+  App Store variant also `com.apple.security.device.camera`).
+  `scripts/capture-check.mjs` checks the whole path in headless Chrome with a
+  video file as the camera.
 - **Providers.** One choice for masks (`threshold`, `import`,
   `external-sam`) and one for cameras (`alicevision`, `colmap`, `markers`,
   `import`), from the crate's list. `markers` (a printed marker mat under the

@@ -16,6 +16,8 @@ export interface StartField {
   kind: "inputs" | "folder" | "file";
   required: boolean;
   help?: string;
+  /** A lens calibration field that also takes `auto`: the engine finds the focal length itself. */
+  automatic?: boolean;
 }
 
 export interface ProviderOption {
@@ -117,7 +119,7 @@ export function parseStartPoints(json: unknown): StartPoint[] {
       const key = text(field.key);
       if (key === undefined) continue;
       const kind = field.kind === "inputs" || field.kind === "file" ? field.kind : "folder";
-      fields.push({ key, label: text(field.label) ?? key, kind, required: field.required !== false, help: text(field.help) });
+      fields.push({ key, label: text(field.label) ?? key, kind, required: field.required !== false, help: text(field.help), ...(field.automatic === true ? { automatic: true } : {}) });
     }
     const providers: ProviderChoice[] = [];
     for (const choice of rows(row.providers)) {

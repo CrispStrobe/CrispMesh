@@ -19,6 +19,7 @@ import type { BrowserEngine } from "../sources/browserEngine";
 import { DeviceImport } from "./deviceImport";
 import { FolderPicker } from "./folderPicker";
 import { CalibrationPicker, PhotosPicker } from "./photoPickers";
+import { CaptureButton } from "./capture";
 import { Icon } from "./icons";
 import { PathField } from "./pathField";
 import { CalibrationList, ProviderChoices } from "./providerFields";
@@ -227,11 +228,13 @@ export function NewRun({ engine, prefs, onChange }: Props) {
                 engine={engine as BrowserEngine}
                 error={fieldError(field.key) ?? (showErrors && missing.includes(field.key) ? "Choose the photos." : undefined)}
                 onPicked={(name) => setField(field.key, name)}
+                onAutomaticLens={(label) => setField("calibration", label)}
               />
             ) : engine.kind === "browser" && field.key === "calibration" ? (
               <CalibrationPicker
                 key={`${point.id}-${field.key}`}
                 engine={engine as BrowserEngine}
+                value={values[field.key]}
                 error={fieldError(field.key) ?? (showErrors && missing.includes(field.key) ? "Choose the lens calibration." : undefined)}
                 onPicked={(name) => setField(field.key, name)}
               />
@@ -260,7 +263,26 @@ export function NewRun({ engine, prefs, onChange }: Props) {
               {health?.imports === true && (field.key === "photos" || field.key === "calibration") && (
                 <DeviceImport engine={engine} what={field.key} onImported={(path) => setField(field.key, path)} />
               )}
+              {field.key === "photos" && point.fields.some((other) => other.automatic === true) && (
+                <CaptureButton
+                  engine={engine}
+                  onSaved={(folder) => {
+                    setField("photos", folder);
+                    // Photos from this device's camera have no lens file: the focal length is found from the turn.
+                    if ((values.calibration ?? "").trim() === "") setField("calibration", "auto");
+                  }}
+                />
+              )}
               {field.key === "calibration" && <CalibrationList engine={engine} current={values.calibration ?? ""} onPick={(path) => setField("calibration", path)} />}
+              {field.automatic === true && (
+                <div class="calibrations" role="group" aria-label="Without a calibration file">
+                  <span class="help">No file?</span>
+                  <button type="button" class="button small" aria-pressed={values[field.key] === "auto"} onClick={() => setField(field.key, "auto")}>
+                    Automatic
+                  </button>
+                  <span class="help">The focal length is found from the turn (centred lens, distortion left out): for phone cameras and webcams.</span>
+                </div>
+              )}
             </PathField>
             ),
           )}
