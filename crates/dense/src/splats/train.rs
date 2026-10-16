@@ -327,27 +327,39 @@ pub async fn mesh(
         .map(|n| crate::surface::train::trilinear(&hull, hull_resolution, [centre(n / (r * r)), centre(n / r % r), centre(n % r)]))
         .collect();
     let voxels: Vec<u32> = (0..r * r * r).filter(|n| hull_value[*n].abs() < band).map(|n| n as u32).collect();
-    let sums = gpu.zeroed("splat fuse sums", voxels.len() as u64 * 3 * 4);
-    let list = gpu.upload("splat fuse voxels", &voxels);
+    // The sums are split into parts that each fit one storage binding (at the best level, mesh 768, one buffer was 256 MB).
+    let part = (gpu.binding_budget() / (3 * 4)).max(1) as usize;
+    let parts: Vec<(u32, wgpu::Buffer, wgpu::Buffer)> = voxels
+        .chunks(part)
+        .map(|chunk| {
+            (chunk.len() as u32, gpu.upload("splat fuse voxels", chunk), gpu.zeroed("splat fuse sums", chunk.len() as u64 * 3 * 4))
+        })
+        .collect();
     let fuse = gpu.kernel("splat_fuse", include_str!("../shaders/splat_fuse.wgsl"), "main").await?;
     for view in &scene.views {
         let cam = camera(view);
         let mut frame = Frame::new(gpu, splats.count, &cam);
         render(gpu, kernels, splats, &cam, degree, &mut frame).await?;
-        let params = FuseParams {
-            count: voxels.len() as u32,
-            resolution: r as u32,
-            width: cam.width,
-            height: cam.height,
-            rotation: std::array::from_fn(|i| [cam.rotation[i][0], cam.rotation[i][1], cam.rotation[i][2], cam.translation[i]]),
-            intrinsics: cam.intrinsics,
-            truncation: 4.0 * size,
-            pad: [0.0; 3],
-        };
-        let uniform = gpu.uniform("splat fuse", &params);
-        gpu.run(&fuse, &[&uniform, &list, &frame.pixels, &sums], voxels.len() as u64).await?;
+        for (count, list, sums) in &parts {
+            let params = FuseParams {
+                count: *count,
+                resolution: r as u32,
+                width: cam.width,
+                height: cam.height,
+                rotation: std::array::from_fn(|i| [cam.rotation[i][0], cam.rotation[i][1], cam.rotation[i][2], cam.translation[i]]),
+                intrinsics: cam.intrinsics,
+                truncation: 4.0 * size,
+                pad: [0.0; 3],
+            };
+            let uniform = gpu.uniform("splat fuse", &params);
+            gpu.run(&fuse, &[&uniform, list, &frame.pixels, sums], *count as u64).await?;
+        }
     }
-    let sums: Vec<f32> = gpu.read(&sums, voxels.len() * 3).await?;
+    let mut sums = Vec::with_capacity(voxels.len() * 3);
+    for (count, _, buffer) in &parts {
+        sums.extend(gpu.read::<f32>(buffer, *count as usize * 3).await?);
+    }
+    drop(parts);
     let mut field: Vec<f32> = hull_value.iter().map(|h| if *h < 0.0 { -1.0 } else { 1.0 }).collect();
     drop(hull_value);
     for (i, n) in voxels.iter().enumerate() {
@@ -528,11 +540,12 @@ pub async fn train_with(
     let mut sorted = psnr.clone();
     sorted.sort_by(f64::total_cmp);
     let median = sorted.get(sorted.len() / 2).copied().unwrap_or(f64::NAN);
-    let triangles = mesh(gpu, &kernels, &splats, scene, settings.sh_degree, settings.mesh, 0.05, &out.join("mesh.stl")).await?;
-    log(&start, &format!("mesh: {triangles} triangles"));
+    // Saved before meshing, so a failed mesh does not lose the training (`init=splats.npz steps=0` meshes again).
     let rows: Vec<f32> = gpu.read(&splats.params, splats.count as usize * PARAMS as usize).await?;
     let array = crate::npz::Array::new(&[splats.count as usize, PARAMS as usize], crate::npz::Data::F32(rows));
     crate::npz::write(&out.join("splats.npz"), &[("params", &array)], false)?;
+    let triangles = mesh(gpu, &kernels, &splats, scene, settings.sh_degree, settings.mesh, 0.05, &out.join("mesh.stl")).await?;
+    log(&start, &format!("mesh: {triangles} triangles"));
     let summary = serde_json::json!({"steps": settings.steps, "views": scene.views.len(), "held_out": held.len(), "splats": splats.count,
         "train_seconds": train_seconds, "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "heldout_psnr_in_mask_median": median, "heldout_psnr_in_mask": psnr, "adapter": gpu.describe(), "history": history});
     crate::storage::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
