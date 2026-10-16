@@ -53,6 +53,34 @@ fn turntable_region(mask: &crate::inputs::Plane<u8>) -> crate::inputs::Plane<u8>
     region
 }
 
+/// Turns the raw steps may add up to while `--calibration auto` is still finding the focal length.
+const AUTO_CLOSING: (f64, f64) = (0.25, 4.0);
+/// Solves of `--calibration auto` before it settles for the closest one.
+const AUTO_PASSES: usize = 7;
+
+/// The next focal length to try from the (focal length, turn sum) pairs so far: the first step assumes the sum is
+/// proportional to the focal length; later ones fit the power law through the last two (its exponent kept within
+/// 0.3 to 3, since the sums carry noise), which settles where a proportional step would swing back and forth.
+fn next_focal(tried: &[(f64, f64)]) -> f64 {
+    let (focal, sum) = *tried.last().expect("one pass");
+    let exponent = match tried.len() {
+        0 | 1 => 1.0,
+        n => {
+            let (before, before_sum) = tried[n - 2];
+            let fitted = (sum / before_sum).ln() / (focal / before).ln();
+            if fitted.is_finite() {
+                fitted.clamp(0.3, 3.0)
+            } else {
+                1.0
+            }
+        }
+    };
+    focal * (360.0 / sum).powf(1.0 / exponent)
+}
+
+/// Fields of view across the longer side, in degrees, that `--calibration auto` accepts as found.
+const AUTO_FIELD: (f64, f64) = (12.0, 120.0);
+
 /// The declared lens at the working resolution: the photo resolution when its longest side is at most
 /// `longest` (or `longest` is 0), else scaled to that longest side (centre of the top-left pixel at 0).
 pub fn working_lens(lens: &Lens, longest: usize) -> Lens {
@@ -123,7 +151,6 @@ impl CameraProvider for Turntable {
         let working = working_lens(&lens, options.turntable.working_size);
         let (sx, sy) = (working.width as f64 / lens.width as f64, working.height as f64 / lens.height as f64);
         let shrink = |p: [f64; 2]| [(p[0] + 0.5) * sx - 0.5, (p[1] + 0.5) * sy - 0.5];
-        let camera = Camera::from_lens(&working);
         let names: Vec<String> = (0..count).map(capture_name).collect();
         let ring_of = |photo: usize| photo / per;
         // Per photo and feature: inside the object's mask (only known for features found here).
@@ -280,62 +307,143 @@ impl CameraProvider for Turntable {
                 .map(|(i, j, list)| (i - r * per, j - r * per, list.clone()))
                 .collect(),
         };
-        let mut solved_rings = Vec::new();
-        for r in 0..rings {
-            let own = if rings == 1 { std::mem::take(&mut matches) } else { ring_matches(r, &matches) };
-            let counted: Vec<(usize, usize, usize)> = own.pairs.iter().map(|p| (p.0, p.1, p.2.len())).collect();
-            let by_distance = matching::matches_by_distance(per, &counted);
-            run.note(
-                if rings == 1 { "turntable_order".to_string() } else { format!("turntable_order_ring_{}", r + 1) }.as_str(),
-                json!({"median_matches_by_distance": by_distance}),
-            );
-            matching::check_order(&by_distance)
-                .map_err(|reason| if rings == 1 { anyhow!(reason) } else { anyhow!("turn {}: {reason}", r + 1) })?;
-            let planar = if options.turntable.surface {
-                let inside = &object_side.as_ref().expect("photo features")[r * per..(r + 1) * per];
-                match super::planar::estimate(&own, inside, &camera) {
-                    Ok(seed) => Some(seed),
-                    Err(e) if rings == 1 => return Err(e),
-                    // A turn seen from the side shows the turntable edge-on: no plane to fit. Its motion
-                    // is searched from the matches like without the surface region.
-                    Err(e) => {
-                        run.warn(format!("turn {}: {e}; its axis is searched from the matches instead", r + 1));
-                        None
+        // With --calibration auto the focal length is found here. The steps the solver finds from image motion scale
+        // with the focal length it is given (measured on the Bunny: 0.85, 0.93, 1.07 times the calibrated focal gave
+        // 309, 337 and 389 degrees for one turn), so a closed turn tells it: the focal is corrected by 360 degrees over
+        // the sum of the raw steps and the turn solved again, until the sum is within 0.2 % of one turn. The matches
+        // do not depend on the lens; only the solve is repeated.
+        let auto = options.turntable.auto_lens;
+        let mut lens = lens;
+        let mut working = working;
+        let mut passes = Vec::new();
+        let mut solved_rings;
+        let mut pass = 0;
+        let mut tried: Vec<(f64, f64)> = Vec::new();
+        let mut finishing = false;
+        loop {
+            let camera = Camera::from_lens(&working);
+            // While the focal length is unknown the raw steps may add up to far from one turn.
+            let closing = if auto { AUTO_CLOSING } else { solver::CLOSING_TURNS };
+            solved_rings = Vec::new();
+            for r in 0..rings {
+                let own = if rings == 1 { std::mem::take(&mut matches) } else { ring_matches(r, &matches) };
+                let counted: Vec<(usize, usize, usize)> = own.pairs.iter().map(|p| (p.0, p.1, p.2.len())).collect();
+                let by_distance = matching::matches_by_distance(per, &counted);
+                run.note(
+                    if rings == 1 { "turntable_order".to_string() } else { format!("turntable_order_ring_{}", r + 1) }.as_str(),
+                    json!({"median_matches_by_distance": by_distance}),
+                );
+                matching::check_order(&by_distance).map_err(|reason| {
+                    if rings == 1 {
+                        anyhow!(reason)
+                    } else {
+                        anyhow!("turn {}: {reason}", r + 1)
                     }
-                }
-            } else {
-                None
-            };
-            let settings = solver::Settings { open_turn: options.open_turn, wide_axis: options.turntable.surface, planar };
-            let (low, high) = (0.6 + 0.22 * r as f64 / rings as f64, 0.6 + 0.22 * (r + 1) as f64 / rings as f64);
-            let solved =
-                run.internal("cameras", "turntable-solve", timeouts.sfm, low, high, "Recovering cameras (turntable solver)", 1, |_| {
-                    Ok(solver::solve(&own, &camera, &settings))
                 })?;
-            let solved = match solved {
-                Ok(solved) => solved,
-                Err(e) if rings == 1 => return Err(e),
-                // A turn that cannot be solved on its own (a camera looking almost straight down) still has
-                // matches to the other turns: its photos are registered one by one when the turns are joined.
-                Err(e) => {
-                    run.warn(format!("turn {}: {e}; its photos are registered against the other turns instead", r + 1));
-                    solver::Solved::unsolved(per, &e.to_string())
-                }
-            };
-            if rings == 1 {
-                matches = own;
-            } else if options.keep_intermediates {
-                // Every turn on its own, in its own frame, for diagnosis of the join.
-                let folder = out.join("sfm/turntable");
-                crate::photos::fs::create_dir_all(&folder)?;
-                util::write_json(
-                    &folder.join(format!("turn-{}.json", r + 1)),
-                    &json!({"rotations": solved.rotations, "translations": solved.translations, "points": solved.points,
-                            "observations": solved.observations, "report": solved.report}),
-                    0,
+                let planar = if options.turntable.surface {
+                    let inside = &object_side.as_ref().expect("photo features")[r * per..(r + 1) * per];
+                    match super::planar::estimate(&own, inside, &camera) {
+                        Ok(seed) => Some(seed),
+                        Err(e) if rings == 1 => return Err(e),
+                        // A turn seen from the side shows the turntable edge-on: no plane to fit. Its motion
+                        // is searched from the matches like without the surface region.
+                        Err(e) => {
+                            if pass == 0 {
+                                run.warn(format!("turn {}: {e}; its axis is searched from the matches instead", r + 1));
+                            }
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+                let settings = solver::Settings { open_turn: options.open_turn, wide_axis: options.turntable.surface, planar, closing };
+                let (low, high) = (0.6 + 0.22 * r as f64 / rings as f64, 0.6 + 0.22 * (r + 1) as f64 / rings as f64);
+                let solved = run.internal(
+                    "cameras",
+                    "turntable-solve",
+                    timeouts.sfm,
+                    low,
+                    high,
+                    "Recovering cameras (turntable solver)",
+                    1,
+                    |_| Ok(solver::solve(&own, &camera, &settings)),
                 )?;
+                let solved = match solved {
+                    Ok(solved) => solved,
+                    Err(e) if rings == 1 => return Err(e),
+                    // A turn that cannot be solved on its own (a camera looking almost straight down) still has
+                    // matches to the other turns: its photos are registered one by one when the turns are joined.
+                    Err(e) => {
+                        if pass == 0 {
+                            run.warn(format!("turn {}: {e}; its photos are registered against the other turns instead", r + 1));
+                        }
+                        solver::Solved::unsolved(per, &e.to_string())
+                    }
+                };
+                if rings == 1 {
+                    matches = own;
+                } else if options.keep_intermediates {
+                    // Every turn on its own, in its own frame, for diagnosis of the join.
+                    let folder = out.join("sfm/turntable");
+                    crate::photos::fs::create_dir_all(&folder)?;
+                    util::write_json(
+                        &folder.join(format!("turn-{}.json", r + 1)),
+                        &json!({"rotations": solved.rotations, "translations": solved.translations, "points": solved.points,
+                                "observations": solved.observations, "report": solved.report}),
+                        0,
+                    )?;
+                }
+                solved_rings.push(solved);
             }
-            solved_rings.push(solved);
+            if !auto {
+                break;
+            }
+            let mut sums: Vec<f64> = solved_rings.iter().filter_map(|s| s.report["turn_sum_deg"].as_f64()).collect();
+            if sums.is_empty() {
+                bail!("--calibration auto: no turn could be solved, so the focal length cannot be found; give a lens file");
+            }
+            let sum = crate::inputs::median_f64(&mut sums);
+            passes.push(json!({"focal_px": lens.pixels[0], "turn_sum_deg": sum}));
+            tried.push((lens.pixels[0], sum));
+            if (sum / 360.0 - 1.0).abs() < 0.002 || finishing {
+                break;
+            }
+            let focal = if pass >= AUTO_PASSES {
+                // Not settled: finish with the focal length whose turn came closest to one.
+                finishing = true;
+                tried.iter().min_by(|a, b| (a.1 - 360.0).abs().total_cmp(&(b.1 - 360.0).abs())).expect("one pass").0
+            } else {
+                next_focal(&tried)
+            };
+            if focal == lens.pixels[0] {
+                break;
+            }
+            let scale = focal / lens.pixels[0];
+            lens.pixels[0] *= scale;
+            lens.pixels[1] *= scale;
+            working = working_lens(&lens, options.turntable.working_size);
+            pass += 1;
+        }
+        let camera = Camera::from_lens(&working);
+        if auto {
+            let field = |focal: f64| 2.0 * (lens.width.max(lens.height) as f64 / (2.0 * focal)).atan().to_degrees();
+            let degrees = field(lens.pixels[0]);
+            if !(AUTO_FIELD.0..=AUTO_FIELD.1).contains(&degrees) {
+                bail!(
+                    "--calibration auto: the focal length found ({:.0} px, a field of view of {degrees:.0} degrees) is implausible \
+                     ({:.0} to {:.0} degrees); the turntable's motion was probably not found. Give a lens file",
+                    lens.pixels[0],
+                    AUTO_FIELD.0,
+                    AUTO_FIELD.1
+                );
+            }
+            run.note("automatic_lens", json!({"focal_px": lens.pixels[0], "field_of_view_deg": degrees, "passes": passes}));
+            run.warn(format!(
+                "no lens file: the focal length was found from the turn ({:.0} px, {degrees:.0} degree field of view), the \
+                 principal point set to the centre and lens distortion left out",
+                lens.pixels[0]
+            ));
         }
         let solved = if rings == 1 {
             solved_rings.pop().expect("one turn")
@@ -397,6 +505,19 @@ impl CameraProvider for Turntable {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn next_focal_steps_proportionally_then_fits_the_two_last() {
+        assert!((next_focal(&[(1000.0, 300.0)]) - 1200.0).abs() < 1e-9);
+        // A sum that grows with the square of the focal length: the second step lands on it.
+        let sum = |f: f64| 360.0 * (f / 1500.0).powi(2);
+        let first = 1000.0;
+        let second = next_focal(&[(first, sum(first))]);
+        let third = next_focal(&[(first, sum(first)), (second, sum(second))]);
+        assert!((third - 1500.0).abs() < 1e-6, "{third}");
+        // Equal focal lengths (no slope): a proportional step.
+        assert!((next_focal(&[(1000.0, 350.0), (1000.0, 350.0)]) - 1000.0 * 360.0 / 350.0).abs() < 1e-9);
+    }
 
     #[test]
     fn working_lens_keeps_small_photos_and_scales_pixel_centres() {

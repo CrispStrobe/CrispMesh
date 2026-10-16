@@ -64,12 +64,15 @@ pub struct Settings {
     /// Expanded search for downward views, used only with experimental surface features.
     pub wide_axis: bool,
     pub planar: Option<super::planar::Seed>,
+    /// Turns the raw steps of a closed capture may add up to (`CLOSING_TURNS`; wider while an unknown lens's
+    /// focal length is still being found, since the steps scale with it).
+    pub closing: (f64, f64),
 }
 
 /// Turns that the steps of a closed capture may add up to before they are scaled to one. Measured on
 /// correct solutions: 0.78 (the Happy Buddha, rotation and translation hard to tell apart) to 1.07 (25
 /// photos at 15 degrees); a wrong axis gave 1.19 (a smooth bottle seen from a steep camera).
-const CLOSING_TURNS: (f64, f64) = (0.75, 1.15);
+pub const CLOSING_TURNS: (f64, f64) = (0.75, 1.15);
 
 /// The step motion of the turntable model: rotation by `angle` about the axis through `centre`.
 fn step_motion(axis: V3, centre: V3, angle: f64) -> (M3, V3) {
@@ -362,14 +365,14 @@ pub fn solve(matches: &Matches, camera: &Camera, settings: &Settings) -> anyhow:
     // Steps found from the matches add up to close to one turn when the axis is right; far from it
     // the motion was not found, and scaling the steps to 360 degrees would only hide that (the
     // adjustment then settles on wrong cameras that pass every later gate).
-    if !settings.open_turn && !(CLOSING_TURNS.0..=CLOSING_TURNS.1).contains(&turns) {
+    if !settings.open_turn && !(settings.closing.0..=settings.closing.1).contains(&turns) {
         bail!(
             "the steps found add up to {:.0} degrees, not about one turn ({:.0} to {:.0}): the turntable's motion was not found \
              (an axis tilted further than the search reaches, or too few features on the object); pass --open-turn if the \
              photos are not one closed turn",
             raw_sum.to_degrees(),
-            360.0 * CLOSING_TURNS.0,
-            360.0 * CLOSING_TURNS.1
+            360.0 * settings.closing.0,
+            360.0 * settings.closing.1
         );
     }
     let closed = !settings.open_turn;
@@ -1044,6 +1047,11 @@ mod tests {
     }
 
     fn capture_tilt(photos: usize, turn: f64, tilt: f64) -> (Matches, Camera, Vec<M3>, Vec<V3>) {
+        capture_sized(photos, turn, tilt, 1.0)
+    }
+
+    /// `size`: the object's extent relative to the default (about 0.07 of the viewing distance, so about 300 px).
+    fn capture_sized(photos: usize, turn: f64, tilt: f64, size: f64) -> (Matches, Camera, Vec<M3>, Vec<V3>) {
         let camera = Camera { fx: 2300.0, fy: 2302.0, cx: 870.0, cy: 560.0, k: [-0.1, 0.2, -0.5] };
         let axis = unit([0.02, tilt.to_radians().cos(), tilt.to_radians().sin()]);
         let centre = [0.01, 0.05, 1.0];
@@ -1060,7 +1068,11 @@ mod tests {
         let points: Vec<V3> = (0..400)
             .map(|k| {
                 let f = k as f64;
-                [0.01 + 0.07 * (f * 1.7).sin(), 0.05 + 0.08 * (f * 2.3).cos(), 1.0 + 0.07 * (f * 3.1).sin() * (f * 0.37).cos()]
+                [
+                    0.01 + size * 0.07 * (f * 1.7).sin(),
+                    0.05 + size * 0.08 * (f * 2.3).cos(),
+                    1.0 + size * 0.07 * (f * 3.1).sin() * (f * 0.37).cos(),
+                ]
             })
             .collect();
         let keypoints: Vec<Vec<P2>> = (0..photos)
@@ -1183,7 +1195,7 @@ mod tests {
             }
         }
         let all = Matches { keypoints, pairs };
-        let settings = Settings { open_turn: false, wide_axis: true, planar: None };
+        let settings = Settings { open_turn: false, wide_axis: true, planar: None, closing: CLOSING_TURNS };
         let ring = |r: usize| Matches {
             keypoints: all.keypoints[r * 24..(r + 1) * 24].to_vec(),
             pairs: all
@@ -1250,10 +1262,31 @@ mod tests {
         assert!(join(&alone, &camera, &solved).is_err());
     }
 
+    /// What `--calibration auto` rests on: the raw steps scale with the focal length the solver is given, so a closed
+    /// turn tells the focal length. It needs perspective, an object filling a good part of the picture (here about
+    /// 1 200 px of 1 749, like the Bunny's photos). At the true focal length the raw steps add up to a little less than
+    /// a turn (here 350 degrees; the Bunny 355), which is why the focal length found is a few percent short.
+    #[test]
+    fn raw_turn_sum_scales_with_the_assumed_focal_length() {
+        let (matches, camera, _, _) = capture_sized(24, 1.0, 20.0, 4.0);
+        let wide = Settings { open_turn: false, wide_axis: false, planar: None, closing: (0.25, 4.0) };
+        let sum = |factor: f64| {
+            let assumed = Camera { fx: camera.fx * factor, fy: camera.fy * factor, ..camera };
+            solve(&matches, &assumed, &wide).unwrap().report["turn_sum_deg"].as_f64().unwrap()
+        };
+        let truth = sum(1.0);
+        assert!((340.0..360.0).contains(&truth), "{truth}");
+        for factor in [0.8, 0.9, 0.95] {
+            let ratio = sum(factor) / truth;
+            assert!((ratio / factor - 1.0).abs() < 0.05, "focal x{factor}: turn x{ratio:.3}");
+        }
+    }
+
     #[test]
     fn steep_capture_recovers_without_relaxing_closure() {
         let (matches, camera, truth, _) = capture_tilt(24, 1.0, 65.0);
-        let solved = solve(&matches, &camera, &Settings { open_turn: false, wide_axis: true, planar: None }).unwrap();
+        let solved =
+            solve(&matches, &camera, &Settings { open_turn: false, wide_axis: true, planar: None, closing: CLOSING_TURNS }).unwrap();
         assert!(solved.report["reprojection_px"]["median"].as_f64().unwrap() < 0.01);
         for (actual, expected) in solved.rotations.iter().zip(truth) {
             assert!(rotation_angle_deg(actual, &expected) < 0.01);
@@ -1264,7 +1297,8 @@ mod tests {
     fn turntable_capture_is_recovered_from_its_matches() {
         for (turn, open) in [(1.0, false), (0.6, true)] {
             let (matches, camera, rotations, translations) = capture(24, turn);
-            let solved = solve(&matches, &camera, &Settings { open_turn: open, wide_axis: false, planar: None }).unwrap();
+            let solved =
+                solve(&matches, &camera, &Settings { open_turn: open, wide_axis: false, planar: None, closing: CLOSING_TURNS }).unwrap();
             assert_eq!(solved.report["closed_to_full_turn"], !open);
             assert!(solved.points.len() > 300 && solved.report["reprojection_px"]["median"].as_f64().unwrap() < 0.01, "{}", solved.report);
             // Both in the first camera's frame; the scale is free.
@@ -1278,6 +1312,6 @@ mod tests {
             assert!(norm(sub(solved.translations[6], solved.translations[5])) < 1e-4);
         }
         let (matches, camera, _, _) = capture(6, 1.0);
-        assert!(solve(&matches, &camera, &Settings { open_turn: false, wide_axis: false, planar: None }).is_err());
+        assert!(solve(&matches, &camera, &Settings { open_turn: false, wide_axis: false, planar: None, closing: CLOSING_TURNS }).is_err());
     }
 }

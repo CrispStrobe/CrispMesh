@@ -27,7 +27,7 @@ use crate::control::Stopped;
 use crate::events::EventLog;
 
 use super::audit::{audit_solution, Policy};
-use super::calibration::{load_calibration, scale_calibration};
+use super::calibration::{exif_focal_35mm, guessed_lens, load_calibration, scale_calibration};
 use super::cameras::camera_provider;
 use super::masks::mask_provider;
 use super::options::{Options, SCHEMA};
@@ -431,7 +431,16 @@ impl Run<'_> {
             Some(path) => Some(scale_calibration(&load_calibration(path)?, width, height)?),
             None => None,
         };
-        let lens = declared.as_ref().map(|scaled| scaled.lens(width, height));
+        let mut lens = declared.as_ref().map(|scaled| scaled.lens(width, height));
+        if options.turntable.auto_lens {
+            // No lens file: a first guess, which the turntable solver corrects (from the first photo's EXIF focal length
+            // when it has one).
+            let first = photo_map["photos"][0]["source"].as_str().map(|source| options.photos.join(source));
+            let focal = first.and_then(|path| crate::photos::fs::read(path).ok()).and_then(|bytes| exif_focal_35mm(&bytes));
+            let (guess, source) = guessed_lens(width, height, focal, options.turntable.field_of_view);
+            self.note("lens_guess", json!({"focal_px": guess.pixels[0], "source": source, "exif_focal_35mm": focal}));
+            lens = Some(guess);
+        }
         if let Some(scaled) = &declared {
             crate::photos::fs::create_dir_all(out.join("sfm"))?;
             let expected = json!({"pixels": [scaled.fx, scaled.fy, scaled.cx, scaled.cy], "k": scaled.k});
@@ -460,8 +469,10 @@ impl Run<'_> {
             used["scale"] = json!(scaled.scale);
         }
         self.report["lens"] = used;
-        let gates =
-            self.internal("cameras", "audit", small, 0.82, 0.86, "Checking cameras", 1, |_| judge(options, out, &solution, lens.as_ref()))?;
+        let gates = self.internal("cameras", "audit", small, 0.82, 0.86, "Checking cameras", 1, |_| {
+            // With --calibration auto the lens is the one found, which the audit then holds the solution to.
+            judge(options, out, &solution, if options.turntable.auto_lens { Some(&solution.lens) } else { lens.as_ref() })
+        })?;
         self.report["gates"] = gates.clone();
         let ring = &gates["ring"];
         let degenerate = ring["degenerate"].as_bool().unwrap_or(true);

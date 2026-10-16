@@ -174,6 +174,10 @@ pub struct TurntableOptions {
     pub working_size: usize,
     /// The photos are this many complete turns of equal length, one after the other (camera heights).
     pub rings: usize,
+    /// `--calibration auto`: no lens file; the solver finds the focal length from the closed turn.
+    pub auto_lens: bool,
+    /// First guess of the field of view across the longer side, in degrees, when the photos carry no EXIF focal length.
+    pub field_of_view: f64,
 }
 
 /// Options of the `markers` camera provider.
@@ -490,9 +494,13 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
             bail!("--cameras import:{} does not exist", path.display());
         }
     }
-    let calibration = text("calibration").map(|p| absolute(&p));
-    if calibration.is_none() && !stop_after_masks && !matches!(cameras, CameraChoice::Import(_)) {
+    let auto_lens = text("calibration").as_deref() == Some("auto");
+    let calibration = text("calibration").filter(|_| !auto_lens).map(|p| absolute(&p));
+    if calibration.is_none() && !auto_lens && !stop_after_masks && !matches!(cameras, CameraChoice::Import(_)) {
         bail!("--calibration is required");
+    }
+    if auto_lens && cameras != CameraChoice::Turntable {
+        bail!("--calibration auto works with --cameras turntable only; give the other providers a lens file");
     }
     let library_path = pick("alicevision-library-path", "CRISPMESH_ALICEVISION_LIBRARY_PATH").map(|v| split_paths(&v)).unwrap_or_default();
     let mut tool_environment = Vec::new();
@@ -549,7 +557,12 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         surface: word("turntable-region") == "surface",
         working_size: integer("turntable-working-size")?.clamp(0, 100_000) as usize,
         rings: integer("turntable-rings")?.clamp(1, 16) as usize,
+        auto_lens,
+        field_of_view: number("lens-field-of-view")?,
     };
+    if !(10.0..=150.0).contains(&turntable.field_of_view) {
+        bail!("--lens-field-of-view {}: expected 10 to 150 degrees", turntable.field_of_view);
+    }
     // The default deadlines are for one turn; several turns have that many times the photos. Given ones are kept.
     let turns = turntable.rings as u64;
     let deadline = |name: &str| -> anyhow::Result<u64> { Ok(seconds(name)? * if text(name).is_some() { 1 } else { turns }) };
@@ -677,7 +690,8 @@ impl Options {
         let argument = |path: Option<&PathBuf>| path.map(|p| p.to_string_lossy().to_string());
         let mut record = json!({
             "schema": SCHEMA, "engine": concat!("crispmesh-dense ", env!("CARGO_PKG_VERSION")),
-            "photos": self.photos, "photo_count": self.photo_count, "calibration": self.calibration, "output": self.output,
+            "photos": self.photos, "photo_count": self.photo_count,
+            "calibration": if self.turntable.auto_lens { json!("auto") } else { json!(self.calibration) }, "output": self.output,
             "masks_provider": self.masks.name(),
             "masks_import": argument(if let MaskChoice::Import(folder) = &self.masks { Some(folder) } else { None }),
             "cameras_provider": self.cameras.name(),
@@ -705,7 +719,7 @@ impl Options {
                 "sensor_database": av.sensor_database, "memory_gib": av.memory_gib, "initial_field_of_view": av.initial_field_of_view,
                 "describer_types": av.describer_types, "describer_preset": av.describer_preset, "matching_method": av.matching_method,
                 "sfm_option": av.sfm_option},
-            "turntable": {"features": self.turntable.features, "span": self.turntable.span, "matches": self.turntable.matches, "surface": self.turntable.surface, "working_size": self.turntable.working_size, "rings": self.turntable.rings},
+            "turntable": {"features": self.turntable.features, "span": self.turntable.span, "matches": self.turntable.matches, "surface": self.turntable.surface, "working_size": self.turntable.working_size, "rings": self.turntable.rings, "auto_lens": self.turntable.auto_lens, "lens_field_of_view": self.turntable.field_of_view},
             "open_turn": self.open_turn,
             "markers": {"mat": self.markers.mat, "minimum_per_photo": self.markers.minimum_per_photo, "aspect": self.markers.aspect,
                         "aspect_auto": self.markers.aspect_auto},

@@ -122,7 +122,8 @@ export function memory() {
  * A run from an inputs directory (`files`) or from turntable photos (`photos` and `calibration`).
  *
  *   photos:      Map or object: file name -> Uint8Array (PNG or JPEG), one turn in the order of the names
- *   calibration: the lens calibration (crispmesh_lens_calibration_v1) as an object, JSON text or bytes
+ *   calibration: the lens calibration (crispmesh_lens_calibration_v1) as an object, JSON text or bytes, or "auto"
+ *                (the turntable solver finds the focal length; centred principal point, no distortion)
  *
  * From photos the masks and cameras are recovered first with the providers that need no other
  * program (threshold masks and the turntable solver by default); `options.photo_options` takes
@@ -170,16 +171,20 @@ function startFromPhotos(root, photos, calibration, options, onEvent) {
   listed.add(prefix);
   engine.setFileSource(lookup);
   engine.setFileLister(list);
-  const lens = calibration instanceof Uint8Array ? calibration
-    : new TextEncoder().encode(typeof calibration === "string" ? calibration : JSON.stringify(calibration));
-  engine.putFile(`${root}/calibration.json`, lens);
+  // "auto": no lens file; the turntable solver finds the focal length from the closed turn.
+  const auto = calibration === "auto";
+  if (!auto) {
+    const lens = calibration instanceof Uint8Array ? calibration
+      : new TextEncoder().encode(typeof calibration === "string" ? calibration : JSON.stringify(calibration));
+    engine.putFile(`${root}/calibration.json`, lens);
+  }
   const handle = new engine.Run();
   const text = JSON.stringify({
     ...options,
     output: `${root}/run`,
     photos: `${root}/photos`,
     photo_options: [
-      "--calibration", `${root}/calibration.json`,
+      "--calibration", auto ? "auto" : `${root}/calibration.json`,
       ...(threads > 1 && !(options.photo_options ?? []).some((word) => word.startsWith("--threads")) ? ["--threads", String(threads)] : []),
       ...(options.photo_options ?? []),
     ],

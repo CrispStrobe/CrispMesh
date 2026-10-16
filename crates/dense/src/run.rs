@@ -994,12 +994,20 @@ pub fn describe_with(photo_options: &[String]) -> Value {
             })
         };
         let group = |id: &str, label: &str| json!({"id": id, "label": label, "settings": option_table::of_group(id)});
+        // `auto` instead of a file: the turntable solver finds the focal length (`--calibration auto`).
+        let mut lens_field = field(
+            "calibration",
+            "Lens calibration (.json)",
+            "file",
+            "Focal length, principal point and radial distortion of the lens, or automatic: the focal length found from the turn.",
+        );
+        lens_field["automatic"] = json!(true);
         points.push(json!({
             "id": "photos", "label": "Turntable photos",
             "meaning": "A folder of photos of an object on a turntable and the calibration of the lens; masks and cameras are made first.",
             "fields": [
                 field("photos", "Photos", "folder", "One photo per turntable position, named in capture order."),
-                field("calibration", "Lens calibration (.json)", "file", "Focal length, principal point and radial distortion of the lens."),
+                lens_field,
             ],
             "providers": [choice("masks", "Masks"), choice("cameras", "Cameras")],
             // The scene is written by the `cameras` stage: a run from photos has no `inputs` stage.

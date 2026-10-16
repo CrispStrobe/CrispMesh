@@ -260,3 +260,115 @@ mod tests {
         assert!(calibrated_scene(&scene, &scaled.lens(1749, 1000)).is_err());
     }
 }
+
+/// The first lens of `--calibration auto` for photos of `width` x `height`: the focal length from the 35 mm
+/// equivalent focal length when the photo carries one (by the diagonal, as the equivalent is defined), else from
+/// `field_of_view` degrees across the longer side; principal point in the centre, no distortion. Also says which.
+pub fn guessed_lens(width: u32, height: u32, focal_35mm: Option<f64>, field_of_view: f64) -> (Lens, &'static str) {
+    let (w, h) = (width as f64, height as f64);
+    let (focal, source) = match focal_35mm.filter(|f| (8.0..=1200.0).contains(f)) {
+        Some(f) => (f * w.hypot(h) / 36f64.hypot(24.0), "exif_35mm_equivalent"),
+        None => (w.max(h) / (2.0 * (field_of_view.to_radians() / 2.0).tan()), "field_of_view_guess"),
+    };
+    (Lens { width, height, pixels: [focal, focal, (w - 1.0) / 2.0, (h - 1.0) / 2.0], k: [0.0; 3] }, source)
+}
+
+/// The 35 mm equivalent focal length (EXIF tag 0xA405) of a JPEG or PNG's EXIF block, if it has one.
+pub fn exif_focal_35mm(bytes: &[u8]) -> Option<f64> {
+    use image::ImageDecoder;
+    let reader = image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format().ok()?;
+    let exif = reader.into_decoder().ok()?.exif_metadata().ok()??;
+    focal_35mm_of_tiff(&exif)
+}
+
+/// Reads tag 0xA405 from the EXIF sub-directory of a TIFF-structured EXIF block.
+fn focal_35mm_of_tiff(tiff: &[u8]) -> Option<f64> {
+    let tiff = tiff.strip_prefix(b"Exif\0\0").unwrap_or(tiff);
+    let little = match tiff.get(0..2)? {
+        b"II" => true,
+        b"MM" => false,
+        _ => return None,
+    };
+    let u16_at = |at: usize| -> Option<u16> {
+        let b: [u8; 2] = tiff.get(at..at + 2)?.try_into().ok()?;
+        Some(if little { u16::from_le_bytes(b) } else { u16::from_be_bytes(b) })
+    };
+    let u32_at = |at: usize| -> Option<u32> {
+        let b: [u8; 4] = tiff.get(at..at + 4)?.try_into().ok()?;
+        Some(if little { u32::from_le_bytes(b) } else { u32::from_be_bytes(b) })
+    };
+    // The value field of `tag` in the directory at `offset`: (type, count, position of the value field).
+    let find = |offset: usize, tag: u16| -> Option<(u16, u32, usize)> {
+        let entries = u16_at(offset)? as usize;
+        (0..entries.min(512))
+            .map(|i| offset + 2 + 12 * i)
+            .find(|&e| u16_at(e) == Some(tag))
+            .and_then(|e| Some((u16_at(e + 2)?, u32_at(e + 4)?, e + 8)))
+    };
+    let first = u32_at(4)? as usize;
+    let (_, _, pointer) = find(first, 0x8769)?;
+    let (kind, count, value) = find(u32_at(pointer)? as usize, 0xA405)?;
+    // SHORT (3), sometimes LONG (4); one value, stored in the entry itself.
+    let focal = match (kind, count) {
+        (3, 1) => u16_at(value)? as f64,
+        (4, 1) => u32_at(value)? as f64,
+        _ => return None,
+    };
+    (focal > 0.0).then_some(focal)
+}
+
+#[cfg(test)]
+mod lens_guess_tests {
+    use super::*;
+
+    /// A little-endian TIFF block with IFD0 -> EXIF IFD -> FocalLengthIn35mmFilm = 26 (an iPhone main camera).
+    fn exif_block(little: bool, focal: u16) -> Vec<u8> {
+        let mut out = Vec::new();
+        let u16b = |v: u16| if little { v.to_le_bytes() } else { v.to_be_bytes() };
+        let u32b = |v: u32| if little { v.to_le_bytes() } else { v.to_be_bytes() };
+        out.extend(if little { b"II" } else { b"MM" });
+        out.extend(u16b(42));
+        out.extend(u32b(8));
+        // IFD0 at 8: one entry, the EXIF pointer to 26.
+        out.extend(u16b(1));
+        out.extend(u16b(0x8769));
+        out.extend(u16b(4));
+        out.extend(u32b(1));
+        out.extend(u32b(26));
+        out.extend(u32b(0));
+        // EXIF IFD at 26: one SHORT entry.
+        out.extend(u16b(1));
+        out.extend(u16b(0xA405));
+        out.extend(u16b(3));
+        out.extend(u32b(1));
+        out.extend(u16b(focal));
+        out.extend([0, 0]);
+        out.extend(u32b(0));
+        out
+    }
+
+    #[test]
+    fn reads_the_35mm_focal_length_in_both_byte_orders() {
+        assert_eq!(focal_35mm_of_tiff(&exif_block(true, 26)), Some(26.0));
+        assert_eq!(focal_35mm_of_tiff(&exif_block(false, 26)), Some(26.0));
+        let mut prefixed = b"Exif\0\0".to_vec();
+        prefixed.extend(exif_block(true, 50));
+        assert_eq!(focal_35mm_of_tiff(&prefixed), Some(50.0));
+        assert_eq!(focal_35mm_of_tiff(b"II*\0\x08\0\0\0\0\0"), None);
+        assert_eq!(focal_35mm_of_tiff(b"junk"), None);
+    }
+
+    #[test]
+    fn guesses_a_centred_lens_without_distortion() {
+        // 26 mm equivalent on a 4032 x 3024 photo: about 3 100 px (an iPhone's main camera).
+        let (lens, source) = guessed_lens(4032, 3024, Some(26.0), 65.0);
+        assert_eq!(source, "exif_35mm_equivalent");
+        assert!((lens.pixels[0] - 26.0 * 5040.0 / 43.2666).abs() < 1.0, "{}", lens.pixels[0]);
+        assert_eq!(lens.pixels[2..], [2015.5, 1511.5]);
+        assert_eq!(lens.k, [0.0; 3]);
+        // No EXIF: 90 degrees across the longer side is half that side.
+        let (lens, source) = guessed_lens(1000, 800, None, 90.0);
+        assert_eq!(source, "field_of_view_guess");
+        assert!((lens.pixels[0] - 500.0).abs() < 1e-9);
+    }
+}

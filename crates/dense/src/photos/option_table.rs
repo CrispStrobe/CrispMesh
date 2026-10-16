@@ -42,7 +42,9 @@ pub const OPTIONS: &[OptionSpec] = &[
         choices: &[],
         variable: None,
         repeated: false,
-        meaning: "Lens file: focal length, principal point and radial distortion (not needed with --cameras import or --stop-after masks)",
+        meaning: "Lens file: focal length, principal point and radial distortion, or auto: the turntable solver finds the focal \
+                  length (started from the photos' EXIF focal length, else --lens-field-of-view), principal point in the \
+                  centre, no distortion (not needed with --cameras import or --stop-after masks)",
     },
     OptionSpec {
         flag: "output",
@@ -568,6 +570,17 @@ pub const OPTIONS: &[OptionSpec] = &[
         variable: None,
         repeated: false,
         meaning: "Features are found on photos scaled to this longest side when larger (0: the photo resolution)",
+    },
+    OptionSpec {
+        flag: "lens-field-of-view",
+        scope: "cameras:turntable",
+        kind: "number",
+        default: Some("65"),
+        choices: &[],
+        variable: None,
+        repeated: false,
+        meaning: "With --calibration auto and no EXIF focal length: the first guess of the field of view across the longer \
+                  side of the photo, in degrees (the solver corrects it)",
     },
     OptionSpec {
         flag: "turntable-rings",

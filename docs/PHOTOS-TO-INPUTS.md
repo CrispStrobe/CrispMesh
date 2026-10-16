@@ -37,6 +37,58 @@ also takes several turns (`--turntable-rings`, next section).
 
 ### Taking the photos
 
+**How many.** One turn of 36 photos (10 degree steps) is enough; more add little. On the 3DLF Bunny (F1 at
+0.5 % above the support): 73 photos 0.964, 37 photos 0.961, 25 photos 0.926 (cameras still found; the
+Dragon's 25 were refused for too few points per view). Every 4th, 5th or 6th Bunny photo (19, 15, 13) is
+refused by the camera stage: at 19 the views share too few points (median 23 observations per view
+against the gate's 20, the worst 9), at 13 the turn is not found at all. So: at least about 25, better 36.
+
+**With the app's camera.** *Take photos* (photos start, every platform: browser, Mac, iPhone, iPad) uses
+the device's camera. The camera stands still on a stand, the object turns. With *Auto* on, a photo is
+taken each time the picture has changed enough from the last photo (the object turned) and then stood
+still for 0.6 s (`apps/studio/src/core/autoCapture.ts`: the share of pixels of 96-pixel grey copies that
+changed by more than 12 grey levels; turned above 1.5 %, still below 0.3 %. On the 3DLF photos a 10 degree
+step changes at least 2.9 % (Bunny) and 5.2 % (Dragon); strong noise and a brightness shift of 8 levels
+change none, while the mean difference is diluted by the backdrop and missed every other step). Turning by
+hand in steps works, and so does a stepping turntable. The photos (`capture_NNNN.jpg`,
+full camera frames) become the run's photos, and since such a camera has no lens file the run uses the
+automatic lens (next paragraph). Checked end to end in headless Chrome with a video file as the camera
+(`apps/studio/scripts/capture-check.mjs`; video of every 2nd Bunny photo, 37 positions at half size,
+each held 2 s): Auto took one photo per position, 37 in 88 s; the run with the automatic lens registered
+37 of 37 (0.38 px median) and closed the mesh in 34 s. The focal length found was 8 % short at that photo
+size (1 073 against 1 164 px).
+
+**Without a lens file: `--calibration auto`** (turntable cameras only). The steps the solver finds from the
+image motion scale with the focal length it is given, so a closed turn tells the focal length: the
+solver starts from the photos' EXIF 35 mm equivalent focal length, else from `--lens-field-of-view`
+(65 degrees across the longer side), corrects it by 360 degrees over the sum of the raw steps and solves
+again until the sum is within 0.2 % of a turn (the matches are found once; on the Bunny 3 to 5 solves).
+The principal point is the photo's centre and distortion is left out. Measured on the six 3DLF objects
+(their factory lens has distortion; same matches, default dense stages, F1 at 0.5 / 1 / 2 % of the
+scan's diagonal, whole object):
+
+| Object | Focal found vs the lens file | Lens file | Automatic |
+| --- | --- | --- | --- |
+| Bunny | -0.9 % | 0.906 / 0.940 / 0.955 | 0.909 / 0.941 / 0.955 |
+| Dragon | -3.3 % | 0.807 / 0.934 / 0.983 | 0.802 / 0.935 / 0.982 |
+| Armadillo | -1.9 % | 0.933 / 0.976 / 0.991 | 0.938 / 0.978 / 0.992 |
+| Lucy | +2.9 % | 0.847 / 0.944 / 0.968 | 0.844 / 0.943 / 0.968 |
+| Thai statue | -0.8 % | 0.882 / 0.932 / 0.952 | 0.885 / 0.933 / 0.952 |
+| Happy Buddha | +28 % | 0.793 / 0.908 / 0.972 | 0.783 / 0.903 / 0.969 |
+
+The Happy Buddha is the case where it goes wrong: even with its lens file the raw steps add up to only 281
+degrees (rotation and translation are hard to tell apart on it, TURNTABLE-SOLVER.md), so the focal length found
+is 28 % too long; the mesh still comes out, 0.010 lower at 0.5 % (0.013 above the support). Nothing in the run
+tells this case from a right one yet.
+
+On the Bunny the start does not matter: 45, 65 and 90 degree first guesses (focal lengths 0.37 to 1.15
+times the right one) all end at 2 306 to 2 308 px. Limits: the focal length is found to a few percent
+(at the right focal length the raw steps add up to a little less than a turn: 355 degrees on the Bunny),
+and it needs perspective: an object filling a good part of the picture (on a synthetic object a tenth of
+the picture wide the steps hardly change with the focal length). A focal length outside 12 to 120
+degrees of field of view is refused. Strong lens distortion (wide webcams) is not modelled; a lens file
+is still better when there is one.
+
 Measured on the YCB power drill (section "YCB power drill from the DSLR
 cameras" in [`OTHER-IMAGE-SETS.md`](OTHER-IMAGE-SETS.md)), in order of effect:
 
@@ -321,6 +373,8 @@ give the second one with `--alicevision-dense`. If the SAM interpreter lacks
 some pure-Python dependency, add directories with `--sam-pythonpath`.
 
 ## Calibration file
+
+(Or `--calibration auto` for the turntable cameras: see "Without a lens file" above.)
 
 ```json
 {
