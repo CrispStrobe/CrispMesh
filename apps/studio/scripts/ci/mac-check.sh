@@ -34,6 +34,15 @@ cat > "$APP/Contents/Info.plist" <<EOF
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 EOF
+# The app's own Info.plist keys, as the Tauri bundler merges them (camera and local-network usage texts): WebKit
+# offers the camera API only to an app that declares camera use.
+"${PYTHON:-python3}" - "$STUDIO/src-tauri/Info.plist" "$APP/Contents/Info.plist" <<'PY'
+import plistlib, sys
+own = plistlib.load(open(sys.argv[1], "rb"))
+target = plistlib.load(open(sys.argv[2], "rb"))
+target.update(own)
+plistlib.dump(target, open(sys.argv[2], "wb"))
+PY
 "${PYTHON:-python3}" - "$STUDIO/src-tauri/entitlements.appstore.plist" "$WORK/entitlements.plist" <<'PY'
 import plistlib, sys
 entitlements = plistlib.load(open(sys.argv[1], "rb"))
