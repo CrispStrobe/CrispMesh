@@ -177,11 +177,11 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
               {run.downloads.map((file) => (
                 <button key={file.path} type="button" class="button primary" disabled={!canDownload(source) && !canShareFiles()}
                   onClick={() => void (canDownload(source) ? downloadFile(source, file.path) : shareFile(source, file.path)).catch((problem) => setDownloadError(describe(problem)))}>
-                  {canDownload(source) ? "Download textured GLB" : "Share textured GLB"}
+                  {(canDownload(source) ? "Download textured GLB" : "Share textured GLB") + glbOf(file.stage)}
                 </button>
               ))}
               {run.downloads[0] && <TexturePreview source={source} path={run.downloads[0].path} themeTick={themeTick} />}
-              {source.kind === "local" && <p class="sub">Saved in this run’s folder as texture/mesh.glb.</p>}
+              {source.kind === "local" && <p class="sub">Saved in this run’s folder as texture/mesh.glb{run.downloads.length > 1 ? " (the other surfaces’ in surface/texture and splats/texture)" : ""}.</p>}
               {downloadError && <p role="alert" class="field-error">{downloadError}</p>}
             </section>
           )}
@@ -365,4 +365,11 @@ function Attribution({ source }: { source: RunSource }) {
       <pre>{text}</pre>
     </details>
   );
+}
+
+/** Which surface a textured GLB belongs to, for its button: the run's mesh needs no name, the methods' do. */
+function glbOf(stage: string | null | undefined): string {
+  if (stage === "surface") return " (neural surface)";
+  if (stage === "splats") return " (2D splats)";
+  return "";
 }
