@@ -17,6 +17,17 @@ browser. No cloud, no upload, and since this release no external program is need
 - **Two photo-optimised surfaces, experimental, natively on the GPU** (no Python, no CUDA): a neural signed-distance surface (after NeuS-facto) and 2D Gaussian splats (after gsplat's 2DGS). Each trains from the run's photos, masks and mesh and writes its own mesh beside the run's: `--surface fast|standard|best`, `--splats fast|standard|best`, single settings with `--surface-set` / `--splats-set`; also in the app's "New run" form, on the desktop and in a browser with WebGPU. On the YCB power drill (300 photos, five heights) both match reference runs of the original methods on a Tesla T4 (F1 at 0.5 % of the diagonal: 0.93 neural surface, 0.88 splats, against 0.89 and 0.88); `fast` takes about 20–40 minutes on an M1, `standard` one to one and a half hours.
 - The photo resolution these methods use follows the object's size in the photos, not the camera's, so defaults need no adjusting per capture.
 
+### Taking the photos in the app, and handing them to a computer
+
+- **Take photos** with the device's camera (phone, tablet, Mac, or a browser): with *Auto* a photo is taken each
+  time the object on the turntable has turned and stands still again; 36 photos for one turn are enough.
+- **No lens file needed**: `--calibration auto` (and *Automatic* in the app) finds the focal length from the closed
+  turn itself; on five of the six 3DLF objects within 3.3 % of the factory calibration and with practically the
+  same mesh.
+- **Photos on the phone, computation on a computer**: the desktop app can let other devices use its engine on the
+  local network (a QR code pairs the phone); the phone sends its photos there, the run is computed there and
+  followed on the phone. Or send the photo folder by AirDrop and start the run on the computer.
+
 ### How good it is
 
 Four objects of the 3DLF-Scan set (73 photos each, Apple M1, the default command). Scanner F1 at 0.5 % / 1 % / 2 % of the scan's diagonal, against independent structured-light scans used for scoring only:
@@ -31,7 +42,8 @@ Four objects of the 3DLF-Scan set (73 photos each, Apple M1, the default command
 ### Known limits
 
 - **Unsigned builds.** Nothing here is signed with a developer certificate or notarised. macOS (ad-hoc signature only) will refuse to open the app until you allow it under System Settings > Privacy & Security, or remove the quarantine flag (`xattr -dr com.apple.quarantine "CrispMesh.app"`). Windows SmartScreen will warn about the installer. The Android file is a debug build signed with a throwaway debug key; the iOS file runs in the simulator only (the iOS and macOS apps are in internal TestFlight testing, not in the stores).
-- **Turntable captures only**: one or more turns of ordered photos (one camera height per turn), with a lens calibration. Twelve photos with unknown poses are not enough.
+- **Turntable captures only**: one or more turns of ordered photos (one camera height per turn), about 25 photos per turn at the least; fewer are refused. Without a lens file the focal length is found from the turn (distortion is left out; on one object of six it came out 28 % too long).
+- **Taking photos and the hand-off to a computer** are new and have been checked in a browser with a video as the camera, not yet on a phone; the connection between devices is plain HTTP with a token, for a network you trust.
 - The neural surface and the splats are experimental and slow (tens of minutes to hours per object); printed labels can turn into false relief.
 - Thin parts (horn tips, wings) come out short or are lost; surfaces no photo sees follow the silhouettes.
 - The meshes have no physical scale, except with the marker mat.
