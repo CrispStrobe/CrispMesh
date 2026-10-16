@@ -437,6 +437,11 @@ undistorted photos and masks") and then runs the dense stages.
   Store variant declares `com.apple.security.network.server` for this.
   `scripts/handoff-check.mjs` checks it in headless Chrome against the app's
   server (`share.rs`, test `serve_for_checks`).
+- **Without a network connection between them.** On the iPhone or iPad the
+  photos taken are a folder `capture-<time>` in the app's data folder, which
+  the Files app shows (On My iPhone, CrispMesh, data). Send that folder to the
+  Mac by AirDrop (or any file transfer), then start a run there with it as the
+  photos and Automatic as the lens.
 - **Providers.** One choice for masks (`threshold`, `import`,
   `external-sam`) and one for cameras (`alicevision`, `colmap`, `markers`,
   `import`), from the crate's list. `markers` (a printed marker mat under the
