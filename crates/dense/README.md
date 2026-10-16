@@ -1412,6 +1412,14 @@ pads, muzzle, the cheeks' outline; eyes only hinted); its losses are at the ear 
 and along the base. It also agrees with the masks better: 0.8 % of its vertices lie outside the mask in five or
 more views, against 5.7 % for the run's mesh.
 
+At `best` (photos at full size 880 x 928, 30 000 steps each, meshes at 768) on the same masks and hull: the neural
+surface 0.889 / 0.925 / 0.949 and 0.969 / 0.996 / 1.000 (5.4 hours on an M1), the splats 0.869 / 0.918 / 0.949 and
+0.957 / 0.995 / 1.000 (1.4 hours, held out 30.0 dB against 29.5 dB at `fast`). Above the support the neural surface
+now matches the run's mesh at 0.5 % (0.969 against 0.968); over the whole object it stays behind (0.889 against
+0.908), as the ear tips and the base remain. In the renders the surface at `best` is the cleanest of all five meshes:
+the cheek pads and muzzle are sharper, the grid steps on the ears at `fast` are gone; a few crumbs lie along the base.
+The splats at `best` are rougher than at `fast` (fine creases on the muzzle, a small fold between the ears).
+
 The splat trainer can stop at the first value that is not finite (`CRISPMESH_SPLAT_FINITE=1`), naming the buffer
 (parameters, gradients of the projected splats, parameter gradients), the step, the view and the splat. The drill's
 30 000-step model from before the backward rasterizer's rewrite (`71b4b05`) held about 1 % splats whose parameters
