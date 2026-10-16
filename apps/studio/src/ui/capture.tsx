@@ -36,6 +36,7 @@ function cameraProblem(error: unknown): string {
 export function CaptureScreen({ onDone, onCancel }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const systemCamera = useRef<HTMLInputElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const detector = useRef(new AutoCapture());
   const lastFrame = useRef<Uint8Array | null>(null);
@@ -215,9 +216,33 @@ export function CaptureScreen({ onDone, onCancel }: Props) {
       <div class="capture-stage">
         <video ref={video} class={flash ? "capture-video flash" : "capture-video"} playsInline muted autoPlay />
         {problem !== "" && (
-          <p class="capture-problem" role="alert">
-            {problem}
-          </p>
+          <div class="capture-problem" role="alert">
+            <p>{problem}</p>
+            {/* Without a live picture: the system's own camera, one photo per tap (no Auto). */}
+            <button type="button" class="button primary" onClick={() => systemCamera.current?.click()}>
+              Take a photo with the system camera
+            </button>
+            <input
+              ref={systemCamera}
+              class="visually-hidden"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) => {
+                const picked = [...(event.currentTarget.files ?? [])];
+                event.currentTarget.value = "";
+                setPhotos((current) => [
+                  ...current,
+                  ...picked.map((file, index) => {
+                    const named = new File([file], captureName(current.length + index), { type: file.type || "image/jpeg" });
+                    return { file: named, url: URL.createObjectURL(named) };
+                  }),
+                ]);
+              }}
+            />
+          </div>
         )}
       </div>
       <div class="capture-controls">

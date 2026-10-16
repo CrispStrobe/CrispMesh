@@ -2011,6 +2011,10 @@ fieldset.panel > legend {
   opacity: 0.4;
 }
 
+.capture-problem p {
+  margin: 0 0 8px;
+}
+
 .capture-problem {
   position: absolute;
   inset: auto 16px 16px;
