@@ -288,7 +288,7 @@ export function CaptureScreen({ onDone, onCancel }: Props) {
  * "Take photos" for an engine that keeps its data in a folder (the apps): the photos are saved into a new folder of
  * the data folder, which then becomes the run's photos.
  */
-export function CaptureButton({ engine, onSaved }: { engine: Engine; onSaved(folder: string): void }) {
+export function CaptureButton({ engine, onSaved }: { engine: Engine; onSaved(folder: string, count: number): void }) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<{ message: string; bad: boolean }>({ message: "", bad: false });
   const save = engine.saveCapture?.bind(engine);
@@ -308,7 +308,7 @@ export function CaptureButton({ engine, onSaved }: { engine: Engine; onSaved(fol
             save(folder, files, (done, total) => setState({ message: `Saving ${done} of ${total}...`, bad: false })).then(
               () => {
                 setState({ message: `${files.length} photos saved in ${folder}.`, bad: false });
-                onSaved(folder);
+                onSaved(folder, files.length);
               },
               (problem) => setState({ message: describe(problem), bad: true }),
             );

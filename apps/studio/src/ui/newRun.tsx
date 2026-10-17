@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { fewPhotos, surfaceAutomatically } from "../core/fewPhotos";
 import { humanise } from "../core/format";
 import {
   defaultFormValue,
@@ -47,6 +48,13 @@ export function NewRun({ engine, prefs, onChange }: Props) {
   // Optional photo-optimised surfaces: quality level per method ("" = off) and single numeric settings.
   const [methodQuality, setMethodQuality] = useState<Record<string, string>>({});
   const [methodSettings, setMethodSettings] = useState<Record<string, Record<string, string>>>({});
+  // Number of photos chosen, where the form knows it (picked here, taken with the camera, copied in); null for a typed path.
+  const [photoCount, setPhotoCount] = useState<number | null>(() =>
+    engine.kind === "browser" ? ((engine as BrowserEngine).pickedPhotos()?.files.length ?? null) : null,
+  );
+  // The neural surface was switched on because of few photos (once per form; `surfaceDecided` keeps it from happening again).
+  const [surfaceSwitched, setSurfaceSwitched] = useState(false);
+  const surfaceDecided = useRef(false);
   const [name, setName] = useState("");
   const [values, setValues] = useState<Record<string, string>>({ inputs: engine.kind === "browser" ? ((engine as BrowserEngine).inputs()?.name ?? "") : prefs.inputs });
   const [pointId, setPointId] = useState("inputs");
@@ -105,6 +113,16 @@ export function NewRun({ engine, prefs, onChange }: Props) {
     }
     return body;
   };
+  // Fewer than 25 photos per turn: the ordinary mesh gets rough, the neural surface (fast) copes with about 20.
+  const few = point.fields.some((field) => field.key === "photos") && fewPhotos(photoCount, providerOptions["turntable-rings"]);
+  const surfaceOffered = methods.some((method) => method.id === "surface" && method.qualities.some((level) => level.id === "fast"));
+  useEffect(() => {
+    const choice = surfaceAutomatically({ few, offered: surfaceOffered, quality: methodQuality.surface ?? "", decided: surfaceDecided.current });
+    surfaceDecided.current = choice.decided;
+    if (!choice.switchOn) return;
+    setMethodQuality((current) => ({ ...current, surface: "fast" }));
+    setSurfaceSwitched(true);
+  }, [few, surfaceOffered]);
   const choosesDevice = health?.choosesDevice !== false;
   const scoresReference = health?.scoresReference !== false;
   const setField = (key: string, value: string) => {
@@ -231,6 +249,7 @@ export function NewRun({ engine, prefs, onChange }: Props) {
                 error={fieldError(field.key) ?? (showErrors && missing.includes(field.key) ? "Choose the photos." : undefined)}
                 onPicked={(name) => setField(field.key, name)}
                 onAutomaticLens={(label) => setField("calibration", label)}
+                onCount={setPhotoCount}
               />
             ) : engine.kind === "browser" && field.key === "calibration" ? (
               <CalibrationPicker
@@ -249,7 +268,11 @@ export function NewRun({ engine, prefs, onChange }: Props) {
               label={field.label}
               optional={field.required ? undefined : "optional"}
               value={values[field.key] ?? ""}
-              onInput={(value) => setField(field.key, value)}
+              onInput={(value) => {
+                setField(field.key, value);
+                // A typed or browsed folder: its number of photos is not known here.
+                if (field.key === "photos") setPhotoCount(null);
+              }}
               placeholder={field.kind === "inputs" ? "dragon/inputs" : undefined}
               help={field.help}
               error={
@@ -263,13 +286,21 @@ export function NewRun({ engine, prefs, onChange }: Props) {
               required={field.required}
             >
               {health?.imports === true && (field.key === "photos" || field.key === "calibration") && (
-                <DeviceImport engine={engine} what={field.key} onImported={(path) => setField(field.key, path)} />
+                <DeviceImport
+                  engine={engine}
+                  what={field.key}
+                  onImported={(path, count) => {
+                    setField(field.key, path);
+                    if (field.key === "photos") setPhotoCount(count);
+                  }}
+                />
               )}
               {field.key === "photos" && point.fields.some((other) => other.automatic === true) && (
                 <CaptureButton
                   engine={engine}
-                  onSaved={(folder) => {
+                  onSaved={(folder, count) => {
                     setField("photos", folder);
+                    setPhotoCount(count);
                     // Photos from this device's camera have no lens file: the focal length is found from the turn.
                     if ((values.calibration ?? "").trim() === "") setField("calibration", "auto");
                   }}
@@ -359,10 +390,22 @@ export function NewRun({ engine, prefs, onChange }: Props) {
           </label>
         )}
 
+        {few && !surfaceOffered && (
+          <p class="notice warn" role="status">
+            Fewer than 25 photos per turn: the mesh will be rough. 36 photos per turn are better.
+          </p>
+        )}
+
         {methods.length > 0 && (
           <fieldset class="methods">
             <legend>Surfaces from the photos (experimental)</legend>
             <p class="sub">After the mesh, optimised against the photos on the GPU; the run's own mesh stays. Minutes (fast) to hours (best).</p>
+            {few && surfaceOffered && (
+              <p class="notice warn" role="status">
+                Fewer than 25 photos per turn: the ordinary mesh will be rough; the neural surface (fast) copes with about 20.
+                {surfaceSwitched && methodQuality.surface === "fast" && " It was switched on at fast for these photos; set it to Off to leave it out."}
+              </p>
+            )}
             {methods.map((method) => {
               const quality = methodQuality[method.id] ?? "";
               const chosen = method.qualities.find((level) => level.id === quality);

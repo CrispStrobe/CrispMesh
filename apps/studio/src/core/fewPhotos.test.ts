@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest";
+import { fewPhotos, photosPerTurn, surfaceAutomatically } from "./fewPhotos";
+
+describe("photos per turn", () => {
+  it("is unknown when the count is, or below three photos", () => {
+    expect(photosPerTurn(null)).toBeNull();
+    expect(photosPerTurn(2)).toBeNull();
+    expect(fewPhotos(null)).toBe(false);
+    expect(fewPhotos(2)).toBe(false);
+  });
+
+  it("divides by the turns as the engine does, whole division, 1 to 16", () => {
+    expect(photosPerTurn(20)).toBe(20);
+    expect(photosPerTurn(100, "5")).toBe(20);
+    expect(photosPerTurn(101, "4")).toBe(25);
+    expect(photosPerTurn(60, "0")).toBe(60);
+    expect(photosPerTurn(400, "40")).toBe(25);
+    // Not a number of turns: one turn.
+    expect(photosPerTurn(30, "two")).toBe(30);
+    expect(photosPerTurn(30, true)).toBe(30);
+  });
+
+  it("is few below 25 per turn only", () => {
+    expect(fewPhotos(3)).toBe(true);
+    expect(fewPhotos(20)).toBe(true);
+    expect(fewPhotos(24)).toBe(true);
+    expect(fewPhotos(25)).toBe(false);
+    expect(fewPhotos(36)).toBe(false);
+    expect(fewPhotos(120, "5")).toBe(true);
+    expect(fewPhotos(125, "5")).toBe(false);
+  });
+});
+
+describe("switching the neural surface on by itself", () => {
+  const start = { few: true, offered: true, quality: "", decided: false };
+
+  it("switches it on once when there are few photos and it is off", () => {
+    expect(surfaceAutomatically(start)).toEqual({ decided: true, switchOn: true });
+  });
+
+  it("does nothing for enough or unknown photos, or when the engine has no neural surface", () => {
+    expect(surfaceAutomatically({ ...start, few: false })).toEqual({ decided: false, switchOn: false });
+    expect(surfaceAutomatically({ ...start, offered: false })).toEqual({ decided: false, switchOn: false });
+  });
+
+  it("leaves a level chosen by hand alone, and then never decides again", () => {
+    expect(surfaceAutomatically({ ...start, quality: "standard" })).toEqual({ decided: true, switchOn: false });
+  });
+
+  it("does not switch it on again after it was switched off by hand", () => {
+    // Switched on automatically, then off by hand, then other few photos chosen.
+    expect(surfaceAutomatically({ ...start, decided: true })).toEqual({ decided: true, switchOn: false });
+  });
+});

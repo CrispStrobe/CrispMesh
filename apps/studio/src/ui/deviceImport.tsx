@@ -6,8 +6,8 @@ interface Props {
   engine: Engine;
   /** `photos`: several images, into a new folder. `calibration`: one lens file. */
   what: "photos" | "calibration";
-  /** Called with the imported folder or file, relative to the data folder. */
-  onImported(path: string): void;
+  /** Called with the imported folder or file, relative to the data folder, and the number of files copied. */
+  onImported(path: string, count: number): void;
 }
 
 /** `photos-20261006-1530`: a new folder per import, so two imports never mix. */
@@ -37,7 +37,7 @@ export function DeviceImport({ engine, what, onImported }: Props) {
     try {
       const folder = what === "photos" ? importFolderName(new Date()) : "calibrations";
       const last = await importFiles(folder, files, (done, total) => setState({ busy: true, message: `Copying ${done} of ${total}...`, bad: false }));
-      onImported(what === "photos" ? folder : last);
+      onImported(what === "photos" ? folder : last, files.length);
       setState({ busy: false, message: what === "photos" ? `${files.length} photos copied into ${folder}.` : `Copied: ${files[0]!.name}.`, bad: false });
     } catch (problem) {
       setState({ busy: false, message: describe(problem), bad: true });

@@ -11,12 +11,14 @@ interface Props {
   onPicked(name: string): void;
   /** Photos taken with the camera come without a lens file: called when the automatic lens was chosen for them. */
   onAutomaticLens?(label: string): void;
+  /** Called with the number of photos chosen, or null when none are. */
+  onCount?(count: number | null): void;
   /** The calibration field's value, so a choice made elsewhere shows here. */
   value?: string;
 }
 
 /** The photos for a run in this browser: several image files, or a folder of them. */
-export function PhotosPicker({ engine, error, onPicked, onAutomaticLens }: Props) {
+export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount }: Props) {
   const files = useRef<HTMLInputElement>(null);
   const folder = useRef<HTMLInputElement>(null);
   const [capturing, setCapturing] = useState(false);
@@ -31,6 +33,7 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens }: Props
       engine.setPhotos(null);
       setPicked(null);
       onPicked("");
+      onCount?.(null);
       return;
     }
     const chosen = { name, files: photos };
@@ -38,6 +41,7 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens }: Props
     engine.setPhotos(chosen, previews);
     setPicked(chosen);
     onPicked(name);
+    onCount?.(photos.length);
   };
 
   const megabytes = picked === null ? 0 : picked.files.reduce((sum, [, file]) => sum + file.size, 0) / 1e6;
