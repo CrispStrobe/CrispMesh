@@ -13,6 +13,14 @@ use super::coarse::Threshold;
 use super::option_table;
 use super::staging::{list_photos, PHOTO_SUFFIXES};
 
+/// Below this many photos per turn the default landmark gate is lowered to [`FEW_PHOTOS_OBSERVATIONS`]: with
+/// about 20-degree steps a correct solution has some photos with only 9 to 12 observations (3DLF Bunny, Armadillo
+/// at 19 photos), and the ring checks (plane, radius, gaps) still refuse wrong cameras (Dragon, Lucy at 19, Bunny
+/// at 15). From 25 photos on nothing changes. An explicit --minimum-observations-per-view always wins.
+pub const FEW_PHOTOS: usize = 25;
+/// The landmark gate for fewer than [`FEW_PHOTOS`] photos per turn.
+pub const FEW_PHOTOS_OBSERVATIONS: i64 = 8;
+
 pub const SCHEMA: &str = "crispmesh_photos_to_inputs_v1";
 
 /// Default dark-hole cleanup budget for the SAM mask providers (the others: the option table's 0.02).
@@ -560,6 +568,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         auto_lens,
         field_of_view: number("lens-field-of-view")?,
     };
+    let few_photos = photo_count / turntable.rings < FEW_PHOTOS;
     if !(10.0..=150.0).contains(&turntable.field_of_view) {
         bail!("--lens-field-of-view {}: expected 10 to 150 degrees", turntable.field_of_view);
     }
@@ -660,7 +669,11 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         },
         gates: Gates {
             minimum_registered_fraction: number("minimum-registered-fraction")?,
-            minimum_observations_per_view: integer("minimum-observations-per-view")?,
+            minimum_observations_per_view: if values.contains_key("minimum-observations-per-view") || !few_photos {
+                integer("minimum-observations-per-view")?
+            } else {
+                FEW_PHOTOS_OBSERVATIONS
+            },
             maximum_view_reprojection_p95_pixels: number("maximum-view-reprojection-p95")?,
             minimum_positive_depth_fraction: number("minimum-positive-depth-fraction")?,
             maximum_radius_spread_percent: number("maximum-radius-spread-percent")?,
@@ -783,6 +796,16 @@ pub(crate) mod tests {
         assert_eq!((options.photo_count, options.dark_threshold, options.envelope.as_str()), (3, Threshold::Otsu, "auto"));
         assert_eq!((&options.masks, &options.cameras, options.threshold_shadow), (&MaskChoice::Threshold, &CameraChoice::Turntable, 0.25));
         assert!(options.gates.ring);
+        // Fewer than FEW_PHOTOS photos: the lowered landmark gate, unless given.
+        assert_eq!(options.gates.minimum_observations_per_view, FEW_PHOTOS_OBSERVATIONS);
+        let given = resolve(&arguments(&folder, &["--minimum-observations-per-view", "20"]), &none).unwrap();
+        assert_eq!(given.gates.minimum_observations_per_view, 20);
+        let enough = scratch("enough");
+        for n in 11..(11 + FEW_PHOTOS - 3) {
+            crate::photos::fs::write(enough.join(format!("photos/thing_{n}_rgb.png")), b"").unwrap();
+        }
+        let ordinary = resolve(&arguments(&enough, &[]), &none).unwrap();
+        assert_eq!((ordinary.photo_count, ordinary.gates.minimum_observations_per_view), (FEW_PHOTOS, 20));
         let orbit = resolve(&arguments(&folder, &["--capture", "orbit", "--cameras", "colmap"]), &none).unwrap();
         assert!(!orbit.gates.ring && orbit.to_json()["gates"]["ring_gates"] == false);
         let refused = resolve(&arguments(&folder, &["--capture", "orbit"]), &none).unwrap_err().to_string();

@@ -15,7 +15,8 @@ interface Taken {
   url: string;
 }
 
-const TARGETS = [24, 36, 48, 72];
+/** Photos per turn offered. 20 (18-degree steps) works with the neural surface; the ordinary mesh wants 36. */
+const TARGETS = [20, 24, 36, 48, 72];
 /** How often the picture is compared, in milliseconds. */
 const TICK_MS = 100;
 
@@ -204,7 +205,7 @@ export function CaptureScreen({ onDone, onCancel }: Props) {
           <select aria-label="Photos for one turn" value={String(target)} onChange={(event) => setTarget(Number(event.currentTarget.value))}>
             {TARGETS.map((count) => (
               <option key={count} value={String(count)}>
-                {count} photos ({Math.round(360 / count)}° steps)
+                {count} photos ({Math.round(360 / count)}° steps){count < 25 ? ", with the neural surface" : ""}
               </option>
             ))}
           </select>

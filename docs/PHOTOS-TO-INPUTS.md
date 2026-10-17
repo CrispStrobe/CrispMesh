@@ -37,17 +37,35 @@ also takes several turns (`--turntable-rings`, next section).
 
 ### Taking the photos
 
-**How many.** One turn of 36 photos (10 degree steps) is enough; more add little. On the 3DLF Bunny (F1 at
-0.5 % above the support): 73 photos 0.964, 37 photos 0.961, 25 photos 0.926 (cameras still found; the
-Dragon's 25 were refused for too few points per view). Every 4th, 5th or 6th Bunny photo (19, 15, 13) is
-refused by the camera stage: at 19 the views share too few points (median 23 observations per view
-against the gate's 20, the worst 9), at 13 the turn is not found at all. The gate is right there: with it
-lowered to 8, the 19 photos give F1 0.676 / 0.802 / 0.897 (whole) and 0.728 / 0.851 / 0.936 above the support,
-against 0.902 / 0.938 / 0.956 and 0.961 / 0.995 / 1.000 from 37. So: at least about 25, better 36; fewer
-would need more matches between views 20 degrees and more apart, not a looser gate. More features do not give
-them: a four times lower contrast threshold found four times the features on the 19 Bunny photos (4 495
-against 1 118 per photo) but only 1.8 times the matches, and the weakest views kept 8 to 9 observations; the
-descriptors do not recognise the points across that much rotation.
+**How many.** One turn of 36 photos (10 degree steps) is enough for every method; more add little. On the
+3DLF Bunny (F1 at 0.5 % above the support): 73 photos 0.964, 37 photos 0.961, 25 photos 0.926 (cameras still
+found; the Dragon's 25 were refused for too few points per view).
+
+**About 20 photos, with the neural surface.** At 19 photos (every 4th, about 19-degree steps) the depth maps
+fail but the cameras are often still right, and the neural surface (`--surface fast`) does not need
+neighbouring photos to match. Bunny, F1 at 0.5 / 1 / 2 % of the diagonal, whole object:
+
+| Bunny | photos | F1 |
+|---|---|---|
+| ordinary mesh | 37 | 0.902 / 0.938 / 0.956 |
+| neural surface, fast | 37 | 0.865 / 0.922 / 0.948 |
+| ordinary mesh | 19 | 0.676 / 0.802 / 0.897 |
+| neural surface, fast | 19 | **0.839 / 0.917 / 0.948** |
+
+Armadillo at 19: ordinary mesh 0.696 / 0.851 / 0.946, neural surface 0.852 / 0.949 / 0.977 (73 photos,
+ordinary mesh: 0.933 / 0.976 / 0.991). Rendered through the same cameras, the 19-photo surfaces show the
+Bunny's ears, face, feet and tail and the Armadillo's shell pattern, hands and tail; the ordinary meshes are torn.
+Neural surface times on the M1: about 30 min (Bunny), 20 min (Armadillo).
+
+So below 25 photos per turn the landmark gate is lowered by default from 20 to 8 observations per photo
+(`FEW_PHOTOS` in `photos/options.rs`; an explicit `--minimum-observations-per-view` always wins; 25 and more
+photos are unchanged). At 19 photos the weakest correct views have only 9 to 12 observations. The ring checks
+still refuse wrong cameras: of six 3DLF objects at 19 photos, Bunny, Armadillo and Thai statue pass; Dragon and
+Lucy are refused (camera centres 7 to 8 % off the ring plane, gaps of 35 degrees), the Happy Buddha's turn is
+not found (182 degrees); the Bunny at 15 photos is refused (9 % off the plane, radius spread 8 %). So about 20
+photos work for objects with enough texture, 36 for all. More features do not rescue the failing cases: a four
+times lower contrast threshold found four times the features on the 19 Bunny photos (4 495 against 1 118 per
+photo) but only 1.8 times the matches; the descriptors do not recognise the points across that much rotation.
 
 **With the app's camera.** *Take photos* (photos start, every platform: browser, Mac, iPhone, iPad) uses
 the device's camera. The camera stands still on a stand, the object turns. With *Auto* on, a photo is
@@ -491,7 +509,7 @@ with `stage_started`, `progress` and `stage_finished`. It does not write
 | Gate | Option | Default |
 | --- | --- | --- |
 | registered share of the photos | `--minimum-registered-fraction` | 0.8 |
-| sparse observations in every registered view | `--minimum-observations-per-view` | 20 |
+| sparse observations in every registered view | `--minimum-observations-per-view` | 20 (8 below 25 photos per turn) |
 | reprojection p95 in every view, pixels | `--maximum-view-reprojection-p95` | 4 |
 | lens unchanged and still locked, radial model monotonic over the frame | (always) | |
 | share of sparse observations in front of their camera | `--minimum-positive-depth-fraction` | 0.999 (1.0 would let a single stray point reject the cameras) |

@@ -122,6 +122,11 @@ README.
   See [silhouette-first-review.json](../tests/evidence/silhouette-first-review.json).
 - At 10° steps (36 photos) results are almost as good as at 5°; at 15° steps
   low-texture objects fail camera recovery.
+- About 20 photos (19° steps) work with the neural surface where the cameras
+  are found: Bunny 0.839 / 0.917 / 0.948 and Armadillo 0.852 / 0.949 / 0.977
+  (ordinary mesh 0.676 and 0.696 at 0.5 %). Below 25 photos per turn the
+  landmark gate is 8 instead of 20; the ring checks refuse Dragon and Lucy at
+  19 photos and the Bunny at 15 (docs/PHOTOS-TO-INPUTS.md, "About 20 photos").
 
 ## In progress
 
