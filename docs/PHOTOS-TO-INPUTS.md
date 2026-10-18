@@ -143,8 +143,12 @@ whole object; above the support in brackets at 0.5 %; scores in `tests/evidence/
 | Happy Buddha | 0.793 / 0.908 / 0.972 (0.834) | 0.783 / 0.903 / 0.969 (0.821) | 0.800 / 0.912 / 0.969 (0.841) | 0.799 / 0.914 / 0.971 (0.837) | 0.781 / 0.904 / 0.968 (0.819), found from the turn |
 | Bunny | 0.908 / 0.941 / 0.956 (0.968) | 0.909 / 0.941 / 0.955 | 0.909 / 0.941 / 0.955 (0.969) | 0.908 / 0.939 / 0.954 (0.969) | 0.911 / 0.943 / 0.956 (0.970) |
 | Dragon | 0.807 / 0.934 / 0.983 (0.852) | 0.802 / 0.935 / 0.982 | 0.803 / 0.934 / 0.982 (0.847) | 0.791 / 0.929 / 0.981 (0.841) | 0.802 / 0.935 / 0.982 (0.848) |
+| Armadillo | 0.933 / 0.976 / 0.991 | 0.938 / 0.978 / 0.992 | 0.935 / 0.977 / 0.992 (0.957) | | 0.938 / 0.979 / 0.992 (0.960) |
+| Lucy | 0.847 / 0.944 / 0.968 | 0.844 / 0.943 / 0.968 | 0.844 / 0.943 / 0.967 (0.879) | | 0.852 / 0.952 / 0.973 (0.880) |
+| Thai statue | 0.882 / 0.932 / 0.952 | 0.885 / 0.933 / 0.952 | 0.885 / 0.933 / 0.953 (0.949) | | 0.885 / 0.933 / 0.953 (0.949) |
 
-(Lens file and Automatic on the Bunny and Dragon from the table above; the Happy Buddha's two were rerun
+(Lens file and Automatic on the Bunny, Dragon, Armadillo, Lucy and Thai statue from the table above; the
+last three with `fov:` were run later, true and 5 % wider only, no warnings, the turn closed; the Happy Buddha's two were rerun
 with the same build and reproduce it.) A field of view within 5 % does as well as the lens file (within
 0.012 at 0.5 %) and, on the Happy Buddha, better than Automatic (+0.016 at 0.5 % with the true and the 5 %
 narrower one), because it does not depend on the turn adding up. The raw steps scale with the focal
@@ -154,7 +158,8 @@ degrees, below the 270 degrees the solver accepts as one turn. Then, with a fiel
 turntable solver warns and finds the focal length from the turn instead, starting from the given one (the
 row's result: the same +28 % focal length and scores as Automatic). A lens file is trusted: there the run
 fails as before. Which direction a device errs in is not known; digital stabilisation or a cropped stream makes the
-real field of view narrower than the reported one (the safe direction here).
+real field of view narrower than the reported one, i.e. the reported one too wide: the direction that
+failed the Happy Buddha's turn and that the fallback covers.
 
 In the apps, *Take photos* asks the system for the camera's field of view (`camera_field_of_view` in
 `apps/studio/src-tauri/src/camera.rs`: AVFoundation's `videoFieldOfView` of the format whose size, or
