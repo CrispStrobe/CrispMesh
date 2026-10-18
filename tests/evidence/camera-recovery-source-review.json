@@ -1,0 +1,73 @@
+{
+  "revision": "6a636b1d84273d5e3ba97676463476569611572a",
+  "license": "BSD-3-Clause",
+  "files": {
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/PoseLib/PoseLib/6a636b1d84273d5e3ba97676463476569611572a/LICENSE",
+      "sha256": "f956d2d12c3a58c72e936bb390071d4c4df8f4da008bdcd617bb0a8a890eda1c"
+    },
+    "PoseLib/solvers/p3p.cc": {
+      "url": "https://raw.githubusercontent.com/PoseLib/PoseLib/6a636b1d84273d5e3ba97676463476569611572a/PoseLib/solvers/p3p.cc",
+      "sha256": "5c00ea0435907ed0b6e5b344536ca90ab2962b9bdc5a926bde529ab8646af47b"
+    },
+    "PoseLib/misc/univariate.cc": {
+      "url": "https://raw.githubusercontent.com/PoseLib/PoseLib/6a636b1d84273d5e3ba97676463476569611572a/PoseLib/misc/univariate.cc",
+      "sha256": "15f94e815a2050a13b7cda58e53fbf20b44e39a180908d1fba27e464f6e76168"
+    },
+    "PoseLib/misc/univariate.h": {
+      "url": "https://raw.githubusercontent.com/PoseLib/PoseLib/6a636b1d84273d5e3ba97676463476569611572a/PoseLib/misc/univariate.h",
+      "sha256": "d6796772356fd5ef2c61519889f1ee66a4c7796881eaf920de93b9c2184ac252"
+    },
+    "PoseLib/solvers/p3p_common.h": {
+      "url": "https://raw.githubusercontent.com/PoseLib/PoseLib/6a636b1d84273d5e3ba97676463476569611572a/PoseLib/solvers/p3p_common.h",
+      "sha256": "b4ce811aaee4852a7a02e4528b7e299be9050c69d696be1c401eb95ee16c84a9"
+    }
+  },
+  "note": "Source and license inventory, not patent clearance. No GPL/MPL source incorporated.",
+  "incorporation": {
+    "destination": "crates/dense/src/photos/p3p.rs",
+    "scope": "Rust adaptation of P3P and helpers; no Eigen or other new runtime dependency",
+    "functions": [
+      "p3p",
+      "root2real (stable quadratic alternative)",
+      "compute_pq",
+      "refine_lambda",
+      "solve_cubic_single_real"
+    ],
+    "retained_notices": "full BSD-3-Clause notice and author attribution in source and root NOTICE; root NOTICE included in distributed notices by apps/studio/scripts/licenses.mjs",
+    "paths": "Existing linear resection remains default. Calibrated P3P is selected explicitly with incremental::recover_with_resection / Resection::P3p. Ordinary turntable resection unchanged."
+  },
+  "learned_private_control": {
+    "shipped": false,
+    "code": {
+      "repository": "https://github.com/facebookresearch/map-anything",
+      "revision": "3d10cf7a3016fc0f9bb13a071ee66c47b10be0d9",
+      "license": "Apache-2.0",
+      "license_sha256": "a172097153c8dec07f872bf749f4f856351b0690fde58ab2c4f570fc1d354931"
+    },
+    "weights": {
+      "origin_repository": "facebook/map-anything-apache",
+      "origin_revision": "00f9c245bbcb60522d1ed7f9e9d88462c6e3f38a",
+      "origin_sha256": "fa06c0fdccefc5048e072c85935d5789b1e36b307f3859033c17f9dcb9fd5201",
+      "origin_bytes": 4914062480,
+      "conversion": "Only F32->F16 rounding, all tensors, streamed. Private inference prototype; not shipped.",
+      "half_bytes": 2457076668,
+      "half_sha256": "e2969918a1260e33c4ccc6ef24d2c3c9727654bd010d5ff84fb8125ce64cc697",
+      "seconds": 414.934396982193,
+      "license": "Apache-2.0",
+      "model_card": "https://huggingface.co/facebook/map-anything-apache"
+    },
+    "encoder_code": {
+      "repository": "https://github.com/facebookresearch/dinov2",
+      "revision": "7764ea0f912e53c92e82eb78a2a1631e92725fc8",
+      "license": "Apache-2.0",
+      "separate_encoder_weights_downloaded": false
+    },
+    "dependencies": {
+      "UniCeption": "0.1.7, BSD-3-Clause; private prototype only",
+      "xformers": "disabled, not used"
+    },
+    "runtime": "Private PyTorch/MPS prototype; not a production dependency or on-device feature. Only Apache checkpoint selected; other model variants not interchangeable.",
+    "direct_use_policy": "Review source, checkpoint and transitive components separately. Restrictive implementations require separate specification/implementation agents and explicit contracts before any rewrite; no such rewrite in this change."
+  }
+}

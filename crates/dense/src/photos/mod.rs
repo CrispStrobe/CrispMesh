@@ -41,6 +41,7 @@ pub mod incremental;
 pub mod markers;
 pub mod option_table;
 pub mod options;
+mod p3p;
 pub mod providers;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod rendered;

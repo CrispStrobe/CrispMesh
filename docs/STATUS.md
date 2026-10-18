@@ -153,7 +153,11 @@ README.
   step angles or distinguish motor timing from shutter timing. No uniform-spacing claim.
   An experimental angle-independent Rust library solver recovers only 21 of 117 accepted
   iPad photos before robust track filtering, 28 afterward; the same filter raises native
-  iPhone recovery from 8/78 to 11/78. It is not exposed as a provider. Synthetic rotation and shape tests pass,
+  iPhone recovery from 8/78 to 11/78. An explicit BSD-3-Clause P3P alternative
+  reduces measured solve times from 258 to 30 seconds on iPhone and 143 to 55 on iPad,
+  but registers only 11/78 and 27/117 respectively. These are single controls, not
+  a performance guarantee; the original linear path remains available and default.
+  It is not exposed as a provider. Synthetic rotation and shape tests pass,
   but this real-batch coverage fails. Fixed-lens iPhone controls improve from at most 18 cameras with 382 selected pairs
   to 61 of 78 with exhaustive matching (3,003 pairs); coverage still fails, and the
   secondary component does not align consistently. Joint sparse-feature/silhouette fitting

@@ -21,6 +21,14 @@ pub struct Recovered {
     pub report: Value,
 }
 
+/// Alternative resection paths; retain the existing linear path for comparison.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Resection {
+    #[default]
+    Linear,
+    P3p,
+}
+
 fn subset(matches: &Matches, placed: &[usize]) -> Matches {
     let mut index = vec![usize::MAX; matches.keypoints.len()];
     for (i, &v) in placed.iter().enumerate() {
@@ -216,6 +224,17 @@ pub fn recover(
     names: &[String],
     check: &mut dyn FnMut(usize, usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Recovered> {
+    recover_with_resection(matches, lens, names, Resection::Linear, check)
+}
+
+/// Explicit experimental path selection. `recover` retains its previous solver.
+pub fn recover_with_resection(
+    matches: &Matches,
+    lens: &Lens,
+    names: &[String],
+    resection: Resection,
+    check: &mut dyn FnMut(usize, usize) -> anyhow::Result<()>,
+) -> anyhow::Result<Recovered> {
     let count = matches.keypoints.len();
     if !(3..=super::MOST_PHOTOS).contains(&count) || names.len() != count {
         bail!("incremental cameras: expected 3 to {} named views", super::MOST_PHOTOS);
@@ -377,7 +396,11 @@ pub fn recover(
                 let mut partners: Vec<_> = partners.into_iter().collect();
                 partners.sort_by_key(|&(v, n)| (std::cmp::Reverse(n), v));
                 let starts: Vec<_> = partners.iter().take(3).filter_map(|&(v, _)| poses[v]).collect();
-                if let Some((r, t, n)) = solver::resect(&links, &starts, focal, &mut random) {
+                let candidate = match resection {
+                    Resection::Linear => solver::resect(&links, &starts, focal, &mut random),
+                    Resection::P3p => solver::resect_general(&links, &starts, focal, &mut random),
+                };
+                if let Some((r, t, n)) = candidate {
                     if n >= 20 && n * 5 >= links.len() * 2 && found.as_ref().is_none_or(|v| n > v.2) {
                         found = Some((u, (r, t), n, links.len()));
                     }
@@ -397,7 +420,7 @@ pub fn recover(
                     let (own, tracks) = refresh(matches, &camera, &placed, &mut poses, true)?;
                     let rotations = placed.iter().map(|&v| poses[v].unwrap().0).collect();
                     let translations = placed.iter().map(|&v| poses[v].unwrap().1).collect();
-                    let report = json!({"method":"experimental incremental SfM","seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":placed.len()<=128,"fixed_angles":false,"supplied_poses":false});
+                    let report = json!({"method":"experimental incremental SfM","resection":match resection {Resection::Linear=>"linear",Resection::P3p=>"p3p"},"seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":placed.len()<=128,"fixed_angles":false,"supplied_poses":false});
                     let solved = solver::Solved {
                         rotations,
                         translations,
@@ -545,8 +568,15 @@ mod tests {
     }
     #[test]
     fn noisy_narrow_object_with_surface_occlusion_recovers_camera_rotations() {
+        check_noisy_capture(Resection::Linear);
+    }
+    #[test]
+    fn minimal_resection_recovers_noisy_narrow_camera_rotations_and_surface() {
+        check_noisy_capture(Resection::P3p);
+    }
+    fn check_noisy_capture(resection: Resection) {
         let (matches, lens, names, truth, truth_points) = capture(false, true);
-        let recovered = recover(&matches, &lens, &names, &mut |_, _| Ok(())).unwrap();
+        let recovered = recover_with_resection(&matches, &lens, &names, resection, &mut |_, _| Ok(())).unwrap();
         assert!(recovered.solution.views.len() >= 15, "registered {}", recovered.solution.views.len());
         let views = &recovered.solution.views;
         let index = |name: &str| name.trim_start_matches("photo_").trim_end_matches(".jpg").parse::<usize>().unwrap();

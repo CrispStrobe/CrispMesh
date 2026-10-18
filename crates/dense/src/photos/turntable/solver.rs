@@ -668,6 +668,26 @@ fn sound_ring(solved: &Solved) -> bool {
 /// the six pose numbers with Huber weights while the inlier bound shrinks; the candidate with the most
 /// observations within 3 pixels wins. Returns the pose and that number.
 pub(crate) fn resect(seen: &[(P2, V3)], starts: &[(M3, V3)], focal: f64, random: &mut super::geometry::Random) -> Option<(M3, V3, usize)> {
+    resect_with_solver(seen, starts, focal, random, false)
+}
+
+/// Minimal calibrated hypotheses for the experimental angle-independent solver.
+pub(crate) fn resect_general(
+    seen: &[(P2, V3)],
+    starts: &[(M3, V3)],
+    focal: f64,
+    random: &mut super::geometry::Random,
+) -> Option<(M3, V3, usize)> {
+    resect_with_solver(seen, starts, focal, random, true)
+}
+
+fn resect_with_solver(
+    seen: &[(P2, V3)],
+    starts: &[(M3, V3)],
+    focal: f64,
+    random: &mut super::geometry::Random,
+    minimal: bool,
+) -> Option<(M3, V3, usize)> {
     if seen.len() < 12 {
         return None;
     }
@@ -720,18 +740,33 @@ pub(crate) fn resect(seen: &[(P2, V3)], starts: &[(M3, V3)], focal: f64, random:
         Some((r, sub(scale(t, spread / lambda), apply(&r, middle))))
     };
     let mut best: Option<(usize, M3, V3)> = None;
-    for _ in 0..500 {
-        let mut sample = Vec::with_capacity(6);
-        while sample.len() < 6 {
+    let mut needed = 500;
+    let mut iteration = 0;
+    while iteration < needed {
+        iteration += 1;
+        let sample_size = if minimal { 3 } else { 6 };
+        let mut sample = Vec::with_capacity(sample_size);
+        while sample.len() < sample_size {
             let k = random.below(seen.len());
             if !sample.contains(&k) {
                 sample.push(k);
             }
         }
-        let Some((r, t)) = dlt(&sample) else { continue };
-        let count = seen.iter().filter(|s| error(&r, t, s) < 4.0).count();
-        if best.as_ref().is_none_or(|b| count > b.0) {
-            best = Some((count, r, t));
+        let candidates = if minimal {
+            crate::photos::p3p::solve(&[seen[sample[0]], seen[sample[1]], seen[sample[2]]])
+        } else {
+            dlt(&sample).into_iter().collect()
+        };
+        for (r, t) in candidates {
+            let count = seen.iter().filter(|s| error(&r, t, s) < 4.0).count();
+            if best.as_ref().is_none_or(|b| count > b.0) {
+                best = Some((count, r, t));
+                if minimal {
+                    let chance = (count as f64 / seen.len() as f64).powi(3);
+                    let trials = if chance >= 1. - 1e-12 { 1. } else { 0.001f64.ln() / (1. - chance).ln() };
+                    needed = needed.min((trials.ceil() as usize).max(50));
+                }
+            }
         }
     }
     let polish = |mut r: M3, mut t: V3, bounds: &[f64]| -> Option<(M3, V3, usize)> {
@@ -1284,6 +1319,29 @@ mod tests {
                 report: self.report.clone(),
             }
         }
+    }
+
+    #[test]
+    fn minimal_resection_handles_planar_points_and_majority_outliers_without_a_nearby_pose() {
+        let rotation = rodrigues([0.4, -0.6, 0.3]);
+        let translation = [0.15, -0.12, 3.];
+        let seen: Vec<_> = (0..120)
+            .map(|k| {
+                let f = k as f64;
+                let point = [0.4 * (f * 1.31).sin(), 0.3 * (f * 2.17).cos(), 0.];
+                let q = add(apply(&rotation, point), translation);
+                let pixel = if k % 3 == 0 {
+                    [q[0] / q[2] + 0.0001 * (f * 3.7).sin(), q[1] / q[2] + 0.0001 * (f * 4.3).cos()]
+                } else {
+                    [0.15 * (f * 9.1).sin(), 0.15 * (f * 5.7).cos()]
+                };
+                (pixel, point)
+            })
+            .collect();
+        let (r, t, inliers) = resect_general(&seen, &[], 2000., &mut super::super::geometry::Random(83)).unwrap();
+        assert!((40..=43).contains(&inliers), "{inliers}");
+        assert!(rotation_angle_deg(&r, &rotation) < 0.1);
+        assert!(norm(sub(t, translation)) < 0.003);
     }
 
     #[test]

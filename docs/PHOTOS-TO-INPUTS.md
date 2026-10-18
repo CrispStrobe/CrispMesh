@@ -421,10 +421,21 @@ It is **not an available camera provider in the app or CLI**. Synthetic tests co
 shuffled viewpoints at different heights, duplicates, wrong correspondences, visible
 cube faces and image noise; they check camera rotations and aligned 3D shape.
 
-The real-user control recovers only 21 of 117 accepted iPad photos from private,
-photo-derived SIFT LightGlue correspondences and an estimated lens. This fails the
-coverage requirement; no STL is produced from it. The external order-independent
-iPhone controls also remain fragmented. General handheld reconstruction and suitable
+The default library path now retains consistent observations from contaminated tracks:
+28 of 117 accepted iPad photos and 11 of 78 iPhone photos in the real-user controls.
+`recover_with_resection(..., Resection::Linear, ...)` selects this existing path;
+`Resection::P3p` selects calibrated minimal hypotheses adapted from the BSD-3-Clause
+PoseLib solver. `recover(...)` keeps `Linear` as its default. No fixed step or known
+turntable program is required by either path.
+
+On the same own correspondences and lens, the P3P control recovers 27/117 iPad views
+in 54.8 s and 11/78 iPhone views in 29.8 s, versus 28/117 in 143.0 s and 11/78 in
+258.3 s for linear resection. These are single runs under different machine loads,
+not general performance benchmarks. Both paths fail coverage and retain distorted
+sparse geometry; neither produces an accepted STL. The existing turntable provider
+continues to use its prior resection implementation. Source revision, hashes and
+retained notices are in [camera-recovery-source-review.json](../tests/evidence/camera-recovery-source-review.json).
+The external order-independent iPhone controls also remain fragmented. General handheld reconstruction and suitable
 meshes from these batches remain open. The current dense bundle adjustment is capped
 at 128 cameras in this experiment; larger reconstructions still need sparse or local
 adjustment. No dense defaults changed. See

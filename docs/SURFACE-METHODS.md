@@ -168,3 +168,46 @@ SDFStudio and the original NeuS are permissive. None of this is patent clearance
    app's New run form.
 4. **Surface extraction** over existing depth (graph cut or similar) as the alternative to voxel
    averaging for single-turn captures.
+
+
+## Camera recovery and Gaussian alternatives on irregular phone captures (2026-10-18)
+
+Camera estimation and surface fitting remain separate choices. Keep existing algorithms
+available when a new algorithm has different tradeoffs; select experimental paths explicitly.
+The private manual iPad and Auto iPhone batches currently fail accepted reconstruction quality.
+Neither exact turntable degrees nor a replacement capture is a prerequisite for this work.
+
+Our `src/splats/train.rs` optimizes splat parameters using supplied **pipeline-recovered**
+cameras; it has no camera-pose optimizer. The existing neural surface also starts from
+recovered cameras. Good-looking splat renders cannot establish correct poses or a printable
+surface: the appearance model can accommodate geometric error. Earlier Brush and 2DGS
+measurements above used recovered cameras and do not demonstrate pose-free recovery.
+
+| Camera path | Purpose and tradeoff | Current evidence |
+| --- | --- | --- |
+| Existing linear incremental SfM | Calibrated eight-point initialization, linear resection plus nearby-pose refinement; preserves the current baseline | 28/117 iPad, 11/78 iPhone; insufficient coverage |
+| Minimal P3P incremental SfM | Three-point calibrated resection with robust sampling, including planar geometry; faster hypotheses, different sample/registration outcomes | Explicit `Resection::P3p`, BSD-3-Clause PoseLib adaptation; 27/117 and 11/78; no shape acceptance |
+| Learned camera/geometry initialization | Predict initial poses from several images when repeatable features are scarce, then validate/refine against original photo correspondences | MapAnything Apache prototype, distinct from the noncommercial checkpoint; small real-photo experiment under evaluation |
+| Dense correspondences and geometric refinement | Test wide-baseline dense matches, cycle consistency and joint camera/point adjustment; more compute and memory | [RoMa](https://github.com/Parskatt/RoMa) and [FlowMap](https://github.com/dcharatan/flowmap) are candidates, not incorporated or verified on these batches |
+| Joint camera and Gaussian optimization | Refine approximately initialized poses while fitting a scene, with geometric constraints and an anchored gauge | Not implemented in our trainer; [InstantSplat](https://github.com/NVlabs/InstantSplat) and [NoPoSplat](https://github.com/cvg/NoPoSplat) demonstrate different research approaches, not interchangeable drop-in dependencies |
+
+For the learned path, specifically use
+[`facebook/map-anything-apache`](https://huggingface.co/facebook/map-anything-apache),
+with code, dependencies and checkpoint revisions recorded separately. A prediction is an
+initial hypothesis, not measured depth or an accepted mesh. Object-centric input masking
+matters for a rotating object against a stationary background. Preserve crop/resampling
+transforms and calibrated principal points; do not optimize the background's stationary pose.
+
+A later capture-assisted path can record synchronized native camera calibration and visual-inertial
+tracking for a user walking around a stationary object. Apple's
+[ARCamera transform](https://developer.apple.com/documentation/arkit/arcamera/transform) and
+[intrinsics](https://developer.apple.com/documentation/arkit/arcamera/intrinsics) provide those
+measurements. A turntable requires object motion relative to the camera as well; phone-world
+tracking alone is insufficient. These are future capture paths, not repairs for existing JPEGs.
+
+New third-party code and weights incorporated directly must be MIT/Apache/BSD or similarly permissive.
+This does not change the project’s existing license.
+Review transitive rasterizers and model terms, not only the top-level repository license.
+If a GPL-only implementation is considered, use a separate specification/implementation
+workflow with explicit subagent contracts; do not label source adaptation as clean-room work.
+The present P3P change is an attributed BSD source adaptation.

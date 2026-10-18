@@ -78,6 +78,20 @@
       "control_binary_sha256": "76d0fbf1823fe787e6212057878e6b5edeb704707b2a0e725ea6bcbf51d8ecee",
       "result": "FAILED coverage; sparse sheet inspected, no STL or production provider.",
       "validation": "122 final-source photo-stage tests passed; release Clippy library/tests -Dwarnings, rustfmt check, wasm32 release library check passed."
+    },
+    "native_minimal_resection_control": {
+      "path": "p3p (explicit opt-in, linear remains default)",
+      "registered": 27,
+      "input": 117,
+      "points": 2799,
+      "seconds": 54.767,
+      "comparison_linear": {
+        "registered": 28,
+        "seconds": 143.049
+      },
+      "same_own_correspondences_and_lens": true,
+      "seed_attempts": 32,
+      "result": "Coverage still fails; sparse sheet inspected. Fewer views than linear in this run; keep both paths. One run per path, not a general performance benchmark."
     }
   },
   "iphone": {
@@ -337,6 +351,20 @@
         "method": "Bounded pair-hypothesis triangulation; retain consistent observations and at most one feature per view instead of discarding a contaminated track component. Existing ordinary turntable track path unchanged.",
         "control_binary_sha256": "76d0fbf1823fe787e6212057878e6b5edeb704707b2a0e725ea6bcbf51d8ecee",
         "result": "FAILED coverage; sparse sheet inspected and still flattened. No STL; no production provider or dense default change."
+      },
+      "native_minimal_resection_control": {
+        "path": "p3p (explicit opt-in, linear remains default)",
+        "registered": 11,
+        "input": 78,
+        "points": 1044,
+        "seconds": 29.804,
+        "comparison_linear": {
+          "registered": 11,
+          "seconds": 258.347
+        },
+        "same_own_correspondences_and_lens": true,
+        "seed_attempts": 32,
+        "result": "Coverage still fails; sparse sheet inspected, flattened geometry. One run per path, different resource conditions; not a general performance benchmark."
       }
     },
     "foreground_recovery": {
@@ -396,7 +424,15 @@
     "dense_photos_tests_note": "final committed source:121 passed,0 failed, including four experimental incremental tests; shipped turntable path retains minimum three-view tracks",
     "settings_language_fixture": "EN/DE phone check passed: dense setting labels/descriptions, method settings/validation, persistent engine IDs; screenshots inspected",
     "experimental_native_clippy": "library and test targets passed -D warnings",
-    "experimental_wasm_check": "wasm32 library release check passed; not an executed browser camera provider"
+    "experimental_wasm_check": "wasm32 library release check passed; not an executed browser camera provider",
+    "minimal_resection": {
+      "photos_release_tests": 126,
+      "failed": 0,
+      "native_release_clippy_lib_and_tests": "passed -D warnings",
+      "wasm32_release_library_check": "passed",
+      "rustfmt": "passed",
+      "coverage": "Planar P3P with two-thirds outliers and no nearby pose; degenerate triplets; narrow calibrated fields and varied world scales; noisy full camera/shape recovery. Experimental library only; no browser execution claim."
+    }
   },
   "limits": [
     "1536 is an input capacity, not a completed device benchmark",
