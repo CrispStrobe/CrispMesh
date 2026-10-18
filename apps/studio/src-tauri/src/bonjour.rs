@@ -4,6 +4,9 @@
 //! computer (share.rs, `POST /api/pair`). Apple platforms only (DNS-SD C API in libSystem; on iOS the app
 //! declares the service type in NSBonjourServices); elsewhere nothing is announced and nothing is found.
 
+// Phones only look; announcing is for the desktop app's sharing.
+#![cfg_attr(mobile, allow(dead_code, unused_imports))]
+
 use serde::Serialize;
 
 /// The service type announced and looked for.

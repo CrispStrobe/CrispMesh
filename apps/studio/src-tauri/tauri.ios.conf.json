@@ -2,7 +2,11 @@
   "bundle": {
     "active": true,
     "iOS": {
-      "minimumSystemVersion": "16.0"
+      "minimumSystemVersion": "16.0",
+      "frameworks": [
+        "AVFoundation",
+        "CoreMedia"
+      ]
     }
   },
   "build": {
