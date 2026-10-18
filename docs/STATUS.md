@@ -1,6 +1,6 @@
 # Status
 
-State of CrispMesh (engine and app) on 2026-10-16. The plan of record is
+State of CrispMesh (engine and app) on 2026-10-18. The plan of record is
 [ARCHITECTURE.md](ARCHITECTURE.md); measurements and settings are in the
 [crate README](../crates/dense/README.md); the current comparison of surface
 methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md).
@@ -13,9 +13,11 @@ methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md)
 | **Native crate** (`crates/dense`, Rust + wgpu) | The primary implementation. Metal, Vulkan, DirectX 12 and WebGPU; library API, C interface, event log contract; Python package kept as the reference it was ported from |
 | **Browser** | The same pipeline as WebAssembly + WebGPU, from photos or from prepared inputs, single-threaded or threaded (cross-origin isolated pages). Default Bunny from 73 photos in Chrome: measured 130–264 s with 4 threads, peak WebAssembly memory about 1.6–2.1 GiB. Live at <https://crispstrobe.github.io/CrispMesh/> |
 | **CrispMesh** (app) | Desktop (macOS, Windows, Linux), iOS and Android from one code base (Tauri 2); the engine runs in-process. Start from photos with provider choice, live progress, preview surfaces, diagnostic sheets, per-step inspection sheets, example objects downloaded on request. Prereleases (unsigned desktop builds) on the [releases page](https://github.com/CrispStrobe/CrispMesh/releases); internal TestFlight builds for iOS and macOS |
-| **Taking photos** | *Take photos* in the app and the web page: the device's camera, *Auto* takes one photo per turntable step (picture changed, then still). Checked end to end in Chrome with a video as the camera; not yet on a phone (TestFlight build 10) |
+| **Taking photos** | *Take photos* in the app and the web page: the device's camera, *Auto* takes one photo per turntable step (picture changed, then still); 20 to 72 photos per turn. Without a live camera picture the system camera takes one photo per tap. Checked end to end in Chrome with a video as the camera and in the iOS simulator (camera API answers); on a real iPhone Auto works but "not perfectly yet" (owner, 2026-10-18; details pending) |
+| **Few photos** | About 20 photos per turn work with the neural surface on textured objects (Bunny 0.839, Armadillo 0.852 at 0.5 % from 19 photos; the ordinary mesh 0.68 / 0.70). Below 25 photos per turn the camera gate is lower and New run switches the neural surface on once. Dragon, Lucy, Happy Buddha are refused at 19, every object at 15. [PHOTOS-TO-INPUTS.md](PHOTOS-TO-INPUTS.md) "About 20 photos" |
+| **Languages** | Studio texts in English and German (System / English / Deutsch); engine messages stay English. Not yet translated: Take photos, Auto, New run, the few-photos hint ([apps/studio/README.md](../apps/studio/README.md) "Languages") |
 | **No lens file** | `--calibration auto`: the focal length from the closed turn (raw steps scale with it). Five of six 3DLF objects within 3.3 %, F1 within 0.006; the Happy Buddha 28 % off. `--calibration fov:DEG` (a known field of view; *Take photos* in the iOS app asks the system): within 5 % as good as the lens file on Bunny, Dragon, Happy Buddha (Buddha +0.016 F1 over automatic); a field of view that does not close the turn falls back to automatic. [PHOTOS-TO-INPUTS.md](PHOTOS-TO-INPUTS.md) |
-| **Phone to computer** | The desktop app lets other devices use its engine (local network, token, QR pairing, `POST /api/uploads`); the phone sends its photos and follows the run. Checked in Chrome against the app's server; [ENGINE-CONTRACT.md](ENGINE-CONTRACT.md) |
+| **Phone to computer** | The desktop app lets other devices use its engine (local network, token, QR pairing, `POST /api/uploads`); the phone sends its photos and follows the run. The desktop app also announces itself (Bonjour `_crispmesh._tcp`, macOS/iOS) and shows a six-digit pairing code, so a phone can find it without the QR code. Checked in Chrome against the app's server and with an mDNS self-test on the Mac; on devices in TestFlight build 13; [ENGINE-CONTRACT.md](ENGINE-CONTRACT.md) |
 | **Masks** | `threshold` (default; contact shadow removed), `import`, `sam` (SAM 2.1 natively through ONNX Runtime or CrispEmbed's ggml engine, optional build feature), `external-sam` (PyTorch) |
 | **Cameras** | `turntable` (default; our own solver, pure Rust, repeatable), `markers` (printed mat, gives scale and handedness; validated on renders only), `colmap`, `alicevision`, `import`; `--capture orbit` for camera paths that are not one ring |
 | **Evaluation** | Scanner F1 against independent scans (3DLF), DTU protocol, Google Scanned Objects rendered by our own renderer (`crispmesh-dense render`), per-step inspection sheets in every run |
@@ -130,6 +132,23 @@ README.
 
 ## In progress
 
+- **Owner's open requests (2026-10-18)**, not done yet:
+  - *Hand-held captures from any angle* (walking around the object, no turntable, no fixed steps). Today
+    the cameras come from the turntable solver (fixed camera, turning object, one or several turns; the
+    steps need not be equal) or from external tools (`colmap`, `alicevision`, not in the apps). Needed:
+    a general incremental solver in the engine (pair start, resection, bundle adjustment; matching,
+    resection and joint adjustment exist in `crates/dense/src/photos`), validated on real hand-held
+    captures with scans for scoring.
+  - *Delete wrong photos after taking them* (review strip in Take photos, renumbering in order).
+  - *Several camera heights in Take photos* (turns 1 to 5, pause and Continue between turns). The engine
+    side is done: `--turntable-turn-sizes 36,35,36` for turns of unequal length; Take photos and New run
+    do not use it yet, and it has unit tests only, no real multi-turn run.
+  - *Auto robustness* on the phone (exposure changes, shake, a turntable that keeps moving, a minimum
+    time between photos, a live indicator). A first draft exists outside the repository.
+  - *German* for Take photos, Auto, New run and the few-photos hint.
+  - A warning while taking photos that the steps are too large was tried and is not possible with a
+    measure between two photos ([scripts/capture_spacing](../scripts/capture_spacing/README.md)).
+
 - **Surface quality on captures from several heights** (2026-10-13). Like for
   like on the same masks and hull, fused depth is worth 0.12 F1 at 0.5 % on the
   textured drill and nothing on the plain mustard bottle, at several times the
@@ -193,8 +212,8 @@ README.
   photo in a browser; 300 photos work at 1424 x 949 and not at 2136 x 1424.
 - The marker mat has not been tested with a real print.
 - Builds have been run on Apple hardware only (desktop app, iOS simulator,
-  browser); Windows, Linux and Android builds are tested in CI only, and no
-  real iPhone or iPad has run the app yet.
+  browser); Windows, Linux and Android builds are tested in CI only. The owner
+  has started trying TestFlight builds on an iPhone (2026-10-18).
 
 ## Data published for this project
 
