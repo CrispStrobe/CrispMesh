@@ -111,3 +111,19 @@ it("translates known engine captions at render time without changing extension t
   setLanguage("en");
   expect(engineText("Cameras")).toBe("Cameras");
 });
+
+
+it("translates dense settings without changing their engine identifiers", async () => {
+  const { default: schema } = await import("../../../../crates/dense/settings-schema.json");
+  setLanguage("de");
+  for (const spec of schema.settings) {
+    expect(engineText(spec.name), spec.name).not.toBe(spec.name);
+    expect(engineText(spec.meaning), spec.name).not.toBe(spec.meaning);
+    expect(engineText(spec.group), spec.group).toBe(de[`settings.group.${spec.group}` as keyof typeof de]);
+  }
+  setLanguage("en");
+  for (const spec of schema.settings) {
+    expect(engineText(spec.name)).toBe(spec.name);
+    expect(engineText(spec.meaning)).toBe(spec.meaning);
+  }
+});

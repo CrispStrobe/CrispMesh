@@ -462,12 +462,12 @@ export function NewRun({ engine, prefs, onChange }: Props) {
                       <option key={level.id} value={level.id}>{engineText(level.label)}</option>
                     ))}
                   </select>
-                  <span class="sub">{chosen ? chosen.meaning : method.meaning}</span>
+                  <span class="sub">{engineText(chosen ? chosen.meaning : method.meaning)}</span>
                   {quality !== "" && method.settings.length > 0 && (
                     <details>
                       <summary>{t("newRun.methodSettings", { method: engineText(method.label) })}</summary>
                       {method.settings.map((setting) => {
-                        const key = `${method.id}.${engineText(setting.name)}`;
+                        const key = `${method.id}.${setting.name}`;
                         const error = showErrors ? methodErrors[key] : undefined;
                         return (
                           <label class="field" key={key}>
@@ -616,6 +616,8 @@ interface SettingFieldProps {
 
 function SettingField({ spec, value, error, onChange }: SettingFieldProps) {
   const id = `s-${spec.name}`;
+  const translatedLabel = engineText(spec.name);
+  const label = translatedLabel === spec.name ? humanise(spec.name) : translatedLabel;
   const changed = isChanged(spec, value);
   const fallback = defaultFormValue(spec);
   const describedBy = [`${id}-help`, error !== undefined ? `${id}-error` : ""].filter(Boolean).join(" ");
@@ -633,12 +635,12 @@ function SettingField({ spec, value, error, onChange }: SettingFieldProps) {
             aria-invalid={error !== undefined}
             onChange={(event) => onChange(event.currentTarget.checked)}
           />
-          <span class="field-label">{humanise(spec.name)}</span>
+          <span class="field-label">{label}</span>
         </label>
       ) : (
         <>
           <label class="field-label" for={id}>
-            {humanise(spec.name)}
+            {label}
           </label>
           <input
             id={id}

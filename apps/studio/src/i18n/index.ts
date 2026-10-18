@@ -8,7 +8,7 @@
  * languages have the same keys and the same placeholders.
  *
  * Known engine captions use the same catalogues through engineText(). Engine error messages,
- * uncatalogued settings descriptions and events still appear as sent by the engine.
+ * uncatalogued provider descriptions and events still appear as sent by the engine. Dense settings labels and descriptions are catalogued.
  *
  * German glossary (keep to it):
  *   mesh -> Mesh (das Mesh, die Meshes)        photo(s) -> Foto(s)
@@ -36,13 +36,14 @@ import * as app from "./messages/app";
 import * as connection from "./messages/connection";
 import * as engine from "./messages/engine";
 import * as inputs from "./messages/inputs";
+import * as settings from "./messages/settings";
 import * as run from "./messages/run";
 
-export const en = { ...metadata.en, ...newRun.en, ...capture.en, ...app.en, ...connection.en, ...engine.en, ...inputs.en, ...run.en };
-export const de: Catalogue<typeof en> = { ...metadata.de, ...newRun.de, ...capture.de, ...app.de, ...connection.de, ...engine.de, ...inputs.de, ...run.de };
+export const en = { ...metadata.en, ...newRun.en, ...capture.en, ...app.en, ...connection.en, ...engine.en, ...inputs.en, ...run.en, ...settings.en };
+export const de: Catalogue<typeof en> = { ...metadata.de, ...newRun.de, ...capture.de, ...app.de, ...connection.de, ...engine.de, ...inputs.de, ...run.de, ...settings.de };
 
 /** The areas, for the test that every key carries its area's prefix (so merging cannot overwrite). */
-export const AREAS = { metadata, newRun, capture, app, connection, engine, inputs, run } as const;
+export const AREAS = { metadata, newRun, capture, app, connection, engine, inputs, run, settings } as const;
 
 export type MessageKey = keyof typeof en;
 
