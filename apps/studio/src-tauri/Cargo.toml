@@ -5,7 +5,7 @@ license = "AGPL-3.0-only"
 description = "CrispMesh: watch a photo-to-STL reconstruction step by step"
 authors = ["CrispMesh contributors"]
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.82"
 
 [lib]
 name = "crispmesh_studio_lib"

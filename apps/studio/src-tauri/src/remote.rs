@@ -29,8 +29,11 @@ pub fn split_url(url: &str) -> Result<(String, u16, String), String> {
     Ok((host.trim_start_matches('[').trim_end_matches(']').to_string(), port, path.to_string()))
 }
 
-/// Sends one request; answers (status, headers, body).
-pub fn fetch(method: &str, url: &str, headers: &[(String, String)], body: &[u8]) -> Result<(u16, Vec<(String, String)>, Vec<u8>), String> {
+/// An answer: status, headers, body.
+pub type Answer = (u16, Vec<(String, String)>, Vec<u8>);
+
+/// Sends one request.
+pub fn fetch(method: &str, url: &str, headers: &[(String, String)], body: &[u8]) -> Result<Answer, String> {
     if !matches!(method, "GET" | "HEAD" | "POST" | "PUT" | "DELETE") {
         return Err(format!("method {method} is not sent"));
     }
