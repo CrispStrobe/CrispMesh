@@ -37,6 +37,7 @@ pub mod cleanup;
 pub mod coarse;
 pub mod contrast;
 pub mod fs;
+pub mod incremental;
 pub mod markers;
 pub mod option_table;
 pub mod options;

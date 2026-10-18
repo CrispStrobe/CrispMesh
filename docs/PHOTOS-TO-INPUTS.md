@@ -412,6 +412,24 @@ variables: `CRISPMESH_MASKS`, `CRISPMESH_CAMERAS`, `CRISPMESH_ALICEVISION`,
 Additions: `--stop-after masks`, `--list-providers`. Not offered: TIFF photos
 (PNG and JPEG are read), `--alicevision-dense` and `--prepare-timeout`.
 
+### Experimental general camera recovery (2026-10-18)
+
+The Rust library experiment in `photos/incremental.rs` initializes calibrated two-view
+poses, triangulates tracks, adds cameras through robust resection and adjusts their
+poses freely. It takes no turntable axis, exact angles, orbit plane or capture order.
+It is **not an available camera provider in the app or CLI**. Synthetic tests cover
+shuffled viewpoints at different heights, duplicates, wrong correspondences, visible
+cube faces and image noise; they check camera rotations and aligned 3D shape.
+
+The real-user control recovers only 21 of 117 accepted iPad photos from private,
+photo-derived SIFT LightGlue correspondences and an estimated lens. This fails the
+coverage requirement; no STL is produced from it. The external order-independent
+iPhone controls also remain fragmented. General handheld reconstruction and suitable
+meshes from these batches remain open. The current dense bundle adjustment is capped
+at 128 cameras in this experiment; larger reconstructions still need sparse or local
+adjustment. No dense defaults changed. See
+[real-user-capture-review.json](../tests/evidence/real-user-capture-review.json).
+
 ## The reference implementation (Python)
 
 `python -m scripts.turntable_mesh.photos_to_inputs` takes a folder of turntable
@@ -442,9 +460,9 @@ on. Exit code 1 means a step failed (tool error, deadline, disk, cancel).
 ## What it assumes about the capture
 
 - One turn of a turntable (or of the camera around the object), photographed
-  by **one camera with a fixed lens and fixed focus**, 3 to 1,536 photos total, all the
+  by **one camera with a fixed lens and fixed focus**, 3 to 96 photos in the Python reference (native: up to 1,536 total), all the
   same size. The file order (natural order: `x_2` before `x_10`) is the capture
-  order. (The native step also takes several turns, up to 96 photos each:
+  order. (The native step also takes several turns within the same 1,536-photo total:
   `--turntable-rings` for turns of equal length, `--turntable-turn-sizes` for
   turns of unequal length.)
 - A **dark object on a light backdrop**. The coarse masks are a grey-level
@@ -683,6 +701,6 @@ features, 3 to 7 min for matching and 3 to 5 min for global SfM.
   dark turntable or a deep shadow larger than the object will win; give an
   explicit `--envelope` or a lower `--dark-threshold`. A warning is recorded
   when the region touches the frame or the envelope.
-- **More than 96 photos** are refused: the camera audit is bounded there.
+- **More than 96 photos in the Python reference** are refused. The native engine accepts up to 1,536 photos total; this is an input bound, not a completed device benchmark.
 - **No physical scale.** The reconstruction frame has an arbitrary scale and up
   direction.

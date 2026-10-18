@@ -32,7 +32,40 @@
       "worst_view": "view_111"
     },
     "visual_result": "FAILED: distorted geometry in dense and silhouette-only controls; neither suitable for printing",
-    "mesh_sha256": "726ee8b24c28c8dc5ecffb1e5395b8a79e68d8be9005124134e267acd94ca9f7"
+    "mesh_sha256": "726ee8b24c28c8dc5ecffb1e5395b8a79e68d8be9005124134e267acd94ca9f7",
+    "mask_consistency_control": {
+      "stable_own_sparse_points": 916,
+      "criterion": "track length>=4, reprojection error<1.5px",
+      "per_view_fraction_inside_mask_median": 0.8941048034934498,
+      "worst_fraction": 0.5993449781659389,
+      "selected_views": 49,
+      "selection": "at least90% own stable points inside mask, at least two 3–40 degree neighbour cameras; no manual image IDs",
+      "render_result": "outline improves, but still distorted; not suitable for printing",
+      "settings": {
+        "grid": 256,
+        "silhouette_first": 0,
+        "repair_masks": false
+      },
+      "topology": {
+        "closed": true,
+        "components": 1,
+        "genus": 1,
+        "triangles": 320774
+      },
+      "default_adoption": false
+    },
+    "native_incremental_experiment": {
+      "method": "calibrated essential-matrix initialization with alternative pose hypotheses, robust resection, triangulation and free bundle adjustment; no axis, plane, capture order or fixed angular spacing",
+      "registered": 21,
+      "input": 117,
+      "points": 1931,
+      "run_seconds": 130.219,
+      "starting_seeds_tried": 32,
+      "matching": "same private SIFT LightGlue raw pixel matches; own recovered lens only, no imported poses",
+      "result": "FAILED coverage; sparse sheets inspected, no STL and no provider availability advertised",
+      "large_batch_limit": "dense global bundle adjustment bounded at128 views; sparse/local adjustment still needed",
+      "synthetic_tests": "four pass, including shuffled irregular multilevel viewpoints, duplicate views, outliers, occluded cube faces and0.25px noise; proper-similarity surface accuracy checked with correct tracks for alignment and all recovered tracks for median error; not proof of real-batch quality"
+    }
   },
   "iphone": {
     "source": "78 Auto-shutter JPEGs; intended fixed-angle LEGO stepping; programmed angle unknown",
@@ -109,6 +142,34 @@
           "exposureNormalisedObject": 0.000496031746031746
         }
       ]
+    },
+    "general_camera_controls": {
+      "matching": "private permissive SIFT LightGlue,382 pairs selected by chronology plus nonlocal photo matches; own Vision masks, no supplied poses or geometry",
+      "unconstrained_lens": "only2 cameras; implausible fitted radial distortion, rejected",
+      "fixed_lens_candidates_pixels": [
+        2600,
+        3000,
+        3400
+      ],
+      "fixed_lens_max_connected_views": 18,
+      "fixed_lens_largest_model_sparse_mean_error_px": 1.1303824115767944,
+      "fixed_lens_result": "fragmented components, below coverage gate; sparse sheet inspected; no STL",
+      "affine_initialization": "67 photos with1060 tracks; weak-perspective rank-four control rejected because rigid metric was not positive definite; no provider/default change",
+      "exhaustive_pair_control": {
+        "pairs": 3003,
+        "fixed_focal_pixels": 3000,
+        "largest_component_views": 61,
+        "input": 78,
+        "sparse_points": 2371,
+        "mean_reprojection_px": 1.1535432174186946,
+        "matching_seconds": 252.4,
+        "mapping_seconds": 9.832129001617432,
+        "comparison": "same78 photos and lens;382-pair controls had at most18 cameras",
+        "other_focals": "2600 and3400px each recover60 cameras",
+        "component_alignment": "main61 and second26 share20 image IDs and cover67 in union, but own reprojection-based similarity alignment rejects their agreement; not merged",
+        "result": "below unchanged80% coverage gate; sparse sheet inspected, no suitable STL or default adoption claim",
+        "native_incremental": "running separately; no result claim"
+      }
     }
   },
   "apple_foreground_runtime_probe": {
@@ -119,16 +180,27 @@
     "foreground_pixels_swift": 91493
   },
   "validation": {
-    "studio_tests": 205,
-    "dense_photos_tests": 117,
+    "studio_tests": 206,
+    "dense_photos_tests": 121,
     "guard_tests": 9,
     "native_release_clippy": "passed",
     "english_german_phone_layout": "passed: 27 identical-thumbnail captures across 3 heights, one selected deletion, 26 retained; retarget Auto on frozen view does not trigger duplicate",
     "crop_preview_fixture": "passed: three sample photos, mask overlay, padding without inference, focus/threshold refresh",
     "ios_project": "generated and inspected: Vision/CoreVideo linked, en/de InfoPlist.strings in Resources",
     "real_device_updated_build": "pending",
-    "wasm": "build pending at evidence generation",
-    "capture_crop_fixture": "passed: reviewed samples reused, one no-object photo omitted from reconstruction but original retained in unmatched folder, 15 photos/masks renumbered"
+    "wasm": "single-threaded and threaded release builds passed",
+    "capture_crop_fixture": "passed: reviewed samples reused, one no-object photo omitted from reconstruction but original retained in unmatched folder, 15 photos/masks renumbered",
+    "ci": {
+      "app_checks": "https://github.com/CrispStrobe/CrispMesh/actions/runs/39148379678",
+      "testflight_dry_run": "https://github.com/CrispStrobe/CrispMesh/actions/runs/39148382224",
+      "status": "iPhone/iPad simulator and Mac sandbox jobs passed; both TestFlight dry runs and both build15 uploads passed; App Store processing/internal assignment pending",
+      "internal_upload": "https://github.com/CrispStrobe/CrispMesh/actions/runs/39150257814",
+      "internal_build_number": 15
+    },
+    "dense_photos_tests_note": "includes four experimental incremental tests; shipped turntable path retains minimum three-view tracks",
+    "settings_language_fixture": "EN/DE phone check passed: dense setting labels/descriptions, method settings/validation, persistent engine IDs; screenshots inspected",
+    "experimental_native_clippy": "library and test targets passed -D warnings",
+    "experimental_wasm_check": "wasm32 library release check passed; not an executed browser camera provider"
   },
   "limits": [
     "1536 is an input capacity, not a completed device benchmark",

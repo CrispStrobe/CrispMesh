@@ -151,6 +151,11 @@ README.
   was refused by the native camera order gate (neighbour/four-apart match medians 4/4).
   Saved-photo differences cannot establish physical
   step angles or distinguish motor timing from shutter timing. No uniform-spacing claim.
+  An experimental angle-independent Rust library solver recovers only 21 of 117 accepted
+  iPad photos; it is not exposed as a provider. Synthetic rotation and shape tests pass,
+  but this real-batch coverage fails. Fixed-lens iPhone controls improve from at most 18 cameras with 382 selected pairs
+  to 61 of 78 with exhaustive matching (3,003 pairs); coverage still fails, and the
+  secondary component does not align consistently. No suitable STL yet.
   Evidence: [real-user-capture-review.json](../tests/evidence/real-user-capture-review.json).
 
 - **Surface quality on captures from several heights** (2026-10-13). Like for

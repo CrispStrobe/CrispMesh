@@ -225,9 +225,9 @@ touched: cameras and scene are byte-identical to the previous binary on a
 
 **Several turns.** `--turntable-rings N`: the photos are N complete turns of
 equal length, one after the other, for example the same turntable seen by
-cameras at several heights. The photo limit becomes 96 per turn.
+cameras at several heights. The native photo limit is 1,536 total, shared by all turns.
 `--turntable-turn-sizes 36,35,36` gives turns of unequal length instead (8 to
-96 photos each, adding up to all photos; the number of turns follows); without
+1,536 photos each within that total, adding up to all photos; the number of turns follows); without
 it every step below is unchanged. Across turns of unequal length a photo is
 paired with the photo of the next turn at the same share of the turn, shifted
 by the phase found.

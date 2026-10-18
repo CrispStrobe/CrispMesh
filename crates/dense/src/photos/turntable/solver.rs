@@ -99,16 +99,29 @@ fn minimise(f: &dyn Fn(f64) -> f64, mut low: f64, mut high: f64) -> f64 {
     (low + high) / 2.0
 }
 
-struct Tracks {
-    points: Vec<V3>,
+pub(crate) struct Tracks {
+    pub(crate) points: Vec<V3>,
     /// `(photo, point, feature)`.
-    observations: Vec<(usize, usize, u32)>,
+    pub(crate) observations: Vec<(usize, usize, u32)>,
     verified: usize,
 }
 
 /// Matches that agree with the poses (Sampson distance below `bound` pixels), joined into tracks of
 /// at least three photos and triangulated.
 fn build(matches: &Matches, normalised: &[Vec<P2>], rotations: &[M3], translations: &[V3], focal: f64, bound: f64) -> Tracks {
+    build_min(matches, normalised, rotations, translations, focal, bound, 3)
+}
+
+/// Two-view tracks bootstrap a general reconstruction; ordinary turntable tracks still require three.
+pub(crate) fn build_min(
+    matches: &Matches,
+    normalised: &[Vec<P2>],
+    rotations: &[M3],
+    translations: &[V3],
+    focal: f64,
+    bound: f64,
+    minimum: usize,
+) -> Tracks {
     let mut ids: HashMap<(usize, u32), usize> = HashMap::new();
     let mut parent: Vec<usize> = Vec::new();
     let mut nodes: Vec<(usize, u32)> = Vec::new();
@@ -157,7 +170,7 @@ fn build(matches: &Matches, normalised: &[Vec<P2>], rotations: &[M3], translatio
     let (mut points, mut observations) = (Vec::new(), Vec::new());
     for track in tracks {
         let distinct = track.windows(2).all(|w| w[0].0 != w[1].0);
-        if track.len() < 3 || !distinct {
+        if track.len() < minimum || !distinct {
             continue;
         }
         let seen: Vec<(M3, V3, P2)> = track.iter().map(|&(v, f)| (rotations[v], translations[v], normalised[v][f as usize])).collect();
@@ -519,7 +532,7 @@ fn sound_ring(solved: &Solved) -> bool {
 /// seen from above) and the `starts`, poses of cameras near this one. Each is refined by Gauss-Newton on
 /// the six pose numbers with Huber weights while the inlier bound shrinks; the candidate with the most
 /// observations within 3 pixels wins. Returns the pose and that number.
-fn resect(seen: &[(P2, V3)], starts: &[(M3, V3)], focal: f64, random: &mut super::geometry::Random) -> Option<(M3, V3, usize)> {
+pub(crate) fn resect(seen: &[(P2, V3)], starts: &[(M3, V3)], focal: f64, random: &mut super::geometry::Random) -> Option<(M3, V3, usize)> {
     if seen.len() < 12 {
         return None;
     }
