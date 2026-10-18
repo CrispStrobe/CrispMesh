@@ -11,7 +11,7 @@
 // this runs. Needs `xcodegen` on PATH (it is what `tauri ios init` itself uses).
 
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,6 +29,13 @@ if (target === undefined) {
 
 // Every file of the target's folder is a source of the target; XcodeGen makes this one a resource.
 copyFileSync(join(root, "src-tauri/PrivacyInfo.xcprivacy"), join(apple, target, "PrivacyInfo.xcprivacy"));
+
+// Localized OS permission prompts belong in the bundle, alongside the privacy manifest.
+for (const language of ["en", "de"]) {
+  const folder = join(apple, target, `${language}.lproj`);
+  mkdirSync(folder, { recursive: true });
+  copyFileSync(join(root, "src-tauri/localizations", `${language}.lproj`, "InfoPlist.strings"), join(folder, "InfoPlist.strings"));
+}
 
 const at = process.argv.indexOf("--team");
 const team = at > 0 ? process.argv[at + 1] : undefined;
@@ -53,6 +60,10 @@ execFileSync("xcodegen", ["generate", "--spec", "project.yml"], { cwd: apple, st
 const project = readFileSync(join(apple, readdirSync(apple).find((name) => name.endsWith(".xcodeproj")), "project.pbxproj"), "utf8");
 if (!/PrivacyInfo\.xcprivacy in Resources/.test(project)) {
   console.error("The privacy manifest did not become a resource of the app.");
+  process.exit(1);
+}
+if (!/InfoPlist\.strings in Resources/.test(project)) {
+  console.error("Localized permission prompts did not become a resource of the app.");
   process.exit(1);
 }
 console.log(`${target}: privacy manifest is a resource${team !== undefined ? `, team ${team}, automatic signing` : ""}.`);

@@ -76,3 +76,52 @@ describe("taking turntable photos by themselves", () => {
     expect(captureName(71)).toBe("capture_0072.jpg");
   });
 });
+
+describe("phone capture robustness", () => {
+  it("compares exposure in either order without hiding object motion", () => {
+    const a = frame(4);
+    const bright = a.map((v) => Math.min(255, Math.round(v * 1.25)));
+    expect(changedShare(a, bright)).toBe(changedShare(bright, a));
+    // Saturated foreground may still differ; a uniform unsaturated exposure change does not.
+    const dark = a.map((v) => Math.round(v * 0.7));
+    expect(changedShare(a, dark)).toBe(0);
+    expect(changedShare(frame(4), frame(12))).toBeGreaterThan(0.1);
+    const staticExposure = Array.from({ length: 50 }, (_, i) => i % 2 ? a : dark);
+    expect(run(new AutoCapture(), staticExposure)).toHaveLength(1);
+  });
+
+  it("does not call a slowly drifting picture still", () => {
+    const detector = new AutoCapture();
+    // Only two of 1024 pixels change per tick (<0.3%), but they accumulate.
+    const frames = Array.from({ length: 40 }, (_, i) => {
+      const data = new Uint8Array(1024).fill(100);
+      data.fill(200, 0, i * 2);
+      return data;
+    });
+    expect(run(detector, frames)).toEqual([]);
+  });
+
+  it("keeps the last view across pause and Auto toggles", () => {
+    const detector = new AutoCapture();
+    detector.taken(frame(4), 0);
+    detector.resume();
+    for (let now = 2000; now <= 4000; now += 100) expect(detector.frame(frame(4), now).take).toBe(false);
+    const shots: number[] = [];
+    for (let now = 4100; now <= 7000; now += 100) {
+      if (detector.frame(frame(12), now).take) { shots.push(now); detector.taken(frame(12), now); }
+    }
+    expect(shots).toHaveLength(1);
+  });
+
+  it("enforces the interval and forgets the previous height on reset", () => {
+    const detector = new AutoCapture();
+    detector.taken(frame(4), 0);
+    for (let now = 100; now < 1000; now += 100) expect(detector.frame(frame(12), now).take).toBe(false);
+    expect(detector.frame(frame(12), 1000).take).toBe(true);
+    detector.taken(frame(12), 1000);
+    detector.reset();
+    expect(detector.frame(frame(12), 1100).take).toBe(false);
+    for (let now = 1200; now < 1800; now += 100) expect(detector.frame(frame(12), now).take).toBe(false);
+    expect(detector.frame(frame(12), 1800).take).toBe(true);
+  });
+});

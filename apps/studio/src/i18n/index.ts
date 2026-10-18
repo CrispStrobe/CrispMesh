@@ -7,8 +7,8 @@
  * `{ one, other }` forms is chosen by the `count` parameter. i18n.test.ts checks that both
  * languages have the same keys and the same placeholders.
  *
- * Texts that come from the engine (its error messages, the settings schema's descriptions,
- * event messages) are shown as the engine sends them, in English.
+ * Known engine captions use the same catalogues through engineText(). Engine error messages,
+ * uncatalogued settings descriptions and events still appear as sent by the engine.
  *
  * German glossary (keep to it):
  *   mesh -> Mesh (das Mesh, die Meshes)        photo(s) -> Foto(s)
@@ -29,17 +29,20 @@
 
 import type { ComponentChild } from "preact";
 import { format, formatParts, language, type Catalogue, type Params } from "./core";
+import * as metadata from "./messages/metadata";
+import * as newRun from "./messages/newRun";
+import * as capture from "./messages/capture";
 import * as app from "./messages/app";
 import * as connection from "./messages/connection";
 import * as engine from "./messages/engine";
 import * as inputs from "./messages/inputs";
 import * as run from "./messages/run";
 
-export const en = { ...app.en, ...connection.en, ...engine.en, ...inputs.en, ...run.en };
-export const de: Catalogue<typeof en> = { ...app.de, ...connection.de, ...engine.de, ...inputs.de, ...run.de };
+export const en = { ...metadata.en, ...newRun.en, ...capture.en, ...app.en, ...connection.en, ...engine.en, ...inputs.en, ...run.en };
+export const de: Catalogue<typeof en> = { ...metadata.de, ...newRun.de, ...capture.de, ...app.de, ...connection.de, ...engine.de, ...inputs.de, ...run.de };
 
 /** The areas, for the test that every key carries its area's prefix (so merging cannot overwrite). */
-export const AREAS = { app, connection, engine, inputs, run } as const;
+export const AREAS = { metadata, newRun, capture, app, connection, engine, inputs, run } as const;
 
 export type MessageKey = keyof typeof en;
 
@@ -48,6 +51,19 @@ const CATALOGUES = { en, de } as const;
 /** The text of `key` in the active language, with `{name}` placeholders filled from `params`. */
 export function t(key: MessageKey, params?: Params): string {
   return format(CATALOGUES[language()][key] ?? en[key], params);
+}
+
+/** Translate recognized engine captions at render time; preserve unknown extension text verbatim. */
+const ENGINE_CAPTIONS = new Map<string, MessageKey>();
+for (const [key, value] of Object.entries(en)) {
+  if (typeof value === "string" && !value.includes("{")) ENGINE_CAPTIONS.set(value, key as MessageKey);
+}
+export function engineText(value: string): string;
+export function engineText(value: string | undefined): string | undefined;
+export function engineText(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  const key = ENGINE_CAPTIONS.get(value);
+  return key ? t(key) : value;
 }
 
 /** Like `t`, but placeholders may be elements (a link, a code span); returns children for JSX. */

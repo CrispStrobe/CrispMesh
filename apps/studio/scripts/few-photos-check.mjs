@@ -38,7 +38,7 @@ const many = every(2, 0, 37);
 const launch = ["--enable-unsafe-webgpu", "--enable-features=WebGPU", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"];
 if (process.platform === "darwin") launch.push("--use-angle=metal");
 const browser = await chromium.launch({ channel: process.env.STUDIO_CHANNEL ?? "chrome", headless: true, args: launch });
-const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ["camera"] });
+const context = await browser.newContext({ locale: "en-US", viewport: { width: 1280, height: 900 }, permissions: ["camera"] });
 const problems = [];
 const HINT = "Fewer than 25 photos per turn: the ordinary mesh will be rough; the neural surface (fast) copes with about 20.";
 const SWITCHED = "It was switched on at fast for these photos";

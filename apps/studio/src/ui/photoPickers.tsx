@@ -14,12 +14,13 @@ interface Props {
   onAutomaticLens?(label: string): void;
   /** Called with the number of photos chosen, or null when none are. */
   onCount?(count: number | null): void;
+  onTurns?(sizes: number[]): void;
   /** The calibration field's value, so a choice made elsewhere shows here. */
   value?: string;
 }
 
 /** The photos for a run in this browser: several image files, or a folder of them. */
-export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount }: Props) {
+export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount, onTurns }: Props) {
   const files = useRef<HTMLInputElement>(null);
   const folder = useRef<HTMLInputElement>(null);
   const [capturing, setCapturing] = useState(false);
@@ -28,6 +29,7 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount
   const [problem, setProblem] = useState("");
 
   const accept = (list: File[], name: string) => {
+    onTurns?.([]);
     const photos = photoFiles(list.map((file) => ({ name: file.name, file })));
     if (photos.length < 3) {
       setProblem(photos.length === 0 ? t("inputs.photos.noPhotos") : t("inputs.photos.tooFew"));
@@ -99,9 +101,10 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount
       {capturing && (
         <CaptureScreen
           onCancel={() => setCapturing(false)}
-          onDone={(taken) => {
+          onDone={(taken, _frame, sizes) => {
             setCapturing(false);
             accept(taken, importFolderName(new Date()).replace("photos-", "capture-"));
+            onTurns?.(sizes);
             // A camera of this device has no lens file here: the focal length is found from the turn.
             if (engine.pickedCalibration() === null) {
               engine.useAutomaticLens();

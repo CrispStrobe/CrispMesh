@@ -94,6 +94,29 @@ each held 2 s): Auto took one photo per position, 37 in 88 s; the run with the a
 37 of 37 (0.38 px median) and closed the mesh in 34 s. The focal length found was 8 % short at that photo
 size (1 073 against 1 164 px).
 
+**Capture review and cropping (2026-10-18).** Capture accepts up to 1,536 photos total,
+with up to 16 camera heights; each retained turn needs at least eight photos. Select
+thumbnails to delete mistakes, then use the remaining photos in their original order.
+Unequal turn sizes are passed to the engine, rather than assuming equal-length turns.
+The 1–4× zoom is a digital crop, locked after the first photo because a capture shares
+one lens. It preserves source pixel sampling and corrects the field of view.
+
+Auto compares the frame actually encoded by the shutter, normalizes moderate exposure
+changes symmetrically, checks drift throughout the 0.6-second settling interval and
+waits at least one second between photos. Pausing and toggling Auto preserve its last
+view. Tap the object in the live picture to select Auto's watched area; this helps when
+moving shadows dominate the background. This is visual motion detection, not feedback
+from a motor: it cannot guarantee a photograph at every programmed step.
+
+On macOS 14 / iOS 17, optional foreground cropping previews the first, middle and last
+photo with three controls: padding, search area and mask threshold. The foreground search
+follows the previous object's box, then falls back to the full/central image if needed.
+Reviewed sample masks are reused when saving. Photos without a valid foreground are
+reported and omitted; remaining turns must still meet the minimum. Accepted JPEGs stay unchanged; omitted originals are saved in a separate
+`-unmatched` folder. `--object-crop-padding 0.15` crops undistorted RGB, masks and texture
+pixels together and shifts the principal point; its default `-1` keeps whole frames.
+These controls do not establish camera accuracy or repair an inconsistent reconstruction.
+
 **Without a lens file: `--calibration auto`** (turntable cameras only). The steps the solver finds from the
 image motion scale with the focal length it is given, so a closed turn tells the focal length: the
 solver starts from the photos' EXIF 35 mm equivalent focal length, else from `--lens-field-of-view`
@@ -188,7 +211,7 @@ cameras" in [`OTHER-IMAGE-SETS.md`](OTHER-IMAGE-SETS.md)), in order of effect:
    worked), keep the turns one after the other in file order, keep the lens
    and focus, and pass `--turntable-rings N`. Turns of unequal length (photos
    deleted after the capture) are listed instead: `--turntable-turn-sizes
-   36,35,36` gives the photos of each turn in file order (8 to 96 each, adding
+   36,35,36` gives the photos of each turn in file order (8 to 1,536 each, with at most 1,536 total, adding
    up to all photos) and sets the number of turns. A camera looking almost straight
    down is fine: its photos are registered one by one against the other turns
    when its own turn does not form a clean ring.
@@ -419,7 +442,7 @@ on. Exit code 1 means a step failed (tool error, deadline, disk, cancel).
 ## What it assumes about the capture
 
 - One turn of a turntable (or of the camera around the object), photographed
-  by **one camera with a fixed lens and fixed focus**, 3 to 96 photos, all the
+  by **one camera with a fixed lens and fixed focus**, 3 to 1,536 photos total, all the
   same size. The file order (natural order: `x_2` before `x_10`) is the capture
   order. (The native step also takes several turns, up to 96 photos each:
   `--turntable-rings` for turns of equal length, `--turntable-turn-sizes` for

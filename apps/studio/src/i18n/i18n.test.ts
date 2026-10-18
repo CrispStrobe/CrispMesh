@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { format, formatParts, placeholders, type Message } from "./core";
-import { AREAS, de, en, language, resolveLanguage, setLanguage, systemLanguage, t } from "./index";
+import { AREAS, de, en, engineText, language, resolveLanguage, setLanguage, systemLanguage, t } from "./index";
 import { formatBytes, formatDuration, formatNumber, formatPercent } from "../core/format";
 
 const forms = (message: Message): string[] => (typeof message === "string" ? [message] : [message.one, message.other]);
@@ -101,4 +101,13 @@ describe("language choice", () => {
     expect(formatNumber(0.5)).toBe("0,5000");
     expect(formatPercent(0.123)).toBe("12,3 %");
   });
+});
+
+it("translates known engine captions at render time without changing extension text", () => {
+  setLanguage("de");
+  expect(engineText("Turntable photos")).toBe("Drehteller-Fotos");
+  expect(engineText("Cameras")).toBe("Kameras");
+  expect(engineText("custom engine description")).toBe("custom engine description");
+  setLanguage("en");
+  expect(engineText("Cameras")).toBe("Cameras");
 });

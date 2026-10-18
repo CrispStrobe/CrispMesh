@@ -5,7 +5,10 @@
       "minimumSystemVersion": "16.0",
       "frameworks": [
         "AVFoundation",
-        "CoreMedia"
+        "CoreMedia",
+        "Vision",
+        "CoreVideo",
+        "CoreFoundation"
       ]
     }
   },

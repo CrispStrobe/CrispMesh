@@ -7,6 +7,7 @@
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { t } from "../i18n";
+import { decodeForegroundPreview } from "../core/foregroundPreview";
 
 export interface ShellInfo {
   /** The reconstruction is built into the app (crates/dense). */
@@ -155,4 +156,27 @@ export function sourceText(source: ValueSource, field: ConfigField): string {
 /** Only fields that differ from what is saved need saving. */
 export function sameConfig(a: ShellConfig, b: ShellConfig): boolean {
   return CONFIG_FIELDS.every((field) => (a[field] ?? "").trim() === (b[field] ?? "").trim());
+}
+
+/** Foreground previews use the device OS; nothing is sent to the reconstruction computer. */
+export async function foregroundAvailable(): Promise<boolean> {
+  return isTauri() && await invoke<boolean>("capture_foreground_available").catch(()=>false);
+}
+export async function foregroundPreview(file: File, focus: number, threshold: number, region?: import("../core/foregroundPreview").ImageRegion): Promise<import("../core/foregroundPreview").ForegroundPreview | null> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  // Follow the previous complete object before trying the full scene: a small figure must not
+  // be replaced by its turntable or backdrop. A clipped detection is rejected by the native side.
+  const attempts: { area: number; region?: import("../core/foregroundPreview").ImageRegion }[] =
+    focus === 1 ? [...(region ? [{area:1,region}] : []), {area:1}, {area:0.7}, {area:0.4}] : [{area:focus}];
+  for (const attempt of attempts) {
+    try {
+      const headers: Record<string,string> = { "x-focus": String(attempt.area), "x-threshold": String(threshold) };
+      if (attempt.region) headers["x-region"] = JSON.stringify(attempt.region);
+      const buffer = await invoke<ArrayBuffer>("capture_foreground", bytes, { headers });
+      return decodeForegroundPreview(buffer);
+    } catch (error) {
+      if (String(error) !== "foreground-not-found") throw error;
+    }
+  }
+  return null;
 }

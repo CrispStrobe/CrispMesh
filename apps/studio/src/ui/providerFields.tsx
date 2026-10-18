@@ -1,3 +1,4 @@
+import { engineText } from "../i18n";
 import { useEffect, useState } from "preact/hooks";
 import { isChanged, optionError, type OptionSpec, type OptionValues } from "../core/providerOptions";
 import { chosenProviders, type StartPoint } from "../core/startPoints";
@@ -37,12 +38,12 @@ function OptionField({ spec, value, error, onChange }: { spec: OptionSpec; value
             aria-describedby={describedBy}
             onChange={(event) => onChange(event.currentTarget.checked)}
           />
-          <span class="field-label">{spec.label}</span>
+          <span class="field-label">{engineText(spec.label)}</span>
         </label>
       ) : (
         <>
           <label class="field-label" for={id}>
-            {spec.label}
+            {engineText(spec.label)}
           </label>
           {spec.kind === "choice" ? (
             <select id={id} value={text} aria-describedby={describedBy} onChange={(event) => onChange(event.currentTarget.value)}>
@@ -117,8 +118,8 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
         const current = choice.options.find((option) => option.id === chosen[choice.module]) ?? choice.options[0]!;
         return (
           <fieldset class="provider" key={`${point.id}-${choice.module}`}>
-            <legend>{choice.label}</legend>
-            <div class="provider-list" role="radiogroup" aria-label={choice.label}>
+            <legend>{engineText(choice.label)}</legend>
+            <div class="provider-list" role="radiogroup" aria-label={engineText(choice.label)}>
               {choice.options.map((option) => (
                 <label key={option.id} class={`provider-option${option.id === current.id ? " chosen" : ""}${option.available ? "" : " unavailable"}`}>
                   <input
@@ -131,10 +132,10 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
                   />
                   <span class="provider-text">
                     <span class="provider-name">
-                      {option.label}
+                      {engineText(option.label)}
                       {!option.available && <span class="badge status-cancelled">{t("inputs.provider.notAvailable")}</span>}
                     </span>
-                    {option.meaning !== undefined && <span class="help">{option.meaning}</span>}
+                    {option.meaning !== undefined && <span class="help">{engineText(option.meaning)}</span>}
                     {option.external.length > 0 && (
                       <span class="help">
                         {t("inputs.provider.needs", { list: option.external.join(", ") })}
@@ -144,7 +145,7 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
                     )}
                     {!option.available && (
                       <span class="field-error">
-                        {option.reason ?? t("inputs.provider.cannotUse")}{" "}
+                        {engineText(option.reason) ?? t("inputs.provider.cannotUse")}{" "}
                         {toolsHref !== undefined && option.external.length > 0 && <a href={toolsHref}>{t("inputs.provider.tools")}</a>}
                       </span>
                     )}
@@ -158,10 +159,10 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
                 engine={engine}
                 want={input.kind}
                 id={`f-${input.key}`}
-                label={input.label}
+                label={engineText(input.label)}
                 value={values[input.key] ?? ""}
                 onInput={(value) => onValue(input.key, value)}
-                help={input.help}
+                help={engineText(input.help)}
                 error={error(input.key)}
                 required
               />
@@ -172,7 +173,7 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
         );
       })}
       {point.optionGroups.map((group) => (
-        <More key={group.id} title={group.label} specs={group.settings} options={options} onOption={onOption} error={error} />
+        <More key={group.id} title={engineText(group.label)} specs={group.settings} options={options} onOption={onOption} error={error} />
       ))}
     </>
   );

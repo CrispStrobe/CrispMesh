@@ -16,6 +16,8 @@
 
 mod bonjour;
 mod camera;
+#[cfg(native_engine)]
+mod foreground;
 mod config;
 mod remote;
 #[cfg(local_engine)]
@@ -116,6 +118,29 @@ fn configure_native(app: &AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn camera_field_of_view(width: u32, height: u32) -> Option<f64> {
     camera::field_of_view_for(width, height, &camera::camera_formats())
+}
+
+#[tauri::command]
+fn capture_foreground_available() -> bool {
+    #[cfg(native_engine)] { foreground::available() }
+    #[cfg(not(native_engine))] { false }
+}
+
+#[tauri::command]
+async fn capture_foreground(request: tauri::ipc::Request<'_>) -> Result<tauri::ipc::Response, String> {
+    #[cfg(native_engine)] {
+        let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else { return Err("invalid-foreground-input".into()); };
+        let number = |key: &str, default: f64| request.headers().get(key).and_then(|v|v.to_str().ok()).and_then(|v|v.parse::<f64>().ok()).unwrap_or(default);
+        let (focus, threshold) = (number("x-focus", 1.0), number("x-threshold", 0.5));
+        let region = request.headers().get("x-region").map(|value| serde_json::from_slice::<[f64;4]>(value.as_bytes()).map_err(|_| "invalid-foreground-input".to_string())).transpose()?;
+        let bytes = bytes.clone();
+        let result = tauri::async_runtime::spawn_blocking(move || match region {
+            Some(region) => foreground::preview_region(&bytes, focus, threshold, Some(region)),
+            None => foreground::preview(&bytes, focus, threshold),
+        }).await.map_err(|e|e.to_string())??;
+        Ok(tauri::ipc::Response::new(result))
+    }
+    #[cfg(not(native_engine))] { let _=request; Err("foreground-unavailable".into()) }
 }
 
 #[tauri::command]
@@ -700,6 +725,8 @@ pub fn run() {
         native_delete_example,
         native_free_space,
         camera_field_of_view,
+        capture_foreground_available,
+        capture_foreground,
         check_tool,
         autopilot_log,
         autopilot_await,
@@ -733,6 +760,8 @@ pub fn run() {
         native_delete_example,
         native_free_space,
         camera_field_of_view,
+        capture_foreground_available,
+        capture_foreground,
         check_tool
     ]);
 

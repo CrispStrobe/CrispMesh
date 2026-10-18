@@ -46,3 +46,11 @@ describe("the lens of photos taken in the app", () => {
     expect(fieldOfViewOf("fov:wide")).toBeNull();
   });
 });
+
+it("corrects the field of view for a centred zoom crop", async () => {
+  const calls: number[][] = [];
+  const value = await captureCalibration({ width: 1632, height: 1224, sourceWidth: 3264, sourceHeight: 2448 }, async (w, h) => { calls.push([w,h]); return 60; });
+  expect(calls).toEqual([[3264, 2448]]);
+  expect(fieldOfViewOf(value)).toBeCloseTo(32.20, 2);
+  expect(commonFrame([{ frame: { width: 100, height: 100, sourceWidth: 200, sourceHeight: 200 } }, { frame: { width: 100, height: 100, sourceWidth: 400, sourceHeight: 400 } }])).toBeNull();
+});

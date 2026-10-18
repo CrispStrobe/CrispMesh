@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "CrispMesh takes photos of an object with the camera. The photos stay on this device.";
+"NSLocalNetworkUsageDescription" = "CrispMesh connects to the engine you select on your local network, such as your own computer sharing its engine.";

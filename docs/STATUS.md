@@ -13,9 +13,9 @@ methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md)
 | **Native crate** (`crates/dense`, Rust + wgpu) | The primary implementation. Metal, Vulkan, DirectX 12 and WebGPU; library API, C interface, event log contract; Python package kept as the reference it was ported from |
 | **Browser** | The same pipeline as WebAssembly + WebGPU, from photos or from prepared inputs, single-threaded or threaded (cross-origin isolated pages). Default Bunny from 73 photos in Chrome: measured 130–264 s with 4 threads, peak WebAssembly memory about 1.6–2.1 GiB. Live at <https://crispstrobe.github.io/CrispMesh/> |
 | **CrispMesh** (app) | Desktop (macOS, Windows, Linux), iOS and Android from one code base (Tauri 2); the engine runs in-process. Start from photos with provider choice, live progress, preview surfaces, diagnostic sheets, per-step inspection sheets, example objects downloaded on request. Prereleases (unsigned desktop builds) on the [releases page](https://github.com/CrispStrobe/CrispMesh/releases); internal TestFlight builds for iOS and macOS |
-| **Taking photos** | *Take photos* in the app and the web page: the device's camera, *Auto* takes one photo per turntable step (picture changed, then still); 20 to 72 photos per turn. Without a live camera picture the system camera takes one photo per tap. Checked end to end in Chrome with a video as the camera and in the iOS simulator (camera API answers); on a real iPhone Auto works but "not perfectly yet" (owner, 2026-10-18; details pending) |
+| **Taking photos** | Live camera, manual or Auto shutter, 1–4× digital zoom before the first photo, selection/deletion and renumbering, pause/Continue and up to 16 camera heights with unequal photo counts. Capacity raised to 1,536 photos total (resource limits still apply). Auto compares the saved frame, compensates moderate exposure changes, checks settling drift and a minimum interval; tap the object to choose the watched area. English/German phone-layout checks pass; updated real-device Auto validation is pending |
 | **Few photos** | About 20 photos per turn work with the neural surface on textured objects (Bunny 0.839, Armadillo 0.852 at 0.5 % from 19 photos; the ordinary mesh 0.68 / 0.70). Below 25 photos per turn the camera gate is lower and New run switches the neural surface on once. Dragon, Lucy, Happy Buddha are refused at 19, every object at 15. [PHOTOS-TO-INPUTS.md](PHOTOS-TO-INPUTS.md) "About 20 photos" |
-| **Languages** | Studio texts in English and German (System / English / Deutsch); engine messages stay English. Not yet translated: Take photos, Auto, New run, the few-photos hint ([apps/studio/README.md](../apps/studio/README.md) "Languages") |
+| **Languages** | Studio-composed texts, including Take photos, Auto, New run and few-photo guidance, have English and German catalogues. Apple permission-prompt resources now include both languages. Engine-provided descriptions, events and errors still need localization |
 | **No lens file** | `--calibration auto`: the focal length from the closed turn (raw steps scale with it). Five of six 3DLF objects within 3.3 %, F1 within 0.006; the Happy Buddha 28 % off. `--calibration fov:DEG` (a known field of view; *Take photos* in the iOS app asks the system): within 5 % as good as the lens file on Bunny, Dragon, Happy Buddha (Buddha +0.016 F1 over automatic); a field of view that does not close the turn falls back to automatic. [PHOTOS-TO-INPUTS.md](PHOTOS-TO-INPUTS.md) |
 | **Phone to computer** | The desktop app lets other devices use its engine (local network, token, QR pairing, `POST /api/uploads`); the phone sends its photos and follows the run. The desktop app also announces itself (Bonjour `_crispmesh._tcp`, macOS/iOS) and shows a six-digit pairing code, so a phone can find it without the QR code. Checked in Chrome against the app's server and with an mDNS self-test on the Mac; on devices in TestFlight build 13; [ENGINE-CONTRACT.md](ENGINE-CONTRACT.md) |
 | **Masks** | `threshold` (default; contact shadow removed), `import`, `sam` (SAM 2.1 natively through ONNX Runtime or CrispEmbed's ggml engine, optional build feature), `external-sam` (PyTorch) |
@@ -132,22 +132,26 @@ README.
 
 ## In progress
 
-- **Owner's open requests (2026-10-18)**, not done yet:
-  - *Hand-held captures from any angle* (walking around the object, no turntable, no fixed steps). Today
-    the cameras come from the turntable solver (fixed camera, turning object, one or several turns; the
-    steps need not be equal) or from external tools (`colmap`, `alicevision`, not in the apps). Needed:
-    a general incremental solver in the engine (pair start, resection, bundle adjustment; matching,
-    resection and joint adjustment exist in `crates/dense/src/photos`), validated on real hand-held
-    captures with scans for scoring.
-  - *Delete wrong photos after taking them* (review strip in Take photos, renumbering in order).
-  - *Several camera heights in Take photos* (turns 1 to 5, pause and Continue between turns). The engine
-    side is done: `--turntable-turn-sizes 36,35,36` for turns of unequal length; Take photos and New run
-    do not use it yet, and it has unit tests only, no real multi-turn run.
-  - *Auto robustness* on the phone (exposure changes, shake, a turntable that keeps moving, a minimum
-    time between photos, a live indicator). A first draft exists outside the repository.
-  - *German* for Take photos, Auto, New run and the few-photos hint.
-  - A warning while taking photos that the steps are too large was tried and is not possible with a
-    measure between two photos ([scripts/capture_spacing](../scripts/capture_spacing/README.md)).
+- **Real-user capture work (2026-10-18):** photo selection/deletion, unequal capture turns,
+  zoom, and capture/New run German texts are implemented. Optional foreground crop previews
+  on macOS 14 / iOS 17 show three photos with padding, search-area and mask-threshold controls;
+  masks follow the previous object region, and reviewed sample masks are reused on saving.
+  Cropping preserves image sampling and shifts the camera principal point. Browser and other
+  platforms keep ordinary capture; this foreground provider is Apple-only.
+- **Still open:** a general in-process camera solver for arbitrary hand-held paths; reliable
+  meshes from real phone batches; updated iPhone Auto and crop validation; localization of
+  engine-generated text. Increasing the input limit is not a 1,536-photo device benchmark.
+- **Private real-user batches:** 119 manually triggered iPad photos and 78 Auto iPhone photos
+  were copied through USB without changing the device files. Own foreground segmentation
+  and crop controls are promising, but the iPad photo-only control (105 registered cameras)
+  produced a distorted mesh; a silhouette-only control is also distorted. Neither is a
+  suitable printable reconstruction. No ground-truth masks, poses, depths or meshes were used.
+  The iPhone contains confirmed near-repeated consecutive viewpoints (1–2, 3–4, 32–33);
+  the programmed LEGO angle is unknown. An all-78-photo control reduced to 1,600 pixels
+  was refused by the native camera order gate (neighbour/four-apart match medians 4/4).
+  Saved-photo differences cannot establish physical
+  step angles or distinguish motor timing from shutter timing. No uniform-spacing claim.
+  Evidence: [real-user-capture-review.json](../tests/evidence/real-user-capture-review.json).
 
 - **Surface quality on captures from several heights** (2026-10-13). Like for
   like on the same masks and hull, fused depth is worth 0.12 F1 at 0.5 % on the

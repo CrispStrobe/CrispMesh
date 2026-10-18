@@ -227,12 +227,12 @@ catalogues are typed against the English ones and `src/i18n/i18n.test.ts`
 checks keys and placeholders. Numbers get the language's decimal sign. The
 German terms follow the glossary at the top of `src/i18n/index.ts`.
 
-Known limit: texts that come from the engine stay English in both languages:
+Take photos, Auto, capture review/crop controls, New run and few-photo guidance are catalogued in both languages. Known engine captions are translated at render time. Remaining engine text stays English in both languages:
 its error messages, the descriptions in its settings schema and the messages
 of its events. The Apple apps declare English and German
 (`CFBundleLocalizations` in `src-tauri/Info*.plist`) so that their web view
 reports German on a German system; not yet checked on a device. The system's
-permission prompts (camera, local network) are still English only. Tests and the headless checks in `scripts/` run in English
+permission prompts (camera, local network) have English and German bundle resources; real-device prompt selection remains to be checked. Tests and the headless checks in `scripts/` run in English
 (Chrome with locale `en-US`).
 
 ### Dependencies and licenses

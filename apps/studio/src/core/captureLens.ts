@@ -10,6 +10,9 @@
 export interface CaptureFrame {
   width: number;
   height: number;
+  /** Full camera frame before a centred digital crop. */
+  sourceWidth?: number;
+  sourceHeight?: number;
 }
 
 /** Asks the device for the horizontal field of view across frames of this size; null when it does not know. */
@@ -18,9 +21,11 @@ export type FieldOfViewSource = (width: number, height: number) => Promise<numbe
 /** The calibration value for photos taken in the app: `fov:DEG` when the device knows its camera, else `auto`. */
 export async function captureCalibration(frame: CaptureFrame | null, ask: FieldOfViewSource): Promise<string> {
   if (frame === null || frame.width <= 0 || frame.height <= 0) return "auto";
-  const degrees = await ask(frame.width, frame.height).catch(() => null);
+  const degrees = await ask(frame.sourceWidth ?? frame.width, frame.sourceHeight ?? frame.height).catch(() => null);
   if (typeof degrees !== "number" || !Number.isFinite(degrees) || degrees <= 1 || degrees >= 179) return "auto";
-  return `fov:${degrees.toFixed(2)}`;
+  const share = frame.width / (frame.sourceWidth ?? frame.width);
+  const cropped = 2 * Math.atan(Math.tan(degrees * Math.PI / 360) * share) * 180 / Math.PI;
+  return `fov:${cropped.toFixed(2)}`;
 }
 
 /** The field of view of a `fov:DEG` calibration value, else null. */

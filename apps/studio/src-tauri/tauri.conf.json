@@ -39,6 +39,10 @@
       "icons/icon.icns",
       "icons/icon.ico",
       "icons/icon.png"
-    ]
+    ],
+    "resources": {
+      "localizations/en.lproj/InfoPlist.strings": "en.lproj/InfoPlist.strings",
+      "localizations/de.lproj/InfoPlist.strings": "de.lproj/InfoPlist.strings"
+    }
   }
 }

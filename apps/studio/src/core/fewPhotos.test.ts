@@ -52,3 +52,10 @@ describe("switching the neural surface on by itself", () => {
     expect(surfaceAutomatically({ ...start, decided: true })).toEqual({ decided: true, switchOn: false });
   });
 });
+
+it("counts the shortest retained turn rather than an average", () => {
+  expect(photosPerTurn(96, "3", "36,24,36")).toBe(24);
+  expect(fewPhotos(96, "1", "36,24,36")).toBe(true);
+  expect(fewPhotos(107, "1", "36,35,36")).toBe(false);
+  expect(photosPerTurn(96, "3", "36,24,35")).toBe(32);
+});

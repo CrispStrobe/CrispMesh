@@ -2110,3 +2110,34 @@ fieldset.panel > legend {
   background: #fff;
   border-radius: var(--radius-small);
 }
+
+/* Full capture review remains scrollable on a phone; previews decode on demand. */
+.capture-strip { max-height: 220px; overflow: auto; flex-wrap: wrap; }
+.capture-thumb { position: relative; display: inline-flex; flex-direction: column; flex-shrink: 0; width: 96px; font-size: 11px; }
+.capture-thumb input { position: absolute; top: 3px; left: 3px; z-index: 1; width: 20px; height: 20px; }
+.capture-thumb:has(input:checked) { outline: 3px solid var(--accent, #4986df); }
+.capture-thumb img { width: 96px; height: 72px; object-fit: contain; }
+.capture-thumb span { padding: 2px; }
+.capture-buttons { flex-wrap: wrap; }
+
+.capture-stage { overflow: hidden; }
+.capture-zoom { display: flex; gap: 12px; align-items: center; }
+.capture-zoom input { flex: 1; min-width: 80px; }
+
+.crop-review { min-width: 0; width: 100%; border: 1px solid var(--line, #667); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.crop-review label { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.crop-review label input { flex: 1; min-width: 100px; }
+.crop-examples { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 8px; }
+.crop-examples figure { margin: 0; min-width: 0; }
+.crop-examples canvas { width: 100%; height: auto; }
+.crop-examples figcaption { overflow-wrap: anywhere; font-size: 12px; }
+
+.capture-watch-box { position: absolute; border: 2px solid #47e0a0; border-radius: 4px; pointer-events: none; box-shadow: 0 0 0 1px #1118; }
+
+/* Keep the live picture reachable when translated help, review or crop controls need more space. */
+.capture-stage { flex: 1 0 150px; min-height: 150px; }
+.capture-controls { flex: 0 1 auto; min-height: 0; max-height: 55dvh; overflow-y: auto; }
+.capture-buttons { padding-block: 4px; }
+/* Preserve natural heights inside scrolling controls so the review checkboxes
+   cannot overlap the preceding button rows. */
+.capture-controls > * { flex-shrink: 0; }

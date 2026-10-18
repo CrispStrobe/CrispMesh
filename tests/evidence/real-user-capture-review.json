@@ -1,0 +1,140 @@
+{
+  "date": "2026-10-18",
+  "scope": "Real-user USB batches and capture/crop changes; private photos and rendered sheets are not published",
+  "reference_geometry_used": false,
+  "supplied_poses_masks_depths_used": false,
+  "ipad": {
+    "source": "119 manually triggered photos, not Auto",
+    "own_foreground_accepted": 117,
+    "own_recovered_cameras": 105,
+    "camera_control": "OpenCV SIFT/RootSIFT, private permissive SIFT LightGlue matcher control, PyCOLMAP; not integrated into the app",
+    "sparse_mean_reprojection_px": 1.286094,
+    "native_control_settings": {
+      "grid": 256,
+      "sizes": [
+        128,
+        256,
+        512
+      ],
+      "native_level": false,
+      "object_crop_padding": 0.15
+    },
+    "run_seconds": 424.860780917,
+    "mesh": {
+      "closed": true,
+      "triangles": 1057922,
+      "genus": 1701
+    },
+    "silhouette_iou_original_masks": {
+      "maximum": 0.7916303983930365,
+      "median": 0.6958396533043872,
+      "minimum": 0.505063896671906,
+      "worst_view": "view_111"
+    },
+    "visual_result": "FAILED: distorted geometry in dense and silhouette-only controls; neither suitable for printing",
+    "mesh_sha256": "726ee8b24c28c8dc5ecffb1e5395b8a79e68d8be9005124134e267acd94ca9f7"
+  },
+  "iphone": {
+    "source": "78 Auto-shutter JPEGs; intended fixed-angle LEGO stepping; programmed angle unknown",
+    "unique_photo_hashes": 78,
+    "bytes": 146671696,
+    "native_foreground_masks": 78,
+    "foreground_review": "26 evenly spaced overviews inspected; later small figure retained using temporal region tracking; not a per-pixel accuracy score",
+    "near_repeated_consecutive_views": [
+      [
+        1,
+        2
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        32,
+        33
+      ]
+    ],
+    "physical_angles_measured": false,
+    "angle_limitation": "2D affine agreement is not a calibrated physical turntable angle. No video or motor timings exist for this batch. Do not infer equal spacing from saved-photo count.",
+    "native_camera_control": {
+      "all_images": 78,
+      "long_side": 1600,
+      "turn_sizes": [
+        36,
+        29,
+        13
+      ],
+      "turn_size_basis": "visual camera reposition boundaries, not measured motor turns",
+      "result": "refused: turn 2 median neighbour/four-apart correspondences 4/4; no STL produced"
+    },
+    "native_three_photo_preview_control": [
+      {
+        "photo": "capture_0001",
+        "preview_vs_sequential_mask_iou": 1.0
+      },
+      {
+        "photo": "capture_0040",
+        "preview_vs_sequential_mask_iou": 0.9671024506636179
+      },
+      {
+        "photo": "capture_0078",
+        "preview_vs_sequential_mask_iou": 0.9500013227163303
+      }
+    ],
+    "saved_photo_detector_control": {
+      "note": "saved images, not a live timing replay; previous own foreground box plus 35% margin",
+      "pairs": [
+        {
+          "from": "capture_0001.jpg",
+          "to": "capture_0002.jpg",
+          "oldRawFull": 0.004195601851851852,
+          "exposureNormalisedCentre": 0.006045678459471563,
+          "previousForegroundShare": 0.04716435185185185,
+          "exposureNormalisedObject": 0.011904761904761904
+        },
+        {
+          "from": "capture_0003.jpg",
+          "to": "capture_0004.jpg",
+          "oldRawFull": 0.025607638888888888,
+          "exposureNormalisedCentre": 0.012315270935960592,
+          "previousForegroundShare": 0.05049189814814815,
+          "exposureNormalisedObject": 0.0003324468085106383
+        },
+        {
+          "from": "capture_0032.jpg",
+          "to": "capture_0033.jpg",
+          "oldRawFull": 0.011863425925925927,
+          "exposureNormalisedCentre": 0.017241379310344827,
+          "previousForegroundShare": 0.032552083333333336,
+          "exposureNormalisedObject": 0.000496031746031746
+        }
+      ]
+    }
+  },
+  "apple_foreground_runtime_probe": {
+    "photo": "capture_0003.jpg",
+    "intersection_over_union": 0.9992789013078108,
+    "identical_mask_pixels": false,
+    "foreground_pixels_native": 91495,
+    "foreground_pixels_swift": 91493
+  },
+  "validation": {
+    "studio_tests": 205,
+    "dense_photos_tests": 117,
+    "guard_tests": 9,
+    "native_release_clippy": "passed",
+    "english_german_phone_layout": "passed: 27 identical-thumbnail captures across 3 heights, one selected deletion, 26 retained; retarget Auto on frozen view does not trigger duplicate",
+    "crop_preview_fixture": "passed: three sample photos, mask overlay, padding without inference, focus/threshold refresh",
+    "ios_project": "generated and inspected: Vision/CoreVideo linked, en/de InfoPlist.strings in Resources",
+    "real_device_updated_build": "pending",
+    "wasm": "build pending at evidence generation",
+    "capture_crop_fixture": "passed: reviewed samples reused, one no-object photo omitted from reconstruction but original retained in unmatched folder, 15 photos/masks renumbered"
+  },
+  "limits": [
+    "1536 is an input capacity, not a completed device benchmark",
+    "General in-process arbitrary-path camera recovery remains open",
+    "Capture UI tests do not prove every physical motor step will be photographed",
+    "No dense algorithm defaults changed; no six-object adoption claim",
+    "Engine-generated technical messages and descriptions are not fully translated"
+  ]
+}
