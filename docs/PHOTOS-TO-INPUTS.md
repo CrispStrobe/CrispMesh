@@ -87,7 +87,8 @@ step changes at least 2.9 % (Bunny) and 5.2 % (Dragon); strong noise and a brigh
 change none, while the mean difference is diluted by the backdrop and missed every other step). Turning by
 hand in steps works, and so does a stepping turntable. The photos (`capture_NNNN.jpg`,
 full camera frames) become the run's photos, and since such a camera has no lens file the run uses the
-automatic lens (next paragraph). Checked end to end in headless Chrome with a video file as the camera
+camera's field of view where the app can ask the system for it (`fov:DEG`, below), else the automatic
+lens (next paragraph). Checked end to end in headless Chrome with a video file as the camera
 (`apps/studio/scripts/capture-check.mjs`; video of every 2nd Bunny photo, 37 positions at half size,
 each held 2 s): Auto took one photo per position, 37 in 88 s; the run with the automatic lens registered
 37 of 37 (0.38 px median) and closed the mesh in 34 s. The focal length found was 8 % short at that photo
@@ -127,6 +128,41 @@ and it needs perspective: an object filling a good part of the picture (on a syn
 the picture wide the steps hardly change with the focal length). A focal length outside 12 to 120
 degrees of field of view is refused. Strong lens distortion (wide webcams) is not modelled; a lens file
 is still better when there is one.
+
+**When the camera's field of view is known: `--calibration fov:DEG`** (every camera provider). A pinhole
+lens with DEG degrees of horizontal field of view across the photo's width (as the photos are given),
+focal length `width / (2 tan(DEG/2))` in both directions, principal point in the centre, no distortion;
+the lens is then fixed like a lens file's. Phones and some webcams report their field of view, which is
+nominal: no distortion model, and a few percent off is possible. Measured on three 3DLF objects with the
+true lens's field of view (41.17 degrees across 1749 px, i.e. its focal length 2328.3 px without its
+distortion) and with 5 % less and more (default dense stages, F1 at 0.5 / 1 / 2 % of the scan's diagonal,
+whole object; above the support in brackets at 0.5 %; scores in `tests/evidence/lens-field-of-view-review.json`):
+
+| Object | Lens file | Automatic | `fov:` true (41.17) | `fov:` -5 % (39.11) | `fov:` +5 % (43.23) |
+| --- | --- | --- | --- | --- | --- |
+| Happy Buddha | 0.793 / 0.908 / 0.972 (0.834) | 0.783 / 0.903 / 0.969 (0.821) | 0.800 / 0.912 / 0.969 (0.841) | 0.799 / 0.914 / 0.971 (0.837) | 0.781 / 0.904 / 0.968 (0.819), found from the turn |
+| Bunny | 0.908 / 0.941 / 0.956 (0.968) | 0.909 / 0.941 / 0.955 | 0.909 / 0.941 / 0.955 (0.969) | 0.908 / 0.939 / 0.954 (0.969) | 0.911 / 0.943 / 0.956 (0.970) |
+| Dragon | 0.807 / 0.934 / 0.983 (0.852) | 0.802 / 0.935 / 0.982 | 0.803 / 0.934 / 0.982 (0.847) | 0.791 / 0.929 / 0.981 (0.841) | 0.802 / 0.935 / 0.982 (0.848) |
+
+(Lens file and Automatic on the Bunny and Dragon from the table above; the Happy Buddha's two were rerun
+with the same build and reproduce it.) A field of view within 5 % does as well as the lens file (within
+0.012 at 0.5 %) and, on the Happy Buddha, better than Automatic (+0.016 at 0.5 % with the true and the 5 %
+narrower one), because it does not depend on the turn adding up. The raw steps scale with the focal
+length (Happy Buddha 281 / 297 degrees, Bunny 363 / 383 / 344, Dragon 373 / 393 / 353 for true / -5 % /
++5 %). On the Happy Buddha the 5 % wider field of view (a 5.2 % shorter focal length) brings them to 266
+degrees, below the 270 degrees the solver accepts as one turn. Then, with a field of view only, the
+turntable solver warns and finds the focal length from the turn instead, starting from the given one (the
+row's result: the same +28 % focal length and scores as Automatic). A lens file is trusted: there the run
+fails as before. Which direction a device errs in is not known; digital stabilisation or a cropped stream makes the
+real field of view narrower than the reported one (the safe direction here).
+
+In the apps, *Take photos* asks the system for the camera's field of view (`camera_field_of_view` in
+`apps/studio/src-tauri/src/camera.rs`: AVFoundation's `videoFieldOfView` of the format whose size, or
+else aspect ratio, matches the frames, for the back wide-angle camera on iOS and the default camera on
+the Mac; across the frame's shorter side when the frames are portrait) and uses `fov:DEG` when it answers;
+otherwise, in a browser, with the system camera or another camera chosen, it stays `auto`. The Mac this
+was written on reports 0 ("unknown") for its built-in camera, so on the Mac this is usually `auto`; the
+iOS answer is not yet checked on a device.
 
 Measured on the YCB power drill (section "YCB power drill from the DSLR
 cameras" in [`OTHER-IMAGE-SETS.md`](OTHER-IMAGE-SETS.md)), in order of effect:
@@ -413,7 +449,7 @@ some pure-Python dependency, add directories with `--sam-pythonpath`.
 
 ## Calibration file
 
-(Or `--calibration auto` for the turntable cameras: see "Without a lens file" above.)
+(Or `--calibration auto` for the turntable cameras, or `--calibration fov:DEG` for a known field of view: see "Without a lens file" above.)
 
 ```json
 {

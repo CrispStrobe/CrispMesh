@@ -44,7 +44,9 @@ pub const OPTIONS: &[OptionSpec] = &[
         repeated: false,
         meaning: "Lens file: focal length, principal point and radial distortion, or auto: the turntable solver finds the focal \
                   length (started from the photos' EXIF focal length, else --lens-field-of-view), principal point in the \
-                  centre, no distortion (not needed with --cameras import or --stop-after masks)",
+                  centre, no distortion; or fov:DEG: a pinhole lens with DEG degrees of field of view across the photo's \
+                  width, centred, no distortion, for every camera provider (not needed with --cameras import or \
+                  --stop-after masks)",
     },
     OptionSpec {
         flag: "output",

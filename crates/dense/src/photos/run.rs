@@ -27,7 +27,7 @@ use crate::control::Stopped;
 use crate::events::EventLog;
 
 use super::audit::{audit_solution, Policy};
-use super::calibration::{exif_focal_35mm, guessed_lens, load_calibration, scale_calibration};
+use super::calibration::{exif_focal_35mm, guessed_lens, scale_calibration};
 use super::cameras::camera_provider;
 use super::masks::mask_provider;
 use super::options::{Options, SCHEMA};
@@ -427,8 +427,8 @@ impl Run<'_> {
         staged.emit("stage_started", json!({"provider": provider.info().name}))?;
         // The declared lens at the photo resolution.
         let (width, height) = (photo_map["width"].as_u64().unwrap_or(0) as u32, photo_map["height"].as_u64().unwrap_or(0) as u32);
-        let declared = match &options.calibration {
-            Some(path) => Some(scale_calibration(&load_calibration(path)?, width, height)?),
+        let declared = match options.declared_calibration(width, height)? {
+            Some(calibration) => Some(scale_calibration(&calibration, width, height)?),
             None => None,
         };
         let mut lens = declared.as_ref().map(|scaled| scaled.lens(width, height));
@@ -469,9 +469,12 @@ impl Run<'_> {
             used["scale"] = json!(scaled.scale);
         }
         self.report["lens"] = used;
+        // With --calibration auto the lens is the one found, which the audit then holds the solution to; so too when a
+        // field of view (`fov:DEG`) did not close the turn and the turntable solver found the focal length instead.
+        let found = options.turntable.auto_lens
+            || (options.lens_field_of_view.is_some() && lens.as_ref().is_some_and(|given| given.pixels != solution.lens.pixels));
         let gates = self.internal("cameras", "audit", small, 0.82, 0.86, "Checking cameras", 1, |_| {
-            // With --calibration auto the lens is the one found, which the audit then holds the solution to.
-            judge(options, out, &solution, if options.turntable.auto_lens { Some(&solution.lens) } else { lens.as_ref() })
+            judge(options, out, &solution, if found { Some(&solution.lens) } else { lens.as_ref() })
         })?;
         self.report["gates"] = gates.clone();
         let ring = &gates["ring"];

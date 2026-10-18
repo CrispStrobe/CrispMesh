@@ -999,7 +999,7 @@ pub fn describe_with(photo_options: &[String]) -> Value {
             "calibration",
             "Lens calibration (.json)",
             "file",
-            "Focal length, principal point and radial distortion of the lens, or automatic: the focal length found from the turn.",
+            "Focal length, principal point and radial distortion of the lens, or automatic: the focal length found from the turn, or fov:DEG: the camera's horizontal field of view.",
         );
         lens_field["automatic"] = json!(true);
         points.push(json!({

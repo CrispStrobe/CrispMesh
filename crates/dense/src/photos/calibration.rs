@@ -102,6 +102,30 @@ pub fn parse_calibration(data: &Value) -> anyhow::Result<Calibration> {
     Ok(Calibration { width: width as u32, height: height as u32, fx, fy, cx, cy, k, sensor_width_mm: sensor })
 }
 
+/// `--calibration fov:DEG`: a pinhole lens whose horizontal field of view is `degrees` across the photo's width
+/// (as the photos are given), focal length the same in both directions, principal point in the centre, no
+/// distortion. For a camera whose field of view is known (a phone or webcam reports it) but which has no lens file.
+pub fn field_of_view_calibration(degrees: f64, width: u32, height: u32) -> anyhow::Result<Calibration> {
+    if !(degrees.is_finite() && degrees > 1.0 && degrees < 179.0) {
+        bail!("--calibration fov:{degrees}: the field of view must be between 1 and 179 degrees");
+    }
+    if width == 0 || height == 0 {
+        bail!("invalid photo size {width}x{height}");
+    }
+    let (w, h) = (width as f64, height as f64);
+    let focal = w / (2.0 * (degrees.to_radians() / 2.0).tan());
+    Ok(Calibration { width, height, fx: focal, fy: focal, cx: (w - 1.0) / 2.0, cy: (h - 1.0) / 2.0, k: [0.0; 3], sensor_width_mm: 36.0 })
+}
+
+/// The value of `--calibration fov:DEG`, if `text` is that spelling.
+pub fn parse_field_of_view(text: &str) -> Option<anyhow::Result<f64>> {
+    let value = text.strip_prefix("fov:")?;
+    Some(match value.trim().parse::<f64>() {
+        Ok(degrees) if degrees.is_finite() && degrees > 1.0 && degrees < 179.0 => Ok(degrees),
+        _ => Err(anyhow!("--calibration fov:{value}: expected the horizontal field of view in degrees, between 1 and 179")),
+    })
+}
+
 /// Scales a lens declared at one resolution to the photo resolution.
 ///
 /// A pure resize keeps the radial coefficients (they act on normalised
@@ -258,6 +282,39 @@ mod tests {
         posed["poses"] = json!([{}]);
         assert!(calibrated_scene(&posed, &scaled.lens(1749, 1155)).is_err());
         assert!(calibrated_scene(&scene, &scaled.lens(1749, 1000)).is_err());
+    }
+}
+
+#[cfg(test)]
+mod field_of_view_tests {
+    use super::*;
+
+    #[test]
+    fn field_of_view_lens() {
+        // 90 degrees across 1000 px: focal 500 px; principal point at the centre of the pixel grid.
+        let c = field_of_view_calibration(90.0, 1000, 750).unwrap();
+        assert!((c.fx - 500.0).abs() < 1e-9 && c.fx == c.fy);
+        assert_eq!((c.cx, c.cy, c.k), (499.5, 374.5, [0.0; 3]));
+        // Back from the focal length: the 3DLF lens (fx 2328.28 at 1749 px wide) is about 41.2 degrees across.
+        let fx: f64 = 776.0949096679688 * 3.0;
+        let fov = 2.0 * (1749.0 / 2.0 / fx).atan().to_degrees();
+        let c = field_of_view_calibration(fov, 1749, 1155).unwrap();
+        assert!((c.fx - fx).abs() < 1e-6);
+        // Scaling to the same size keeps it.
+        let s = scale_calibration(&c, 1749, 1155).unwrap();
+        assert_eq!((s.fx, s.cx, s.cy), (c.fx, c.cx, c.cy));
+        assert!(field_of_view_calibration(0.5, 10, 10).is_err());
+        assert!(field_of_view_calibration(180.0, 10, 10).is_err());
+    }
+
+    #[test]
+    fn field_of_view_spelling() {
+        assert!(parse_field_of_view("auto").is_none());
+        assert!(parse_field_of_view("lens.json").is_none());
+        assert_eq!(parse_field_of_view("fov:63.5").unwrap().unwrap(), 63.5);
+        for bad in ["fov:", "fov:wide", "fov:0", "fov:180", "fov:NaN", "fov:-5"] {
+            assert!(parse_field_of_view(bad).unwrap().is_err(), "{bad}");
+        }
     }
 }
 

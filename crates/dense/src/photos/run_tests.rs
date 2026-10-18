@@ -2,7 +2,7 @@
 //! threshold masks, cameras imported from an AliceVision scene.
 
 use super::*;
-use crate::photos::calibration::{alicevision_intrinsic_fields, parse_calibration, scale_calibration};
+use crate::photos::calibration::{alicevision_intrinsic_fields, load_calibration, parse_calibration, scale_calibration};
 use crate::photos::options::resolve;
 
 const COUNT: usize = 16;

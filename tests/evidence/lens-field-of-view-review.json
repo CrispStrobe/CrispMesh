@@ -1,0 +1,238 @@
+{
+ "schema": "crispmesh_evidence_v1",
+ "title": "--calibration fov:DEG against the lens file and --calibration auto on 3DLF objects",
+ "date": "2026-10-18",
+ "inputs": "3DLF pro rgb photos (73 PNG, 1749x1155) of each object; default masks (threshold), cameras (turntable), default dense stages; no --surface",
+ "true_lens": "scripts/turntable_mesh/calibrations/3dlf-pro.json scaled x3: fx 2328.28 px, i.e. 41.1722 degrees across 1749 px (distortion k1..k3 only in the lens file)",
+ "field_of_view_runs": {
+  "fov100": 41.1722,
+  "fov95": 39.1136,
+  "fov105": 43.2308
+ },
+ "scoring": "scripts.turntable_mesh.scan_evaluate against revopoint/<object>/fuse_mesh_rgb.ply (evaluation only, post hoc); F1 at 0.5/1/2 % of the scan diagonal",
+ "notes": [
+  "happy fov105 first failed the turn gate (266 degrees, below 270) with a fixed lens; the run shown is with the fallback: a field of view that does not close the turn hands over to the automatic focal length search",
+  "Automatic on bunny and dragon not rerun here: docs/PHOTOS-TO-INPUTS.md table (0.909/0.941/0.955 and 0.802/0.935/0.982)"
+ ],
+ "runs": {
+  "bunny": {
+   "fov100": {
+    "calibration": "fov:41.1722",
+    "focal_px_used": 2328.28,
+    "turn_sum_deg": 363.1,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.9092,
+     "0.01": 0.9415,
+     "0.02": 0.9554
+    },
+    "f1_above_support": {
+     "0.005": 0.9689,
+     "0.01": 0.9972,
+     "0.02": 0.9999
+    }
+   },
+   "fov105": {
+    "calibration": "fov:43.2308",
+    "focal_px_used": 2207.0,
+    "turn_sum_deg": 344.3,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.9111,
+     "0.01": 0.9428,
+     "0.02": 0.9557
+    },
+    "f1_above_support": {
+     "0.005": 0.9705,
+     "0.01": 0.9978,
+     "0.02": 1.0
+    }
+   },
+   "fov95": {
+    "calibration": "fov:39.1136",
+    "focal_px_used": 2461.75,
+    "turn_sum_deg": 383.3,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.9076,
+     "0.01": 0.9391,
+     "0.02": 0.9542
+    },
+    "f1_above_support": {
+     "0.005": 0.9695,
+     "0.01": 0.9954,
+     "0.02": 0.9995
+    }
+   },
+   "lens": {
+    "calibration": "scripts/turntable_mesh/calibrations/3dlf-pro.json",
+    "focal_px_used": 2328.28,
+    "turn_sum_deg": 355.4,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.9082,
+     "0.01": 0.9406,
+     "0.02": 0.9558
+    },
+    "f1_above_support": {
+     "0.005": 0.9681,
+     "0.01": 0.9959,
+     "0.02": 0.9999
+    }
+   }
+  },
+  "dragon": {
+   "fov100": {
+    "calibration": "fov:41.1722",
+    "focal_px_used": 2328.28,
+    "turn_sum_deg": 373.3,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.8025,
+     "0.01": 0.9338,
+     "0.02": 0.9818
+    },
+    "f1_above_support": {
+     "0.005": 0.8471,
+     "0.01": 0.965,
+     "0.02": 0.9947
+    }
+   },
+   "fov105": {
+    "calibration": "fov:43.2308",
+    "focal_px_used": 2207.0,
+    "turn_sum_deg": 352.7,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.8024,
+     "0.01": 0.9352,
+     "0.02": 0.9823
+    },
+    "f1_above_support": {
+     "0.005": 0.848,
+     "0.01": 0.9668,
+     "0.02": 0.9948
+    }
+   },
+   "fov95": {
+    "calibration": "fov:39.1136",
+    "focal_px_used": 2461.75,
+    "turn_sum_deg": 393.4,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.7909,
+     "0.01": 0.9294,
+     "0.02": 0.9813
+    },
+    "f1_above_support": {
+     "0.005": 0.8413,
+     "0.01": 0.9648,
+     "0.02": 0.9944
+    }
+   },
+   "lens": {
+    "calibration": "scripts/turntable_mesh/calibrations/3dlf-pro.json",
+    "focal_px_used": 2328.28,
+    "turn_sum_deg": 366.1,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.8067,
+     "0.01": 0.9339,
+     "0.02": 0.9826
+    },
+    "f1_above_support": {
+     "0.005": 0.8518,
+     "0.01": 0.9658,
+     "0.02": 0.9956
+    }
+   }
+  },
+  "happy": {
+   "auto": {
+    "calibration": "auto",
+    "focal_px_used": 2979.78,
+    "turn_sum_deg": 359.4,
+    "warnings": [
+     "no lens file: the focal length was found from the turn (2980 px, 33 degree field of view), the principal point set to the centre and lens distortion left out"
+    ],
+    "f1_whole": {
+     "0.005": 0.7831,
+     "0.01": 0.9035,
+     "0.02": 0.969
+    },
+    "f1_above_support": {
+     "0.005": 0.8213,
+     "0.01": 0.9348,
+     "0.02": 0.9869
+    }
+   },
+   "fov100": {
+    "calibration": "fov:41.1722",
+    "focal_px_used": 2328.28,
+    "turn_sum_deg": 280.7,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.8005,
+     "0.01": 0.9122,
+     "0.02": 0.9692
+    },
+    "f1_above_support": {
+     "0.005": 0.8406,
+     "0.01": 0.9431,
+     "0.02": 0.9879
+    }
+   },
+   "fov105": {
+    "calibration": "fov:43.2308",
+    "focal_px_used": 2981.35,
+    "turn_sum_deg": 360.4,
+    "warnings": [
+     "the field of view given (43.2 degrees) does not close the turn (the steps found add up to 266 degrees, not about one turn (270 to 414): the turntable's motion was not found (an axis tilted further than the search reaches, or too few features on the object); pass --open-turn if the photos are not one closed turn); the focal length is found from the turn instead",
+     "no lens file: the focal length was found from the turn (2981 px, 33 degree field of view), the principal point set to the centre and lens distortion left out"
+    ],
+    "f1_whole": {
+     "0.005": 0.7811,
+     "0.01": 0.9035,
+     "0.02": 0.968
+    },
+    "f1_above_support": {
+     "0.005": 0.8186,
+     "0.01": 0.935,
+     "0.02": 0.9859
+    }
+   },
+   "fov95": {
+    "calibration": "fov:39.1136",
+    "focal_px_used": 2461.75,
+    "turn_sum_deg": 297.4,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.7989,
+     "0.01": 0.9141,
+     "0.02": 0.9708
+    },
+    "f1_above_support": {
+     "0.005": 0.8368,
+     "0.01": 0.9431,
+     "0.02": 0.9887
+    }
+   },
+   "lens": {
+    "calibration": "scripts/turntable_mesh/calibrations/3dlf-pro.json",
+    "focal_px_used": 2328.28,
+    "turn_sum_deg": 281.5,
+    "warnings": [],
+    "f1_whole": {
+     "0.005": 0.7935,
+     "0.01": 0.9075,
+     "0.02": 0.9716
+    },
+    "f1_above_support": {
+     "0.005": 0.8344,
+     "0.01": 0.9411,
+     "0.02": 0.9912
+    }
+   }
+  }
+ }
+}

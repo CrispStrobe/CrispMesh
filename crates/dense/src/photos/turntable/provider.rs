@@ -312,7 +312,7 @@ impl CameraProvider for Turntable {
         // 309, 337 and 389 degrees for one turn), so a closed turn tells it: the focal is corrected by 360 degrees over
         // the sum of the raw steps and the turn solved again, until the sum is within 0.2 % of one turn. The matches
         // do not depend on the lens; only the solve is repeated.
-        let auto = options.turntable.auto_lens;
+        let mut auto = options.turntable.auto_lens;
         let mut lens = lens;
         let mut working = working;
         let mut passes = Vec::new();
@@ -325,6 +325,7 @@ impl CameraProvider for Turntable {
             // While the focal length is unknown the raw steps may add up to far from one turn.
             let closing = if auto { AUTO_CLOSING } else { solver::CLOSING_TURNS };
             solved_rings = Vec::new();
+            let mut refused = false;
             for r in 0..rings {
                 let own = if rings == 1 { std::mem::take(&mut matches) } else { ring_matches(r, &matches) };
                 let counted: Vec<(usize, usize, usize)> = own.pairs.iter().map(|p| (p.0, p.1, p.2.len())).collect();
@@ -371,6 +372,20 @@ impl CameraProvider for Turntable {
                 )?;
                 let solved = match solved {
                     Ok(solved) => solved,
+                    // A field of view (`--calibration fov:DEG`) is nominal: a few percent too wide and the raw steps of
+                    // a hard object miss the closing window (Happy Buddha: 266 degrees at +5 %). Then the focal length is
+                    // found from the turn instead, starting from the given one.
+                    Err(e) if rings == 1 && !auto && options.lens_field_of_view.is_some() => {
+                        run.warn(format!(
+                            "the field of view given ({:.1} degrees) does not close the turn ({e}); the focal length is found \
+                             from the turn instead",
+                            options.lens_field_of_view.unwrap_or_default()
+                        ));
+                        matches = own;
+                        auto = true;
+                        refused = true;
+                        break;
+                    }
                     Err(e) if rings == 1 => return Err(e),
                     // A turn that cannot be solved on its own (a camera looking almost straight down) still has
                     // matches to the other turns: its photos are registered one by one when the turns are joined.
@@ -395,6 +410,9 @@ impl CameraProvider for Turntable {
                     )?;
                 }
                 solved_rings.push(solved);
+            }
+            if refused {
+                continue;
             }
             if !auto {
                 break;

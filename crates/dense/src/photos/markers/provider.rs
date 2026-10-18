@@ -132,11 +132,19 @@ pub fn mask_preparation(options: &Options) -> anyhow::Result<Option<Box<crate::p
     if options.cameras != CameraChoice::Markers || options.masks != MaskChoice::Threshold {
         return Ok(None);
     }
-    let (Some(mat), Some(calibration)) = (&options.markers.mat, &options.calibration) else { return Ok(None) };
+    let Some(mat) = &options.markers.mat else { return Ok(None) };
+    let file = options.calibration.as_deref().map(crate::photos::calibration::load_calibration).transpose()?;
+    let field_of_view = options.lens_field_of_view;
+    if file.is_none() && field_of_view.is_none() {
+        return Ok(None);
+    }
     let mat = Mat::load(mat)?;
-    let calibration = crate::photos::calibration::load_calibration(calibration)?;
     Ok(Some(Box::new(move |gray: &mut crate::inputs::Plane<u8>| -> anyhow::Result<Option<u32>> {
         let (width, height) = (gray.width as u32, gray.height as u32);
+        let calibration = match (&file, field_of_view) {
+            (Some(calibration), _) => calibration.clone(),
+            (None, degrees) => crate::photos::calibration::field_of_view_calibration(degrees.unwrap_or_default(), width, height)?,
+        };
         let scaled = crate::photos::calibration::scale_calibration(&calibration, width, height)?;
         let camera = Camera::from_lens(&scaled.lens(width, height));
         let found = detect::detect(gray, &mat, Some(&camera), &detect::Settings::default());

@@ -92,7 +92,7 @@ for three starting points, in one process:
 ```sh
 crispmesh-dense run --output RUN --inputs DIR                                   # an inputs directory
 crispmesh-dense run --output RUN --scene final.sfm --prepared DIR --raw-masks DIR
-crispmesh-dense run --output RUN --photos DIR --calibration lens.json           # plain photos
+crispmesh-dense run --output RUN --photos DIR --calibration lens.json           # plain photos (or auto, or fov:DEG)
     [--masks PROVIDER] [--cameras PROVIDER] [options of `crispmesh-dense photos`]
     [--config FILE] [--set key=value ...] [--threads N] [--stereo-timeout S]
     [--minimum-free-gib G] [--reuse-depths depths.npz] [--no-live-previews]

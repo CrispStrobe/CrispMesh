@@ -231,6 +231,8 @@ pub struct Options {
     pub photos: PathBuf,
     pub photo_count: usize,
     pub calibration: Option<PathBuf>,
+    /// `--calibration fov:DEG`: no lens file; a pinhole lens with this horizontal field of view in degrees.
+    pub lens_field_of_view: Option<f64>,
     pub output: PathBuf,
     pub events: Option<PathBuf>,
     pub masks: MaskChoice,
@@ -503,8 +505,14 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         }
     }
     let auto_lens = text("calibration").as_deref() == Some("auto");
-    let calibration = text("calibration").filter(|_| !auto_lens).map(|p| absolute(&p));
-    if calibration.is_none() && !auto_lens && !stop_after_masks && !matches!(cameras, CameraChoice::Import(_)) {
+    let lens_field_of_view = text("calibration").as_deref().and_then(super::calibration::parse_field_of_view).transpose()?;
+    let calibration = text("calibration").filter(|_| !auto_lens && lens_field_of_view.is_none()).map(|p| absolute(&p));
+    if calibration.is_none()
+        && !auto_lens
+        && lens_field_of_view.is_none()
+        && !stop_after_masks
+        && !matches!(cameras, CameraChoice::Import(_))
+    {
         bail!("--calibration is required");
     }
     if auto_lens && cameras != CameraChoice::Turntable {
@@ -620,6 +628,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         photos,
         photo_count,
         calibration,
+        lens_field_of_view,
         output,
         events: text("events").map(|p| absolute(&p)),
         masks: masks.clone(),
@@ -698,13 +707,28 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
 }
 
 impl Options {
+    /// The declared lens for photos of `width` x `height`: the lens file, or the pinhole lens of
+    /// `--calibration fov:DEG`; `None` with `--calibration auto` or none at all.
+    pub fn declared_calibration(&self, width: u32, height: u32) -> anyhow::Result<Option<super::calibration::Calibration>> {
+        match (&self.calibration, self.lens_field_of_view) {
+            (Some(path), _) => super::calibration::load_calibration(path).map(Some),
+            (None, Some(degrees)) => super::calibration::field_of_view_calibration(degrees, width, height).map(Some),
+            (None, None) => Ok(None),
+        }
+    }
+
     /// The record written to `frontend-config.json` and into the report.
     pub fn to_json(&self) -> Value {
         let argument = |path: Option<&PathBuf>| path.map(|p| p.to_string_lossy().to_string());
         let mut record = json!({
             "schema": SCHEMA, "engine": concat!("crispmesh-dense ", env!("CARGO_PKG_VERSION")),
             "photos": self.photos, "photo_count": self.photo_count,
-            "calibration": if self.turntable.auto_lens { json!("auto") } else { json!(self.calibration) }, "output": self.output,
+            "calibration": match (self.turntable.auto_lens, self.lens_field_of_view) {
+                (true, _) => json!("auto"),
+                (false, Some(degrees)) => json!(format!("fov:{degrees}")),
+                (false, None) => json!(self.calibration),
+            },
+            "output": self.output,
             "masks_provider": self.masks.name(),
             "masks_import": argument(if let MaskChoice::Import(folder) = &self.masks { Some(folder) } else { None }),
             "cameras_provider": self.cameras.name(),
@@ -920,6 +944,11 @@ pub(crate) mod tests {
         crate::photos::fs::write(folder.join("bad.json"), "{\"fx\": 1}").unwrap();
         let bad = folder.join("bad.json").to_string_lossy().to_string();
         assert!(with(&["--calibration", &bad]).unwrap_err().to_string().contains("unknown calibration format"));
+        let fov = with(&["--calibration", "fov:60"]).unwrap();
+        assert_eq!((fov.lens_field_of_view, fov.calibration.as_ref(), fov.turntable.auto_lens), (Some(60.0), None, false));
+        assert_eq!(fov.to_json()["calibration"], "fov:60");
+        assert!((fov.declared_calibration(1200, 800).unwrap().unwrap().fx - 600.0 / 30f64.to_radians().tan()).abs() < 1e-9);
+        assert!(with(&["--calibration", "fov:wide"]).unwrap_err().to_string().contains("between 1 and 179"));
         crate::photos::fs::create_dir_all(folder.join("two")).unwrap();
         for name in ["a.png", "b.png", "notes.txt"] {
             crate::photos::fs::write(folder.join("two").join(name), b"").unwrap();
