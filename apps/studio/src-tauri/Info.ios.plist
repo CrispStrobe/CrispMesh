@@ -28,5 +28,13 @@
 	<!-- The camera takes the photos of a capture inside the app (Take photos); nothing leaves the device. -->
 	<key>NSCameraUsageDescription</key>
 	<string>CrispMesh takes the photos of an object on a turntable with the camera; they stay on this device.</string>
+	<!-- The languages the app's interface has (Studio's English and German texts). The web view
+	     reports the system's preferred one of these as navigator.language; without this list it
+	     would report English on a German system. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+	</array>
 </dict>
 </plist>

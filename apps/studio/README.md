@@ -215,6 +215,26 @@ Things worth knowing:
 - **Rendering on demand.** There is no animation loop; a still model costs
   nothing.
 
+### Languages
+
+Studio speaks English and German. It follows the system's (inside the apps)
+or the browser's language list: German when the first of English or German in
+it is German, else English. The footer has a choice of System, English and
+Deutsch, remembered with the other preferences. The texts are in
+`src/i18n/messages/<area>.ts` (no library: `t(key, params)` with `{name}`
+placeholders and `{ one, other }` plural forms by Intl rules); the German
+catalogues are typed against the English ones and `src/i18n/i18n.test.ts`
+checks keys and placeholders. Numbers get the language's decimal sign. The
+German terms follow the glossary at the top of `src/i18n/index.ts`.
+
+Known limit: texts that come from the engine stay English in both languages:
+its error messages, the descriptions in its settings schema and the messages
+of its events. The Apple apps declare English and German
+(`CFBundleLocalizations` in `src-tauri/Info*.plist`) so that their web view
+reports German on a German system; not yet checked on a device. The system's
+permission prompts (camera, local network) are still English only. Tests and the headless checks in `scripts/` run in English
+(Chrome with locale `en-US`).
+
 ### Dependencies and licenses
 
 Studio itself is AGPL-3.0-only, like the rest of CrispMesh.
