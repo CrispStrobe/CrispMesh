@@ -1,0 +1,304 @@
+{
+  "date": "2026-10-18",
+  "status": "Private additive point-tracking prototype; no accepted cameras/mesh",
+  "source_inventory": "camera-recovery-source-review.json",
+  "reference_inputs_used": false,
+  "inputs": "78 original iPhone LEGO turntable photos; own corrected Vision masks, original-pixel foreground crops, no resampling via earlier336px images; actual angles unknown.",
+  "backend": {
+    "device": "MPS F32 no AMP; PyTorch2.7.1, M1",
+    "controls": {
+      "parity-direct": {
+        "max_track_difference_px": 302.7573547363281,
+        "median_track_difference_px": 125.5652847290039,
+        "max_occlusion_logit_difference": 23.863685607910156,
+        "cpu_seconds": 4.624078989028931,
+        "mps_seconds": 1.5705327987670898
+      },
+      "parity-gridcpu": {
+        "max_track_difference_px": 0.012159215286374092,
+        "median_track_difference_px": 0.0002357376943109557,
+        "max_occlusion_logit_difference": 0.00040221214294433594,
+        "cpu_seconds": 2.0352261066436768,
+        "mps_seconds": 0.9134120941162109
+      },
+      "parity-grid3dcpu": {
+        "max_track_difference_px": 370.3370056152344,
+        "median_track_difference_px": 131.92996215820312,
+        "max_occlusion_logit_difference": 23.997974395751953,
+        "cpu_seconds": 1.9425041675567627,
+        "mps_seconds": 0.8021118640899658
+      },
+      "parity-grid512": {
+        "max_track_difference_px": 0.09132996201515198,
+        "median_track_difference_px": 0.003876827424392104,
+        "max_occlusion_logit_difference": 0.0015745162963867188,
+        "cpu_seconds": 11.291298151016235,
+        "mps_seconds": 3.8368611335754395
+      },
+      "parity-contiguous": {
+        "max_track_difference_px": 0.013936387374997139,
+        "median_track_difference_px": 0.000296527286991477,
+        "max_occlusion_logit_difference": 0.00036728382110595703,
+        "cpu_seconds": 2.4587018489837646,
+        "mps_seconds": 1.3183822631835938
+      }
+    },
+    "note": "Full CPU sampling workaround passes the small256/512px model checks. Keeping only3Dsampling onCPU does not. Contiguous2D MPS sampling plus CPU3Dsampling passes256px model parity. A synthetic script checks2Dlayout in fresh processes; mixing layouts can give different results, exact backend implementation cause not established.",
+    "synthetic_2d": {
+      "strided": {
+        "torch": "2.7.1",
+        "platform": "macOS-26.2-arm64-arm-64bit",
+        "layout": "strided",
+        "fresh_process_required": true,
+        "tolerance": 2e-05,
+        "passed": false,
+        "cases": [
+          {
+            "shape_bthc": [
+              1,
+              4,
+              32,
+              128
+            ],
+            "original_image_stride": [
+              131072,
+              1,
+              4096,
+              128
+            ],
+            "original_grid_stride": [
+              98,
+              392,
+              2,
+              1
+            ],
+            "max_absolute_error": 4.581622123718262,
+            "mean_absolute_error": 0.6707189083099365
+          },
+          {
+            "shape_bthc": [
+              1,
+              4,
+              16,
+              256
+            ],
+            "original_image_stride": [
+              65536,
+              1,
+              4096,
+              256
+            ],
+            "original_grid_stride": [
+              98,
+              392,
+              2,
+              1
+            ],
+            "max_absolute_error": 4.7585601806640625,
+            "mean_absolute_error": 0.6824686527252197
+          },
+          {
+            "shape_bthc": [
+              1,
+              78,
+              32,
+              128
+            ],
+            "original_image_stride": [
+              131072,
+              1,
+              4096,
+              128
+            ],
+            "original_grid_stride": [
+              98,
+              7644,
+              2,
+              1
+            ],
+            "max_absolute_error": 4.975180625915527,
+            "mean_absolute_error": 0.6713772416114807
+          }
+        ],
+        "scope": "Sampling parity only; not full-model equivalence or reconstruction quality. Mixed-layout runs can differ from isolated runs; compare fresh processes separately."
+      },
+      "contiguous": {
+        "torch": "2.7.1",
+        "platform": "macOS-26.2-arm64-arm-64bit",
+        "layout": "contiguous",
+        "fresh_process_required": true,
+        "tolerance": 2e-05,
+        "passed": true,
+        "cases": [
+          {
+            "shape_bthc": [
+              1,
+              4,
+              32,
+              128
+            ],
+            "original_image_stride": [
+              131072,
+              1,
+              4096,
+              128
+            ],
+            "original_grid_stride": [
+              98,
+              392,
+              2,
+              1
+            ],
+            "max_absolute_error": 7.152557373046875e-07,
+            "mean_absolute_error": 2.5738533082630966e-08
+          },
+          {
+            "shape_bthc": [
+              1,
+              4,
+              16,
+              256
+            ],
+            "original_image_stride": [
+              65536,
+              1,
+              4096,
+              256
+            ],
+            "original_grid_stride": [
+              98,
+              392,
+              2,
+              1
+            ],
+            "max_absolute_error": 4.76837158203125e-07,
+            "mean_absolute_error": 2.5370594514129152e-08
+          },
+          {
+            "shape_bthc": [
+              1,
+              78,
+              32,
+              128
+            ],
+            "original_image_stride": [
+              131072,
+              1,
+              4096,
+              128
+            ],
+            "original_grid_stride": [
+              98,
+              7644,
+              2,
+              1
+            ],
+            "max_absolute_error": 7.152557373046875e-07,
+            "mean_absolute_error": 2.593071712908568e-08
+          }
+        ],
+        "scope": "Sampling parity only; not full-model equivalence or reconstruction quality. Some affected installations also reuse incompatible sampling layouts within a process."
+      }
+    }
+  },
+  "controls": [
+    {
+      "case": "full256",
+      "views": 78,
+      "queries": 384,
+      "resolution": 256,
+      "seconds": 34.365642070770264,
+      "peak_rss_bytes": 1418936320,
+      "sampling": "All grid sampling onCPU, verified small-case parity; model otherwise MPSF32",
+      "camera_controls": [
+        {
+          "path": "p3p-cameras",
+          "registered": 4,
+          "points": 47,
+          "assessment": "Insufficient coverage; no mesh acceptance"
+        },
+        {
+          "path": "five-cameras",
+          "registered": 5,
+          "points": 49,
+          "assessment": "Insufficient coverage; no mesh acceptance"
+        }
+      ]
+    },
+    {
+      "case": "dense256",
+      "views": 78,
+      "queries": 2496,
+      "resolution": 256,
+      "seconds": 209.06255197525024,
+      "peak_rss_bytes": 1432944640,
+      "sampling": "All grid sampling onCPU, verified small-case parity; model otherwise MPSF32",
+      "camera_controls": [
+        {
+          "path": "p3p-cameras",
+          "registered": 5,
+          "points": 165,
+          "assessment": "Insufficient coverage; no mesh acceptance"
+        },
+        {
+          "path": "five-cameras",
+          "registered": 8,
+          "points": 226,
+          "assessment": "Insufficient coverage; no mesh acceptance"
+        },
+        {
+          "path": "p3p-cameras-scale4",
+          "registered": 39,
+          "points": 944,
+          "assessment": "Sparse sheet inspected; all-point cross-view silhouette consistency fails. Rejected as dense input.",
+          "median_silhouette_support": 0.7161016949152542,
+          "worst_silhouette_support": 0.5805084745762712,
+          "sheet_inspected": true
+        },
+        {
+          "path": "five-cameras-scale4",
+          "registered": 39,
+          "points": 946,
+          "assessment": "Insufficient coverage; no mesh acceptance"
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Chronological tracking is distinct from unordered matching; abrupt camera changes can break tracks.",
+    "Model confidence and registered view count do not establish accurate shape.",
+    "Only library camera options and diagnostics shipped; no model/code/weights in app.",
+    "Own3000px focal hypothesis, not measured calibration; EXIF focal/zoom absent."
+  ],
+  "tolerance_control": "Quarter-scaled diagnostic pixel coordinates/intrinsics preserve bearings; wider full-photo pixel uncertainty improves registration5->39 but fails silhouette consistency. The explicit measurement_error_scale library option preserves original coordinates/calibration; synthetic noisy-camera regression passes with17registered and disconnectedphoto refused.",
+  "full512_failure": "78views,384queries, F32 MPSencoder exceeds bounded5.92GB GPUbudget;4.88GBallocated before1.22GBrequest. No results. Low-resolution path retained.",
+  "hybrid_control": {
+    "method": "Independent own SIFT/LightGlue landmarks plus BootsTAPIR observations; pixel bearings unchanged, quarter-scale noise diagnostic, P3p; no cross-descriptor/query identity merge",
+    "registered": 49,
+    "points": 2340,
+    "seconds": 266.017,
+    "median_silhouette_support": 0.9034188034188034,
+    "worst_silhouette_support": 0.811965811965812,
+    "sheet_inspected": true,
+    "assessment": "Coverage49/78 still incomplete and point cloud remains flattened/poor. Not accepted as a suitable mesh input. Additional five-point hybrid repetition deliberately cancelled after baseline; no claim from it."
+  },
+  "sift_local_control": {
+    "registered": 11,
+    "points": 1044,
+    "median_silhouette_support": 0.8955938697318008,
+    "worst_silhouette_support": 0.8706896551724138,
+    "note": "Different point sets and camera subsets: support fractions are necessary consistency checks, not like-for-like quality scores."
+  },
+  "validation": {
+    "photo_release_tests": 140,
+    "failures": 0,
+    "new_regressions": [
+      "Uncertain noisy observations retain original calibration and exact original feature coordinates while recovering correct camera rotations",
+      "Nonfinite/out-of-range measurement scales rejected before geometry"
+    ],
+    "clippy_lib_and_tests": "passed -D warnings",
+    "wasm32_release_library": "passed; no browser-execution claim",
+    "sampling_reproducer": "fresh contiguous process passes, fresh strided process reproduces numerical failure; no model download",
+    "default_changes": false
+  }
+}

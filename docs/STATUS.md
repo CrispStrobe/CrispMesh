@@ -591,3 +591,20 @@ constant-output symptom using the same F16-rounded checkpoint. Its complete
 no suitable object mesh. No printable STL has been accepted from either real
 capture; fixed-camera Gaussian training cannot repair their cameras. See
 [learned camera evidence](../tests/evidence/learned-camera-real-capture-review.json).
+
+
+The separate Apache BootsTAPIR tracking control now has a reproducible MPS
+sampling-parity workaround and bounded 78-view execution. Dense temporal anchors
+plus wider localization tolerances register 39/78; combining independent own
+SIFT/LightGlue landmarks registers 49/78. Neither is accepted: temporal-only
+median cross-view silhouette support is .716, hybrid .903 (worst .812), and the
+inspected point cloud remains poor/flattened. These use different point/view
+sets, so support fractions are not paired accuracy scores. No learned tracker
+is shipped in the app and no camera default changes. See
+[point tracking evidence](../tests/evidence/point-tracking-camera-review.json).
+
+The experimental general camera API also has an explicit pixel uncertainty
+multiplier; default1 preserves prior gates. It changes correspondence tolerances
+while retaining original photo coordinates and calibration. No automatic
+uncertainty estimator is claimed. Final validation: 140 photo release tests,
+strict library/test clippy and wasm32 release library checks pass.

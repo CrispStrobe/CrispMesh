@@ -735,3 +735,10 @@ controls. All sparse sheets were inspected; coverage and geometry remain insuffi
 No option is advertised as a working general camera provider in the app.
 
 Evidence: [camera-recovery-paths-review.json](../tests/evidence/camera-recovery-paths-review.json).
+
+`measurement_error_scale` scales geometric correspondence tolerances (default1,
+finite range0.125–16). It preserves original pixel coordinates and lens calibration;
+use it for experiments whose feature localization uncertainty differs, such as
+resized learned tracking. It is one global multiplier, not per-feature covariance
+or automatic noise estimation. Wider gates can admit wrong geometry: the measured
+coverage gain on real photos does not establish acceptable cameras.

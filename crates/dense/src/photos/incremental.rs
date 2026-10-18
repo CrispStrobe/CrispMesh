@@ -60,6 +60,8 @@ pub struct RecoveryOptions {
     pub seed_selection: SeedSelection,
     pub track_selection: TrackSelection,
     pub maximum_seed_attempts: usize,
+    /// Pixel uncertainty multiplier for correspondence gates; leaves calibration/coordinates intact.
+    pub measurement_error_scale: f64,
 }
 impl Default for RecoveryOptions {
     fn default() -> Self {
@@ -69,6 +71,7 @@ impl Default for RecoveryOptions {
             seed_selection: SeedSelection::Score,
             track_selection: TrackSelection::Robust,
             maximum_seed_attempts: 32,
+            measurement_error_scale: 1.,
         }
     }
 }
@@ -256,12 +259,12 @@ fn refresh(
     poses: &mut [Option<Pose>],
     bundle: bool,
     selection: TrackSelection,
+    focal: f64,
 ) -> anyhow::Result<(Matches, solver::Tracks)> {
     let own = subset(matches, placed);
     let normalised: Vec<Vec<_>> = own.keypoints.iter().map(|list| list.iter().map(|p| camera.undistort(*p)).collect()).collect();
     let mut rotations: Vec<_> = placed.iter().map(|&v| poses[v].unwrap().0).collect();
     let mut translations: Vec<_> = placed.iter().map(|&v| poses[v].unwrap().1).collect();
-    let focal = (camera.fx + camera.fy) / 2.;
     let build = |rotations: &[M3], translations: &[V3]| match selection {
         TrackSelection::Robust => solver::build_robust(&own, &normalised, rotations, translations, focal, 2., 2),
         TrackSelection::Split => solver::build_split(&own, &normalised, rotations, translations, focal, 2., 2),
@@ -331,6 +334,9 @@ pub fn recover_with_options(
     options: RecoveryOptions,
     check: &mut dyn FnMut(usize, usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Recovered> {
+    if !options.measurement_error_scale.is_finite() || !(0.125..=16.).contains(&options.measurement_error_scale) {
+        bail!("incremental cameras: measurement error scale must be finite and between 0.125 and 16");
+    }
     if !(1..=256).contains(&options.maximum_seed_attempts) {
         bail!("incremental cameras: seed budget must be between 1 and 256");
     }
@@ -358,7 +364,7 @@ pub fn recover_with_options(
         bail!("incremental cameras: invalid lens");
     }
     let camera = Camera::from_lens(lens);
-    let focal = (camera.fx + camera.fy) / 2.;
+    let focal = (camera.fx + camera.fy) / (2. * options.measurement_error_scale);
     if !focal.is_finite() || focal <= 0. {
         bail!("incremental cameras: invalid lens");
     }
@@ -464,7 +470,7 @@ pub fn recover_with_options(
         loop {
             check(placed.len(), count)?;
             let Ok((_, tracks)) =
-                refresh(matches, &camera, &placed, &mut poses, placed.len() <= 12 || placed.len() % 4 == 0, options.track_selection)
+                refresh(matches, &camera, &placed, &mut poses, placed.len() <= 12 || placed.len() % 4 == 0, options.track_selection, focal)
             else {
                 attempts.push(json!({"seed":[a,b],"registered":placed.len(),"failed":"insufficient consistent tracks"}));
                 continue 'seeds;
@@ -542,10 +548,10 @@ pub fn recover_with_options(
                         attempts.push(json!({"seed":[a,b],"registered":2,"failed":"no third view"}));
                         continue 'seeds;
                     }
-                    let (own, tracks) = refresh(matches, &camera, &placed, &mut poses, true, options.track_selection)?;
+                    let (own, tracks) = refresh(matches, &camera, &placed, &mut poses, true, options.track_selection, focal)?;
                     let rotations = placed.iter().map(|&v| poses[v].unwrap().0).collect();
                     let translations = placed.iter().map(|&v| poses[v].unwrap().1).collect();
-                    let report = json!({"method":"experimental incremental SfM","track_selection":match options.track_selection {TrackSelection::Robust=>"robust",TrackSelection::Split=>"split"},"seed_selection":match options.seed_selection {SeedSelection::Score=>"score",SeedSelection::Diverse=>"diverse"},"seed_budget":options.maximum_seed_attempts,"seed_candidates":seed_candidates,"initializer":match initializer {Initializer::EightPoint=>"eight_point",Initializer::FivePoint=>"five_point"},"resection":match resection {Resection::Linear=>"linear",Resection::P3p=>"p3p",Resection::P3pConsensus=>"p3p_consensus"},"seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":placed.len()<=128,"fixed_angles":false,"supplied_poses":false});
+                    let report = json!({"method":"experimental incremental SfM","measurement_error_scale":options.measurement_error_scale,"track_selection":match options.track_selection {TrackSelection::Robust=>"robust",TrackSelection::Split=>"split"},"seed_selection":match options.seed_selection {SeedSelection::Score=>"score",SeedSelection::Diverse=>"diverse"},"seed_budget":options.maximum_seed_attempts,"seed_candidates":seed_candidates,"initializer":match initializer {Initializer::EightPoint=>"eight_point",Initializer::FivePoint=>"five_point"},"resection":match resection {Resection::Linear=>"linear",Resection::P3p=>"p3p",Resection::P3pConsensus=>"p3p_consensus"},"seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":placed.len()<=128,"fixed_angles":false,"supplied_poses":false});
                     let solved = solver::Solved {
                         rotations,
                         translations,
@@ -688,6 +694,58 @@ mod tests {
             .err()
             .unwrap();
             assert!(error.to_string().contains("seed budget"));
+        }
+    }
+    #[test]
+    fn uncertain_measurements_keep_original_calibration_and_pixels() {
+        let (mut matches, lens, names, truth, _) = capture(false, false);
+        for (v, features) in matches.keypoints.iter_mut().enumerate().take(17) {
+            for (k, p) in features.iter_mut().enumerate() {
+                p[0] += 1.5 * ((v * 37 + k * 71) as f64).sin();
+                p[1] += 1.5 * ((v * 19 + k * 43) as f64).cos();
+            }
+        }
+        let recovered = recover_with_options(
+            &matches,
+            &lens,
+            &names,
+            RecoveryOptions { measurement_error_scale: 4., resection: Resection::P3p, ..RecoveryOptions::default() },
+            &mut |_, _| Ok(()),
+        )
+        .unwrap();
+        assert_eq!(recovered.solution.lens, lens);
+        assert_eq!(recovered.solution.views.len(), 17);
+        assert_eq!(recovered.solution.unregistered, ["photo_17.jpg"]);
+        let first = &recovered.solution.views[0];
+        let index = |view: &super::super::solution::View| names.iter().position(|name| name == &view.source).unwrap();
+        for view in &recovered.solution.views {
+            let expected = mul(&truth[index(view)], &transpose(&truth[index(first)]));
+            let actual = mul(&view.rotation, &transpose(&first.rotation));
+            assert!(norm(geometry::rotation_vector(&mul(&actual, &transpose(&expected)))) < 0.03);
+        }
+        for point in &recovered.solution.landmarks {
+            for &(v, xy) in &point.observations {
+                let source = index(&recovered.solution.views[v]);
+                assert!(matches.keypoints[source].contains(&xy));
+            }
+        }
+        assert_eq!(recovered.report["measurement_error_scale"], 4.);
+    }
+    #[test]
+    fn measurement_uncertainty_is_bounded_before_geometry() {
+        let matches = Matches::default();
+        let lens = Lens { width: 100, height: 100, pixels: [100., 100., 50., 50.], k: [0.; 3] };
+        for scale in [0., -1., 0.124, 16.001, f64::INFINITY, f64::NAN] {
+            let error = recover_with_options(
+                &matches,
+                &lens,
+                &[],
+                RecoveryOptions { measurement_error_scale: scale, ..RecoveryOptions::default() },
+                &mut |_, _| Ok(()),
+            )
+            .err()
+            .unwrap();
+            assert!(error.to_string().contains("measurement error scale"));
         }
     }
     #[test]

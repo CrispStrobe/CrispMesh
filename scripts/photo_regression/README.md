@@ -160,3 +160,13 @@ are an upper bound on production support. A supporting depth is not proof of
 correct geometry. Far free-space votes, weak behind-surface votes and direct
 near-surface observations are counted separately. No automatic acceptance
 threshold or default change follows from this diagnostic.
+
+Optional PyTorch/MPS sampling diagnostic (no model download): run
+`python scripts/photo_regression/torch_grid_parity.py --layout contiguous --output <report.json>`.
+Compare `--layout strided` in a **separate fresh process**. The strided control
+fails on the tested PyTorch 2.7.1/M1 environment, while contiguous inputs agree
+with CPU within 0.000001. Mixing layouts in one process can affect the result;
+this check does not isolate the backend implementation cause or validate a full
+model. PyTorch is an optional research environment dependency, not added to the
+app. See `tests/evidence/point-tracking-camera-review.json` for full-model parity
+and the rejected real-photo geometry controls.

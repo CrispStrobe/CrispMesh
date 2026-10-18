@@ -254,3 +254,14 @@ ambiguous resection consensus, splitting falsely joined tracks, and diverse seed
 selection. These are additive library options, with existing defaults preserved.
 Nine real-batch controls still fail camera coverage and inspected shape. See
 [camera path evidence](../tests/evidence/camera-recovery-paths-review.json).
+
+
+The separate Apache BootsTAPIR tracking control now has a reproducible MPS
+sampling-parity workaround and bounded 78-view execution. Dense temporal anchors
+plus wider localization tolerances register 39/78; combining independent own
+SIFT/LightGlue landmarks registers 49/78. Neither is accepted: temporal-only
+median cross-view silhouette support is .716, hybrid .903 (worst .812), and the
+inspected point cloud remains poor/flattened. These use different point/view
+sets, so support fractions are not paired accuracy scores. No learned tracker
+is shipped in the app and no camera default changes. See
+[point tracking evidence](../tests/evidence/point-tracking-camera-review.json).

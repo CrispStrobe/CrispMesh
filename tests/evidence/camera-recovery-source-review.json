@@ -105,5 +105,38 @@
       "dm-tree": "Apache-2.0, existing environment"
     },
     "scope": "Private chronological photo tracking prototype; no model code or weights shipped or incorporated in Rust. No source-restricted rewrite."
+  },
+  "learned_features_private_control": {
+    "code_revision": "eb42fee2d71449efb0aa5c10549752b5d75384d8",
+    "files": {
+      "https://raw.githubusercontent.com/cvg/LightGlue/eb42fee2d71449efb0aa5c10549752b5d75384d8/lightglue/aliked.py": "60b24397c52e8a08d838828967cd03f5d6066c1f7c3c433805bf11dcb0d5228e",
+      "https://raw.githubusercontent.com/Shiaoming/ALIKED/683d7c65197395c0b3f01ebe76e1084a27e73a65/LICENSE": {
+        "bytes": 1521,
+        "sha256": "c48ae933e262f77087a1956ae95f4675bfe20895b52fb328eed5b4e11d477bfb"
+      },
+      "https://raw.githubusercontent.com/Shiaoming/ALIKED/683d7c65197395c0b3f01ebe76e1084a27e73a65/README.md": {
+        "bytes": 5283,
+        "sha256": "c314435a5b2198f64229fe230dbd4b8c23040a84e3b2bd8f1c77b6ccecb85c7a"
+      },
+      "https://raw.githubusercontent.com/Shiaoming/ALIKED/683d7c65197395c0b3f01ebe76e1084a27e73a65/models/aliked-n16rot.pth": {
+        "bytes": 2738325,
+        "sha256": "ddf3abbf38e86f6a74540d214e1a9712c54b2d8551abc864542199f2347d7332"
+      },
+      "https://github.com/cvg/LightGlue/releases/download/v0.1_arxiv/aliked_lightglue.pth": {
+        "bytes": 47632827,
+        "sha256": "d975e965b105311a6143194852297dff4f02aea5cc2e10cecfed966ca0e22503"
+      }
+    },
+    "shipping": false,
+    "aliked_revision": "683d7c65197395c0b3f01ebe76e1084a27e73a65",
+    "license": {
+      "matcher_code_and_weights": "Apache-2.0 per pinned LightGlue README",
+      "extractor_code_and_model": "BSD-3-Clause per ALIKED source and repository LICENSE, model tracked inside same pinned repo"
+    },
+    "scope": "Private controls only; selected permissive inference files, SuperPoint excluded; no new production dependency or model incorporation",
+    "dependencies": {
+      "torchvision": "existing BSD-3-Clause installation; no new code copied",
+      "kornia": "existing Apache-2.0 installation; no new code copied"
+    }
   }
 }
