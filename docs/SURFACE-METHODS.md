@@ -187,7 +187,7 @@ measurements above used recovered cameras and do not demonstrate pose-free recov
 | --- | --- | --- |
 | Existing linear incremental SfM | Calibrated eight-point initialization, linear resection plus nearby-pose refinement; preserves the current baseline | 28/117 iPad, 11/78 iPhone; insufficient coverage |
 | Minimal P3P incremental SfM | Three-point calibrated resection with robust sampling, including planar geometry; faster hypotheses, different sample/registration outcomes | Explicit `Resection::P3p`, BSD-3-Clause PoseLib adaptation; 27/117 and 11/78; no shape acceptance |
-| Learned camera/geometry initialization | Predict initial poses from several images when repeatable features are scarce, then validate/refine against original photo correspondences | MapAnything Apache prototype, distinct from the noncommercial checkpoint; small real-photo experiment under evaluation |
+| Learned camera/geometry initialization | Predict initial poses from several images when repeatable features are scarce, then validate/refine against original photo correspondences | MapAnything Apache prototype, distinct from the noncommercial checkpoint; four-photo calibrated/RGB-only controls still flattened; 336 px full batch memory-limited; 224 px chunked outputs degenerate |
 | Dense correspondences and geometric refinement | Test wide-baseline dense matches, cycle consistency and joint camera/point adjustment; more compute and memory | [RoMa](https://github.com/Parskatt/RoMa) and [FlowMap](https://github.com/dcharatan/flowmap) are candidates, not incorporated or verified on these batches |
 | Joint camera and Gaussian optimization | Refine approximately initialized poses while fitting a scene, with geometric constraints and an anchored gauge | Not implemented in our trainer; [InstantSplat](https://github.com/NVlabs/InstantSplat) and [NoPoSplat](https://github.com/cvg/NoPoSplat) demonstrate different research approaches, not interchangeable drop-in dependencies |
 
@@ -211,3 +211,29 @@ Review transitive rasterizers and model terms, not only the top-level repository
 If a GPL-only implementation is considered, use a separate specification/implementation
 workflow with explicit subagent contracts; do not label source adaptation as clean-room work.
 The present P3P change is an attributed BSD source adaptation.
+
+
+Private learned-initialization controls use the same four masked iPhone views at 336 pixels.
+Supplying the own focal-length/principal-point hypothesis gives median cross-view silhouette
+support 0.841; RGB-only gives 0.829. Raw feature depth-reprojection medians remain about
+21–55 pixels across pairs, and both rendered foreground clouds remain flattened. Raw matches
+can contain outliers, so these are consistency checks, not ground-truth errors. Neither
+control is accepted as reconstruction quality.
+
+The 78-view global transformer requires a separate resource strategy on the shared 16 GB M1.
+Upstream MPS attention attempts a 90.55 GB buffer. Exact query chunking retains every key/value
+and passes small CPU/MPS parity checks, but the 336-pixel full run then exceeds the configured
+GPU memory cap in its feed-forward layer. Keep bounded-resolution and overlapping-view
+alternatives; upstream `memory_efficient_inference` alone does not bound all intermediates on
+this backend. Per-case prediction/failure artifacts must be checked: a wrapper catching an
+exception can exit successfully while producing no camera predictions.
+Evidence: [learned-camera-real-capture-review.json](../tests/evidence/learned-camera-real-capture-review.json).
+
+
+With both attention and feed-forward chunking, 224-pixel controls finish for 12 and 78 views
+in 7.89 and 64.62 seconds of inference (checkpoint load excluded). **They fail numerical
+validity:** every view has a spatially constant point field, constant depth and nonpositive
+focal estimates. Silhouette support of a collapsed cloud is meaningless. Small MPS chunked
+MLP/attention checks match stock MPS closely; they do not validate the complete mixed-precision
+model. Root cause is not isolated. Keep this prototype outside the production provider and
+validate against upstream full-precision inference before interpreting method quality.

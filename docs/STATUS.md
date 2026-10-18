@@ -169,6 +169,12 @@ README.
   Unresolved originals are retained for review. Radial-lens controls reach 63/78 cameras,
   but silhouette agreement remains poor. A free-angle shared-axis diagnostic also fails
   feature accuracy; it is not adopted.
+  Private Apache MapAnything four-view controls also remain flattened; the 78-view
+  336-pixel prototype is memory-limited on MPS, even after exact attention chunking.
+  Lower-resolution chunked 12- and 78-view runs finish but produce constant depth and
+  invalid focal estimates; they are rejected before geometry assessment.
+  Existing splat/surface trainers keep recovered cameras fixed; they cannot repair
+  these poses automatically. See [camera alternatives](SURFACE-METHODS.md#camera-recovery-and-gaussian-alternatives-on-irregular-phone-captures-2026-10-18).
   Evidence: [real-user-capture-review.json](../tests/evidence/real-user-capture-review.json).
 
 - **Surface quality on captures from several heights** (2026-10-13). Like for

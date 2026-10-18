@@ -55,7 +55,12 @@
       "half_sha256": "e2969918a1260e33c4ccc6ef24d2c3c9727654bd010d5ff84fb8125ce64cc697",
       "seconds": 414.934396982193,
       "license": "Apache-2.0",
-      "model_card": "https://huggingface.co/facebook/map-anything-apache"
+      "model_card": "https://huggingface.co/facebook/map-anything-apache",
+      "model_card_pinned": "https://huggingface.co/facebook/map-anything-apache/blob/00f9c245bbcb60522d1ed7f9e9d88462c6e3f38a/README.md",
+      "metadata_sha256": {
+        "README.md": "1481978d474172ee1acac213eddaf3572e54dba369190d898c8578f26097f1d2",
+        "config.json": "65701d09d99ed37a21d295f0d138978b3d584ab3bccdbcb4a2853da212b676c5"
+      }
     },
     "encoder_code": {
       "repository": "https://github.com/facebookresearch/dinov2",

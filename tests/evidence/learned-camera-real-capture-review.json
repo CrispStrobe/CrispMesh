@@ -1,0 +1,191 @@
+{
+  "date": "2026-10-18",
+  "status": "experimental; no accepted camera recovery or printable mesh",
+  "reference_inputs_used": false,
+  "input": "Private Auto iPhone LEGO turntable capture; 78 original photos, arbitrary/unknown step angles. Own native foreground masks, including generic recovery of photo66. No supplied poses/depth/geometry.",
+  "source_inventory": "camera-recovery-source-review.json",
+  "method": "MapAnything Apache; independent from existing fixed-camera Gaussian trainer. F16-rounded checkpoint, F32 geometric/prediction heads, PyTorch/MPS private control; not a production dependency.",
+  "controls": [
+    {
+      "views": 4,
+      "resolution": 336,
+      "calibration": "own focal/principal-point hypothesis supplied as conditioning, not enforced constraint",
+      "seconds": 21.742373943328857,
+      "sampled_predicted_foreground_points": 8659,
+      "median_cross_view_silhouette_inside_fraction": 0.8412634253377989,
+      "worst_fraction": 0.6315971821226469,
+      "raw_feature_depth_reprojection_median_px_by_pair": [
+        51.31523862035381,
+        26.09863386818419,
+        32.39685554860302,
+        20.884888947364246,
+        52.5665650027919,
+        50.24980059039661
+      ],
+      "assessment": "Sparse sheet inspected; flattened/inconsistent geometry. Raw feature checks may contain outliers, not ground truth. Not an accepted reconstruction."
+    },
+    {
+      "views": 4,
+      "resolution": 336,
+      "calibration": "RGB only, no calibration/poses/depth inputs",
+      "seconds": 6.3643879890441895,
+      "sampled_predicted_foreground_points": 8659,
+      "median_cross_view_silhouette_inside_fraction": 0.8293105439427186,
+      "worst_fraction": 0.6267467374985564,
+      "raw_feature_depth_reprojection_median_px_by_pair": [
+        49.348760746935774,
+        24.381563913225236,
+        30.699348462987377,
+        20.986178792764072,
+        54.75231180816669,
+        53.86178588105186
+      ],
+      "assessment": "Sparse sheet inspected; flattened/inconsistent geometry. Raw feature checks may contain outliers, not ground truth. Not an accepted reconstruction."
+    },
+    {
+      "views": 12,
+      "resolution": 224,
+      "calibration": "own focal/principal-point hypothesis supplied as conditioning",
+      "attention_query_chunk": 128,
+      "feed_forward_token_chunk": 128,
+      "mps_memory_fraction": 0.65,
+      "seconds": 7.8883421421051025,
+      "process_peak_rss_bytes": 2623455232,
+      "mps_current_allocated_bytes": 2714620672,
+      "constant_depth_views": 12,
+      "spatially_constant_point_fields": 12,
+      "nonpositive_focal_views": 12,
+      "assessment": "Inference completed, but all views have spatially constant point fields, constant depths, and invalid focal estimates. REJECTED before geometric scoring. Root cause not isolated: private low-resolution/mixed-precision/chunked prototype is not validated against upstream full-precision inference. This does not establish a limitation of the method itself."
+    },
+    {
+      "views": 78,
+      "resolution": 224,
+      "calibration": "own focal/principal-point hypothesis supplied as conditioning",
+      "attention_query_chunk": 128,
+      "feed_forward_token_chunk": 128,
+      "mps_memory_fraction": 0.65,
+      "seconds": 64.62491011619568,
+      "process_peak_rss_bytes": 2623455232,
+      "mps_current_allocated_bytes": 3088839680,
+      "constant_depth_views": 78,
+      "spatially_constant_point_fields": 78,
+      "nonpositive_focal_views": 78,
+      "assessment": "Inference completed, but all views have spatially constant point fields, constant depths, and invalid focal estimates. REJECTED before geometric scoring. Root cause not isolated: private low-resolution/mixed-precision/chunked prototype is not validated against upstream full-precision inference. This does not establish a limitation of the method itself."
+    }
+  ],
+  "failed_full_batch_attempts": [
+    {
+      "views": 78,
+      "resolution": 336,
+      "encoder": "batch",
+      "result": "Disk reserve guard stopped before inference; no result"
+    },
+    {
+      "views": 78,
+      "resolution": 336,
+      "encoder": "one view at a time",
+      "attention": "upstream MPS SDPA",
+      "result": "Invalid buffer size 90.55 GB; no predictions"
+    },
+    {
+      "views": 78,
+      "resolution": 336,
+      "encoder": "one view at a time",
+      "attention": "exact128query chunks with full keys/values; CPU/MPS small-case parity passed",
+      "result": "Passed attention allocation, then feed-forward MPS memory cap:7.78GB allocated,7.70GB limit. No predictions. Wrapper caught failure and exited0; guard success alone does not mean inference success."
+    },
+    {
+      "views": 78,
+      "resolution": 224,
+      "encoder": "one view at a time",
+      "attention": "128query chunks, all keys/values retained",
+      "feed_forward": "128token chunks, small CPU parity passed",
+      "gpu_cap_gb": 5.33,
+      "result": "Reached attention output allocation with5.16GB already allocated; memory cap exceeded. No predictions. Does not establish failure under larger cap."
+    }
+  ],
+  "attention_parity": {
+    "cpu_float32_max_abs_error": 0,
+    "mps_float32_max_abs_error": 8.940696716308594e-08,
+    "scope": "Small random attention with identical keys/values; not a full-model equivalence test."
+  },
+  "limits": [
+    "Learned intrinsics differ from supplied off-centre crop calibration; do not assume calibration is enforced.",
+    "Mask projection coverage and rendered appearance do not establish accurate geometry.",
+    "336px full inference is resource-limited; 224px chunked12/78 inference completes but collapses numerically. Neither constitutes accepted camera recovery. Preserve alternatives and validate full-model numerics before incorporation.",
+    "No original photos changed; no owner photos uploaded to remote storage; public checkpoint stored remotely to avoid local duplication.",
+    "No default changes, no six-object adoption claim, no new TestFlight build."
+  ],
+  "capture_calibration_check": {
+    "photos_checked": 78,
+    "dimensions": [
+      3024,
+      4032
+    ],
+    "exif_focal_length_present": 0,
+    "exif_35mm_equivalent_present": 0,
+    "exif_digital_zoom_present": 0,
+    "note": "The 3000px focal is an own hypothesis, not measured calibration. Existing photos do not expose these EXIF fields. Native calibration capture remains a separate future path."
+  },
+  "chunk_fp16_numerics": [
+    {
+      "method": "SDPA",
+      "amplitude": 1.0,
+      "chunk_vs_stock_max": 1.52587890625e-05,
+      "chunk_vs_cpu32_max": 0.00022313371300697327,
+      "chunk_finite": true
+    },
+    {
+      "method": "SDPA",
+      "amplitude": 5.0,
+      "chunk_vs_stock_max": 0.0,
+      "chunk_vs_cpu32_max": 0.04975533485412598,
+      "chunk_finite": true
+    },
+    {
+      "method": "SDPA",
+      "amplitude": 20.0,
+      "chunk_vs_stock_max": 0.0,
+      "chunk_vs_cpu32_max": 0.6741710901260376,
+      "chunk_finite": true
+    },
+    {
+      "method": "SDPA",
+      "amplitude": 50.0,
+      "chunk_vs_stock_max": 0.0,
+      "chunk_vs_cpu32_max": 1.4321578741073608,
+      "chunk_finite": true
+    },
+    {
+      "method": "MLP",
+      "shape": [
+        1,
+        400,
+        128
+      ],
+      "chunk_vs_stock_max": 0.0,
+      "chunk_finite": true
+    },
+    {
+      "method": "MLP",
+      "shape": [
+        12,
+        256,
+        128
+      ],
+      "chunk_vs_stock_max": 0.0,
+      "chunk_finite": true
+    },
+    {
+      "method": "MLP",
+      "shape": [
+        1,
+        3000,
+        128
+      ],
+      "chunk_vs_stock_max": 0.0,
+      "chunk_finite": true
+    }
+  ],
+  "chunk_fp16_numerics_note": "Small MPS chunked/stock MLP outputs match; attention closely matches stock MPS, but high-amplitude FP16 inputs diverge from CPU FP32. Not a full-model equivalence or causal diagnosis."
+}
