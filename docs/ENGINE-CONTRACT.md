@@ -103,6 +103,12 @@ port 8766 of every interface, with a new random token each time it is switched o
 `"uploads": true` in its health answer and takes photo uploads; it is how a phone or tablet hands its photos to
 a stronger computer (Studio: connect to it as "Another engine", then Take photos).
 
+While sharing, the app announces itself on the local network as `_crispmesh._tcp` (Bonjour through the system's
+DNS-SD; TXT `v=1`, `addr=<address>`; macOS and iOS, `apps/studio/src-tauri/src/bonjour.rs`) and shows a six-digit
+pairing code. A phone lists the computers it finds and asks for that code: `POST /api/pair` with
+`{"code": "123456"}` and no token answers `200 {"token"}`, a wrong code `403`; after five wrong codes the code is
+replaced (the app shows the new one). The announcement carries no token.
+
 | Request | Answer |
 | --- | --- |
 | `GET /api/health` | `{"schema", "device", "can_start_runs"}` |
@@ -144,8 +150,9 @@ end on another port can reach it.
 
 ## 4. Not in the contract yet
 
-- **Discovery.** The phone gets the computer's address and token from a QR code the desktop app shows (or they
-  are typed in); there is no Bonjour discovery. The Python engine server does not take uploads.
+- **Discovery elsewhere.** Bonjour announcement and lookup exist on macOS and iOS only (section 3); Windows,
+  Linux and Android pair by QR code or typed address and token. The Python engine server neither announces
+  itself nor takes uploads.
 - **Push transport.** Clients poll. Server-sent events may be added; polling
   will keep working.
 - **Mesh formats.** Only binary STL. A compact preview format (for example GLB
