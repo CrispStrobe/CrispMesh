@@ -573,3 +573,21 @@ clippy and format checks pass). No reconstruction defaults, app dependencies or
 research gates change. The drill remains unresolved; see
 [independent control evidence](../tests/evidence/drill-independent-controls.json)
 and [depth quality audit](DEPTH-QUALITY-AUDIT.md).
+
+
+Real-user capture camera work adds opt-in five-point initialization (attributed
+BSD-3-Clause PoseLib adaptation), ambiguous P3P consensus, geometrically split
+tracks and diverse seed selection. Existing algorithms/defaults are preserved.
+138 photo release tests, strict library/test clippy and wasm32 release library
+checks pass; browser execution is not established by this check. Nine real-batch
+controls still register only 9–11/78 iPhone and 25–27/117 iPad views, with poor
+inspected shape. These paths are experimental library APIs, not an app provider
+or a successful pipeline repair. See [camera path evidence](../tests/evidence/camera-recovery-paths-review.json).
+
+An unchunked CPU F32 MapAnything control removes the private MPS prototype's
+constant-output symptom using the same F16-rounded checkpoint. Its complete
+78-view prediction remains geometrically fragmented (median silhouette support
+.650) and is rejected. The system Apple photogrammetry comparison also produces
+no suitable object mesh. No printable STL has been accepted from either real
+capture; fixed-camera Gaussian training cannot repair their cameras. See
+[learned camera evidence](../tests/evidence/learned-camera-real-capture-review.json).

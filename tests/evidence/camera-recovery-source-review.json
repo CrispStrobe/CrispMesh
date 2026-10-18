@@ -21,6 +21,10 @@
     "PoseLib/solvers/p3p_common.h": {
       "url": "https://raw.githubusercontent.com/PoseLib/PoseLib/6a636b1d84273d5e3ba97676463476569611572a/PoseLib/solvers/p3p_common.h",
       "sha256": "b4ce811aaee4852a7a02e4528b7e299be9050c69d696be1c401eb95ee16c84a9"
+    },
+    "PoseLib/solvers/relpose_5pt.cc": {
+      "url": "https://raw.githubusercontent.com/PoseLib/PoseLib/6a636b1d84273d5e3ba97676463476569611572a/PoseLib/solvers/relpose_5pt.cc",
+      "sha256": "d77461f3574e381e1b33a6ae1f7997f40ee6d80ec2e8cf011bbff2fa5f0cf280"
     }
   },
   "note": "Source and license inventory, not patent clearance. No GPL/MPL source incorporated.",
@@ -74,5 +78,32 @@
     },
     "runtime": "Private PyTorch/MPS prototype; not a production dependency or on-device feature. Only Apache checkpoint selected; other model variants not interchangeable.",
     "direct_use_policy": "Review source, checkpoint and transitive components separately. Restrictive implementations require separate specification/implementation agents and explicit contracts before any rewrite; no such rewrite in this change."
+  },
+  "minimal_relative_pose_incorporation": {
+    "destination": "crates/dense/src/photos/five_point.rs",
+    "license": "BSD-3-Clause",
+    "scope": "Trace constraints and paired elimination adapted from relpose_5pt.cc. Generic polynomial convolution replaces unrolled determinant coefficients. Project Rust orthogonalization and derivative root isolation replace Eigen and Sturm; no code imported from those dependencies.",
+    "retained_notice": "full BSD copyright/conditions/disclaimer in source; reference in root NOTICE with existing complete PoseLib notice",
+    "selection": "incremental::recover_with_solvers(..., Initializer::FivePoint, Resection::P3p, ...). EightPoint/Linear wrappers remain unchanged defaults.",
+    "new_runtime_dependencies": [],
+    "note": "Attributed source adaptation, not a clean-room rewrite or patent-clearance claim."
+  },
+  "point_tracking_private_control": {
+    "code_revision": "730cda1c730877cfedbe01bf87fb1cadb78a565d",
+    "weights_url": "https://storage.googleapis.com/dm-tapnet/bootstap/bootstapir_checkpoint_v2.pt",
+    "weight_bytes": 218886140,
+    "weight_sha256": "8493c7a69e02c85b9382fbb3c7b8b539b36bc08ede744b9e99feb739a0129f4b",
+    "code_license": "Apache-2.0",
+    "weights_license": "Apache-2.0, explicitly granted in pinned upstream README License and Disclaimer",
+    "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "readme_sha256": "c0cda10a66a91513fd78e1638ff6db7789d4320dc24e5897ce6bc1bd567c15c3",
+    "repository": "https://github.com/google-deepmind/tapnet",
+    "shipped": false,
+    "license_statement": "https://github.com/google-deepmind/tapnet/blob/730cda1c730877cfedbe01bf87fb1cadb78a565d/README.md#license-and-disclaimer",
+    "dependencies": {
+      "einshape": "1.0, Apache-2.0; private prototype only",
+      "dm-tree": "Apache-2.0, existing environment"
+    },
+    "scope": "Private chronological photo tracking prototype; no model code or weights shipped or incorporated in Rust. No source-restricted rewrite."
   }
 }

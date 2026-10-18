@@ -27,6 +27,75 @@ pub enum Resection {
     #[default]
     Linear,
     P3p,
+    P3pConsensus,
+}
+
+/// Alternative calibrated initial-pose estimators; eight-point remains default.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Initializer {
+    #[default]
+    EightPoint,
+    FivePoint,
+}
+
+/// Keep the strongest subtrack, or peel additional independently witnessed tracks.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum TrackSelection {
+    #[default]
+    Robust,
+    Split,
+}
+
+/// Score-only repeats strong local seeds; diversity spends effort across the capture graph.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SeedSelection {
+    #[default]
+    Score,
+    Diverse,
+}
+#[derive(Debug, Clone, Copy)]
+pub struct RecoveryOptions {
+    pub initializer: Initializer,
+    pub resection: Resection,
+    pub seed_selection: SeedSelection,
+    pub track_selection: TrackSelection,
+    pub maximum_seed_attempts: usize,
+}
+impl Default for RecoveryOptions {
+    fn default() -> Self {
+        Self {
+            initializer: Initializer::EightPoint,
+            resection: Resection::Linear,
+            seed_selection: SeedSelection::Score,
+            track_selection: TrackSelection::Robust,
+            maximum_seed_attempts: 32,
+        }
+    }
+}
+type Seed = (usize, usize, Pose, f64, usize);
+fn select_seeds(mut seeds: Vec<Seed>, selection: SeedSelection, budget: usize, count: usize) -> Vec<Seed> {
+    if selection == SeedSelection::Score {
+        return seeds.into_iter().take(budget).collect();
+    }
+    let mut visits = vec![0usize; count];
+    let mut selected = Vec::new();
+    for _ in 0..budget.min(seeds.len()) {
+        let mut best = 0;
+        let mut score = f64::NEG_INFINITY;
+        for (i, seed) in seeds.iter().enumerate() {
+            let penalty = (1 + visits[seed.0] + visits[seed.1]) as f64;
+            let value = seed.3 / (penalty * penalty);
+            if value > score {
+                best = i;
+                score = value;
+            }
+        }
+        let seed = seeds.remove(best);
+        visits[seed.0] += 1;
+        visits[seed.1] += 1;
+        selected.push(seed);
+    }
+    selected
 }
 
 fn subset(matches: &Matches, placed: &[usize]) -> Matches {
@@ -186,13 +255,18 @@ fn refresh(
     placed: &[usize],
     poses: &mut [Option<Pose>],
     bundle: bool,
+    selection: TrackSelection,
 ) -> anyhow::Result<(Matches, solver::Tracks)> {
     let own = subset(matches, placed);
     let normalised: Vec<Vec<_>> = own.keypoints.iter().map(|list| list.iter().map(|p| camera.undistort(*p)).collect()).collect();
     let mut rotations: Vec<_> = placed.iter().map(|&v| poses[v].unwrap().0).collect();
     let mut translations: Vec<_> = placed.iter().map(|&v| poses[v].unwrap().1).collect();
     let focal = (camera.fx + camera.fy) / 2.;
-    let mut tracks = solver::build_robust(&own, &normalised, &rotations, &translations, focal, 2., 2);
+    let build = |rotations: &[M3], translations: &[V3]| match selection {
+        TrackSelection::Robust => solver::build_robust(&own, &normalised, rotations, translations, focal, 2., 2),
+        TrackSelection::Split => solver::build_split(&own, &normalised, rotations, translations, focal, 2., 2),
+    };
+    let mut tracks = build(&rotations, &translations);
     prune(&mut tracks, &normalised, &rotations);
     if tracks.points.len() < 20 {
         bail!("incremental cameras: fewer than 20 triangulated tracks with one degree of parallax");
@@ -209,7 +283,7 @@ fn refresh(
         for (i, &v) in placed.iter().enumerate() {
             poses[v] = Some((rotations[i], translations[i]));
         }
-        tracks = solver::build_robust(&own, &normalised, &rotations, &translations, focal, 2., 2);
+        tracks = build(&rotations, &translations);
         prune(&mut tracks, &normalised, &rotations);
     }
     Ok((own, tracks))
@@ -235,6 +309,32 @@ pub fn recover_with_resection(
     resection: Resection,
     check: &mut dyn FnMut(usize, usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Recovered> {
+    recover_with_solvers(matches, lens, names, Initializer::EightPoint, resection, check)
+}
+
+/// Independent explicit choices for initial relative pose and later resection.
+pub fn recover_with_solvers(
+    matches: &Matches,
+    lens: &Lens,
+    names: &[String],
+    initializer: Initializer,
+    resection: Resection,
+    check: &mut dyn FnMut(usize, usize) -> anyhow::Result<()>,
+) -> anyhow::Result<Recovered> {
+    recover_with_options(matches, lens, names, RecoveryOptions { initializer, resection, ..RecoveryOptions::default() }, check)
+}
+/// Bounded search alternatives. File order and fixed angular spacing are not priors.
+pub fn recover_with_options(
+    matches: &Matches,
+    lens: &Lens,
+    names: &[String],
+    options: RecoveryOptions,
+    check: &mut dyn FnMut(usize, usize) -> anyhow::Result<()>,
+) -> anyhow::Result<Recovered> {
+    if !(1..=256).contains(&options.maximum_seed_attempts) {
+        bail!("incremental cameras: seed budget must be between 1 and 256");
+    }
+    let (initializer, resection) = (options.initializer, options.resection);
     let count = matches.keypoints.len();
     if !(3..=super::MOST_PHOTOS).contains(&count) || names.len() != count {
         bail!("incremental cameras: expected 3 to {} named views", super::MOST_PHOTOS);
@@ -270,7 +370,11 @@ pub fn recover_with_resection(
     for (rank, &(i, j, list)) in ranked.iter().take(512).enumerate() {
         check(0, count)?;
         let (a, b): (Vec<_>, Vec<_>) = list.iter().map(|&(x, y)| (normalised[*i][x as usize], normalised[*j][y as usize])).unzip();
-        let Some((e, flags)) = geometry::essential_ransac(&a, &b, 2. / focal, &mut random) else { continue };
+        let estimate = match initializer {
+            Initializer::EightPoint => geometry::essential_ransac(&a, &b, 2. / focal, &mut random),
+            Initializer::FivePoint => super::five_point::ransac(&a, &b, 2. / focal, &mut random),
+        };
+        let Some((e, flags)) = estimate else { continue };
         let Some((r, t)) = geometry::recover_pose(&e, &a, &b, &flags) else { continue };
         let selected: Vec<_> = (0..a.len()).filter(|&k| flags[k]).collect();
         if selected.len() < 30 {
@@ -347,9 +451,11 @@ pub fn recover_with_resection(
         }
     }
     seeds.sort_by(|a, b| b.3.total_cmp(&a.3).then_with(|| (a.0, a.1).cmp(&(b.0, b.1))));
+    let seed_candidates = seeds.len();
+    let seeds = select_seeds(seeds, options.seed_selection, options.maximum_seed_attempts, count);
     let mut best: Option<Recovered> = None;
     let mut attempts = Vec::new();
-    'seeds: for (a, b, pose, _, seed_points) in seeds.into_iter().take(32) {
+    'seeds: for (a, b, pose, _, seed_points) in seeds {
         let mut poses = vec![None; count];
         poses[a] = Some((IDENTITY, [0.; 3]));
         poses[b] = Some(pose);
@@ -357,7 +463,9 @@ pub fn recover_with_resection(
         let mut rounds = Vec::new();
         loop {
             check(placed.len(), count)?;
-            let Ok((_, tracks)) = refresh(matches, &camera, &placed, &mut poses, placed.len() <= 12 || placed.len() % 4 == 0) else {
+            let Ok((_, tracks)) =
+                refresh(matches, &camera, &placed, &mut poses, placed.len() <= 12 || placed.len() % 4 == 0, options.track_selection)
+            else {
                 attempts.push(json!({"seed":[a,b],"registered":placed.len(),"failed":"insufficient consistent tracks"}));
                 continue 'seeds;
             };
@@ -369,6 +477,7 @@ pub fn recover_with_resection(
             for u in (0..count).filter(|&v| poses[v].is_none()) {
                 check(placed.len(), count)?;
                 let mut seen: BTreeMap<u32, Option<usize>> = BTreeMap::new();
+                let mut candidates: BTreeMap<(u32, usize), super::registration::Link> = BTreeMap::new();
                 let mut partners: BTreeMap<usize, usize> = BTreeMap::new();
                 for (i, j, list) in &matches.pairs {
                     if *i != u && *j != u {
@@ -377,6 +486,14 @@ pub fn recover_with_resection(
                     for &(x, y) in list {
                         let (own, other) = if *i == u { (x, (*j, y)) } else { (y, (*i, x)) };
                         if let Some(&point) = point_at.get(&other) {
+                            if resection == Resection::P3pConsensus {
+                                candidates.entry((own, point)).or_insert(super::registration::Link {
+                                    feature: own,
+                                    point,
+                                    bearing: normalised[u][own as usize],
+                                    position: tracks.points[point],
+                                });
+                            }
                             seen.entry(own)
                                 .and_modify(|old| {
                                     if *old != Some(point) {
@@ -390,7 +507,12 @@ pub fn recover_with_resection(
                 }
                 let links: Vec<_> =
                     seen.into_iter().filter_map(|(f, p)| p.map(|p| (normalised[u][f as usize], tracks.points[p]))).collect();
-                if links.len() < 20 {
+                let linked = if resection == Resection::P3pConsensus {
+                    candidates.keys().map(|(f, _)| *f).collect::<std::collections::BTreeSet<_>>().len()
+                } else {
+                    links.len()
+                };
+                if linked < 20 {
                     continue;
                 }
                 let mut partners: Vec<_> = partners.into_iter().collect();
@@ -399,10 +521,13 @@ pub fn recover_with_resection(
                 let candidate = match resection {
                     Resection::Linear => solver::resect(&links, &starts, focal, &mut random),
                     Resection::P3p => solver::resect_general(&links, &starts, focal, &mut random),
+                    Resection::P3pConsensus => {
+                        super::registration::recover(&candidates.into_values().collect::<Vec<_>>(), &starts, focal, &mut random)
+                    }
                 };
                 if let Some((r, t, n)) = candidate {
-                    if n >= 20 && n * 5 >= links.len() * 2 && found.as_ref().is_none_or(|v| n > v.2) {
-                        found = Some((u, (r, t), n, links.len()));
+                    if n >= 20 && n * 5 >= linked * 2 && found.as_ref().is_none_or(|v| n > v.2) {
+                        found = Some((u, (r, t), n, linked));
                     }
                 }
             }
@@ -417,10 +542,10 @@ pub fn recover_with_resection(
                         attempts.push(json!({"seed":[a,b],"registered":2,"failed":"no third view"}));
                         continue 'seeds;
                     }
-                    let (own, tracks) = refresh(matches, &camera, &placed, &mut poses, true)?;
+                    let (own, tracks) = refresh(matches, &camera, &placed, &mut poses, true, options.track_selection)?;
                     let rotations = placed.iter().map(|&v| poses[v].unwrap().0).collect();
                     let translations = placed.iter().map(|&v| poses[v].unwrap().1).collect();
-                    let report = json!({"method":"experimental incremental SfM","resection":match resection {Resection::Linear=>"linear",Resection::P3p=>"p3p"},"seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":placed.len()<=128,"fixed_angles":false,"supplied_poses":false});
+                    let report = json!({"method":"experimental incremental SfM","track_selection":match options.track_selection {TrackSelection::Robust=>"robust",TrackSelection::Split=>"split"},"seed_selection":match options.seed_selection {SeedSelection::Score=>"score",SeedSelection::Diverse=>"diverse"},"seed_budget":options.maximum_seed_attempts,"seed_candidates":seed_candidates,"initializer":match initializer {Initializer::EightPoint=>"eight_point",Initializer::FivePoint=>"five_point"},"resection":match resection {Resection::Linear=>"linear",Resection::P3p=>"p3p",Resection::P3pConsensus=>"p3p_consensus"},"seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":placed.len()<=128,"fixed_angles":false,"supplied_poses":false});
                     let solved = solver::Solved {
                         rotations,
                         translations,
@@ -539,6 +664,33 @@ mod tests {
         (Matches { keypoints, pairs }, lens, names, rotations, points)
     }
     #[test]
+    fn seed_diversity_does_not_spend_the_whole_budget_on_repeated_pairs() {
+        let pose = (IDENTITY, [0.; 3]);
+        let mut seeds = vec![(0, 1, pose, 100., 50); 10];
+        seeds.extend([(2, 3, pose, 20., 40), (4, 5, pose, 20., 40)]);
+        let score = select_seeds(seeds.clone(), SeedSelection::Score, 3, 6);
+        assert!(score.iter().all(|s| (s.0, s.1) == (0, 1)));
+        let diverse = select_seeds(seeds, SeedSelection::Diverse, 3, 6);
+        assert_eq!(diverse.iter().map(|s| (s.0, s.1)).collect::<Vec<_>>(), vec![(0, 1), (2, 3), (4, 5)]);
+    }
+    #[test]
+    fn seed_budget_is_bounded_before_reconstruction() {
+        let matches = Matches::default();
+        let lens = Lens { width: 100, height: 100, pixels: [100., 100., 50., 50.], k: [0.; 3] };
+        for budget in [0, 257] {
+            let error = recover_with_options(
+                &matches,
+                &lens,
+                &[],
+                RecoveryOptions { maximum_seed_attempts: budget, ..RecoveryOptions::default() },
+                &mut |_, _| Ok(()),
+            )
+            .err()
+            .unwrap();
+            assert!(error.to_string().contains("seed budget"));
+        }
+    }
+    #[test]
     fn irregular_shuffled_multilevel_capture_with_duplicates_and_outliers() {
         let (matches, lens, names, truth, _) = capture(false, false);
         let recovered = recover(&matches, &lens, &names, &mut |_, _| Ok(())).unwrap();
@@ -574,9 +726,16 @@ mod tests {
     fn minimal_resection_recovers_noisy_narrow_camera_rotations_and_surface() {
         check_noisy_capture(Resection::P3p);
     }
+    #[test]
+    fn five_point_initializer_recovers_noisy_camera_rotations_and_surface() {
+        check_noisy_capture_with(Initializer::FivePoint, Resection::P3p);
+    }
     fn check_noisy_capture(resection: Resection) {
+        check_noisy_capture_with(Initializer::EightPoint, resection);
+    }
+    fn check_noisy_capture_with(initializer: Initializer, resection: Resection) {
         let (matches, lens, names, truth, truth_points) = capture(false, true);
-        let recovered = recover_with_resection(&matches, &lens, &names, resection, &mut |_, _| Ok(())).unwrap();
+        let recovered = recover_with_solvers(&matches, &lens, &names, initializer, resection, &mut |_, _| Ok(())).unwrap();
         assert!(recovered.solution.views.len() >= 15, "registered {}", recovered.solution.views.len());
         let views = &recovered.solution.views;
         let index = |name: &str| name.trim_start_matches("photo_").trim_end_matches(".jpg").parse::<usize>().unwrap();

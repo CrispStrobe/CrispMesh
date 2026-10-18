@@ -36,6 +36,7 @@ pub mod calibration;
 pub mod cleanup;
 pub mod coarse;
 pub mod contrast;
+mod five_point;
 pub mod fs;
 pub mod incremental;
 pub mod markers;
@@ -43,6 +44,7 @@ pub mod option_table;
 pub mod options;
 mod p3p;
 pub mod providers;
+mod registration;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod rendered;
 pub mod ring;

@@ -75,3 +75,8 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Additional PoseLib BSD adaptation (same revision and complete license above):
+crates/dense/src/photos/five_point.rs adapts the trace constraints and paired
+elimination in solvers/relpose_5pt.cc. The Rust nullspace, polynomial convolution
+and derivative root isolation do not incorporate Eigen or Sturm source.

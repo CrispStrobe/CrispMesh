@@ -187,5 +187,66 @@
       "chunk_finite": true
     }
   ],
-  "chunk_fp16_numerics_note": "Small MPS chunked/stock MLP outputs match; attention closely matches stock MPS, but high-amplitude FP16 inputs diverge from CPU FP32. Not a full-model equivalence or causal diagnosis."
+  "chunk_fp16_numerics_note": "Small MPS chunked/stock MLP outputs match; attention closely matches stock MPS, but high-amplitude FP16 inputs diverge from CPU FP32. Not a full-model equivalence or causal diagnosis.",
+  "cpu_float32_controls": [
+    {
+      "case": "map-cpu32-4view-336-001",
+      "views": 4,
+      "resolution": 336,
+      "seconds": 17.14580798149109,
+      "dtype": "F16-rounded checkpoint copied into F32 parameters and buffers; CPU F32 execution, no AMP or chunked attention/MLP",
+      "median_mask_support": 0.8412056819494168,
+      "worst_mask_support": 0.6327520498902875,
+      "numerically_valid": true,
+      "assessment": "Predictions finite, spatially varying, positive focal; rendered sheet inspected. Flattened or fragmented/repeated foreground, rejected for reconstruction."
+    },
+    {
+      "case": "map-cpu32-4view-224-001",
+      "views": 4,
+      "resolution": 224,
+      "seconds": 8.17368197441101,
+      "dtype": "F16-rounded checkpoint copied into F32 parameters and buffers; CPU F32 execution, no AMP or chunked attention/MLP",
+      "median_mask_support": 0.8146661031276416,
+      "worst_mask_support": 0.5861158072696534,
+      "numerically_valid": true,
+      "assessment": "Predictions finite, spatially varying, positive focal; rendered sheet inspected. Flattened or fragmented/repeated foreground, rejected for reconstruction."
+    },
+    {
+      "case": "map-cpu32-12view-224-001",
+      "views": 12,
+      "resolution": 224,
+      "seconds": 29.188148975372314,
+      "dtype": "F16-rounded checkpoint copied into F32 parameters and buffers; CPU F32 execution, no AMP or chunked attention/MLP",
+      "median_mask_support": 0.6429797582433302,
+      "worst_mask_support": 0.08060939846935126,
+      "numerically_valid": true,
+      "assessment": "Predictions finite, spatially varying, positive focal; rendered sheet inspected. Flattened or fragmented/repeated foreground, rejected for reconstruction."
+    },
+    {
+      "case": "map-cpu32-all-224-001",
+      "views": 78,
+      "resolution": 224,
+      "seconds": 441.1213128566742,
+      "dtype": "F16-rounded checkpoint copied into F32 parameters and buffers; CPU F32 execution, no AMP or chunked attention/MLP",
+      "median_mask_support": 0.6500373165270752,
+      "worst_mask_support": 0.011891533294634713,
+      "numerically_valid": true,
+      "assessment": "Predictions finite, spatially varying, positive focal; rendered sheet inspected. Flattened or fragmented/repeated foreground, rejected for reconstruction."
+    }
+  ],
+  "cpu_float32_note": "Same F16-rounded checkpoint, copied into F32 parameters/buffers; not original F32 weights. CPU execution without AMP or attention/feed-forward chunking fixes the constant-field symptom. Backend/precision/chunking changed together; causal operation not isolated. All78 predictions still fail geometric consistency; no mesh acceptance. Times exclude checkpoint load.",
+  "system_comparison": {
+    "provider": "Apple PhotogrammetrySession, unordered, high feature sensitivity, object masking enabled, preview detail",
+    "raw78": {
+      "seconds": 77.216,
+      "vertices": 6674,
+      "faces": 13136,
+      "assessment": "USDZ and neutral mesh sheet inspected; reconstructed table/background rather than figure; rejected."
+    },
+    "own_foreground_pixel_crops": {
+      "seconds": 9.745,
+      "result": "processError at about26% progress; no accepted output"
+    },
+    "scope": "Local system SDK comparison only, no portable implementation/source incorporated."
+  }
 }

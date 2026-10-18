@@ -237,3 +237,20 @@ focal estimates. Silhouette support of a collapsed cloud is meaningless. Small M
 MLP/attention checks match stock MPS closely; they do not validate the complete mixed-precision
 model. Root cause is not isolated. Keep this prototype outside the production provider and
 validate against upstream full-precision inference before interpreting method quality.
+
+
+CPU F32 execution (still using the F16-rounded Apache checkpoint), without AMP or
+attention/feed-forward chunking, removes the constant-field symptom at 224 pixels.
+Four, twelve and all 78 views now produce varying predictions with positive focal
+estimates. This changes several execution choices together and does not isolate a
+causal operation. The complete 78-view inference takes 441.1 seconds, excluding
+checkpoint load; its median silhouette support is only .650, worst .012. Inspected
+clouds contain fragmented/repeated figures. All CPU controls remain rejected for
+reconstruction. Apple's system photogrammetry comparison reconstructs the table
+from raw images and fails on own foreground crops; it supplies no accepted mesh.
+
+Additional native choices now include five-point initialization, one-to-one
+ambiguous resection consensus, splitting falsely joined tracks, and diverse seed
+selection. These are additive library options, with existing defaults preserved.
+Nine real-batch controls still fail camera coverage and inspected shape. See
+[camera path evidence](../tests/evidence/camera-recovery-paths-review.json).

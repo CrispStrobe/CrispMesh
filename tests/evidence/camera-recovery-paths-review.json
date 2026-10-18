@@ -1,0 +1,164 @@
+{
+  "date": "2026-10-18",
+  "status": "Experimental additive paths; no real-batch mesh accepted",
+  "reference_inputs_used": false,
+  "source_review": "camera-recovery-source-review.json",
+  "paths": {
+    "initializer": "EightPoint(default) or FivePoint",
+    "resection": "Linear(default), P3p or P3pConsensus",
+    "tracks": "Robust(default) or Split (additional models require three-view witnesses, no reused observations, maximum16 models/component)",
+    "seeds": "Score(default) or Diverse; maximum_seed_attempts1..256, default32"
+  },
+  "api": "incremental::recover_with_options; prior wrappers retain their defaults",
+  "validation": {
+    "photo_release_tests": 138,
+    "failures": 0,
+    "clippy_lib_and_tests": "passed -D warnings",
+    "wasm32_library_release": "passed; not browser execution",
+    "rustfmt": "passed",
+    "tests_include": [
+      "Five-point exact/narrow off-centre poses and70%outlier sampling",
+      "Noisy camera rotations and shape",
+      "Ambiguous feature/point one-to-one consensus; repeated edges do not add votes",
+      "Coincident supports rejected",
+      "Two true tracks linked by one false edge recovered separately without observation reuse",
+      "Diverse seeding covers different pairs; old score ordering preserved; bounded budgets"
+    ]
+  },
+  "controls": [
+    {
+      "case": "ipad-consensus-control-001",
+      "input_views": 117,
+      "registered": 27,
+      "points": 2890,
+      "initializer": "eight_point",
+      "resection": "p3p_consensus",
+      "track_selection": "robust",
+      "seed_selection": "score",
+      "seed_budget": 32,
+      "seconds": 84.135,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "ipad-diverse-32-control-001",
+      "input_views": 117,
+      "registered": 25,
+      "points": 2526,
+      "initializer": "eight_point",
+      "resection": "p3p",
+      "track_selection": "robust",
+      "seed_selection": "diverse",
+      "seed_budget": 32,
+      "seconds": 34.482,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "ipad-five-control-001",
+      "input_views": 117,
+      "registered": 26,
+      "points": 2653,
+      "initializer": "five_point",
+      "resection": "p3p",
+      "track_selection": "robust",
+      "seed_selection": "score",
+      "seed_budget": 32,
+      "seconds": 58.419,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "ipad-split-control-001",
+      "input_views": 117,
+      "registered": 27,
+      "points": 3332,
+      "initializer": "eight_point",
+      "resection": "p3p",
+      "track_selection": "split",
+      "seed_selection": "score",
+      "seed_budget": 32,
+      "seconds": 62.646,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "iphone-consensus-control-001",
+      "input_views": 78,
+      "registered": 10,
+      "points": 947,
+      "initializer": "eight_point",
+      "resection": "p3p_consensus",
+      "track_selection": "robust",
+      "seed_selection": "score",
+      "seed_budget": 32,
+      "seconds": 60.316,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "iphone-current-p3p-control-001",
+      "input_views": 78,
+      "registered": 11,
+      "points": 1044,
+      "initializer": "eight_point",
+      "resection": "p3p",
+      "track_selection": "robust",
+      "seed_selection": "score",
+      "seed_budget": 32,
+      "seconds": 32.764,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "iphone-current-split-control-001",
+      "input_views": 78,
+      "registered": 10,
+      "points": 1156,
+      "initializer": "eight_point",
+      "resection": "p3p",
+      "track_selection": "split",
+      "seed_selection": "score",
+      "seed_budget": 32,
+      "seconds": 32.141,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "iphone-diverse-32-control-001",
+      "input_views": 78,
+      "registered": 11,
+      "points": 1044,
+      "initializer": "eight_point",
+      "resection": "p3p",
+      "track_selection": "robust",
+      "seed_selection": "diverse",
+      "seed_budget": 32,
+      "seconds": 20.309,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    },
+    {
+      "case": "iphone-five-control-001",
+      "input_views": 78,
+      "registered": 9,
+      "points": 948,
+      "initializer": "five_point",
+      "resection": "p3p",
+      "track_selection": "robust",
+      "seed_selection": "score",
+      "seed_budget": 32,
+      "seconds": 26.901,
+      "assessment": "Coverage fails; sparse sheet rendered and inspected. Flattened/fragmented geometry; not accepted camera recovery."
+    }
+  ],
+  "input_cache_repair": {
+    "photo": "capture_0066.jpg",
+    "old_features": 100,
+    "old_features_outside_current_own_mask": 71,
+    "new_features": 30,
+    "pairs_recomputed": 77,
+    "maximum_pair_matches": 9,
+    "mask_sha256": "303c34c7bd751291782a000403e689b0650d771496c655b00a70da12849c482b",
+    "note": "Diagnostic cache predated the generic mask correction. Re-extracted from original RGB and corrected own Vision mask, rematched all77pairs; others unchanged. Debug cache inputs, not an automatic shipped cache invalidation claim."
+  },
+  "limits": [
+    "No general camera UI/CLI provider advertised",
+    "No existing solver/dense default replaced; no six-object adoption claim",
+    "All runs single controls under different resource conditions, not a general performance benchmark",
+    "Input capacity1536 is not a device execution benchmark; general global BA still limited to128 views",
+    "No new TestFlight build or App Store submission"
+  ]
+}

@@ -122,7 +122,7 @@ pub(crate) fn build_min(
     bound: f64,
     minimum: usize,
 ) -> Tracks {
-    build_internal(matches, normalised, rotations, translations, focal, bound, minimum, false)
+    build_internal(matches, normalised, rotations, translations, focal, bound, minimum, false, false)
 }
 
 /// Experimental general SfM: salvage a consistent part of a track when a pairwise
@@ -136,7 +136,20 @@ pub(crate) fn build_robust(
     bound: f64,
     minimum: usize,
 ) -> Tracks {
-    build_internal(matches, normalised, rotations, translations, focal, bound, minimum, true)
+    build_internal(matches, normalised, rotations, translations, focal, bound, minimum, true, false)
+}
+
+/// Alternative: retain multiple geometrically distinct subtracks from a merged component.
+pub(crate) fn build_split(
+    matches: &Matches,
+    normalised: &[Vec<P2>],
+    rotations: &[M3],
+    translations: &[V3],
+    focal: f64,
+    bound: f64,
+    minimum: usize,
+) -> Tracks {
+    build_internal(matches, normalised, rotations, translations, focal, bound, minimum, true, true)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -149,6 +162,7 @@ fn build_internal(
     bound: f64,
     minimum: usize,
     robust: bool,
+    split: bool,
 ) -> Tracks {
     let mut ids: HashMap<(usize, u32), usize> = HashMap::new();
     let mut parent: Vec<usize> = Vec::new();
@@ -198,9 +212,20 @@ fn build_internal(
     let (mut points, mut observations) = (Vec::new(), Vec::new());
     for track in tracks {
         if robust {
-            if let Some((x, kept)) = robust_track(&track, normalised, rotations, translations, focal, bound * 2., minimum) {
+            let mut remaining = track;
+            for part in 0..if split { 16 } else { 1 } {
+                // Additional models need a third-view witness; arbitrary two-ray leftovers
+                // must not multiply the landmark count.
+                let required = if part == 0 { minimum } else { minimum.max(3) };
+                let Some((x, kept)) = robust_track(&remaining, normalised, rotations, translations, focal, bound * 2., required) else {
+                    break;
+                };
                 observations.extend(kept.iter().map(|&(v, f)| (v, points.len(), f)));
                 points.push(x);
+                remaining.retain(|observation| kept.binary_search(observation).is_err());
+                if remaining.len() < required {
+                    break;
+                }
             }
             continue;
         }
@@ -1221,6 +1246,42 @@ mod tests {
     use super::*;
     use crate::photos::markers::linalg::rotation_angle_deg;
 
+    #[test]
+    fn merged_component_can_retain_two_real_points_without_reusing_observations() {
+        let rotations = vec![[[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]; 6];
+        let translations: Vec<_> = (0..6).map(|i| [i as f64 * 0.2, 0., 0.]).collect();
+        let truth = [[-0.1, 0.05, 3.], [0.2, 0.05, 3.]];
+        let normalised: Vec<Vec<P2>> = translations
+            .iter()
+            .map(|&t| {
+                truth
+                    .iter()
+                    .map(|&x| {
+                        let q = add(x, t);
+                        [q[0] / q[2], q[1] / q[2]]
+                    })
+                    .collect()
+            })
+            .collect();
+        let mut pairs = Vec::new();
+        for a in 0..6 {
+            for b in a + 1..6 {
+                pairs.push((a, b, vec![(0, 0), (1, 1)]));
+            }
+        }
+        pairs[0].2.push((0, 1));
+        let matches = Matches { keypoints: normalised.clone(), pairs };
+        let one = build_robust(&matches, &normalised, &rotations, &translations, 1000., 2., 2);
+        assert_eq!(one.points.len(), 1);
+        let split = build_split(&matches, &normalised, &rotations, &translations, 1000., 2., 2);
+        assert_eq!(split.points.len(), 2);
+        assert_eq!(split.observations.len(), 12);
+        let unique: std::collections::BTreeSet<_> = split.observations.iter().map(|&(v, _, f)| (v, f)).collect();
+        assert_eq!(unique.len(), 12);
+        for expected in truth {
+            assert!(split.points.iter().any(|&x| norm(sub(x, expected)) < 1e-6));
+        }
+    }
     #[test]
     fn robust_track_keeps_geometry_when_one_epipolar_compatible_observation_is_wrong() {
         let identity = [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];

@@ -715,3 +715,23 @@ features, 3 to 7 min for matching and 3 to 5 min for global SfM.
 - **More than 96 photos in the Python reference** are refused. The native engine accepts up to 1,536 photos total; this is an input bound, not a completed device benchmark.
 - **No physical scale.** The reconstruction frame has an arbitrary scale and up
   direction.
+
+
+## Experimental camera recovery choices (2026-10-18)
+
+The Rust library’s `incremental::recover_with_options` keeps independent choices for
+initial pose (`EightPoint` / BSD-adapted `FivePoint`), camera addition (`Linear`,
+`P3p`, or one-to-one `P3pConsensus`), track retention (`Robust` / `Split`), and
+starting-pair search (`Score` / `Diverse`, 1–256 attempts). Existing wrappers retain
+eight-point, linear resection, strongest subtrack, and 32 score-ranked attempts.
+
+`Split` can recover two real landmarks joined by one wrong correspondence; additional
+models need three-view support and never reuse observations. Consensus registration
+resolves competing feature/point associations with one vote per feature and world point,
+and rejects coincident/collinear support. These are tested robustness mechanisms, not
+a claim that the real captures are fixed. Five-point, consensus, diverse search and
+track splitting still register only 9–11/78 iPhone and 25–27/117 iPad views in these
+controls. All sparse sheets were inspected; coverage and geometry remain insufficient.
+No option is advertised as a working general camera provider in the app.
+
+Evidence: [camera-recovery-paths-review.json](../tests/evidence/camera-recovery-paths-review.json).
