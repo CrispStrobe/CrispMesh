@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from unittest.mock import patch
+import os
 import json
 import math
 from pathlib import Path
@@ -10,12 +13,46 @@ import tempfile
 import time
 import unittest
 
-from scripts.research_job.guard import TEMP_ROOT, run_child
+from scripts.research_job.guard import TEMP_ROOT, run_child, _tree_bytes
 
 
 class GuardTests(unittest.TestCase):
     def setUp(self) -> None:
         TEMP_ROOT.mkdir(parents=True, exist_ok=True)
+
+    def test_files_released_between_enumeration_and_stat_are_not_guard_failures(self) -> None:
+        with tempfile.TemporaryDirectory(dir=TEMP_ROOT) as root:
+            base = Path(root)
+            released = base / "intermediate.png"
+            released.write_bytes(b"temporary")
+            (base / "result.stl").write_bytes(b"mesh")
+            real_scandir = os.scandir
+
+            @contextmanager
+            def scan(path):
+                with real_scandir(path) as entries:
+                    rows = list(entries)
+                released.unlink()
+                yield iter(rows)
+
+            with patch("scripts.research_job.guard.os.scandir", side_effect=scan):
+                self.assertEqual(_tree_bytes(base), 4)
+
+    def test_directory_released_after_it_is_queued_is_not_a_guard_failure(self) -> None:
+        with tempfile.TemporaryDirectory(dir=TEMP_ROOT) as root:
+            base = Path(root)
+            released = base / "intermediates"
+            released.mkdir()
+            (base / "result.stl").write_bytes(b"mesh")
+            real_scandir = os.scandir
+
+            def scan(path):
+                if Path(path) == released:
+                    released.rmdir()
+                return real_scandir(path)
+
+            with patch("scripts.research_job.guard.os.scandir", side_effect=scan):
+                self.assertEqual(_tree_bytes(base), 4)
 
     def test_success_and_input_unchanged(self) -> None:
         with tempfile.TemporaryDirectory(dir=TEMP_ROOT) as root:

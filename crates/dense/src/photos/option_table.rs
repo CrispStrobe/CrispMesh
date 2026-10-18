@@ -25,6 +25,11 @@ pub struct OptionSpec {
 
 pub const OPTIONS: &[OptionSpec] = &[
     OptionSpec {
+        flag: "object-crop-padding", scope: "cameras", kind: "number", default: Some("-1"), choices: &[],
+        variable: None, repeated: false,
+        meaning: "After camera recovery, crop each view around its foreground with this fraction of its longest side as padding (0 to 1); -1 keeps the full frames. Intrinsics follow the crops",
+    },
+    OptionSpec {
         flag: "photos",
         scope: "run",
         kind: "directory",

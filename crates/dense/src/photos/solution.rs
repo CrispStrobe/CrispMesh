@@ -152,7 +152,7 @@ pub fn parse_sfm(scene: &Value) -> anyhow::Result<Solution> {
     }
     let (views, poses, structure, intrinsics) =
         (list(scene, "views"), list(scene, "poses"), list(scene, "structure"), list(scene, "intrinsics"));
-    if !(3..=96).contains(&views.len())
+    if !(3..=super::MOST_PHOTOS).contains(&views.len())
         || poses.len() > views.len()
         || structure.len() > 1_000_000
         || !(1..=views.len()).contains(&intrinsics.len())

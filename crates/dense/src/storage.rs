@@ -299,6 +299,12 @@ pub fn open_image(path: impl AsRef<Path>) -> anyhow::Result<image::DynamicImage>
 
 /// Writes an 8-bit image with 1 (grey) or 3 (RGB) channels as PNG.
 pub fn save_png(path: impl AsRef<Path>, width: usize, height: usize, channels: usize, data: &[u8]) -> anyhow::Result<()> {
+    let bytes = png_bytes(width, height, channels, data)?;
+    write_owned(path.as_ref(), bytes).map_err(|e| anyhow::anyhow!("{}: {e}", path.as_ref().display()))
+}
+
+/// Encodes an 8-bit grey or RGB image without a temporary file.
+pub fn png_bytes(width: usize, height: usize, channels: usize, data: &[u8]) -> anyhow::Result<Vec<u8>> {
     use image::ImageEncoder;
     let colour = match channels {
         1 => image::ExtendedColorType::L8,
@@ -308,7 +314,7 @@ pub fn save_png(path: impl AsRef<Path>, width: usize, height: usize, channels: u
     anyhow::ensure!(data.len() == width * height * channels, "image data does not match its size");
     let mut bytes = Vec::new();
     image::codecs::png::PngEncoder::new(&mut bytes).write_image(data, width as u32, height as u32, colour)?;
-    write_owned(path.as_ref(), bytes).map_err(|e| anyhow::anyhow!("{}: {e}", path.as_ref().display()))
+    Ok(bytes)
 }
 
 #[cfg(test)]

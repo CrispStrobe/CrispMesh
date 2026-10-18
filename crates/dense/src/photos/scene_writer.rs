@@ -71,6 +71,25 @@ pub fn write_scene(
     threads: usize,
     watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Value> {
+    write_scene_cropped(solution, photos, texture_photos, masks, output, threads, None, watch)
+}
+
+/// As `write_scene`, optionally cropping each undistorted view to its own foreground box.
+/// Principal points follow the crop; pose, focal length and pixel sampling do not change.
+#[allow(clippy::too_many_arguments)]
+pub fn write_scene_cropped(
+    solution: &Solution,
+    photos: &Path,
+    texture_photos: Option<&BTreeMap<String, PathBuf>>,
+    masks: &Path,
+    output: &Path,
+    threads: usize,
+    crop_padding: Option<f64>,
+    watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
+) -> anyhow::Result<Value> {
+    if crop_padding.is_some_and(|p| !p.is_finite() || !(0.0..=1.0).contains(&p)) {
+        bail!("object crop padding must be between 0 and 1");
+    }
     if output.stored() {
         bail!("output directory exists: {}", output.display());
     }
@@ -109,25 +128,34 @@ pub fn write_scene(
             if (photo.width() as usize, photo.height() as usize) != (width, height) || (mask.width, mask.height) != (width, height) {
                 bail!("photo or mask of {} is not {width}x{height}, the size the cameras were recovered at", view.source);
             }
+            let undistorted_mask = remap_mask(&mask, &map_x, &map_y);
+            let crop = match crop_padding {
+                Some(padding) => foreground_box(&undistorted_mask, width, height, padding)?,
+                None => [0, 0, width, height],
+            };
+            let [left, top, right, bottom] = crop;
+            let (cw, ch) = (right - left, bottom - top);
             util::save_rgb(
-                &output.join(format!("images/{name}.png")),
-                width,
-                height,
-                remap_rgb(photo.as_raw(), width, height, &map_x, &map_y),
+                &output.join(format!("images/{name}.png")), cw, ch,
+                crop_pixels(remap_rgb(photo.as_raw(), width, height, &map_x, &map_y), width, crop, 3),
             )?;
-            util::save_gray(&output.join(format!("masks/{name}.png")), width, height, remap_mask(&mask, &map_x, &map_y))?;
+            util::save_gray(&output.join(format!("masks/{name}.png")), cw, ch,
+                crop_pixels(undistorted_mask, width, crop, 1))?;
             let mut row = json!({
                 "name": name, "source": view.source, "image": format!("images/{name}.png"), "mask": format!("masks/{name}.png"),
-                "width": width, "height": height, "k": [fx, fy, cx + 0.5, cy + 0.5],
+                "width": cw, "height": ch, "k": [fx, fy, cx + 0.5 - left as f64, cy + 0.5 - top as f64],
                 "rotation": view.rotation, "translation": view.translation,
             });
+            if crop_padding.is_some() {
+                row["image_crop"] = json!({"source_width": width, "source_height": height, "xyxy": crop});
+            }
             if let Some((path, bytes)) = original_bytes {
                 let original = super::staging::decode_photo(&path, &bytes)?.rgb;
                 if (original.width() as usize, original.height() as usize) != (width, height) {
                     bail!("texture photo of {} is not {width}x{height}", view.source);
                 }
                 let relative = format!("texture_images/{name}.png");
-                util::save_rgb(&output.join(&relative), width, height, remap_rgb(original.as_raw(), width, height, &map_x, &map_y))?;
+                util::save_rgb(&output.join(&relative), cw, ch, crop_pixels(remap_rgb(original.as_raw(), width, height, &map_x, &map_y), width, crop, 3))?;
                 row["texture_image"] = json!(relative);
             }
             Ok(row)
@@ -146,6 +174,29 @@ pub fn write_scene(
     }
     crate::photos::fs::write(output.join("cameras.json"), serde_json::to_string_pretty(&cameras)? + "\n")?;
     Ok(json!({"views": rows.len(), "sparse_points": points.len() / 3}))
+}
+
+/// Bounded foreground extent with a margin measured as a fraction of its longest side.
+pub fn foreground_box(mask: &[u8], width: usize, height: usize, padding: f64) -> anyhow::Result<[usize; 4]> {
+    if mask.len() != width.saturating_mul(height) || width == 0 || height == 0 || !padding.is_finite() || !(0.0..=1.0).contains(&padding) {
+        bail!("invalid foreground crop input");
+    }
+    let (mut left, mut top, mut right, mut bottom) = (width, height, 0usize, 0usize);
+    for (index, _) in mask.iter().enumerate().filter(|(_, value)| **value > 127) {
+        let (x, y) = (index % width, index / width);
+        left = left.min(x); top = top.min(y); right = right.max(x + 1); bottom = bottom.max(y + 1);
+    }
+    if right <= left || bottom <= top { bail!("no foreground to crop"); }
+    let margin = (((right - left).max(bottom - top)) as f64 * padding).ceil() as usize;
+    Ok([left.saturating_sub(margin), top.saturating_sub(margin), right.saturating_add(margin).min(width), bottom.saturating_add(margin).min(height)])
+}
+
+fn crop_pixels(source: Vec<u8>, width: usize, crop: [usize; 4], channels: usize) -> Vec<u8> {
+    let [left, top, right, bottom] = crop;
+    if left == 0 && top == 0 && right == width && bottom * width * channels == source.len() { return source; }
+    let mut pixels = Vec::with_capacity((right - left) * (bottom - top) * channels);
+    for y in top..bottom { pixels.extend_from_slice(&source[(y * width + left) * channels..(y * width + right) * channels]); }
+    pixels
 }
 
 #[cfg(test)]
@@ -242,6 +293,39 @@ mod tests {
         let colour_inputs = crate::inputs::Inputs::load(&root.join("colour-scene"), &config).unwrap();
         assert!(colour_inputs.gray.iter().zip(&inputs.gray).all(|(a, b)| a.data == b.data));
         assert!(write_scene(&solution, &root.join("photos"), None, &root.join("masks"), &root.join("scene"), 2, &mut |_| Ok(())).is_err());
+        // Independent per-view crops preserve the same pixels, texture alignment and camera rays.
+        write_scene_cropped(&solution, &root.join("photos"), Some(&sources), &root.join("masks"), &root.join("cropped"), 2, Some(0.1), &mut |_| Ok(())).unwrap();
+        let cropped = crate::inputs::load_views(&root.join("cropped")).unwrap();
+        let crop_image = image::open(&cropped[0].image).unwrap().to_rgb8();
+        assert_eq!(crop_image.dimensions(), (24, 24)); // [18,8,42,32], two pixels of margin.
+        assert_eq!(crop_image, image::imageops::crop_imm(&image, 18, 8, 24, 24).to_image());
+        assert_eq!(cropped[0].k, [80.0, 80.0, 14.0, 16.0]);
+        for (u, v) in [(0.5, 0.5), (13.5, 17.5), (23.5, 23.5)] {
+            assert_eq!((u-cropped[0].k[2])/cropped[0].k[0], (u+18.0-inputs.rows[0].k[2])/inputs.rows[0].k[0]);
+            assert_eq!((v-cropped[0].k[3])/cropped[0].k[1], (v+8.0-inputs.rows[0].k[3])/inputs.rows[0].k[1]);
+        }
+        assert_eq!(cropped[0].rotation, inputs.rows[0].rotation);
+        assert_eq!(cropped[0].translation, inputs.rows[0].translation);
+        let crop_mask = image::open(&cropped[0].mask).unwrap().to_luma8();
+        assert_eq!(crop_mask.pixels().filter(|p| p.0[0]>127).count(), 400);
+        let crop_texture = image::open(cropped[0].texture_image.as_ref().unwrap()).unwrap().to_rgb8();
+        assert_eq!(crop_texture.dimensions(), crop_image.dimensions());
+        assert!(crop_texture.pixels().all(|p| p.0 == [19,67,183]));
+        // Explicitly disabling crops stays byte-identical to the original writer, including metadata.
+        write_scene_cropped(&solution, &root.join("photos"), None, &root.join("masks"), &root.join("uncropped"), 2, None, &mut |_| Ok(())).unwrap();
+        for relative in ["cameras.json", "sparse_points.npy", "images/view_70.png", "masks/view_70.png"] {
+            assert_eq!(std::fs::read(root.join("scene").join(relative)).unwrap(), std::fs::read(root.join("uncropped").join(relative)).unwrap());
+        }
         std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn foreground_crop_rejects_empty_masks_and_clamps_padding() {
+        assert!(foreground_box(&[0; 20], 5, 4, 0.1).is_err());
+        assert!(foreground_box(&[255; 20], 5, 4, f64::NAN).is_err());
+        assert!(foreground_box(&[255; 19], 5, 4, 0.0).is_err());
+        let mut mask = [0;20];mask[0]=255;mask[6]=255;
+        assert_eq!(foreground_box(&mask,5,4,0.0).unwrap(), [0,0,2,2]);
+        assert_eq!(foreground_box(&mask,5,4,1.0).unwrap(), [0,0,4,4]);
     }
 }

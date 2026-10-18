@@ -35,17 +35,25 @@ def _tree_bytes(path: Path) -> int:
     pending = [path]
     while pending:
         directory = pending.pop()
-        with os.scandir(directory) as entries:
-            for entry in entries:
-                info = entry.stat(follow_symlinks=False)
-                if stat.S_ISLNK(info.st_mode):
-                    raise ValueError(f"symlink appeared in run output: {entry.path}")
-                if stat.S_ISDIR(info.st_mode):
-                    pending.append(Path(entry.path))
-                elif stat.S_ISREG(info.st_mode):
-                    total += info.st_size
-                else:
-                    raise ValueError(f"special file appeared in run output: {entry.path}")
+        try:
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    try:
+                        info = entry.stat(follow_symlinks=False)
+                    except FileNotFoundError:
+                        # The child may release an intermediate after enumeration, before stat.
+                        continue
+                    if stat.S_ISLNK(info.st_mode):
+                        raise ValueError(f"symlink appeared in run output: {entry.path}")
+                    if stat.S_ISDIR(info.st_mode):
+                        pending.append(Path(entry.path))
+                    elif stat.S_ISREG(info.st_mode):
+                        total += info.st_size
+                    else:
+                        raise ValueError(f"special file appeared in run output: {entry.path}")
+        except FileNotFoundError:
+            # Likewise, a directory queued above may have been removed in the meantime.
+            continue
     return total
 
 

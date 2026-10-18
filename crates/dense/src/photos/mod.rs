@@ -27,7 +27,7 @@
 //! with a backend feature such as `sam-onnx`) or through the reference
 //! `segment.py` in an external interpreter (`--masks external-sam`).
 
-/// The most photos one front-end run takes: 96 per turntable turn, up to 16 turns.
+/// The most photos one front-end run takes, shared by all capture layouts and camera imports.
 pub const MOST_PHOTOS: usize = 96 * 16;
 
 pub mod audit;

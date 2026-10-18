@@ -212,7 +212,7 @@ impl TurntableOptions {
     }
 }
 
-/// Parses `--turntable-turn-sizes 36,35,36`: 1 to 16 turns of 8 to 96 photos each that add up to `photo_count`.
+/// Parses `--turntable-turn-sizes 36,35,36`: 1 to 16 turns of at least 8 photos each that add up to `photo_count`.
 fn turn_sizes(text: &str, photo_count: usize) -> anyhow::Result<Vec<usize>> {
     let sizes: Vec<usize> = text
         .split(',')
@@ -222,8 +222,8 @@ fn turn_sizes(text: &str, photo_count: usize) -> anyhow::Result<Vec<usize>> {
     if !(1..=16).contains(&sizes.len()) {
         bail!("--turntable-turn-sizes {text:?}: 1 to 16 turns");
     }
-    if let Some(bad) = sizes.iter().find(|n| !(8..=96).contains(*n)) {
-        bail!("--turntable-turn-sizes {text:?}: a turn of {bad} photos; every turn needs 8 to 96");
+    if let Some(bad) = sizes.iter().find(|n| !(8..=super::MOST_PHOTOS).contains(*n)) {
+        bail!("--turntable-turn-sizes {text:?}: a turn of {bad} photos; every turn needs 8 to {}", super::MOST_PHOTOS);
     }
     let sum: usize = sizes.iter().sum();
     if sum != photo_count {
@@ -281,6 +281,7 @@ pub struct Options {
     pub events: Option<PathBuf>,
     pub masks: MaskChoice,
     pub cameras: CameraChoice,
+    pub object_crop_padding: f64,
     pub python: Option<String>,
     pub threads: usize,
     pub minimum_free_gib: f64,
@@ -387,7 +388,7 @@ cameras, turntable provider (our own solver for ordered turntable photos; docs/T
   --turntable-rings N (1)         the photos are N complete turns of equal length one after the other (cameras at
                                   several heights): every turn is solved, then all are joined and adjusted together
   --turntable-turn-sizes N,N,...  the same for turns of unequal length (e.g. after deleting photos): the photos of
-                                  each turn in order, 8 to 96 each, adding up to all photos; sets the number of turns
+                                  each turn in order, at least 8 each, adding up to all photos; sets the number of turns
 cameras, markers provider (a printed mat under the object; docs/MARKER-MAT.md):
   --markers-mat FILE              description of the printed mat, as `crispmesh-dense mat` writes it [CRISPMESH_MARKERS_MAT]
   --markers-minimum N (5)         a photo with fewer decoded markers gets no pose
@@ -511,14 +512,10 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         bail!("--photos must be a directory");
     }
     let photo_count = list_photos(&photos)?.len();
-    // Up to 96 photos per turn (several turns with --turntable-rings or --turntable-turn-sizes).
+    // One bound for all photo providers and capture layouts. Heights do not determine capacity.
     let sizes_text = text("turntable-turn-sizes").filter(|v| !v.trim().is_empty());
-    let turns = match &sizes_text {
-        Some(sizes) => sizes.split(',').count().clamp(1, 16),
-        None => integer("turntable-rings")?.clamp(1, 16) as usize,
-    };
-    if !(3..=96 * turns).contains(&photo_count) {
-        let most = 96 * turns;
+    if !(3..=super::MOST_PHOTOS).contains(&photo_count) {
+        let most = super::MOST_PHOTOS;
         bail!("found {photo_count} photos ({}); the camera audit supports 3 to {most}", PHOTO_SUFFIXES.join(", "));
     }
     let stop_after_masks = match text("stop-after").as_deref() {
@@ -686,6 +683,10 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         "orbit" => false,
         other => bail!("--capture {other}: expected turntable or orbit"),
     };
+    let object_crop_padding = number("object-crop-padding")?;
+    if object_crop_padding != -1.0 && !(0.0..=1.0).contains(&object_crop_padding) {
+        bail!("--object-crop-padding: 0 to 1, or -1 to keep full frames");
+    }
     let options = Options {
         photos,
         photo_count,
@@ -695,6 +696,7 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         events: text("events").map(|p| absolute(&p)),
         masks: masks.clone(),
         cameras,
+        object_crop_padding,
         python: pick("python", "CRISPMESH_PYTHON"),
         threads: threads as usize,
         minimum_free_gib: number("minimum-free-gib")?,
@@ -1022,6 +1024,19 @@ pub(crate) mod tests {
         assert!(with(&["--photos", &folder.join("two").to_string_lossy()]).unwrap_err().to_string().contains("found 2 photos"));
         let no_lens: Vec<String> = arguments(&folder, &[]).into_iter().filter(|w| w != "--calibration" && *w != example()).collect();
         assert_eq!(resolve(&no_lens, &none).unwrap_err().to_string(), "--calibration is required");
+        crate::photos::fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn photo_capacity_does_not_depend_on_the_number_of_heights() {
+        assert_eq!(turn_sizes("120,180,360", 660).unwrap(), [120, 180, 360]);
+        let folder = scratch("many-photos");
+        for n in 4..=300 {
+            crate::photos::fs::write(folder.join(format!("photos/capture_{n:04}.png")), b"").unwrap();
+        }
+        let options = resolve(&arguments(&folder, &[]), &none).unwrap();
+        assert_eq!(options.photo_count, 300);
+        assert_eq!(options.turntable.rings, 1);
         crate::photos::fs::remove_dir_all(&folder).unwrap();
     }
 

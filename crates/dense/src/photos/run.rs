@@ -33,7 +33,7 @@ use super::masks::mask_provider;
 use super::options::{Options, SCHEMA};
 use super::process::{bounded, log_tail, ExternalCommand};
 use super::ring::{decide_gates, ring_statistics, scene_cameras};
-use super::scene_writer::write_scene;
+use super::scene_writer::write_scene_cropped;
 use super::solution::{Lens, Solution};
 use super::staging::{capture_name, list_photos, open_photo};
 use super::{cleanup, contrast, sheets, staging, util};
@@ -447,6 +447,7 @@ impl Run<'_> {
             let expected = json!({"pixels": [scaled.fx, scaled.fy, scaled.cx, scaled.cy], "k": scaled.k});
             util::write_json(&out.join("sfm/expected-calibration.json"), &expected, 1)?;
         }
+        let release_staged_photos = !provider.reads_staged_photos() && !options.keep_intermediates;
         self.internal("cameras", "contrast", small, 0.0, 0.04, "Contrast images for feature detection", count, |watch| {
             let target = out.join("work/contrast");
             crate::photos::fs::create_dir_all(&target)?;
@@ -456,7 +457,12 @@ impl Run<'_> {
                 let (width, height) = (photo.width(), photo.height());
                 let mut rgb = photo.rgb.into_raw();
                 contrast::contrast_image(&mut rgb, width, height, options.contrast_gamma, options.clahe_clip, options.clahe_grid);
-                util::save_rgb(&target.join(&name), width, height, rgb)
+                util::save_rgb(&target.join(&name), width, height, rgb)?;
+                if release_staged_photos {
+                    // Release each replaced frame now: a large capture must not retain two full PNG sets.
+                    crate::photos::fs::remove_file(out.join("work/photos").join(&name))?;
+                }
+                Ok(())
             };
             util::parallel(count, threads, work, watch).map(|_| ())
         })?;
@@ -532,13 +538,14 @@ impl Run<'_> {
             "Undistorting photos and masks, writing the scene",
             registered,
             |watch| {
-                write_scene(
+                write_scene_cropped(
                     &solution,
                     &out.join("work/contrast"),
                     Some(&texture_photos),
                     &out.join("masks"),
                     &out.join("inputs"),
                     threads,
+                    (options.object_crop_padding >= 0.0).then_some(options.object_crop_padding),
                     watch,
                 )
             },
