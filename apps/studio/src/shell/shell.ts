@@ -162,12 +162,12 @@ export function sameConfig(a: ShellConfig, b: ShellConfig): boolean {
 export async function foregroundAvailable(): Promise<boolean> {
   return isTauri() && await invoke<boolean>("capture_foreground_available").catch(()=>false);
 }
-export async function foregroundPreview(file: File, focus: number, threshold: number, region?: import("../core/foregroundPreview").ImageRegion): Promise<import("../core/foregroundPreview").ForegroundPreview | null> {
+export async function foregroundPreview(file: File, focus: number, threshold: number, region?: import("../core/foregroundPreview").ImageRegion, strictRegion = false): Promise<import("../core/foregroundPreview").ForegroundPreview | null> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   // Follow the previous complete object before trying the full scene: a small figure must not
   // be replaced by its turntable or backdrop. A clipped detection is rejected by the native side.
   const attempts: { area: number; region?: import("../core/foregroundPreview").ImageRegion }[] =
-    focus === 1 ? [...(region ? [{area:1,region}] : []), {area:1}, {area:0.7}, {area:0.4}] : [{area:focus}];
+    strictRegion && region ? [{area:1,region}] : focus === 1 ? [...(region ? [{area:1,region}] : []), {area:1}, {area:0.7}, {area:0.4}] : [{area:focus}];
   for (const attempt of attempts) {
     try {
       const headers: Record<string,string> = { "x-focus": String(attempt.area), "x-threshold": String(threshold) };

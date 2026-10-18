@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cropSamples, decodeForegroundPreview, paddedCrop, focusRegion, trackingRegion } from "./foregroundPreview";
+import { cropSamples, decodeForegroundPreview, paddedCrop, focusRegion, trackingRegion, recoverForegroundSpikes } from "./foregroundPreview";
 function response(values = [3264,2448,700,300,1800,2000]) {
   const buffer = new ArrayBuffer(32);const view = new DataView(buffer);
   values.forEach((v,i)=>view.setUint32(4*i,v,true));
@@ -33,4 +33,32 @@ it("keeps a tapped Auto area within the saved frame, including its edges",()=>{
 it("keeps a tracking search in original normalized coordinates",()=>{
   const source=decodeForegroundPreview(response([1000,800,400,200,600,500]));
   expect(trackingRegion(source)).toEqual([.19,0,.81,.8875]);
+});
+
+function preview(box: [number,number,number,number]) {
+  return decodeForegroundPreview(response([3024,4032,...box]));
+}
+it("recovers the real height-transition table selection using the following figure region",async()=>{
+  const before=preview([1604,2313,1898,2822]);
+  const wrong=preview([474,2717,2585,3970]);
+  const after=preview([1652,2870,1958,3368]);
+  const regions: unknown[]=[];
+  const result=await recoverForegroundSpikes([before,wrong,after],async(index,region)=>{
+    expect(index).toBe(1);regions.push(region);return after;
+  });
+  expect(regions).toEqual([trackingRegion(after)]);
+  expect(result).toEqual([before,after,after]);
+});
+it("rejects a repeated table result and retains an unresolved slot for original-photo review",async()=>{
+  const figure=preview([1600,2300,1900,2800]), table=preview([400,2600,2600,4000]);
+  let attempts=0;
+  expect(await recoverForegroundSpikes([figure,table,figure],async()=>{attempts++;return table;})).toEqual([figure,null,figure]);
+  expect(attempts).toBe(2);
+});
+it("leaves sustained camera-distance changes and flat-object rotation alone",async()=>{
+  const small=preview([1500,2400,1600,2900]), broad=preview([800,2400,2300,2900]);
+  const large=preview([400,1000,2600,3900]);
+  for (const frames of [[small,broad,small],[small,large,large],[null,large,small]]) {
+    expect(await recoverForegroundSpikes(frames,async()=>{throw new Error('unexpected retry');})).toEqual(frames);
+  }
 });

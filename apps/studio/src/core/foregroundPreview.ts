@@ -34,3 +34,43 @@ export function trackingRegion(previous: ForegroundPreview): ImageRegion {
   const [l,t,r,b] = paddedCrop(previous.box, previous.width, previous.height, 0.7);
   return [l/previous.width, t/previous.height, r/previous.width, b/previous.height];
 }
+
+function relativeArea(preview: ForegroundPreview): number {
+  const [l,t,r,b] = preview.box;
+  return (r-l)*(b-t)/(preview.width*preview.height);
+}
+
+/** A single oversized selection can be the support/table at a camera-height change.
+ * Require agreement from both neighbours; sustained scale changes are left alone.
+ * Retry strictly inside trusted regions, never silently fall back to the whole scene.
+ * An unresolved selection is omitted; callers retain its original photo for review.
+ */
+export async function recoverForegroundSpikes(
+  previews: readonly (ForegroundPreview | null)[],
+  retry: (index: number, region: ImageRegion) => Promise<ForegroundPreview | null>,
+): Promise<(ForegroundPreview | null)[]> {
+  const output = [...previews];
+  for (let i=1; i<previews.length-1; i++) {
+    const before=previews[i-1], current=previews[i], after=previews[i+1];
+    if (!before || !current || !after) continue;
+    const low=Math.min(relativeArea(before),relativeArea(after));
+    const high=Math.max(relativeArea(before),relativeArea(after));
+    if (high/low > 2 || relativeArea(current) <= high*4) continue;
+    const width=(p: ForegroundPreview)=>(p.box[2]-p.box[0])/p.width;
+    const height=(p: ForegroundPreview)=>(p.box[3]-p.box[1])/p.height;
+    // A rotating flat object can legitimately change width dramatically while
+    // keeping its height. Only flag expansion in both dimensions.
+    if (width(current)<=2*Math.max(width(before),width(after)) ||
+        height(current)<=2*Math.max(height(before),height(after))) continue;
+    output[i]=null;
+    // Try the following frame first: it often shares the new camera height.
+    for (const anchor of [after,before]) {
+      const candidate=await retry(i,trackingRegion(anchor));
+      if (candidate && relativeArea(candidate)>=low/2 && relativeArea(candidate)<=high*2) {
+        output[i]=candidate;
+        break;
+      }
+    }
+  }
+  return output;
+}

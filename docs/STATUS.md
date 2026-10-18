@@ -158,6 +158,12 @@ README.
   secondary component does not align consistently. Joint sparse-feature/silhouette fitting
   improves fitted mask support but a dense diagnostic on that 61-photo subset remains
   distorted and open (119,133 triangles, genus 14). No suitable STL yet.
+  Reviewing all78 masks found a table selection on photo66 that the earlier sampled
+  review missed. A new batch check retries isolated oversized masks inside neighbouring
+  object regions; native replay selects the figure, with some shadow still included.
+  Unresolved originals are retained for review. Radial-lens controls reach63/78 cameras,
+  but silhouette agreement remains poor. A free-angle shared-axis diagnostic also fails
+  feature accuracy; it is not adopted.
   Evidence: [real-user-capture-review.json](../tests/evidence/real-user-capture-review.json).
 
 - **Surface quality on captures from several heights** (2026-10-13). Like for

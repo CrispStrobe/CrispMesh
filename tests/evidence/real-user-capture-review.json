@@ -39,7 +39,7 @@
       "per_view_fraction_inside_mask_median": 0.8941048034934498,
       "worst_fraction": 0.5993449781659389,
       "selected_views": 49,
-      "selection": "at least90% own stable points inside mask, at least two 3–40 degree neighbour cameras; no manual image IDs",
+      "selection": "at least90% own stable points inside mask, at least two 3\u201340 degree neighbour cameras; no manual image IDs",
       "render_result": "outline improves, but still distorted; not suitable for printing",
       "settings": {
         "grid": 256,
@@ -72,7 +72,7 @@
     "unique_photo_hashes": 78,
     "bytes": 146671696,
     "native_foreground_masks": 78,
-    "foreground_review": "26 evenly spaced overviews inspected; later small figure retained using temporal region tracking; not a per-pixel accuracy score",
+    "foreground_review": "Initial sampled review missed a wrong table mask on photo66. Subsequently inspected all78 RGB/mask overlays: other masks broadly follow figure, not per-pixel accuracy proof.",
     "near_repeated_consecutive_views": [
       [
         1,
@@ -245,7 +245,61 @@
           },
           "default_adoption": false
         }
+      },
+      "radial_calibration_control": {
+        "same_pairs": 3003,
+        "fixed_focal_pixels": 3000,
+        "distortion_candidates": [
+          -0.1,
+          -0.05,
+          0.05,
+          0.1
+        ],
+        "largest_views": [
+          60,
+          63,
+          63,
+          58
+        ],
+        "best_count": 63,
+        "input": 78,
+        "note": "Two candidates clear80% count alone, but stable-point silhouette agreement remains poor (median .807/.833). No suitable shape established."
+      },
+      "shared_axis_control": {
+        "views": 61,
+        "points": 418,
+        "camera_groups": [
+          21,
+          29,
+          11
+        ],
+        "angle_per_photo": "freely fitted; no exact step, capture order, motor program or full-turn constraint",
+        "group_basis": "visually reviewed height boundaries, not automatic inference",
+        "feature_error_median_px": 21.29682473441873,
+        "feature_error_p95_px": 114.66431695599711,
+        "result": "Rejected; constrained fit does not explain own feature tracks accurately. Diagnostic only, no default/provider adoption."
       }
+    },
+    "foreground_recovery": {
+      "failure": "At camera-height transition, prior tracking region clipped the figure; full-scene fallback selected the table on photo66.",
+      "old_bbox": [
+        474,
+        2717,
+        2585,
+        3970
+      ],
+      "recovered_bbox": [
+        1619,
+        2890,
+        1933,
+        3483
+      ],
+      "recovered_pixels": 94594,
+      "mask_sha256": "c14a0beba29b929a91260f301babd85bab77dafcfc23dfc5c69bf3dbc88011d1",
+      "method": "Generic postpass detects isolated >4x bbox area AND >2x width and height versus both mutually scale-compatible neighbours. Retries strictly in next, then previous neighbour search region; no full-scene fallback. Sustained scale changes and width-only rotations untouched. Unresolved photo originals retained for review.",
+      "actual_native_test": "macOS Vision, original photo66, next-neighbour normalized region; no manually drawn mask or reference geometry",
+      "visual_result": "Table removed; figure retained with some cast shadow. Not a perfect silhouette or camera/mesh quality fix.",
+      "validation": "209 Studio tests and production build passed, including real bbox regression and unresolved/sustained-scale/flat-object cases."
     }
   },
   "apple_foreground_runtime_probe": {

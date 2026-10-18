@@ -3,6 +3,7 @@
 import { createServer } from 'vite';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 const html=`<html><body><div id="root"></div><script type="module">
 import {h,render} from 'preact';import {CaptureButton} from '/src/ui/capture.tsx';
 import {setLanguage} from '/src/i18n/index.ts';import '/src/styles.css';setLanguage('en');
@@ -21,7 +22,7 @@ window.__TAURI_INTERNALS__={invoke:async(cmd,args)=>{
 const engine={kind:'local',saveCapture:async(folder,files,progress)=>{window.writes.push({folder,names:files.map(f=>f.name)});progress?.(files.length,files.length);return folder;}};
 render(h(CaptureButton,{engine,onSaved:(...args)=>window.saved=args}),document.getElementById('root'));
 </script></body></html>`;
-const server=await createServer({server:{port:1434,strictPort:true,hmr:false},plugins:[{name:'capture-crop-fixture',configureServer(server){server.middlewares.use(async(req,res,next)=>{if(req.url!=='/__capture-crop')return next();res.setHeader('Content-Type','text/html');res.end(await server.transformIndexHtml(req.url,html));});}}]});await server.listen();
+const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),server:{host:'127.0.0.1',port:1434,strictPort:true,hmr:false},plugins:[{name:'capture-crop-fixture',configureServer(server){server.middlewares.use(async(req,res,next)=>{if(req.url!=='/__capture-crop')return next();res.setHeader('Content-Type','text/html');res.end(await server.transformIndexHtml(req.url,html));});}}]});await server.listen();
 const browser=await chromium.launch({channel:'chrome',headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
 try{
  const page=await browser.newPage({permissions:['camera'],viewport:{width:390,height:844}});await page.goto('http://127.0.0.1:1434/__capture-crop');

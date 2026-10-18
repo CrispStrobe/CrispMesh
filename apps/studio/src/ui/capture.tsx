@@ -2,7 +2,7 @@ import { t } from "../i18n";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AutoCapture, captureName, centralRegion, greyThumbnail, renumberPhotos, turnProblem, turnSizes, MOST_PHOTOS } from "../core/autoCapture";
 import { captureCalibration, type CaptureFrame } from "../core/captureLens";
-import { CROP_DEFAULTS, focusRegion, trackingRegion, type ForegroundPreview, type ImageRegion, type CropSettings } from "../core/foregroundPreview";
+import { CROP_DEFAULTS, focusRegion, trackingRegion, recoverForegroundSpikes, type ForegroundPreview, type ImageRegion, type CropSettings } from "../core/foregroundPreview";
 import { CropReview } from "./cropReview";
 import { cameraFieldOfView, foregroundAvailable, foregroundPreview } from "../shell/shell";
 import type { Engine } from "../sources/types";
@@ -286,13 +286,23 @@ export function CaptureScreen({ onDone, onCancel, foregroundSupported = false }:
     busy.current = true;setFinishError("");setSaving(true);setPaused(true);
     try {
       const valid: Taken[] = [];const masks: Blob[] = [];
+      const previews: (ForegroundPreview | null)[] = [];
       let previous: ForegroundPreview | null = null;
       const cached = cropCache.current.key === `${cropSettings.focus}/${cropSettings.threshold}` ? cropCache.current.results : new Map<File,ForegroundPreview|null>();
       for (const [index, photo] of photos.entries()) {
         if (!mounted.current) return;
         setStatus(t("capture.crop.progress", { done: index + 1, total: photos.length }));
         const result: ForegroundPreview | null = cached.has(photo.file) ? cached.get(photo.file)! : await foregroundPreview(photo.file, cropSettings.focus, cropSettings.threshold, previous ? trackingRegion(previous) : undefined);
-        if (result !== null) {previous=result;valid.push(photo);masks.push(result.mask);}
+        previews.push(result);
+        if (result !== null) previous=result;
+      }
+      const recovered = await recoverForegroundSpikes(previews, async (index, region) => {
+        if (!mounted.current) return null;
+        setStatus(t("capture.crop.progress", { done: index + 1, total: photos.length }));
+        return foregroundPreview(photos[index]!.file, cropSettings.focus, cropSettings.threshold, region, true);
+      });
+      for (const [index, result] of recovered.entries()) {
+        if (result !== null) {valid.push(photos[index]!);masks.push(result.mask);}
       }
       if (!mounted.current) return;
       const keptSizes = turnSizes(valid);
