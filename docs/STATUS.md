@@ -155,7 +155,9 @@ README.
   iPad photos; it is not exposed as a provider. Synthetic rotation and shape tests pass,
   but this real-batch coverage fails. Fixed-lens iPhone controls improve from at most 18 cameras with 382 selected pairs
   to 61 of 78 with exhaustive matching (3,003 pairs); coverage still fails, and the
-  secondary component does not align consistently. No suitable STL yet.
+  secondary component does not align consistently. Joint sparse-feature/silhouette fitting
+  improves fitted mask support but a dense diagnostic on that 61-photo subset remains
+  distorted and open (119,133 triangles, genus 14). No suitable STL yet.
   Evidence: [real-user-capture-review.json](../tests/evidence/real-user-capture-review.json).
 
 - **Surface quality on captures from several heights** (2026-10-13). Like for
@@ -223,6 +225,26 @@ README.
 - Builds have been run on Apple hardware only (desktop app, iOS simulator,
   browser); Windows, Linux and Android builds are tested in CI only. The owner
   has started trying TestFlight builds on an iPhone (2026-10-18).
+
+## Owner's open requests
+
+1. Validate Auto on the real LEGO turntable with internal TestFlight 0.3.0 (15):
+   missed steps, duplicate photos, zoom, deletion and the foreground crop preview.
+   Both Apple uploads and internal-group assignments completed; device results are pending.
+2. Recover arbitrary handheld paths and irregular or repeated turntable angles in-process.
+   The experimental library solver is not yet an app/CLI provider; precise angles or a
+   motor program must not be required from users.
+3. Produce a visually suitable auto-cropped mesh/STL from the supplied manual iPad and
+   Auto iPhone batches. Current reconstructions do not meet that requirement.
+4. Translate all remaining engine-provided user-facing descriptions, events and errors
+   into German. Capture, dense settings and surface-method controls are translated.
+5. Validate substantially larger batches on devices and in browsers, including scalable
+   camera adjustment. The native input limit is 1,536; resource limits still apply.
+6. Validate several table turns with the camera moving up/down between them.
+   Capture supports up to 16 height groups with unequal counts; automatic hardware
+   coordination and reliable reconstruction of real multi-height captures remain open.
+7. Move a validated build to external TestFlight only after the owner's device test
+   and decision. External testing remains on its previous build.
 
 ## Data published for this project
 

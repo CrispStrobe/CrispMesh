@@ -168,7 +168,83 @@
         "other_focals": "2600 and3400px each recover60 cameras",
         "component_alignment": "main61 and second26 share20 image IDs and cover67 in union, but own reprojection-based similarity alignment rejects their agreement; not merged",
         "result": "below unchanged80% coverage gate; sparse sheet inspected, no suitable STL or default adoption claim",
-        "native_incremental": "running separately; no result claim"
+        "native_incremental": {
+          "registered": 8,
+          "input": 78,
+          "points": 786,
+          "starting_seeds_tried": 32,
+          "result": "FAILED coverage; no STL",
+          "control_binary_sha256": "4f86dfcf65d333e345ab7b566025a99b81a4fb7c5119feda0695d21dce5cccbb"
+        },
+        "own_mask_consistency": {
+          "stable_own_points": 418,
+          "selection": "track length>=4, error<1.5px",
+          "median_view_fraction_inside_mask": 0.8205741626794258,
+          "worst_view_fraction": 0.2727272727272727,
+          "result": "camera count and low reprojection error do not establish compatible object geometry"
+        },
+        "silhouette_pose_refinement": {
+          "scope": "private joint fit of418 own sparse tracks and own masks,61-camera diagnostic subset only; not an app provider",
+          "mask_fit_measure": "median over views, fraction of selected sparse points within2px of foreground in downsampled4x mask distance fields; fitted-data diagnostic, not held-out shape accuracy",
+          "before": {
+            "feature_median_px": 0.9315830027534617,
+            "feature_p95_px": 2.388968436349589,
+            "fraction_inside_per_view_median": 0.8133971291866029,
+            "outside_distance_median_px": 0.0,
+            "outside_distance_p90_px": 28.346344566345213
+          },
+          "after": {
+            "feature_median_px": 1.19666467607755,
+            "feature_p95_px": 9.197453682729817,
+            "fraction_inside_per_view_median": 0.9736842105263158,
+            "outside_distance_median_px": 0.0,
+            "outside_distance_p90_px": 0.0
+          },
+          "settings": {
+            "silhouette_weight": 0.5,
+            "evaluations": 105
+          },
+          "silhouette_only_meshes": {
+            "before": {
+              "closed": true,
+              "triangles": 93220,
+              "components": 7,
+              "genus": 1
+            },
+            "after": {
+              "closed": true,
+              "triangles": 112996,
+              "components": 2,
+              "genus": 0
+            },
+            "visual_result": "both inspected; body outline improves, shape still crude and unsuitable; no default adoption"
+          },
+          "dense_diagnostic": {
+            "registered_subset": 61,
+            "coverage_gate_passed": false,
+            "run_seconds": 7.105119417,
+            "triangles": 119133,
+            "closed": false,
+            "genus": 14,
+            "silhouette_iou_median": 0.632794913001846,
+            "visual_result": "FAILED: holes and distorted/missing shape, not suitable for printing",
+            "mesh_sha256": "7b6223e0c8e9cb826ebf668f60b227281de4161e97e9d35150ab03f2ea23d804",
+            "settings": {
+              "grid": 256,
+              "sizes": [
+                128,
+                256,
+                512
+              ],
+              "native_level": false,
+              "silhouette_first": 0,
+              "repair_masks": false,
+              "mask_grow": false,
+              "photo_refine": 0
+            }
+          },
+          "default_adoption": false
+        }
       }
     }
   },
@@ -193,11 +269,12 @@
     "ci": {
       "app_checks": "https://github.com/CrispStrobe/CrispMesh/actions/runs/39148379678",
       "testflight_dry_run": "https://github.com/CrispStrobe/CrispMesh/actions/runs/39148382224",
-      "status": "iPhone/iPad simulator and Mac sandbox jobs passed; both TestFlight dry runs and both build15 uploads passed; App Store processing/internal assignment pending",
+      "status": "iPhone/iPad simulator and Mac sandbox jobs passed; both TestFlight dry runs and both build15 uploads passed; build15 VALID on both platforms, bilingual notes set and Internal group assignments succeeded",
       "internal_upload": "https://github.com/CrispStrobe/CrispMesh/actions/runs/39150257814",
-      "internal_build_number": 15
+      "internal_build_number": 15,
+      "internal_distribution": "0.3.0 (15), iOS and macOS; external unchanged"
     },
-    "dense_photos_tests_note": "includes four experimental incremental tests; shipped turntable path retains minimum three-view tracks",
+    "dense_photos_tests_note": "final committed source:121 passed,0 failed, including four experimental incremental tests; shipped turntable path retains minimum three-view tracks",
     "settings_language_fixture": "EN/DE phone check passed: dense setting labels/descriptions, method settings/validation, persistent engine IDs; screenshots inspected",
     "experimental_native_clippy": "library and test targets passed -D warnings",
     "experimental_wasm_check": "wasm32 library release check passed; not an executed browser camera provider"

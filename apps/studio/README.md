@@ -762,7 +762,7 @@ Not implemented:
 - **Mesh formats other than binary STL.** A text STL is refused with a clear
   message.
 - **Installable PWA / offline shell**: no service worker.
-- **Translations.** English only.
+- **Remaining translations.** Studio controls, capture, dense settings and surface-method descriptions have English/German catalogues. Other engine-generated provider descriptions, events and errors still need localization.
 - **Asking before quitting while a run is in progress.**
 
 Runs recorded before the engine announced the photo check as a `report`
