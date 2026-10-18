@@ -7,6 +7,7 @@ import { parseEventLines, type RunEvent } from "../core/events";
 import { ReplayPlayer, systemClock, type ReplayClock, type ReplaySnapshot, type ReplaySpeed } from "../core/replay";
 import { browserFetch, describe, encodePath, headSize, isAbort, readBytes, request, withTrailingSlash, type FetchLike } from "./transport";
 import type { FetchOptions, LinkStatus, ReplayControls, RunSource, SourceUpdate } from "./types";
+import { t } from "../i18n";
 
 export interface ReplayOptions {
   fetcher?: FetchLike;
@@ -113,12 +114,12 @@ export class ReplaySource implements RunSource {
       this.events = parseEventLines(body).events;
       if (this.events.length === 0) {
         // A static host answering with its index page for a missing file ends up here as well.
-        this.setLink({ state: "failed", message: "There is no event log at this address (events.jsonl is missing or empty)." });
+        this.setLink({ state: "failed", message: t("run.replaySource.noLog") });
         return;
       }
     } catch (problem) {
       if (isAbort(problem)) return;
-      this.setLink({ state: "failed", message: `Could not load the recording: ${describe(problem)}` });
+      this.setLink({ state: "failed", message: t("run.replaySource.loadFailed", { error: describe(problem) }) });
       return;
     }
     this.player = new ReplayPlayer(this.events, this.clock, this.speed);

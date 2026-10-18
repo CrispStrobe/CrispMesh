@@ -8,6 +8,7 @@
 import { meshBytes, parseBinaryStlChunked, StlError, type ParsedMesh } from "../core/stl";
 import type { RunSource } from "../sources/types";
 import type { StlRequest, StlResponse } from "./stl.worker";
+import { t } from "../i18n";
 
 export interface LoadProgress {
   phase: "download" | "parse";
@@ -106,7 +107,7 @@ export class MeshLoader {
         this.worker = null;
         worker.terminate();
         for (const { reject } of this.waiting.values()) {
-          reject(new StlError("The mesh could not be read in the background. Try loading it again."));
+          reject(new StlError(t("run.loader.background")));
         }
         this.waiting.clear();
       };

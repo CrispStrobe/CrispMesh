@@ -3,6 +3,7 @@ import { pairWithCode, type Pairing } from "../core/pairing";
 import { remoteFetcher } from "../shell/remoteFetch";
 import type { Shell } from "../shell/shell";
 import { describe } from "../sources/transport";
+import { t } from "../i18n";
 
 interface Found {
   name: string;
@@ -49,13 +50,10 @@ export function FindComputers({ shell, disabled, onPaired }: Props) {
   return (
     <div class="find-computers">
       <button type="button" class="button" disabled={disabled || looking} onClick={look}>
-        {looking ? "Looking..." : "Find computers on this network"}
+        {looking ? t("connection.find.looking") : t("connection.find.button")}
       </button>
       {found !== null && found.length === 0 && !looking && (
-        <p class="help">
-          None found. On the computer: Connection, This computer, "Let other devices use this computer"; both on the same
-          network. Or scan its code.
-        </p>
+        <p class="help">{t("connection.find.none")}</p>
       )}
       {found !== null && found.length > 0 && (
         <ul class="found-computers">
@@ -80,7 +78,7 @@ export function FindComputers({ shell, disabled, onPaired }: Props) {
       {chosen !== null && (
         <form class="pair-code" onSubmit={pair} novalidate>
           <label class="field">
-            <span class="field-label">Pairing code of {chosen.name}</span>
+            <span class="field-label">{t("connection.find.codeOf", { name: chosen.name })}</span>
             <input
               type="text"
               inputMode="numeric"
@@ -90,10 +88,10 @@ export function FindComputers({ shell, disabled, onPaired }: Props) {
               value={code}
               onInput={(event) => setCode(event.currentTarget.value)}
             />
-            <span class="help">Six digits, shown on the computer under "Let other devices use this computer".</span>
+            <span class="help">{t("connection.find.codeHelp")}</span>
           </label>
           <button type="submit" class="button primary" disabled={pairing}>
-            {pairing ? "Pairing..." : "Pair"}
+            {pairing ? t("connection.find.pairing") : t("connection.find.pair")}
           </button>
         </form>
       )}

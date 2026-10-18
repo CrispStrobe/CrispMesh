@@ -9,6 +9,7 @@
  * testable.
  */
 
+import { t } from "../i18n";
 import { normaliseEvent, type RunEvent } from "../core/events";
 import { parseSettingsSchema, type SettingSpec } from "../core/settings";
 import { parseStartPoints } from "../core/startPoints";
@@ -69,7 +70,7 @@ export class LocalEngine implements Engine {
     private readonly bridge: Bridge,
     private readonly options: LocalOptions = {},
   ) {
-    this.label = options.label ?? "this computer";
+    this.label = options.label ?? t("engine.thisComputer");
   }
 
   async health(): Promise<EngineHealth> {
@@ -126,7 +127,7 @@ export class LocalEngine implements Engine {
     const answer = await this.bridge<{ id?: unknown } | null>("native_start", { body }).catch((problem) => {
       throw refusal(problem, 400);
     });
-    if (typeof answer?.id !== "string") throw new EngineError("The engine did not return a run id.", 0);
+    if (typeof answer?.id !== "string") throw new EngineError(t("engine.noRunId"), 0);
     return answer.id;
   }
 
@@ -149,7 +150,7 @@ export class LocalEngine implements Engine {
    * per file with its bytes as they are. Returns the last file's path relative to the data folder.
    */
   async importFiles(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string> {
-    if (!this.imports) throw new EngineError("This engine takes files from the data folder; it has no import.", 0);
+    if (!this.imports) throw new EngineError(t("engine.noImport"), 0);
     return this.copyFiles(folder, files, onProgress);
   }
 
@@ -316,7 +317,7 @@ export class LocalRunSource implements RunSource {
       if (!this.running) return;
       const message = typeof problem === "string" ? problem : describe(problem);
       if (message === "unknown run") {
-        this.setLink({ state: "failed", message: "There is no such run on this computer." });
+        this.setLink({ state: "failed", message: t("engine.noSuchLocalRun") });
         this.running = false;
         return;
       }

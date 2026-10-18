@@ -6,6 +6,7 @@
  */
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { t } from "../i18n";
 
 export interface ShellInfo {
   /** The reconstruction is built into the app (crates/dense). */
@@ -144,11 +145,11 @@ export function sourceText(source: ValueSource, field: ConfigField): string {
       sam_source: "CRISPMESH_SAM_SOURCE",
       sam_checkpoint: "CRISPMESH_SAM_CHECKPOINT",
     }[field as string];
-    return variable !== undefined ? `from ${variable}` : "from the environment";
+    return variable !== undefined ? t("connection.shell.source.variable", { variable }) : t("connection.shell.source.environment");
   }
-  if (source === "found") return "found automatically";
-  if (source === "default") return field === "torch_python" ? "same as the interpreter above" : "default";
-  return "set here";
+  if (source === "found") return t("connection.shell.source.found");
+  if (source === "default") return field === "torch_python" ? t("connection.shell.source.sameAsAbove") : t("connection.shell.source.default");
+  return t("connection.shell.source.setting");
 }
 
 /** Only fields that differ from what is saved need saving. */

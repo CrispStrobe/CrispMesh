@@ -4,6 +4,8 @@ import type { RunSource } from "../sources/types";
 import { useImageUrl } from "./gallery";
 import { canDownload, downloadFile } from "./download";
 import { Icon } from "./icons";
+import { formatPercent } from "../core/format";
+import { t } from "../i18n";
 
 interface Props {
   source: RunSource;
@@ -196,30 +198,30 @@ export function Lightbox({ source, sheets, index, onIndex, onClose }: Props) {
           {sheet.label}
         </p>
         <div class="lightbox-tools">
-          <button type="button" class="button icon-only" onClick={() => go(-1)} disabled={index === 0} aria-label="Previous sheet">
+          <button type="button" class="button icon-only" onClick={() => go(-1)} disabled={index === 0} aria-label={t("run.lightbox.previous")}>
             <Icon name="prev" />
           </button>
-          <button type="button" class="button icon-only" onClick={() => go(1)} disabled={index === sheets.length - 1} aria-label="Next sheet">
+          <button type="button" class="button icon-only" onClick={() => go(1)} disabled={index === sheets.length - 1} aria-label={t("run.lightbox.next")}>
             <Icon name="next" />
           </button>
-          <button type="button" class="button icon-only" onClick={() => zoomAt(0.8)} aria-label="Zoom out">
+          <button type="button" class="button icon-only" onClick={() => zoomAt(0.8)} aria-label={t("run.lightbox.zoomOut")}>
             <Icon name="minus" />
           </button>
           <span class="lightbox-zoom" aria-live="polite">
-            {percent}%
+            {formatPercent(percent / 100, 0)}
           </span>
-          <button type="button" class="button icon-only" onClick={() => zoomAt(1.25)} aria-label="Zoom in">
+          <button type="button" class="button icon-only" onClick={() => zoomAt(1.25)} aria-label={t("run.lightbox.zoomIn")}>
             <Icon name="plus" />
           </button>
           {canDownload(source) && (
             <button type="button" class="button" onClick={() => void downloadFile(source, sheet.path).catch(() => undefined)}>
-              Download
+              {t("run.lightbox.download")}
             </button>
           )}
-          <button type="button" class="button icon-only" onClick={fit} aria-label="Fit to window">
+          <button type="button" class="button icon-only" onClick={fit} aria-label={t("run.lightbox.fit")}>
             <Icon name="fit" />
           </button>
-          <button type="button" class="button icon-only" onClick={onClose} aria-label="Close" autofocus>
+          <button type="button" class="button icon-only" onClick={onClose} aria-label={t("run.lightbox.close")} autofocus>
             <Icon name="close" />
           </button>
         </div>
@@ -252,7 +254,7 @@ export function Lightbox({ source, sheets, index, onIndex, onClose }: Props) {
             }}
           />
         )}
-        {failed && <p class="viewer-message">This image could not be loaded.</p>}
+        {failed && <p class="viewer-message">{t("run.lightbox.failed")}</p>}
       </div>
     </dialog>
   );

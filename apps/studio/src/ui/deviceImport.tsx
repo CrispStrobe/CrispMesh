@@ -1,6 +1,7 @@
 import { useRef, useState } from "preact/hooks";
 import type { Engine } from "../sources/types";
 import { describe } from "../sources/transport";
+import { t } from "../i18n";
 
 interface Props {
   engine: Engine;
@@ -30,15 +31,15 @@ export function DeviceImport({ engine, what, onImported }: Props) {
   const take = async (files: File[]) => {
     if (files.length === 0) return;
     if (what === "photos" && files.length < 3) {
-      setState({ busy: false, message: "Choose at least three photos: one per turntable position.", bad: true });
+      setState({ busy: false, message: t("connection.import.atLeastThree"), bad: true });
       return;
     }
-    setState({ busy: true, message: `Copying ${files.length} ${files.length === 1 ? "file" : "files"}...`, bad: false });
+    setState({ busy: true, message: t("connection.import.copying", { count: files.length }), bad: false });
     try {
       const folder = what === "photos" ? importFolderName(new Date()) : "calibrations";
-      const last = await importFiles(folder, files, (done, total) => setState({ busy: true, message: `Copying ${done} of ${total}...`, bad: false }));
+      const last = await importFiles(folder, files, (done, total) => setState({ busy: true, message: t("connection.import.progress", { done, total }), bad: false }));
       onImported(what === "photos" ? folder : last, files.length);
-      setState({ busy: false, message: what === "photos" ? `${files.length} photos copied into ${folder}.` : `Copied: ${files[0]!.name}.`, bad: false });
+      setState({ busy: false, message: what === "photos" ? t("connection.import.photosDone", { count: files.length, folder }) : t("connection.import.fileDone", { name: files[0]!.name }), bad: false });
     } catch (problem) {
       setState({ busy: false, message: describe(problem), bad: true });
     }
@@ -47,7 +48,7 @@ export function DeviceImport({ engine, what, onImported }: Props) {
   return (
     <div class="device-import">
       <button type="button" class="button" disabled={state.busy} onClick={() => input.current?.click()}>
-        {what === "photos" ? "Choose photos on this device" : "Choose a calibration file"}
+        {what === "photos" ? t("connection.import.choosePhotos") : t("connection.import.chooseCalibration")}
       </button>
       <input
         ref={input}

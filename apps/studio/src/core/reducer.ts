@@ -4,6 +4,7 @@
  */
 
 import { finite, SCHEMA, text, type RunEvent } from "./events";
+import { t } from "../i18n";
 
 export const KNOWN_STAGES = ["inputs", "stereo", "mesh", "check", "evaluate"] as const;
 
@@ -61,12 +62,12 @@ export interface Inspection {
 
 /** A readable name for an inspection step when the event gives no label. */
 export function inspectionTitle(step: string): string {
-  if (step === "steps") return "All steps";
-  if (/^\d+-hull$/.test(step)) return "Silhouette hull";
-  if (/^\d+-hull-repaired$/.test(step)) return "Hull after mask repair";
+  if (step === "steps") return t("run.inspection.allSteps");
+  if (/^\d+-hull$/.test(step)) return t("run.inspection.hull");
+  if (/^\d+-hull-repaired$/.test(step)) return t("run.inspection.hullRepaired");
   const level = /^\d+-level-(\d+)$/.exec(step);
-  if (level !== null) return `Surface after level ${Number(level[1]) + 1}`;
-  if (/^\d+-final$/.test(step)) return "Final surface";
+  if (level !== null) return t("run.inspection.afterLevel", { level: Number(level[1]) + 1 });
+  if (/^\d+-final$/.test(step)) return t("run.inspection.final");
   return step;
 }
 
@@ -225,7 +226,7 @@ export function reduce(state: RunState, event: RunEvent): RunState {
     case "artifact":
       return artifact(state, next, event);
     case "error": {
-      const message = text(event.message) ?? "The stage failed without a message.";
+      const message = text(event.message) ?? t("run.stageFailedNoMessage");
       next.errors = [...state.errors, { seq: event.seq, stage: event.stage, message }];
       if (event.stage !== null) {
         next.stages = withStage(state.stages, event.stage, event.time, (stage) => ({ ...stage, status: "failed" }));

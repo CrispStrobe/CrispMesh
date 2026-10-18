@@ -8,6 +8,7 @@
  * functions, so this is tested with a stand-in worker.
  */
 
+import { localDecimal, t } from "../i18n";
 import { normaliseEvent, type RunEvent } from "../core/events";
 import { parseSettingsSchema, type SettingSpec } from "../core/settings";
 import { parseStartPoints, type StartPoint } from "../core/startPoints";
@@ -49,14 +50,9 @@ export function megapixelText(megapixels: number): string {
 
 /** Whether live previews are on by default for these inputs, and why. */
 export function previewAdvice(views: number, megapixels: number): { on: boolean; reason: string } {
-  const size = `${views} photos, ${megapixelText(megapixels)} megapixels in all`;
-  if (megapixels <= PREVIEW_LIMIT_MEGAPIXELS) {
-    return { on: true, reason: `${size}: small enough to show the surface while it is computed.` };
-  }
-  return {
-    on: false,
-    reason: `${size}: intermediate surfaces are off, because they need about a third more memory and a browser gives the engine at most 4 GiB. Only the final surface is shown.`,
-  };
+  const size = t("engine.browser.preview.size", { count: views, megapixels: localDecimal(megapixelText(megapixels)) });
+  if (megapixels <= PREVIEW_LIMIT_MEGAPIXELS) return { on: true, reason: t("engine.browser.preview.on", { size }) };
+  return { on: false, reason: t("engine.browser.preview.off", { size }) };
 }
 
 /**
@@ -82,7 +78,7 @@ export function describeInputs(name: string, files: [string, File][], camerasJso
     if (!Array.isArray(parsed.views)) throw new Error();
     views = parsed.views as typeof views;
   } catch {
-    throw new Error("cameras.json in this folder cannot be read; it is not an inputs folder.");
+    throw new Error(t("engine.browser.inputs.unreadable"));
   }
   let pixels = 0;
   // A browser reads only the chosen folder: every photo and mask the cameras name has to be in it.
@@ -97,52 +93,54 @@ export function describeInputs(name: string, files: [string, File][], camerasJso
   if (outside.length > 0) {
     const absolute = outside.some((path) => path.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path));
     throw new Error(
-      `cameras.json names ${outside.length} ${outside.length === 1 ? "file that is" : "files that are"} not in this folder (the first: ${outside[0]}). ` +
-        (absolute ? "They are given by full paths elsewhere on a disk. " : "") +
-        "A browser can only read the folder you chose: put the photos and masks inside it and name them relative to it.",
+      t("engine.browser.inputs.outside", { count: outside.length, first: outside[0]! }) +
+        " " +
+        (absolute ? t("engine.browser.inputs.absolute") + " " : "") +
+        t("engine.browser.inputs.inside"),
     );
   }
   return { name, files, views: views.length, megapixels: pixels / 1e6 };
 }
 
-const BROWSER_START: StartPoint[] = [
+/** The browser's own start points, in the active language (made fresh, so a language change shows). */
+const browserStart = (): StartPoint[] => [
   {
     id: "inputs",
-    label: "Inputs folder",
-    meaning: "A folder on this device with cameras.json, the undistorted photos and their masks. It is read here; nothing is uploaded.",
-    fields: [{ key: "inputs", label: "Inputs folder", kind: "inputs", required: true, help: "A folder with cameras.json, the photos and their masks." }],
+    label: t("engine.browser.start.inputs.label"),
+    meaning: t("engine.browser.start.inputs.meaning"),
+    fields: [{ key: "inputs", label: t("engine.browser.start.inputs.label"), kind: "inputs", required: true, help: t("engine.browser.start.inputs.help") }],
     providers: [],
     optionGroups: [],
   },
   {
     id: "photos",
-    label: "Turntable photos",
-    meaning: "Photos of an object on a turntable, one turn, and the calibration of the lens. Masks and cameras are made first, here in the browser; nothing is uploaded.",
+    label: t("engine.browser.start.photos.label"),
+    meaning: t("engine.browser.start.photos.meaning"),
     fields: [
-      { key: "photos", label: "Photos", kind: "folder", required: true, help: "One photo per turntable position, in capture order by name (PNG or JPEG)." },
-      { key: "calibration", label: "Lens calibration", kind: "file", required: true, automatic: true, help: "Focal length, principal point and radial distortion of the lens (crispmesh_lens_calibration_v1), or automatic." },
+      { key: "photos", label: t("engine.browser.start.photos.photos"), kind: "folder", required: true, help: t("engine.browser.start.photos.photosHelp") },
+      { key: "calibration", label: t("engine.browser.start.photos.calibration"), kind: "file", required: true, automatic: true, help: t("engine.browser.start.photos.calibrationHelp") },
     ],
     providers: [
       {
         module: "masks",
-        label: "Masks",
+        label: t("engine.browser.masks"),
         default: "threshold",
         settings: [],
         options: [
-          { id: "threshold", label: "threshold", meaning: "Dark object on a light backdrop: grey threshold, largest dark region, contact shadow taken out.", available: true, external: [], settings: [], inputs: [] },
-          { id: "background", label: "background", meaning: "Centred object against a backdrop: colour contrast, retains light parts (experimental).", available: true, external: [], settings: [], inputs: [] },
-          { id: "import", label: "import", meaning: "Masks made elsewhere.", available: false, reason: "Not in the browser yet: the engine package cannot take a folder of masks.", external: [], settings: [], inputs: [] },
+          { id: "threshold", label: "threshold", meaning: t("engine.browser.masks.threshold"), available: true, external: [], settings: [], inputs: [] },
+          { id: "background", label: "background", meaning: t("engine.browser.masks.background"), available: true, external: [], settings: [], inputs: [] },
+          { id: "import", label: "import", meaning: t("engine.browser.masks.import"), available: false, reason: t("engine.browser.masks.importReason"), external: [], settings: [], inputs: [] },
         ],
       },
       {
         module: "cameras",
-        label: "Cameras",
+        label: t("engine.browser.cameras"),
         default: "turntable",
         settings: [],
         options: [
-          { id: "turntable", label: "turntable", meaning: "One turn on a turntable: features, matching and the turn solved inside the engine.", available: true, external: [], settings: [], inputs: [] },
-          { id: "markers", label: "markers", meaning: "A printed marker mat under the object.", available: false, reason: "Not in the browser yet: the engine package cannot take the mat's description file.", external: [], settings: [], inputs: [] },
-          { id: "import", label: "import", meaning: "A camera solution made elsewhere.", available: false, reason: "Not in the browser yet: the engine package cannot take a camera solution file.", external: [], settings: [], inputs: [] },
+          { id: "turntable", label: "turntable", meaning: t("engine.browser.cameras.turntable"), available: true, external: [], settings: [], inputs: [] },
+          { id: "markers", label: "markers", meaning: t("engine.browser.cameras.markers"), available: false, reason: t("engine.browser.cameras.markersReason"), external: [], settings: [], inputs: [] },
+          { id: "import", label: "import", meaning: t("engine.browser.cameras.import"), available: false, reason: t("engine.browser.cameras.importReason"), external: [], settings: [], inputs: [] },
         ],
       },
     ],
@@ -151,7 +149,9 @@ const BROWSER_START: StartPoint[] = [
 ];
 
 const PLACE_KINDS = new Set(["path", "directory", "executable", "path_list"]);
-const NOT_YET = "Not in the browser yet: this needs a file or folder that the browser engine cannot take so far.";
+
+/** Why the worker could not load the engine, as text in the page's language. */
+const WORKER_REASONS = { "no-webgpu": "engine.browser.noWebGpu", "no-adapter": "engine.browser.noAdapter" } as const;
 
 /**
  * The start points of the package's describe(), shaped for this browser: an inputs folder and
@@ -178,7 +178,7 @@ export function browserStartPoints(described: unknown): StartPoint[] {
             return {
               ...o,
               available: o.available !== false && !needsPath,
-              reason: needsPath ? NOT_YET : o.reason,
+              reason: needsPath ? t("engine.browser.notYet") : o.reason,
               settings: tunable(o.settings),
               inputs: [],
             };
@@ -191,16 +191,21 @@ export function browserStartPoints(described: unknown): StartPoint[] {
       // The browser's own fields: a folder of photos and a calibration are picked here, not typed.
       return { ...p, providers, option_groups: groups };
     });
-  const points = parseStartPoints(shaped);
-  // Keep the browser's wording for what is picked on this device.
+  const points = ownWording(parseStartPoints(shaped));
+  return points.length === 2 ? points : [];
+}
+
+/** Keeps the browser's wording (active language) for what is picked on this device. */
+function ownWording(points: StartPoint[]): StartPoint[] {
+  const own = browserStart();
   for (const point of points) {
-    const own = BROWSER_START.find((candidate) => candidate.id === point.id);
-    if (own !== undefined) {
-      point.meaning = own.meaning;
-      point.fields = own.fields;
+    const mine = own.find((candidate) => candidate.id === point.id);
+    if (mine !== undefined) {
+      point.meaning = mine.meaning;
+      point.fields = mine.fields;
     }
   }
-  return points.length === 2 ? points : [];
+  return points;
 }
 
 /** Photos picked on this device for the photos start, sorted by name (the capture order). */
@@ -228,9 +233,9 @@ export function checkCalibration(text: string): string {
   try {
     parsed = JSON.parse(text) as { schema?: unknown };
   } catch {
-    throw new Error("This file is not JSON; a lens calibration is a JSON file.");
+    throw new Error(t("engine.browser.calibration.notJson"));
   }
-  if (parsed.schema !== "crispmesh_lens_calibration_v1") throw new Error("This JSON file is not a lens calibration (crispmesh_lens_calibration_v1).");
+  if (parsed.schema !== "crispmesh_lens_calibration_v1") throw new Error(t("engine.browser.calibration.notCalibration"));
   return text;
 }
 
@@ -270,7 +275,8 @@ export class BrowserEngine implements Engine {
   private loaded: Promise<{ settings: unknown; adapter: string | null; described?: unknown; threads?: number }> | null = null;
   private resolveLoaded: ((value: { settings: unknown; adapter: string | null; described?: unknown; threads?: number }) => void) | null = null;
   /** The start points this browser offers, from the package's describe() once loaded. */
-  private startPoints: StartPoint[] = BROWSER_START;
+  /** From the package's describe(); null until then (the browser's own list is used). */
+  private startPoints: StartPoint[] | null = null;
   private rejectLoaded: ((problem: Error) => void) | null = null;
   private runs = new Map<string, Held>();
   private requests = new Map<number, (bytes: ArrayBuffer | null) => void>();
@@ -354,11 +360,11 @@ export class BrowserEngine implements Engine {
       try {
         const worker = this.options.createWorker();
         worker.onmessage = ({ data }) => this.receive(data);
-        worker.onerror = () => this.rejectLoaded?.(new EngineError("The engine could not be started in this browser.", 0));
+        worker.onerror = () => this.rejectLoaded?.(new EngineError(t("engine.browser.workerFailed"), 0));
         this.worker = worker;
         worker.postMessage({ type: "load", module: this.options.module });
       } catch {
-        this.rejectLoaded?.(new EngineError("This browser cannot start a worker for the engine.", 0));
+        this.rejectLoaded?.(new EngineError(t("engine.browser.noWorker"), 0));
       }
     }
     return this.loaded;
@@ -371,7 +377,7 @@ export class BrowserEngine implements Engine {
         if (points.length > 0) this.startPoints = points;
         this.resolveLoaded?.({ settings: message.settings, adapter: message.adapter, described: message.described, threads: message.threads });
       }
-      else this.rejectLoaded?.(new EngineError(message.message, 0));
+      else this.rejectLoaded?.(new EngineError(message.reason !== undefined ? t(WORKER_REASONS[message.reason]) : message.message, 0));
     } else if (message.type === "event") {
       const run = this.runs.get(message.id);
       if (run === undefined) return;
@@ -399,7 +405,7 @@ export class BrowserEngine implements Engine {
         const time = this.clock();
         const add = (type: string, fields: Record<string, unknown>) => run.events.push({ type, time, stage: null, seq: run.events.length, ...fields });
         if (run.events.length === 0) add("run_started", { schema: "crispmesh_dense_events_v1", device: "WebGPU" });
-        add("error", { message: message.message ?? "The engine stopped without saying why." });
+        add("error", { message: message.message ?? t("engine.browser.stoppedSilently") });
         add("run_finished", { status: "failed", seconds: message.seconds });
         run.status = "failed";
       }
@@ -411,14 +417,19 @@ export class BrowserEngine implements Engine {
     }
   }
 
+  /** The start points to offer: the package's, or the browser's own; picked fields in the active language. */
+  private currentStartPoints(): StartPoint[] {
+    return this.startPoints === null ? browserStart() : ownWording(this.startPoints);
+  }
+
   async health(): Promise<EngineHealth> {
     const { adapter, threads, described } = await this.load();
-    const lanes = (threads ?? 1) > 1 ? `${threads} threads` : "single-threaded";
+    const lanes = (threads ?? 1) > 1 ? t("engine.browser.threads", { count: threads ?? 1 }) : t("engine.browser.singleThreaded");
     return {
       schema: "crispmesh_dense_events_v1",
       device: `${adapter === null ? "WebGPU" : `WebGPU: ${adapter}`} · ${lanes}`,
       canStartRuns: true,
-      startPoints: this.startPoints,
+      startPoints: this.currentStartPoints(),
       choosesDevice: false,
       scoresReference: false,
       methods: parseMethods((described as { methods?: unknown } | null | undefined)?.methods),
@@ -444,9 +455,9 @@ export class BrowserEngine implements Engine {
   async startRun(body: Record<string, unknown>): Promise<string> {
     await this.load();
     if (body.photos !== undefined) return this.startFromPhotos(body);
-    if (this.picked === null) throw new EngineError("inputs: choose the inputs folder first", 400);
+    if (this.picked === null) throw new EngineError(`inputs: ${t("engine.browser.chooseInputs")}`, 400);
     if ([...this.runs.values()].some((run) => !run.ended)) {
-      throw new EngineError("A run is already in progress in this browser. Wait for it, or cancel it.", 400);
+      throw new EngineError(t("engine.browser.busy"), 400);
     }
     const name = typeof body.name === "string" && body.name.trim() !== "" ? body.name.trim() : this.picked.name;
     const id = `browser-${String(++this.counter).padStart(2, "0")}-${name.replace(/[^A-Za-z0-9._-]+/g, "-").slice(0, 40) || "run"}`;
@@ -461,20 +472,20 @@ export class BrowserEngine implements Engine {
   }
 
   private startFromPhotos(body: Record<string, unknown>): string {
-    if (this.photos === null || this.photos.files.length === 0) throw new EngineError("photos: choose the photos first", 400);
-    if (this.photos.files.length < 3) throw new EngineError("photos: at least three photos are needed, one per turntable position", 400);
-    if (this.calibration === null) throw new EngineError("calibration: choose the lens calibration", 400);
+    if (this.photos === null || this.photos.files.length === 0) throw new EngineError(`photos: ${t("engine.browser.choosePhotos")}`, 400);
+    if (this.photos.files.length < 3) throw new EngineError(`photos: ${t("engine.browser.tooFewPhotos")}`, 400);
+    if (this.calibration === null) throw new EngineError(`calibration: ${t("engine.browser.chooseCalibration")}`, 400);
     if ([...this.runs.values()].some((run) => !run.ended)) {
-      throw new EngineError("A run is already in progress in this browser. Wait for it, or cancel it.", 400);
+      throw new EngineError(t("engine.browser.busy"), 400);
     }
     const providers = (typeof body.providers === "object" && body.providers !== null ? body.providers : {}) as Record<string, unknown>;
-    const point = this.startPoints.find((candidate) => candidate.id === "photos");
+    const point = this.currentStartPoints().find((candidate) => candidate.id === "photos");
     const pick = (module: string, fallback: string): string => {
       const choice = point?.providers.find((candidate) => candidate.module === module);
       const wanted = typeof providers[module] === "string" ? (providers[module] as string) : (choice?.default ?? fallback);
       const option = choice?.options.find((candidate) => candidate.id === wanted);
       if (choice !== undefined && (option === undefined || !option.available)) {
-        throw new EngineError(`${module}: ${option?.reason ?? `there is no provider named ${wanted} in this browser`}`, 400);
+        throw new EngineError(`${module}: ${option?.reason ?? t("engine.browser.noProvider", { name: wanted })}`, 400);
       }
       return wanted;
     };
@@ -565,7 +576,7 @@ export class BrowserRunSource implements RunSource {
   start(): void {
     const run = this.engine.held(this.title);
     if (run === undefined) {
-      this.setLink({ state: "failed", message: "This run is no longer in this browser's memory. Runs made here are gone when the page is reloaded." });
+      this.setLink({ state: "failed", message: t("engine.browser.runGone") });
       return;
     }
     const deliver = () => {
@@ -612,7 +623,7 @@ export class BrowserRunSource implements RunSource {
   async fetchBytes(path: string, options: FetchOptions = {}): Promise<ArrayBuffer> {
     const bytes = await this.engine.file(this.title, path);
     options.signal?.throwIfAborted();
-    if (bytes === null) throw new EngineError("Not found.", 404);
+    if (bytes === null) throw new EngineError(t("engine.notFound"), 404);
     options.onProgress?.(bytes.byteLength, bytes.byteLength);
     return bytes;
   }

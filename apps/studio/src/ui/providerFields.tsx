@@ -3,6 +3,7 @@ import { isChanged, optionError, type OptionSpec, type OptionValues } from "../c
 import { chosenProviders, type StartPoint } from "../core/startPoints";
 import type { Engine } from "../sources/types";
 import { PathField } from "./pathField";
+import { language, t } from "../i18n";
 
 interface Props {
   engine: Engine;
@@ -68,7 +69,7 @@ function OptionField({ spec, value, error, onChange }: { spec: OptionSpec; value
       )}
       <span class="help" id={`${id}-help`}>
         <span class="mono">--{spec.name}</span>
-        {changed && spec.default !== "" && ` · default ${spec.default}`}
+        {changed && spec.default !== "" && t("inputs.provider.default", { value: spec.default })}
       </span>
       {error !== undefined && (
         <span class="field-error" id={`${id}-error`}>
@@ -96,7 +97,7 @@ function More({ title, specs, options, onOption, error }: { title: string; specs
     <details class="raw provider-more">
       <summary>
         {title}
-        {changed > 0 ? ` (${changed} changed)` : ""}
+        {changed > 0 ? t("inputs.provider.changed", { count: changed }) : ""}
       </summary>
       <OptionGrid specs={specs} options={options} onOption={onOption} error={error} />
     </details>
@@ -131,19 +132,20 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
                   <span class="provider-text">
                     <span class="provider-name">
                       {option.label}
-                      {!option.available && <span class="badge status-cancelled">Not available</span>}
+                      {!option.available && <span class="badge status-cancelled">{t("inputs.provider.notAvailable")}</span>}
                     </span>
                     {option.meaning !== undefined && <span class="help">{option.meaning}</span>}
                     {option.external.length > 0 && (
                       <span class="help">
-                        Needs: {option.external.join(", ")}.{option.available && option.version !== undefined && ` Found: version ${option.version}.`}
-                        {option.license !== undefined && ` License: ${option.license}.`}
+                        {t("inputs.provider.needs", { list: option.external.join(", ") })}
+                        {option.available && option.version !== undefined && t("inputs.provider.found", { version: option.version })}
+                        {option.license !== undefined && t("inputs.provider.license", { license: option.license })}
                       </span>
                     )}
                     {!option.available && (
                       <span class="field-error">
-                        {option.reason ?? "It cannot be used on this computer."}{" "}
-                        {toolsHref !== undefined && option.external.length > 0 && <a href={toolsHref}>Tools</a>}
+                        {option.reason ?? t("inputs.provider.cannotUse")}{" "}
+                        {toolsHref !== undefined && option.external.length > 0 && <a href={toolsHref}>{t("inputs.provider.tools")}</a>}
                       </span>
                     )}
                   </span>
@@ -165,7 +167,7 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
               />
             ))}
             {current.settings.length > 0 && <OptionGrid specs={current.settings} options={options} onOption={onOption} error={error} />}
-            <More title={`More options for ${choice.label.toLowerCase()}`} specs={choice.settings.filter((spec) => !current.settings.some((own) => own.name === spec.name))} options={options} onOption={onOption} error={error} />
+            <More title={t("inputs.provider.more", { module: language() === "en" ? choice.label.toLowerCase() : choice.label })} specs={choice.settings.filter((spec) => !current.settings.some((own) => own.name === spec.name))} options={options} onOption={onOption} error={error} />
           </fieldset>
         );
       })}
@@ -191,8 +193,8 @@ export function CalibrationList({ engine, current, onPick }: { engine: Engine; c
   }, [engine]);
   if (found.length === 0) return null;
   return (
-    <div class="calibrations" role="group" aria-label="Calibrations found on this computer">
-      <span class="help">Found on this computer:</span>
+    <div class="calibrations" role="group" aria-label={t("inputs.lens.foundLabel")}>
+      <span class="help">{t("inputs.lens.found")}</span>
       {found.map((calibration) => (
         <button key={calibration.path} type="button" class="button small" aria-pressed={calibration.path === current} title={calibration.path} onClick={() => onPick(calibration.path)}>
           {calibration.label}

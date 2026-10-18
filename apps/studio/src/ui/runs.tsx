@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
-import { formatClock, humanise } from "../core/format";
+import { formatClock, formatPercent, humanise } from "../core/format";
+import { t, tParts, type MessageKey } from "../i18n";
 import { describe, isAbort } from "../sources/transport";
 import type { Engine, EngineHealth, RunSummary } from "../sources/types";
 import { Icon } from "./icons";
@@ -9,7 +10,7 @@ const REFRESH_MS = 3000;
 
 export function StatusBadge({ status }: { status: string }) {
   const known = ["running", "complete", "failed", "cancelled", "waiting"].includes(status) ? status : "unknown";
-  return <span class={`badge status-${known}`}>{humanise(status)}</span>;
+  return <span class={`badge status-${known}`}>{known === "unknown" ? humanise(status) : t(`run.status.${known}` as MessageKey)}</span>;
 }
 
 export function ProgressBar({ fraction, label, active }: { fraction: number; label: string; active?: boolean }) {
@@ -63,43 +64,43 @@ export function Runs({ engine, settingsHref }: { engine: Engine; settingsHref?: 
     <section class="page">
       <div class="page-head">
         <div>
-          <h1>Runs</h1>
+          <h1>{t("run.list.title")}</h1>
           <p class="sub">
-            Engine: <span class="mono">{engine.label}</span>
-            {health?.device !== undefined && <> · default device {health.device}</>}
+            {tParts("run.list.engine", { name: <span class="mono">{engine.label}</span> })}
+            {health?.device !== undefined && <> · {t("run.list.defaultDevice", { device: health.device })}</>}
             {settingsHref !== undefined && (
               <>
                 {" · "}
-                <a href={settingsHref}>Engine settings</a>
+                <a href={settingsHref}>{t("run.list.engineSettings")}</a>
               </>
             )}
           </p>
         </div>
         {canStart ? (
           <a class="button primary" href="#/engine/new">
-            <Icon name="plus" /> New run
+            <Icon name="plus" /> {t("run.list.newRun")}
           </a>
         ) : (
-          health !== null && <span class="sub">This engine does not start runs.</span>
+          health !== null && <span class="sub">{t("run.list.cannotStart")}</span>
         )}
       </div>
 
       {error !== "" && (
         <div class="notice bad" role="alert">
           <p>
-            <strong>The engine is not answering.</strong> {error} Trying again.
+            <strong>{t("run.list.notAnswering")}</strong> {t("run.list.tryingAgain", { error })}
           </p>
         </div>
       )}
 
-      {runs === null && error === "" && <p class="sub">Loading runs...</p>}
+      {runs === null && error === "" && <p class="sub">{t("run.list.loading")}</p>}
 
       {runs !== null && runs.length === 0 && (
         <div class="empty">
-          <p>No runs yet.</p>
+          <p>{t("run.list.empty")}</p>
           {canStart && (
             <a class="button primary" href="#/engine/new">
-              Start the first run
+              {t("run.list.startFirst")}
             </a>
           )}
         </div>
@@ -116,16 +117,16 @@ export function Runs({ engine, settingsHref }: { engine: Engine; settingsHref?: 
                   {run.status === "running" && run.stage !== null && (
                     <>
                       <span class="run-stage-name">
-                        {stageTitle(run.stage)} · {Math.round(run.stageFraction * 100)}%
+                        {stageTitle(run.stage)} · {formatPercent(run.stageFraction, 0)}
                       </span>
-                      <ProgressBar fraction={run.stageFraction} label={`${stageTitle(run.stage)} progress`} active />
+                      <ProgressBar fraction={run.stageFraction} label={t("run.progressLabel", { stage: stageTitle(run.stage) })} active />
                     </>
                   )}
-                  {run.status === "running" && run.stage === null && <span class="sub">Starting</span>}
+                  {run.status === "running" && run.stage === null && <span class="sub">{t("run.list.starting")}</span>}
                   {(run.status === "failed" || run.status === "cancelled") && run.stage !== null && (
-                    <span class="sub">Stopped in {stageTitle(run.stage)}</span>
+                    <span class="sub">{t("run.list.stoppedIn", { stage: stageTitle(run.stage) })}</span>
                   )}
-                  {run.status === "complete" && <span class="sub">{run.events} events</span>}
+                  {run.status === "complete" && <span class="sub">{t("run.list.events", { count: run.events })}</span>}
                 </span>
                 <span class="run-started">{run.started !== null ? formatClock(run.started) : ""}</span>
               </a>

@@ -19,6 +19,8 @@
  * Paths are relative to the manifest's folder (`base_url` when given).
  */
 
+import { t } from "../i18n";
+
 export const EXAMPLES_SCHEMA = "crispmesh_example_objects_v1";
 
 /** A dataset repository the app offers objects from, with what is said about its objects besides the dataset's own attribution. */
@@ -27,21 +29,33 @@ export interface ExampleSource {
   /** Heading of its list. */
   title: string;
   manifest: string;
-  /** Shown before download and kept with every run, after the dataset's attribution. */
+  /** Kept with every run, after the dataset's attribution (English: it is a record that travels with the files). */
   purpose: string;
+  /** `purpose` in the active language, shown before download; `purpose` when absent. */
+  readonly shownPurpose?: string;
 }
 
 /** The sources, in the order they are listed: the freely licensed synthetic renders first. */
 export const EXAMPLE_SOURCES: ExampleSource[] = [
   {
     id: "gso",
-    title: "Rendered household objects",
+    get title() {
+      return t("inputs.examples.source.gso.title");
+    },
+    get shownPurpose() {
+      return t("inputs.examples.source.gso.purpose");
+    },
     manifest: "https://huggingface.co/datasets/cstr/gso-turntable-photos/resolve/main/manifest.json",
     purpose: "Rendered photos of scanned household objects (synthetic, not photographs). Brands and products shown belong to their owners.",
   },
   {
     id: "3dlf",
-    title: "Photographed figures",
+    get title() {
+      return t("inputs.examples.source.3dlf.title");
+    },
+    get shownPurpose() {
+      return t("inputs.examples.source.3dlf.purpose");
+    },
     manifest: "https://huggingface.co/datasets/cstr/3dlf-scan-photos/resolve/main/manifest.json",
     purpose:
       "Photographs of 3D prints of models from the Stanford 3D Scanning Repository and similar sources, for evaluation and research. Stanford permits research use; commercial use or inclusion in a product for sale needs Stanford's permission.",
@@ -117,12 +131,12 @@ function captureIndex(path: string): number {
 /** Reads a manifest. Throws a sentence when it cannot be used; drops objects that are not safe to fetch. */
 export function parseExampleManifest(json: unknown, manifestUrl: string, purpose = ""): ExampleManifest {
   const root = json as Record<string, unknown> | null;
-  if (root === null || typeof root !== "object" || root.schema !== EXAMPLES_SCHEMA) throw new Error("This is not a list of example objects.");
+  if (root === null || typeof root !== "object" || root.schema !== EXAMPLES_SCHEMA) throw new Error(t("inputs.examples.error.notList"));
   const base = new URL(text(root.base_url) ?? "./", manifestUrl);
-  if (base.protocol !== "https:" && base.hostname !== "127.0.0.1" && base.hostname !== "localhost") throw new Error("Example objects are only downloaded over HTTPS.");
+  if (base.protocol !== "https:" && base.hostname !== "127.0.0.1" && base.hostname !== "localhost") throw new Error(t("inputs.examples.error.https"));
   const credit = text(root.attribution);
   const license = text(root.license);
-  if (credit === undefined || license === undefined) throw new Error("The list of example objects says nothing about where the photos come from.");
+  if (credit === undefined || license === undefined) throw new Error(t("inputs.examples.error.noAttribution"));
   const attribution: Attribution = { source: text(root.source), doi: text(root.doi), license, text: credit };
   const calibrations = new Map<string, ExampleFile>();
   for (const raw of Array.isArray(root.calibration_files) ? root.calibration_files : []) {
@@ -145,7 +159,7 @@ export function parseExampleManifest(json: unknown, manifestUrl: string, purpose
   return { baseUrl: base.href, purpose, attribution, objects };
 }
 
-/** What is kept with a run made from an example object. */
+/** What is kept with a run made from an example object. English on purpose: a record kept with the run and its exports. */
 export function runAttribution(manifest: ExampleManifest, object: ExampleObject): string {
   return [
     `Photos: ${object.name}, ${object.photos} photos, downloaded from ${manifest.baseUrl}`,
@@ -199,7 +213,7 @@ export async function downloadExample(
   const free = await store.free();
   // Room for the photos and for the run made from them (about twice their size).
   if (free !== null && free < missingBytes * 3 + 256 * 1024 * 1024) {
-    throw new Error(`Not enough free space: the photos need ${Math.round(missingBytes / 1e6)} MB and the run about twice that; ${Math.round(free / 1e6)} MB are free.`);
+    throw new Error(t("inputs.examples.error.space", { need: Math.round(missingBytes / 1e6), free: Math.round(free / 1e6) }));
   }
   const total = object.files.length + 1;
   let done = total - missing.length;
@@ -208,10 +222,10 @@ export async function downloadExample(
   for (const file of missing) {
     options.signal?.throwIfAborted();
     const response = await fetcher(new URL(file.path, manifest.baseUrl).href, { signal: options.signal });
-    if (!response.ok) throw new Error(`${file.path}: the server answered ${response.status}.`);
+    if (!response.ok) throw new Error(t("inputs.examples.error.status", { path: file.path, status: response.status }));
     const body = await response.arrayBuffer();
-    if (body.byteLength !== file.size) throw new Error(`${file.path}: ${body.byteLength} bytes arrived, ${file.size} were expected.`);
-    if ((await sha256(body)) !== file.sha256) throw new Error(`${file.path}: the file is not the one the list describes (SHA-256 differs).`);
+    if (body.byteLength !== file.size) throw new Error(t("inputs.examples.error.size", { path: file.path, got: body.byteLength, want: file.size }));
+    if ((await sha256(body)) !== file.sha256) throw new Error(t("inputs.examples.error.hash", { path: file.path }));
     await store.put(object, file, body);
     done += 1;
     bytes += file.size;

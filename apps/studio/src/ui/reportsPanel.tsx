@@ -5,6 +5,7 @@ import { formatMetricValue, summariseReport, type ReportSummary } from "../core/
 import { describe, isAbort } from "../sources/transport";
 import type { RunSource } from "../sources/types";
 import { stageTitle } from "./stages";
+import { t } from "../i18n";
 
 interface Props {
   source: RunSource;
@@ -32,7 +33,7 @@ function useReport(source: RunSource, report: ReportRef): Loaded {
 function rawJson(json: unknown): string {
   try {
     const text = JSON.stringify(json, null, 2) ?? String(json);
-    return text.length > 200_000 ? text.slice(0, 200_000) + "\n... (shortened)" : text;
+    return text.length > 200_000 ? text.slice(0, 200_000) + "\n" + t("run.reports.shortened") : text;
   } catch {
     return String(json);
   }
@@ -45,10 +46,10 @@ function ReportCard({ source, report, optional }: { source: RunSource; report: R
   return (
     <article class="report">
       <h3>{report.label}</h3>
-      {loaded.state === "loading" && <p class="sub">Loading...</p>}
+      {loaded.state === "loading" && <p class="sub">{t("run.reports.loading")}</p>}
       {loaded.state === "failed" && (
         <p class="field-error" role="alert">
-          The report could not be read: {loaded.message}
+          {t("run.reports.readFailed", { error: loaded.message })}
         </p>
       )}
       {loaded.state === "ready" && (
@@ -58,7 +59,7 @@ function ReportCard({ source, report, optional }: { source: RunSource; report: R
               <p>{warning}</p>
             </div>
           ))}
-          {loaded.summary.kind === "unknown" && <p class="sub">Studio does not know this kind of report; here it is as written.</p>}
+          {loaded.summary.kind === "unknown" && <p class="sub">{t("run.reports.unknownKind")}</p>}
           {loaded.summary.sections.map((section, index) => (
             <div class="report-section" key={index}>
               {section.title !== undefined && <h4>{section.title}</h4>}
@@ -80,7 +81,7 @@ function ReportCard({ source, report, optional }: { source: RunSource; report: R
             </ul>
           )}
           <details class="raw" open={loaded.summary.kind === "unknown"}>
-            <summary>Full report (JSON)</summary>
+            <summary>{t("run.reports.fullJson")}</summary>
             <pre tabIndex={0}>{rawJson(loaded.json)}</pre>
           </details>
         </>
@@ -97,24 +98,24 @@ export function ReportsPanel({ source, run }: Props) {
   const announced = run.reports.some((report) => report.path === "check/result.json");
   const photoCheck: ReportRef | null =
     source.kind !== "replay" && checkDone && !announced
-      ? { seq: -1, path: "check/result.json", label: "Photo check", stage: "check" }
+      ? { seq: -1, path: "check/result.json", label: t("run.reports.photoCheck"), stage: "check" }
       : null;
   const configuration = run.configuration;
 
   return (
     <section class="panel reports-panel" aria-labelledby="numbers-heading">
       <div class="panel-head">
-        <h2 id="numbers-heading">Numbers</h2>
+        <h2 id="numbers-heading">{t("run.reports.heading")}</h2>
       </div>
 
       {run.metrics.length === 0 && run.reports.length === 0 && (
         <p class="sub">
-          {run.status === "running" || run.status === "waiting" ? "Measurements appear here as the run produces them." : "This run reported no numbers."}
+          {run.status === "running" || run.status === "waiting" ? t("run.reports.soon") : t("run.reports.none")}
         </p>
       )}
 
       {run.metrics.length > 0 && (
-        <dl class="facts metrics" aria-label="Metrics">
+        <dl class="facts metrics" aria-label={t("run.reports.metrics")}>
           {run.metrics.map((metric) => (
             <div key={metric.name}>
               <dt>
@@ -134,11 +135,11 @@ export function ReportsPanel({ source, run }: Props) {
 
       {configuration !== undefined && (
         <details class="raw">
-          <summary>Settings of this run</summary>
+          <summary>{t("run.reports.settings")}</summary>
           <dl class="facts compact">
             {run.inputs !== undefined && (
               <div>
-                <dt>Inputs</dt>
+                <dt>{t("run.reports.inputs")}</dt>
                 <dd class="mono wrap">{run.inputs}</dd>
               </div>
             )}

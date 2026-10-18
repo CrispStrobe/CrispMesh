@@ -5,6 +5,7 @@
  */
 
 import { formatCount, formatNumber, formatPercent } from "./format";
+import { localDecimal, t } from "../i18n";
 
 export type Tone = "good" | "bad" | "neutral";
 
@@ -63,21 +64,21 @@ function mesh(root: Json): ReportSummary {
     if (value === undefined) return;
     rows.push({ label, value: formatCount(value), tone: badIfPositive ? (value > 0 ? "bad" : "good") : undefined });
   };
-  count("Triangles", "triangles");
-  count("Vertices", "vertices");
-  rows.push({ label: "Closed", value: root.closed === true ? "yes" : "no", tone: root.closed === true ? "good" : "bad" });
-  count("Genus", "genus");
-  count("Boundary edges", "boundary_edges", true);
-  count("Non-manifold edges", "nonmanifold_edges", true);
-  count("Components", "components");
+  count(t("run.report.triangles"), "triangles");
+  count(t("run.report.vertices"), "vertices");
+  rows.push({ label: t("run.report.closed"), value: yesNo(root.closed === true), tone: root.closed === true ? "good" : "bad" });
+  count(t("run.report.genus"), "genus");
+  count(t("run.report.boundaryEdges"), "boundary_edges", true);
+  count(t("run.report.nonManifoldEdges"), "nonmanifold_edges", true);
+  count(t("run.report.components"), "components");
   const fraction = (label: string, key: string) => {
     const value = num(root[key]);
     if (value !== undefined) rows.push({ label, value: formatPercent(value) });
   };
-  fraction("Hull measured by photos", "observed_hull_fraction");
-  fraction("Hull filled in without measurement", "extrapolated_hull_fraction");
+  fraction(t("run.report.hullMeasured"), "observed_hull_fraction");
+  fraction(t("run.report.hullFilled"), "extrapolated_hull_fraction");
   const notes: string[] = [];
-  if (root.physical_scale_established === false) notes.push("The model has no physical scale.");
+  if (root.physical_scale_established === false) notes.push(t("run.report.noScale"));
   return { kind: "mesh", sections: [{ rows }], warnings: strings(root.warnings), notes };
 }
 
@@ -88,22 +89,22 @@ function photoCheck(root: Json): ReportSummary {
     if (values === undefined) return;
     const rows: ReportRow[] = [];
     for (const [label, field] of [
-      ["Median", "median"],
-      ["Lowest", "minimum"],
-      ["Highest", "maximum"],
+      [t("run.report.median"), "median"],
+      [t("run.report.lowest"), "minimum"],
+      [t("run.report.highest"), "maximum"],
     ] as const) {
       const value = num(values[field]);
-      if (value !== undefined) rows.push({ label, value: value.toFixed(3) });
+      if (value !== undefined) rows.push({ label, value: localDecimal(value.toFixed(3)) });
     }
-    if (typeof values.worst_view === "string") rows.push({ label: "Weakest view", value: values.worst_view });
+    if (typeof values.worst_view === "string") rows.push({ label: t("run.report.weakestView"), value: values.worst_view });
     sections.push({ title, rows });
   };
-  block("Silhouette overlap with the input masks", "silhouette_iou_input_masks");
-  block("Silhouette overlap with the repaired masks", "silhouette_iou_repaired_masks");
+  block(t("run.report.overlapInput"), "silhouette_iou_input_masks");
+  block(t("run.report.overlapRepaired"), "silhouette_iou_repaired_masks");
   const views = num(root.views_checked);
   const total = num(root.views);
   if (views !== undefined) {
-    sections.push({ rows: [{ label: "Views checked", value: total === undefined ? String(views) : `${views} of ${total}` }] });
+    sections.push({ rows: [{ label: t("run.report.viewsChecked"), value: total === undefined ? String(views) : t("run.report.viewsOf", { views, total }) }] });
   }
   const notes = typeof root.note === "string" ? [capitalise(root.note)] : [];
   return { kind: "photo_check", sections, warnings: strings(root.warnings), notes };
@@ -112,7 +113,7 @@ function photoCheck(root: Json): ReportSummary {
 function scan(root: Json): ReportSummary {
   const metrics = record(root.metrics) ?? {};
   const sections: ReportSection[] = [];
-  const titles: Record<string, string> = { all: "Whole surface", above_margin: "Above the support" };
+  const titles: Record<string, string> = { all: t("run.report.wholeSurface"), above_margin: t("run.report.aboveSupport") };
   for (const key of ["all", "above_margin"]) {
     const block = record(metrics[key]);
     if (block === undefined) continue;
@@ -124,7 +125,7 @@ function scan(root: Json): ReportSummary {
       const f1 = num(entry?.f1);
       const fraction = num(entry?.fraction_of_diagonal) ?? Number(threshold);
       if (f1 === undefined || !Number.isFinite(fraction)) continue;
-      rows.push({ label: `F1 at ${trimPercent(fraction)}`, value: f1.toFixed(3) });
+      rows.push({ label: t("run.report.f1At", { threshold: trimPercent(fraction) }), value: localDecimal(f1.toFixed(3)) });
     }
     const distance = (label: string, field: string) => {
       const summary = record(record(block[field])?.fraction_of_diagonal);
@@ -133,18 +134,18 @@ function scan(root: Json): ReportSummary {
       if (median === undefined) return;
       rows.push({
         label,
-        value: `${formatPercent(median, 2)}${p90 === undefined ? "" : ` (90th percentile ${formatPercent(p90, 2)})`}`,
+        value: p90 === undefined ? formatPercent(median, 2) : t("run.report.withP90", { median: formatPercent(median, 2), p90: formatPercent(p90, 2) }),
       });
     };
-    distance("Accuracy, median", "accuracy_mesh_to_reference");
-    distance("Completeness, median", "completeness_reference_to_mesh");
+    distance(t("run.report.accuracy"), "accuracy_mesh_to_reference");
+    distance(t("run.report.completeness"), "completeness_reference_to_mesh");
     if (rows.length > 0) sections.push({ title: titles[key], rows });
   }
   const handedness = record(record(root.alignment)?.handedness);
   if (typeof handedness?.scored === "string") {
-    sections.push({ rows: [{ label: "Handedness scored", value: handedness.scored }] });
+    sections.push({ rows: [{ label: t("run.report.handedness"), value: handedness.scored }] });
   }
-  const notes = ["Distances are fractions of the reference scan's bounding-box diagonal.", ...strings(root.notes)];
+  const notes = [t("run.report.distancesNote"), ...strings(root.notes)];
   return {
     kind: sections.length > 0 ? "scan" : "unknown",
     sections,
@@ -154,7 +155,11 @@ function scan(root: Json): ReportSummary {
 }
 
 function trimPercent(fraction: number): string {
-  return `${Number((fraction * 100).toFixed(3))}%`;
+  return localDecimal(`${Number((fraction * 100).toFixed(3))}%`);
+}
+
+function yesNo(value: boolean): string {
+  return value ? t("run.report.yes") : t("run.report.no");
 }
 
 function capitalise(value: string): string {
@@ -164,6 +169,6 @@ function capitalise(value: string): string {
 /** A metric value for the compact list. */
 export function formatMetricValue(value: number | string | boolean): string {
   if (typeof value === "number") return formatNumber(value);
-  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (typeof value === "boolean") return yesNo(value);
   return value;
 }

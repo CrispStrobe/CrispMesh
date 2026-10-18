@@ -6,6 +6,7 @@
  * never placed in a URL and never part of an error message.
  */
 
+import { t } from "../i18n";
 import { normaliseEvent, type RunEvent } from "../core/events";
 import { parseSettingsSchema, type SettingSpec } from "../core/settings";
 import { parseStartPoints } from "../core/startPoints";
@@ -52,16 +53,16 @@ export const BACKOFF_MS = [1000, 2000, 4000, 8000, 15000] as const;
 /** `http://host:8765`, `host:8765/` and friends -> `http://host:8765`. Throws on anything that is not http(s). */
 export function normaliseEngineUrl(input: string): string {
   let value = input.trim();
-  if (value === "") throw new Error("Enter the engine's address, for example http://127.0.0.1:8765.");
+  if (value === "") throw new Error(t("engine.address.empty"));
   if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(value)) value = "http://" + value;
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    throw new Error("That is not a valid address.");
+    throw new Error(t("engine.address.invalid"));
   }
-  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("The address must start with http:// or https://.");
-  if (url.username !== "" || url.password !== "") throw new Error("Do not put credentials in the address; use the token field.");
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error(t("engine.address.scheme"));
+  if (url.username !== "" || url.password !== "") throw new Error(t("engine.address.credentials"));
   return (url.origin + url.pathname).replace(/\/+$/, "");
 }
 
@@ -105,7 +106,7 @@ export class HttpEngine implements Engine {
         headers: { "Content-Type": "application/octet-stream" },
         body: file,
       })) as { path?: unknown } | null;
-      if (typeof answer?.path !== "string") throw new EngineError("The engine did not keep the photo.", 0);
+      if (typeof answer?.path !== "string") throw new EngineError(t("engine.photoNotKept"), 0);
       last = answer.path;
       onProgress?.(index + 1, files.length);
     }
@@ -115,7 +116,7 @@ export class HttpEngine implements Engine {
   async health(signal?: AbortSignal): Promise<EngineHealth> {
     const body = (await this.json("health", { signal })) as Record<string, unknown> | null;
     if (typeof body !== "object" || body === null || (body.schema === undefined && body.can_start_runs === undefined)) {
-      throw new EngineError("Something answered at this address, but it is not a CrispMesh engine.", 0);
+      throw new EngineError(t("engine.notCrispMesh"), 0);
     }
     this.saveCapture = body.uploads === true ? (folder, files, onProgress) => this.upload(folder, files, onProgress) : undefined;
     return {
@@ -158,7 +159,7 @@ export class HttpEngine implements Engine {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     })) as { id?: unknown } | null;
-    if (typeof answer?.id !== "string") throw new EngineError("The engine did not return a run id.", 0);
+    if (typeof answer?.id !== "string") throw new EngineError(t("engine.noRunId"), 0);
     return answer.id;
   }
 
@@ -317,7 +318,7 @@ export class HttpRunSource implements RunSource {
       const status = problem instanceof EngineError ? problem.status : 0;
       if (status === 401 || status === 403 || status === 404) {
         // Asking again will not change the answer.
-        this.setLink({ state: "failed", message: status === 404 ? "The engine does not know this run." : describe(problem) });
+        this.setLink({ state: "failed", message: status === 404 ? t("engine.unknownRun") : describe(problem) });
         this.running = false;
         return;
       }

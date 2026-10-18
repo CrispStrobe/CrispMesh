@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Inspection } from "../core/reducer";
 import type { RunSource } from "../sources/types";
 import { useImageUrl } from "./gallery";
+import { t } from "../i18n";
 
 interface Props {
   source: RunSource;
@@ -29,12 +30,12 @@ export function InspectionPanel({ source, steps }: Props) {
   return (
     <section class="panel inspection" aria-labelledby="inspection-heading">
       <div class="panel-head">
-        <h2 id="inspection-heading">Step by step</h2>
+        <h2 id="inspection-heading">{t("run.inspection.heading")}</h2>
         <span class="sub">
-          {index + 1} of {steps.length}: {current.label}
+          {t("run.inspection.position", { index: index + 1, total: steps.length, label: current.label })}
         </span>
       </div>
-      <div class="inspection-steps" role="tablist" aria-label="Steps">
+      <div class="inspection-steps" role="tablist" aria-label={t("run.inspection.steps")}>
         {steps.map((step, position) => (
           <button
             key={step.path}
@@ -50,11 +51,11 @@ export function InspectionPanel({ source, steps }: Props) {
       </div>
       <InspectionImage source={source} step={current} />
       <div class="actions">
-        <button type="button" class="button" onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous step">
-          Previous
+        <button type="button" class="button" onClick={() => go(index - 1)} disabled={index === 0} aria-label={t("run.inspection.previousStep")}>
+          {t("run.inspection.previous")}
         </button>
-        <button type="button" class="button" onClick={() => go(index + 1)} disabled={index >= steps.length - 1} aria-label="Next step">
-          Next
+        <button type="button" class="button" onClick={() => go(index + 1)} disabled={index >= steps.length - 1} aria-label={t("run.inspection.nextStep")}>
+          {t("run.inspection.next")}
         </button>
       </div>
     </section>
@@ -65,7 +66,7 @@ function InspectionImage({ source, step }: { source: RunSource; step: Inspection
   const { url, failed } = useImageUrl(source, step.path);
   return (
     <div class="inspection-frame">
-      {url !== undefined && !failed ? <img src={url} alt={`Inspection after: ${step.label}`} /> : <span class="sheet-placeholder">{failed ? "Image not available" : "Loading..."}</span>}
+      {url !== undefined && !failed ? <img src={url} alt={t("run.inspection.alt", { label: step.label })} /> : <span class="sheet-placeholder">{failed ? t("run.image.unavailable") : t("run.image.loading")}</span>}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 /** Shared fetch helpers for the sources. `fetch` is injected so tests need no network. */
 
+import { t } from "../i18n";
 import { EngineError, type FetchOptions } from "./types";
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -61,7 +62,7 @@ export async function request(fetcher: FetchLike, url: string, init?: RequestIni
     response = await fetcher(url, init);
   } catch (problem) {
     if (problem instanceof DOMException && problem.name === "AbortError") throw problem;
-    throw new EngineError("Could not reach it. Check the address and that it is running.", 0);
+    throw new EngineError(t("engine.unreachable"), 0);
   }
   if (!response.ok) throw new EngineError(await errorSentence(response), response.status);
   return response;
@@ -76,9 +77,9 @@ async function errorSentence(response: Response): Promise<string> {
   } catch {
     // not JSON; the status has to do
   }
-  if (response.status === 401) return "The engine refused the access token.";
-  if (response.status === 404) return detail === "" || detail === "not found" ? "Not found." : capitalise(detail) + ".";
-  return detail !== "" ? detail : `The request failed (HTTP ${response.status}).`;
+  if (response.status === 401) return t("engine.tokenRefused");
+  if (response.status === 404) return detail === "" || detail === "not found" ? t("engine.notFound") : capitalise(detail) + ".";
+  return detail !== "" ? detail : t("engine.requestFailed", { status: String(response.status) });
 }
 
 function capitalise(value: string): string {

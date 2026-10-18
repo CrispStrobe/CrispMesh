@@ -9,6 +9,8 @@
  * or on the main thread in chunks without freezing the page. No DOM, no three.js.
  */
 
+import { t } from "../i18n";
+
 export interface ParsedMesh {
   /** xyz per vertex. */
   positions: Float32Array;
@@ -31,14 +33,14 @@ const RECORD = 50;
 
 /** Triangle count of a binary STL, after checking that the buffer can be one. */
 export function stlTriangleCount(buffer: ArrayBuffer): number {
-  if (buffer.byteLength < HEADER) throw new StlError("Not a binary STL: the file is shorter than its header.");
+  if (buffer.byteLength < HEADER) throw new StlError(t("inputs.stl.short"));
   const view = new DataView(buffer);
   const count = view.getUint32(80, true);
   if (HEADER + RECORD * count > buffer.byteLength) {
     const head = new TextDecoder().decode(new Uint8Array(buffer, 0, 5));
-    if (head === "solid") throw new StlError("This is a text (ASCII) STL. Only binary STL is supported.");
+    if (head === "solid") throw new StlError(t("inputs.stl.ascii"));
     throw new StlError(
-      `The STL is incomplete: it announces ${count} triangles but holds only ${Math.floor((buffer.byteLength - HEADER) / RECORD)}.`,
+      t("inputs.stl.incomplete", { count, held: Math.floor((buffer.byteLength - HEADER) / RECORD) }),
     );
   }
   return count;

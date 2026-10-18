@@ -16,6 +16,7 @@ import type { Bridge } from "../sources/localEngine";
 import { describe } from "../sources/transport";
 import type { Engine } from "../sources/types";
 import { navigate } from "./app";
+import { t, tParts } from "../i18n";
 
 interface Props {
   engine: Engine;
@@ -36,14 +37,10 @@ export function Examples({ engine, bridge, sources = EXAMPLE_SOURCES }: Props) {
   return (
     <section class="page narrow examples">
       <a class="back" href="#/">
-        Connection
+        {t("inputs.examples.back")}
       </a>
-      <h1>Example objects</h1>
-      <p class="sub">
-        Turntable photo sets, one turn of about 72 photos each, that can be downloaded and reconstructed here. They do not come
-        with {engine.kind === "browser" ? "this page" : "the app"}: they are fetched on request from public dataset repositories,
-        each file checked against its published checksum, and kept {engine.kind === "browser" ? "in this browser" : "in the app's data folder"} until you delete them.
-      </p>
+      <h1>{t("inputs.examples.title")}</h1>
+      <p class="sub">{t(engine.kind === "browser" ? "inputs.examples.introPage" : "inputs.examples.introApp")}</p>
       {sources.map((source) => (
         <SourceSection key={source.id} engine={engine} bridge={bridge} source={source} />
       ))}
@@ -63,7 +60,7 @@ function SourceSection({ engine, bridge, source }: { engine: Engine; bridge: Bri
   useEffect(() => {
     let alive = true;
     fetch(manifestUrl)
-      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`The list of example objects could not be loaded (${response.status}).`))))
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(t("inputs.examples.listFailed", { status: response.status })))))
       .then((json) => alive && setManifest(parseExampleManifest(json, manifestUrl, source.purpose)))
       .catch((reason) => alive && setProblem(describe(reason)));
     return () => {
@@ -123,23 +120,23 @@ function SourceSection({ engine, bridge, source }: { engine: Engine; bridge: Bri
     <section class="example-source" aria-labelledby={`ex-${source.id}`}>
       <h2 id={`ex-${source.id}`}>{source.title}</h2>
       {problem !== "" && <p class="notice bad">{problem}</p>}
-      {manifest === null && problem === "" && <p role="status">Loading the list...</p>}
+      {manifest === null && problem === "" && <p role="status">{t("inputs.examples.loadingList")}</p>}
       {manifest !== null && (
         <>
-          <section class="card attribution-card" aria-label={`Source and license: ${source.title}`}>
-            <h3>Source and license</h3>
+          <section class="card attribution-card" aria-label={t("inputs.examples.sourceLabel", { source: source.title })}>
+            <h3>{t("inputs.examples.sourceHeading")}</h3>
             <p>{manifest.attribution.text}</p>
-            {manifest.purpose !== "" && <p class="help">{manifest.purpose}</p>}
+            {manifest.purpose !== "" && <p class="help">{source.shownPurpose ?? manifest.purpose}</p>}
             <p class="help">
               {manifest.attribution.source !== undefined && (
                 <>
-                  Original dataset: <span class="mono wrap">{manifest.attribution.source}</span>.{" "}
+                  {tParts("inputs.examples.originalDataset", { source: <span class="mono wrap">{manifest.attribution.source}</span> })}{" "}
                 </>
               )}
-              Downloaded from: <span class="mono wrap">{manifest.baseUrl}</span>
+              {tParts("inputs.examples.downloadedFrom", { url: <span class="mono wrap">{manifest.baseUrl}</span> })}
             </p>
           </section>
-          {store === null && <p class="notice">Example objects are reconstructed by the engine built into the app or by the engine in this browser.</p>}
+          {store === null && <p class="notice">{t("inputs.examples.noStore")}</p>}
           <ul class="example-list">
             {manifest.objects.map((object) => {
               const row = rows[object.id] ?? { state: "unknown", have: 0 };
@@ -149,13 +146,18 @@ function SourceSection({ engine, bridge, source }: { engine: Engine; bridge: Bri
                   <div class="example-text">
                     <strong>{object.name}</strong>
                     <span class="help">
-                      {object.photos} photos · {formatBytes(object.bytes)}
-                      {row.state === "ready" && " · downloaded"}
-                      {row.state === "partial" && ` · ${row.have} of ${object.files.length + 1} files downloaded`}
+                      {t("inputs.examples.photos", { count: object.photos })} · {formatBytes(object.bytes)}
+                      {row.state === "ready" && t("inputs.examples.downloaded")}
+                      {row.state === "partial" && t("inputs.examples.partial", { have: row.have, total: object.files.length + 1 })}
                     </span>
                     {row.state === "downloading" && (
                       <span class="help" role="status">
-                        Downloading {row.progress.done} of {row.progress.total} files, {formatBytes(row.progress.bytes)} of {formatBytes(row.progress.totalBytes)}
+                        {t("inputs.examples.downloading", {
+                          done: row.progress.done,
+                          total: row.progress.total,
+                          bytes: formatBytes(row.progress.bytes),
+                          totalBytes: formatBytes(row.progress.totalBytes),
+                        })}
                         <progress max={row.progress.totalBytes} value={row.progress.bytes} />
                       </span>
                     )}
@@ -164,7 +166,7 @@ function SourceSection({ engine, bridge, source }: { engine: Engine; bridge: Bri
                   <div class="actions">
                     {row.state === "downloading" ? (
                       <button type="button" class="button" onClick={() => abort.current?.abort()}>
-                        Cancel
+                        {t("inputs.examples.cancel")}
                       </button>
                     ) : (
                       <>
@@ -174,28 +176,32 @@ function SourceSection({ engine, bridge, source }: { engine: Engine; bridge: Bri
                           disabled={store === null || busy}
                           onClick={() => (row.state === "ready" ? void run(object) : setConfirm(object))}
                         >
-                          {row.state === "ready" ? "Reconstruct" : "Download and reconstruct"}
+                          {row.state === "ready" ? t("inputs.examples.reconstruct") : t("inputs.examples.downloadAndReconstruct")}
                         </button>
                         {(row.state === "ready" || row.state === "partial") && (
                           <button type="button" class="button" disabled={busy} onClick={() => void remove(object)}>
-                            Delete download
+                            {t("inputs.examples.deleteDownload")}
                           </button>
                         )}
                       </>
                     )}
                   </div>
                   {confirm?.id === object.id && (
-                    <div class="example-confirm" role="dialog" aria-label={`Download ${object.name}`}>
+                    <div class="example-confirm" role="dialog" aria-label={t("inputs.examples.confirmLabel", { name: object.name })}>
                       <p>
-                        Download {object.photos} photos of the {object.name} ({formatBytes(object.bytes)}) from <span class="mono wrap">{manifest.baseUrl}</span>, then
-                        reconstruct them with threshold masks and turntable cameras? The source and license above are kept with the run.
+                        {tParts("inputs.examples.confirm", {
+                          count: object.photos,
+                          name: object.name,
+                          size: formatBytes(object.bytes),
+                          url: <span class="mono wrap">{manifest.baseUrl}</span>,
+                        })}
                       </p>
                       <div class="actions">
                         <button type="button" class="button primary" onClick={() => void run(object)}>
-                          Download and reconstruct
+                          {t("inputs.examples.downloadAndReconstruct")}
                         </button>
                         <button type="button" class="button" onClick={() => setConfirm(null)}>
-                          Not now
+                          {t("inputs.examples.notNow")}
                         </button>
                       </div>
                     </div>

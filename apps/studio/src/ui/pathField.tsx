@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { cleanPath, crumbs, joinPath, listable, parentPath, splitTyped } from "../core/paths";
 import { describe, isAbort } from "../sources/transport";
 import type { DataEntry, DataListing, Engine } from "../sources/types";
+import { t } from "../i18n";
 
 interface Props {
   id: string;
@@ -122,7 +123,7 @@ export function PathField({ id, label, optional, value, placeholder, help, error
         />
         {canList && (
           <button type="button" class="button" aria-expanded={open} aria-controls={`${id}-browser`} onClick={toggle}>
-            Browse
+            {t("inputs.path.browse")}
           </button>
         )}
         {engine.pickPath !== undefined && (
@@ -138,7 +139,7 @@ export function PathField({ id, label, optional, value, placeholder, help, error
               );
             }}
           >
-            Choose<span class="visually-hidden"> {label} on this computer</span>
+            {t("inputs.path.choose")}<span class="visually-hidden">{t("inputs.path.chooseHidden", { label })}</span>
           </button>
         )}
       </div>
@@ -146,7 +147,7 @@ export function PathField({ id, label, optional, value, placeholder, help, error
         <datalist id={`${id}-list`}>
           {options.map((entry) => (
             <option key={entry.name} value={joinPath(typed.parent, entry.name) + (entry.directory && !entry.inputs ? "/" : "")}>
-              {entry.inputs ? "inputs folder" : entry.directory ? "folder" : "file"}
+              {t(entry.inputs ? "inputs.path.kind.inputs" : entry.directory ? "inputs.path.kind.folder" : "inputs.path.kind.file")}
             </option>
           ))}
         </datalist>
@@ -163,10 +164,10 @@ export function PathField({ id, label, optional, value, placeholder, help, error
         </span>
       )}
       {open && (
-        <div class="browser" id={`${id}-browser`} role="group" aria-label={`${label}: folders on the engine`}>
-          <nav class="browser-crumbs" aria-label="Folder">
+        <div class="browser" id={`${id}-browser`} role="group" aria-label={t("inputs.path.browserLabel", { label })}>
+          <nav class="browser-crumbs" aria-label={t("inputs.path.crumbsLabel")}>
             <button type="button" class="link" onClick={() => setFolder("")} aria-current={folder === "" ? "location" : undefined}>
-              Data folder
+              {t("inputs.path.dataFolder")}
             </button>
             {crumbs(folder).map((crumb) => (
               <span key={crumb.path}>
@@ -182,16 +183,16 @@ export function PathField({ id, label, optional, value, placeholder, help, error
               </span>
             ))}
           </nav>
-          {(browsing === null || browsing.state === "loading") && <p class="sub">Loading...</p>}
+          {(browsing === null || browsing.state === "loading") && <p class="sub">{t("inputs.path.loading")}</p>}
           {browsing?.state === "failed" && (
             <p class="field-error" role="alert">
-              This folder cannot be listed: {browsing.message}
+              {t("inputs.path.cannotList", { message: browsing.message })}
             </p>
           )}
           {browsing?.state === "ready" && (
             <ul class="browser-list">
               {browsing.listing.entries.filter(visible).length === 0 && (
-                <li class="sub browser-empty">{want === "inputs" ? "No folders in here." : "Nothing in here."}</li>
+                <li class="sub browser-empty">{want === "inputs" ? t("inputs.path.noFolders") : t("inputs.path.nothing")}</li>
               )}
               {browsing.listing.entries.filter(visible).map((entry) => {
                 const path = joinPath(folder, entry.name);
@@ -204,9 +205,9 @@ export function PathField({ id, label, optional, value, placeholder, help, error
                           {"▸"}
                         </span>
                         <span class="entry-name">{entry.name}</span>
-                        {entry.inputs && <span class="badge status-complete">Inputs</span>}
-                        {entry.photos && <span class="badge status-running">Photos</span>}
-                        <span class="visually-hidden">, open folder</span>
+                        {entry.inputs && <span class="badge status-complete">{t("inputs.path.badge.inputs")}</span>}
+                        {entry.photos && <span class="badge status-running">{t("inputs.path.badge.photos")}</span>}
+                        <span class="visually-hidden">{t("inputs.path.openFolder")}</span>
                       </button>
                     ) : (
                       <button type="button" class="browser-entry" onClick={() => choose(path)}>
@@ -214,13 +215,13 @@ export function PathField({ id, label, optional, value, placeholder, help, error
                           {"·"}
                         </span>
                         <span class="entry-name">{entry.name}</span>
-                        {entry.calibration && <span class="badge status-running">Calibration</span>}
-                        <span class="visually-hidden">, use this file</span>
+                        {entry.calibration && <span class="badge status-running">{t("inputs.path.badge.calibration")}</span>}
+                        <span class="visually-hidden">{t("inputs.path.useFile")}</span>
                       </button>
                     )}
                     {entry.directory && pick && (
                       <button type="button" class="button primary small" onClick={() => choose(path)}>
-                        Use<span class="visually-hidden"> {entry.name}</span>
+                        {t("inputs.path.use")}<span class="visually-hidden"> {entry.name}</span>
                       </button>
                     )}
                   </li>
@@ -230,10 +231,10 @@ export function PathField({ id, label, optional, value, placeholder, help, error
           )}
           <div class="browser-foot">
             <span class="sub">
-              {want === "inputs" ? "Folders marked Inputs hold cameras.json; a run can start from them." : want === "folder" ? "Choose a folder." : "Choose a file."}
+              {t(want === "inputs" ? "inputs.path.foot.inputs" : want === "folder" ? "inputs.path.foot.folder" : "inputs.path.foot.file")}
             </span>
             <button type="button" class="button small" onClick={() => setOpen(false)}>
-              Close
+              {t("inputs.path.close")}
             </button>
           </div>
         </div>

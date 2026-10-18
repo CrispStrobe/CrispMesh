@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { formatDuration, formatPercent } from "../core/format";
+import { language, t, tParts, type MessageKey } from "../i18n";
 import { STAGE_TEXT, stageTitle } from "./stages";
 import { stageElapsed, type RunState, type StageState } from "../core/reducer";
 import { REPLAY_SPEEDS, type ReplaySnapshot } from "../core/replay";
@@ -82,14 +83,14 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
       <div class="page-head">
         <div class="run-title">
           <a class="back-link" href={backHref}>
-            <Icon name="back" size={16} /> {source.kind === "replay" ? "Connection" : "Runs"}
+            <Icon name="back" size={16} /> {source.kind === "replay" ? t("run.view.backConnection") : t("run.view.backRuns")}
           </a>
           <h1>{heading}</h1>
           <p class="sub run-meta">
             <StatusBadge status={run.status} />
             {total !== undefined && <span>{formatDuration(total)}</span>}
-            {run.device !== undefined && <span>on {run.device}</span>}
-            {source.kind === "replay" && <span class="tag">Recording</span>}
+            {run.device !== undefined && <span>{t("run.view.onDevice", { device: run.device })}</span>}
+            {source.kind === "replay" && <span class="tag">{t("run.view.recording")}</span>}
             {source.memoryNote?.() !== undefined && <span class="memory-note">{source.memoryNote()}</span>}
           </p>
           <Attribution source={source} />
@@ -103,7 +104,7 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
             aria-describedby={cancel.error !== undefined ? "cancel-error" : undefined}
           >
             <Icon name="stop" size={16} />
-            {cancel.state === "idle" ? "Cancel run" : cancel.state === "asking" ? "Cancelling..." : "Stopping..."}
+            {cancel.state === "idle" ? t("run.view.cancel") : cancel.state === "asking" ? t("run.view.cancelling") : t("run.view.stopping")}
           </button>
         )}
       </div>
@@ -112,26 +113,28 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
       {cancel.error !== undefined && (
         <div class="notice bad" role="alert" id="cancel-error">
           <p>
-            <strong>The run could not be cancelled.</strong> {cancel.error}
+            <strong>{t("run.view.cancelFailed")}</strong> {cancel.error}
           </p>
         </div>
       )}
       {run.schemaUnknown && (
         <div class="notice warn" role="status">
-          <p>
-            This run uses a newer event format ({run.schema}). Studio shows the parts it understands.
-          </p>
+          <p>{t("run.view.newerSchema", { schema: run.schema ?? "" })}</p>
         </div>
       )}
       {run.errors.map((error) =>
         run.status === "cancelled" ? (
           <div class="notice warn" role="status" key={error.seq}>
             <p>
-              <strong>The run was cancelled</strong>
-              {error.stage !== null && <> during {stageTitle(error.stage).toLowerCase()}</>}.
+              {error.stage !== null
+                ? tParts("run.view.cancelledDuring", {
+                    cancelled: <strong>{t("run.view.wasCancelled")}</strong>,
+                    stage: language() === "en" ? stageTitle(error.stage).toLowerCase() : stageTitle(error.stage),
+                  })
+                : tParts("run.view.cancelledPlain", { cancelled: <strong>{t("run.view.wasCancelled")}</strong> })}
             </p>
             <details class="raw">
-              <summary>Last output of the stage</summary>
+              <summary>{t("run.view.lastOutput")}</summary>
               <pre class="error-text" tabIndex={0}>
                 {error.message}
               </pre>
@@ -140,7 +143,7 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
         ) : (
           <div class="notice bad" role="alert" key={error.seq}>
             <p>
-              <strong>{error.stage !== null ? `${stageTitle(error.stage)} failed` : "The run failed"}.</strong>
+              <strong>{error.stage !== null ? t("run.view.stageFailed", { stage: stageTitle(error.stage) }) : t("run.view.runFailed")}</strong>
             </p>
             <pre class="error-text" tabIndex={0}>
               {error.message}
@@ -150,22 +153,19 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
       )}
       {quietFor !== undefined && quietFor > QUIET_AFTER_SECONDS && (
         <div class="notice" role="status">
-          <p>
-            No news from the engine for {formatDuration(quietFor)}. Long steps can be quiet. If this goes on, the run may
-            have stopped without saying so; the engine's log will tell.
-          </p>
+          <p>{t("run.view.quiet", { duration: formatDuration(quietFor) })}</p>
         </div>
       )}
       {run.status === "failed" && run.errors.length === 0 && (
         <div class="notice bad" role="alert">
           <p>
-            <strong>The run failed.</strong> The engine gave no reason.
+            <strong>{t("run.view.runFailed")}</strong> {t("run.view.noReason")}
           </p>
         </div>
       )}
       {run.status === "cancelled" && run.errors.length === 0 && (
         <div class="notice warn" role="status">
-          <p>The run was cancelled.</p>
+          <p>{t("run.view.cancelledNotice")}</p>
         </div>
       )}
 
@@ -174,16 +174,16 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
           <Timeline run={run} now={now} />
           {downloads.length > 0 && (
             <section class="panel">
-              <h2>Textured model</h2>
-              <p class="sub">GLB includes the photo texture and the same reconstructed geometry.</p>
+              <h2>{t("run.view.texturedHeading")}</h2>
+              <p class="sub">{t("run.view.texturedSub")}</p>
               {downloads.map((file) => (
                 <button key={file.path} type="button" class="button primary" disabled={!canDownload(source) && !canShareFiles()}
                   onClick={() => void (canDownload(source) ? downloadFile(source, file.path) : shareFile(source, file.path)).catch((problem) => setDownloadError(describe(problem)))}>
-                  {(canDownload(source) ? "Download textured GLB" : "Share textured GLB") + glbOf(file.stage)}
+                  {glbButton(canDownload(source) ? t("run.view.downloadGlb") : t("run.view.shareGlb"), file.stage)}
                 </button>
               ))}
               {downloads[0] && <TexturePreview source={source} path={downloads[0].path} themeTick={themeTick} />}
-              {source.kind === "local" && <p class="sub">Saved in this run’s folder as texture/mesh.glb{downloads.length > 1 ? " (the other surfaces’ in surface/texture and splats/texture)" : ""}.</p>}
+              {source.kind === "local" && <p class="sub">{downloads.length > 1 ? t("run.view.savedInMore") : t("run.view.savedIn")}</p>}
               {downloadError && <p role="alert" class="field-error">{downloadError}</p>}
             </section>
           )}
@@ -205,7 +205,7 @@ function LinkNotice({ link }: { link: LinkStatus }) {
   if (link.state === "connecting") {
     return (
       <p class="sub" role="status">
-        Loading...
+        {t("run.view.loading")}
       </p>
     );
   }
@@ -213,7 +213,7 @@ function LinkNotice({ link }: { link: LinkStatus }) {
     return (
       <div class="notice warn" role="status">
         <p>
-          <strong>Connection lost.</strong> {link.message} Trying again.
+          <strong>{t("run.view.connectionLost")}</strong> {t("run.view.tryingAgain", { message: link.message ?? "" })}
         </p>
       </div>
     );
@@ -222,7 +222,7 @@ function LinkNotice({ link }: { link: LinkStatus }) {
     return (
       <div class="notice bad" role="alert">
         <p>
-          <strong>This run cannot be shown.</strong> {link.message}
+          <strong>{t("run.view.cannotShow")}</strong> {link.message}
         </p>
       </div>
     );
@@ -230,18 +230,18 @@ function LinkNotice({ link }: { link: LinkStatus }) {
   return null;
 }
 
-const STAGE_STATE_TEXT: Record<StageState["status"], string> = {
-  pending: "Waiting",
-  running: "Running",
-  done: "Done",
-  failed: "Failed",
-  cancelled: "Cancelled",
-  skipped: "Not run",
+const STAGE_STATE_TEXT: Record<StageState["status"], MessageKey> = {
+  pending: "run.stageState.pending",
+  running: "run.stageState.running",
+  done: "run.stageState.done",
+  failed: "run.stageState.failed",
+  cancelled: "run.stageState.cancelled",
+  skipped: "run.stageState.skipped",
 };
 
 function Timeline({ run, now }: { run: RunState; now: number }) {
   return (
-    <ol class="timeline" aria-label="Stages">
+    <ol class="timeline" aria-label={t("run.view.stages")}>
       {run.stages.map((stage, index) => {
         const elapsed = stageElapsed(stage, now);
         const text = STAGE_TEXT[stage.name];
@@ -259,13 +259,13 @@ function Timeline({ run, now }: { run: RunState; now: number }) {
               <span class="stage-state">
                 {stage.status === "running" && stage.fraction > 0
                   ? formatPercent(stage.fraction, 0)
-                  : STAGE_STATE_TEXT[stage.status]}
+                  : t(STAGE_STATE_TEXT[stage.status])}
                 {elapsed !== undefined && <span class="stage-time-inline"> · {formatDuration(elapsed)}</span>}
               </span>
             </div>
             <ProgressBar
               fraction={stage.status === "done" ? 1 : stage.fraction}
-              label={`${stageTitle(stage.name)} progress`}
+              label={t("run.progressLabel", { stage: stageTitle(stage.name) })}
               active={stage.status === "running"}
             />
             <div class="stage-bottom">
@@ -287,36 +287,36 @@ function ReplayBar({ controls }: { controls: ReplayControls }) {
     return controls.subscribe(setState);
   }, [controls]);
 
-  const speedLabel = (speed: number) => (speed === Infinity ? "Instant" : `${speed}×`);
+  const speedLabel = (speed: number) => (speed === Infinity ? t("run.replay.instant") : t("run.replay.speed", { speed }));
 
   return (
-    <div class="replay-bar" role="group" aria-label="Playback">
+    <div class="replay-bar" role="group" aria-label={t("run.replay.playback")}>
       <div class="replay-buttons">
-        <button type="button" class="button icon-only" onClick={() => controls.step(-1)} disabled={state.position === 0} aria-label="Previous event">
+        <button type="button" class="button icon-only" onClick={() => controls.step(-1)} disabled={state.position === 0} aria-label={t("run.replay.previous")}>
           <Icon name="prev" />
         </button>
         <button
           type="button"
           class="button primary icon-only"
           onClick={() => (state.playing ? controls.pause() : controls.play())}
-          aria-label={state.playing ? "Pause" : state.ended ? "Play again from the start" : "Play"}
+          aria-label={state.playing ? t("run.replay.pause") : state.ended ? t("run.replay.again") : t("run.replay.play")}
           disabled={state.total === 0}
         >
           <Icon name={state.playing ? "pause" : state.ended ? "refresh" : "play"} />
         </button>
-        <button type="button" class="button icon-only" onClick={() => controls.step(1)} disabled={state.ended} aria-label="Next event">
+        <button type="button" class="button icon-only" onClick={() => controls.step(1)} disabled={state.ended} aria-label={t("run.replay.next")}>
           <Icon name="next" />
         </button>
       </div>
       <label class="replay-scrub">
-        <span class="visually-hidden">Position in the recording, by event</span>
+        <span class="visually-hidden">{t("run.replay.position")}</span>
         <input
           type="range"
           min={0}
           max={state.total}
           step={1}
           value={state.position}
-          aria-valuetext={`Event ${state.position} of ${state.total}`}
+          aria-valuetext={t("run.replay.eventOf", { position: state.position, total: state.total })}
           onPointerDown={() => {
             resumeAfterScrub.current = state.playing;
             controls.pause();
@@ -331,7 +331,7 @@ function ReplayBar({ controls }: { controls: ReplayControls }) {
       <span class="replay-count" aria-hidden="true">
         {state.position} / {state.total}
       </span>
-      <div class="segmented" role="group" aria-label="Playback speed">
+      <div class="segmented" role="group" aria-label={t("run.replay.speedGroup")}>
         {REPLAY_SPEEDS.map((speed) => (
           <button
             key={speed}
@@ -363,15 +363,15 @@ function Attribution({ source }: { source: RunSource }) {
   if (text === null) return null;
   return (
     <details class="raw attribution">
-      <summary>Source and license of the photos</summary>
+      <summary>{t("run.view.attribution")}</summary>
       <pre>{text}</pre>
     </details>
   );
 }
 
-/** Which surface a textured GLB belongs to, for its button: the run's mesh needs no name, the methods' do. */
-function glbOf(stage: string | null | undefined): string {
-  if (stage === "surface") return " (neural surface)";
-  if (stage === "splats") return " (2D splats)";
-  return "";
+/** A textured GLB's button: the run's mesh needs no name, the methods' surfaces do. */
+function glbButton(action: string, stage: string | null | undefined): string {
+  if (stage === "surface") return t("run.view.glbSurface", { action });
+  if (stage === "splats") return t("run.view.glbSplats", { action });
+  return action;
 }

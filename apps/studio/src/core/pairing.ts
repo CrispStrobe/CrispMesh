@@ -3,6 +3,8 @@
  * address and token, the phone scans it. The text is a small JSON object that only this app reads.
  */
 
+import { t } from "../i18n";
+
 export interface Pairing {
   url: string;
   token: string;
@@ -39,7 +41,7 @@ export async function pairWithCode(
   code: string,
 ): Promise<Pairing> {
   const digits = code.replace(/\s+/g, "");
-  if (!/^\d{6}$/.test(digits)) throw new Error("The pairing code has six digits (shown on the computer).");
+  if (!/^\d{6}$/.test(digits)) throw new Error(t("connection.pair.sixDigits"));
   const address = url.replace(/\/+$/, "");
   const response = await fetcher(`${address}/api/pair`, {
     method: "POST",
@@ -48,7 +50,7 @@ export async function pairWithCode(
   });
   const answer = (await response.json().catch(() => ({}))) as { token?: unknown; error?: unknown };
   if (!response.ok || typeof answer.token !== "string") {
-    throw new Error(typeof answer.error === "string" ? answer.error : `The computer answered ${response.status}.`);
+    throw new Error(typeof answer.error === "string" ? answer.error : t("connection.pair.answered", { status: String(response.status) }));
   }
   return { url: address, token: answer.token };
 }

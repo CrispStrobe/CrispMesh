@@ -7,6 +7,7 @@ import type { ExampleFile, ExampleManifest, ExampleObject, ExampleStore } from "
 import type { BrowserEngine } from "./browserEngine";
 import type { Bridge } from "./localEngine";
 import type { Engine } from "./types";
+import { t } from "../i18n";
 
 const name = (file: ExampleFile) => file.path.split("/").pop() ?? file.path;
 
@@ -86,7 +87,7 @@ export class BrowserExampleStore implements ExampleStore {
   }
 
   async put(_object: ExampleObject, file: ExampleFile, bytes: ArrayBuffer): Promise<void> {
-    if (typeof caches === "undefined") throw new Error("This browser cannot keep downloaded files (no Cache Storage).");
+    if (typeof caches === "undefined") throw new Error(t("inputs.examples.error.noCache"));
     const cache = await caches.open(CACHE);
     await cache.put(this.url(file), new Response(bytes, { headers: { "Content-Length": String(bytes.byteLength) } }));
   }
@@ -107,7 +108,7 @@ export class BrowserExampleStore implements ExampleStore {
     const cache = await caches.open(CACHE);
     const read = async (file: ExampleFile) => {
       const response = await cache.match(this.url(file));
-      if (response === undefined) throw new Error(`${file.path} is not downloaded.`);
+      if (response === undefined) throw new Error(t("inputs.examples.error.notDownloaded", { path: file.path }));
       return response.blob();
     };
     const photos: [string, File][] = [];

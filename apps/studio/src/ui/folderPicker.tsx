@@ -1,6 +1,7 @@
 import { useRef, useState } from "preact/hooks";
 import { describeInputs, megapixelText, previewAdvice, relativeFiles, type BrowserEngine, type PickedInputs } from "../sources/browserEngine";
 import { describe } from "../sources/transport";
+import { t } from "../i18n";
 
 interface Props {
   engine: BrowserEngine;
@@ -39,7 +40,7 @@ export function FolderPicker({ engine, error, onPicked }: Props) {
     try {
       const files = relativeFiles(entries);
       const cameras = files.find(([path]) => path === "cameras.json");
-      if (cameras === undefined) throw new Error(`"${name}" has no cameras.json; it is not an inputs folder.`);
+      if (cameras === undefined) throw new Error(t("inputs.folder.noCameras", { name }));
       const described = describeInputs(name, files, await cameras[1].text());
       engine.setInputs(described, null);
       setPicked(described);
@@ -78,11 +79,11 @@ export function FolderPicker({ engine, error, onPicked }: Props) {
   return (
     <div class="field">
       <span class="field-label" id="f-inputs-label">
-        Inputs folder
+        {t("inputs.folder.label")}
       </span>
       <div class="path-row">
         <button type="button" class="button" onClick={() => void choose()} disabled={busy} aria-describedby="f-inputs-help">
-          {busy ? "Reading the folder..." : picked === null ? "Choose a folder" : "Choose another folder"}
+          {busy ? t("inputs.folder.reading") : picked === null ? t("inputs.folder.choose") : t("inputs.folder.chooseAnother")}
         </button>
         {/* Always present: the fallback where there is no folder dialog API, and what automated tests use. */}
         <input
@@ -103,12 +104,12 @@ export function FolderPicker({ engine, error, onPicked }: Props) {
         />
       </div>
       <span class="help" id="f-inputs-help">
-        A folder on this device with cameras.json, the photos and their masks. It is read here, in the browser; nothing is uploaded.
+        {t("inputs.folder.help")}
       </span>
       {picked !== null && advice !== null && (
         <>
           <span class="picked" role="status">
-            <strong>{picked.name}</strong>: {picked.files.length} files, {picked.views} photos, {megapixelText(picked.megapixels)} megapixels in all.
+            <strong>{picked.name}</strong>: {t("inputs.folder.picked", { files: picked.files.length, photos: picked.views, megapixels: megapixelText(picked.megapixels) })}
           </span>
           <label class="check" for="f-previews">
             <input
@@ -121,11 +122,11 @@ export function FolderPicker({ engine, error, onPicked }: Props) {
                 engine.setInputs(picked, event.currentTarget.checked);
               }}
             />
-            <span>Show intermediate surfaces while computing</span>
+            <span>{t("inputs.folder.previews")}</span>
           </label>
           <span class="help" id="f-previews-help">
             {advice.reason}
-            {previews !== null && previews !== advice.on && (previews ? " You turned them on; the run may run out of memory." : " You turned them off.")}
+            {previews !== null && previews !== advice.on && (previews ? t("inputs.folder.previewsOn") : t("inputs.folder.previewsOff"))}
           </span>
         </>
       )}

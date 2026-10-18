@@ -12,6 +12,7 @@ import {
   type ShellSettings,
 } from "../shell/shell";
 import { describe } from "../sources/transport";
+import { t, tParts, type MessageKey } from "../i18n";
 
 /** Polls the shell for the local engine's state: quickly while it starts, lazily once it runs. */
 export function useLocalEngine(shell: Shell | null, wanted: boolean): { info: ShellInfo | null; status: EngineStatus | null; refresh(): void } {
@@ -54,28 +55,28 @@ export function useLocalEngine(shell: Shell | null, wanted: boolean): { info: Sh
   return { info, status, refresh: () => setTick((count) => count + 1) };
 }
 
-export const NOT_BUNDLED =
-  "The external engine runs with the interpreters named here, from a crispmesh source folder on this computer. The built-in engine needs none of this.";
+/** Why Python is needed at all, next to its settings. */
+export const notBundled = (): string => t("connection.shell.notBundled");
 
-const STATE_TEXT: Record<EngineStatus["state"], string> = {
-  stopped: "Stopped",
-  starting: "Starting",
-  running: "Running",
-  failed: "Not running",
+const STATE_TEXT: Record<EngineStatus["state"], MessageKey> = {
+  stopped: "connection.shell.state.stopped",
+  starting: "connection.shell.state.starting",
+  running: "connection.shell.state.running",
+  failed: "connection.shell.state.failed",
 };
 
 export function EngineLog({ status }: { status: EngineStatus }) {
   if (status.command === null && status.log.length === 0) return null;
   return (
     <details class="raw" open={status.state === "failed"}>
-      <summary>What was started, and what it printed</summary>
+      <summary>{t("connection.shell.logSummary")}</summary>
       {status.command !== null && (
         <pre class="error-text" tabIndex={0}>
           {status.command}
         </pre>
       )}
       <pre class="error-text" tabIndex={0}>
-        {status.log.length > 0 ? status.log.slice(-40).join("\n") : "(nothing was printed)"}
+        {status.log.length > 0 ? status.log.slice(-40).join("\n") : t("connection.shell.nothingPrinted")}
       </pre>
     </details>
   );
@@ -87,7 +88,7 @@ export function LocalEngineGate({ status, shell, onChange }: { status: EngineSta
     return (
       <section class="page narrow">
         <p class="sub" role="status">
-          Starting the engine on this computer...
+          {t("connection.shell.starting")}
         </p>
       </section>
     );
@@ -96,12 +97,12 @@ export function LocalEngineGate({ status, shell, onChange }: { status: EngineSta
     <section class="page narrow">
       <div class="notice bad" role="alert">
         <p>
-          <strong>The engine on this computer could not be started.</strong> {status.message}
+          <strong>{t("connection.shell.couldNotStart")}</strong> {status.message}
         </p>
         <EngineLog status={status} />
         <div class="actions">
           <a class="button primary" href="#/shell">
-            Engine settings
+            {t("connection.shell.engineSettings")}
           </a>
           <button
             type="button"
@@ -110,93 +111,94 @@ export function LocalEngineGate({ status, shell, onChange }: { status: EngineSta
               void shell.restartEngine().then(onChange);
             }}
           >
-            Try again
+            {t("connection.shell.tryAgain")}
           </button>
           <a class="button" href="#/">
-            Other connections
+            {t("connection.shell.otherConnections")}
           </a>
         </div>
       </div>
-      <p class="sub">{NOT_BUNDLED}</p>
+      <p class="sub">{notBundled()}</p>
     </section>
   );
 }
 
+/** Texts are message keys, read when the screen renders (so they follow the language). */
 interface FieldSpec {
   field: ConfigField;
-  label: string;
-  help: string;
+  label: MessageKey;
+  help: MessageKey;
   pick?: "folder" | "file";
-  pickTitle?: string;
+  pickTitle?: MessageKey;
 }
 
 const PYTHON_FIELDS: FieldSpec[] = [
   {
     field: "repo",
-    label: "CrispMesh source folder",
-    help: "Your checkout of the crispmesh repository: the folder that contains scripts/turntable_mesh.",
+    label: "connection.shell.field.repo",
+    help: "connection.shell.field.repoHelp",
     pick: "folder",
-    pickTitle: "Choose the crispmesh source folder",
+    pickTitle: "connection.shell.field.repoPick",
   },
   {
     field: "python",
-    label: "Python",
-    help: "Interpreter with NumPy, SciPy, scikit-image, OpenCV and Pillow. It also runs the engine itself.",
+    label: "connection.shell.field.python",
+    help: "connection.shell.field.pythonHelp",
     pick: "file",
-    pickTitle: "Choose the Python interpreter",
+    pickTitle: "connection.shell.field.pythonPick",
   },
   {
     field: "torch_python",
-    label: "Python with PyTorch",
-    help: "Interpreter for the stereo stage. Leave empty if the one above has PyTorch too.",
+    label: "connection.shell.field.torchPython",
+    help: "connection.shell.field.torchPythonHelp",
     pick: "file",
-    pickTitle: "Choose the Python interpreter that has PyTorch",
+    pickTitle: "connection.shell.field.torchPythonPick",
   },
 ];
 
 /** External programs of the photos start, grouped by the provider that needs them. */
-const TOOL_GROUPS: { tool: ToolName; title: string; what: string; fields: FieldSpec[] }[] = [
+const TOOL_GROUPS: { tool: ToolName; title: string; what: MessageKey; fields: FieldSpec[] }[] = [
   {
     tool: "alicevision",
     title: "AliceVision",
-    what: "Cameras from photos (provider alicevision). MPL-2.0; installed separately.",
+    what: "connection.shell.tool.alicevisionWhat",
     fields: [
       {
         field: "alicevision",
-        label: "AliceVision folder",
-        help: "The install folder that has bin/aliceVision_cameraInit and the others, or a wrapper script.",
+        label: "connection.shell.field.alicevision",
+        help: "connection.shell.field.alicevisionHelp",
         pick: "folder",
-        pickTitle: "Choose the AliceVision install folder",
+        pickTitle: "connection.shell.field.alicevisionPick",
       },
       {
         field: "alicevision_library_path",
-        label: "Extra library folders",
-        help: "Folders with libraries AliceVision needs besides its own lib folder, separated like PATH (for example /opt/homebrew/lib).",
+        label: "connection.shell.field.libraryPath",
+        help: "connection.shell.field.libraryPathHelp",
       },
     ],
   },
   {
     tool: "colmap",
     title: "COLMAP",
-    what: "Cameras from photos (provider colmap). BSD-3-Clause; installed separately.",
+    what: "connection.shell.tool.colmapWhat",
     fields: [
       {
         field: "colmap",
-        label: "COLMAP program",
-        help: "The colmap executable. Empty: a colmap found on the PATH is used.",
+        label: "connection.shell.field.colmap",
+        help: "connection.shell.field.colmapHelp",
         pick: "file",
-        pickTitle: "Choose the colmap program",
+        pickTitle: "connection.shell.field.colmapPick",
       },
     ],
   },
   {
     tool: "sam",
     title: "SAM 2.1",
-    what: "Masks by a neural network (provider external-sam). Needs a Python with PyTorch, the SAM 2 source and a checkpoint, and the crispmesh source folder below.",
+    what: "connection.shell.tool.samWhat",
     fields: [
-      { field: "sam_python", label: "Python with PyTorch", help: "The interpreter that runs SAM.", pick: "file", pickTitle: "Choose the Python interpreter for SAM" },
-      { field: "sam_source", label: "SAM 2 source folder", help: "A checkout of the SAM 2 repository.", pick: "folder", pickTitle: "Choose the SAM 2 source folder" },
-      { field: "sam_checkpoint", label: "SAM 2.1 checkpoint", help: "The checkpoint file (.pt).", pick: "file", pickTitle: "Choose the SAM 2.1 checkpoint" },
+      { field: "sam_python", label: "connection.shell.field.torchPython", help: "connection.shell.field.samPythonHelp", pick: "file", pickTitle: "connection.shell.field.samPythonPick" },
+      { field: "sam_source", label: "connection.shell.field.samSource", help: "connection.shell.field.samSourceHelp", pick: "folder", pickTitle: "connection.shell.field.samSourcePick" },
+      { field: "sam_checkpoint", label: "connection.shell.field.samCheckpoint", help: "connection.shell.field.samCheckpointHelp", pick: "file", pickTitle: "connection.shell.field.samCheckpointPick" },
     ],
   },
 ];
@@ -204,17 +206,17 @@ const TOOL_GROUPS: { tool: ToolName; title: string; what: string; fields: FieldS
 const FOLDER_FIELDS: FieldSpec[] = [
   {
     field: "data_dir",
-    label: "Data folder",
-    help: "Where your prepared photo sets are. New runs browse this folder; with the built-in engine a folder elsewhere can be chosen too.",
+    label: "connection.shell.field.dataDir",
+    help: "connection.shell.field.dataDirHelp",
     pick: "folder",
-    pickTitle: "Choose the data folder",
+    pickTitle: "connection.shell.field.dataDirPick",
   },
   {
     field: "runs_dir",
-    label: "Runs folder",
-    help: "Every run gets a folder in here, with its event log, sheets and meshes.",
+    label: "connection.shell.field.runsDir",
+    help: "connection.shell.field.runsDirHelp",
     pick: "folder",
-    pickTitle: "Choose the folder for runs",
+    pickTitle: "connection.shell.field.runsDirPick",
   },
 ];
 
@@ -252,7 +254,7 @@ export function ShellSettingsScreen({
       <section class="page narrow">
         <div class="notice bad" role="alert">
           <p>
-            <strong>The settings could not be read.</strong> {error}
+            <strong>{t("connection.shell.readFailed")}</strong> {error}
           </p>
         </div>
       </section>
@@ -304,32 +306,31 @@ export function ShellSettingsScreen({
   const pick = async (spec: FieldSpec) => {
     if (spec.pick === undefined) return;
     const current = form[spec.field] || resolvedOf(spec.field).value;
-    const chosen = await shell.pickPath(spec.pick, spec.pickTitle ?? spec.label, current || undefined).catch(() => null);
+    const chosen = await shell.pickPath(spec.pick, t(spec.pickTitle ?? spec.label), current || undefined).catch(() => null);
     if (chosen !== null) change(spec.field, chosen);
   };
 
   return (
     <section class="page narrow">
-      <h1>This computer</h1>
+      <h1>{t("connection.shell.title")}</h1>
       {info?.native_engine && (
         <p class="sub">
-          The reconstruction is built into this app{mode === "native" ? " and is the engine in use" : ""}. It needs only the two folders
-          below. <a href="#/engine">Open runs</a>
+          {t(mode === "native" ? "connection.shell.builtInInUse" : "connection.shell.builtIn")} <a href="#/engine">{t("connection.shell.openRuns")}</a>
         </p>
       )}
 
       {python && mode === "python" && (
       <section class="panel" aria-labelledby="shell-state">
         <div class="panel-head">
-          <h2 id="shell-state">External Python engine</h2>
+          <h2 id="shell-state">{t("connection.shell.python")}</h2>
           <span class={`badge status-${status?.state === "running" ? "complete" : status?.state === "failed" ? "failed" : "running"}`} role="status">
-            {status === null ? "Unknown" : STATE_TEXT[status.state]}
+            {status === null ? t("connection.shell.state.unknown") : t(STATE_TEXT[status.state])}
           </span>
         </div>
         {status?.state === "running" && (
           <p class="sub">
-            Listening on <span class="mono">{status.url}</span>, this computer only, device {status.device}.{" "}
-            <a href="#/engine">Open runs</a>
+            {tParts("connection.shell.listening", { url: <span class="mono">{status.url}</span>, device: status.device ?? "" })}{" "}
+            <a href="#/engine">{t("connection.shell.openRuns")}</a>
           </p>
         )}
         {status?.state === "failed" && (
@@ -343,24 +344,20 @@ export function ShellSettingsScreen({
 
       {sandboxed && (
         <div class="notice" role="note">
-          <p>
-            This edition of the app runs in the App Sandbox. It cannot start other programs, so the photos start with
-            AliceVision, COLMAP or SAM is not available here, and a folder chosen with a dialog has to be chosen again after
-            the app was restarted.
-          </p>
+          <p>{t("connection.shell.sandboxed")}</p>
         </div>
       )}
       <form onSubmit={apply} novalidate>
         {[
-          { legend: "Folders", fields: FOLDER_FIELDS, shown: true },
+          { legend: t("connection.shell.folders"), fields: FOLDER_FIELDS, shown: true },
           ...TOOL_GROUPS.map((group) => ({
-            legend: `Tools: ${group.title}`,
+            legend: t("connection.shell.tools", { name: group.title }),
             fields: group.fields,
             shown: info?.native_engine === true && !sandboxed,
             tool: group.tool,
             what: group.what,
           })),
-          { legend: "External Python engine (optional)", fields: PYTHON_FIELDS, shown: python },
+          { legend: t("connection.shell.pythonOptional"), fields: PYTHON_FIELDS, shown: python },
         ]
           .filter((group) => group.shown)
           .map((group) => (
@@ -368,12 +365,12 @@ export function ShellSettingsScreen({
           <legend>{group.legend}</legend>
           {"tool" in group && (
             <>
-              <p class="help">{group.what}</p>
+              <p class="help">{t(group.what)}</p>
             </>
           )}
           {group.fields === PYTHON_FIELDS && (
             <p class="help">
-              <strong>Python is not part of this app.</strong> {NOT_BUNDLED}
+              <strong>{t("connection.shell.pythonNotPart")}</strong> {notBundled()}
             </p>
           )}
           {group.fields.map((spec) => {
@@ -382,7 +379,7 @@ export function ShellSettingsScreen({
             return (
               <div class="field" key={spec.field}>
                 <label class="field-label" for={id}>
-                  {spec.label}
+                  {t(spec.label)}
                 </label>
                 <div class="path-row">
                   <input
@@ -392,24 +389,24 @@ export function ShellSettingsScreen({
                     autocapitalize="off"
                     autocomplete="off"
                     value={form[spec.field]}
-                    placeholder={resolved.source === "setting" ? "" : resolved.value || "not found"}
+                    placeholder={resolved.source === "setting" ? "" : resolved.value || t("connection.shell.notFound")}
                     aria-describedby={`${id}-help`}
                     onInput={(event) => change(spec.field, event.currentTarget.value)}
                   />
                   {spec.pick !== undefined && (
                     <button type="button" class="button" onClick={() => void pick(spec)}>
-                      Choose<span class="visually-hidden"> {spec.label}</span>
+                      {t("connection.shell.choose")}<span class="visually-hidden"> {t(spec.label)}</span>
                     </button>
                   )}
                 </div>
                 <span class="help" id={`${id}-help`}>
-                  {spec.help}
+                  {t(spec.help)}
                   {form[spec.field].trim() === "" && (
                     <>
                       {" "}
                       {resolved.value === ""
-                        ? "Not set, and nothing was found."
-                        : `Not set here: the value shown in the field is used (${sourceText(resolved.source, spec.field)}).`}
+                        ? t("connection.shell.notSetNothing")
+                        : t("connection.shell.notSetUsed", { source: sourceText(resolved.source, spec.field) })}
                     </>
                   )}
                 </span>
@@ -418,20 +415,20 @@ export function ShellSettingsScreen({
           })}
           {group.fields === PYTHON_FIELDS && (
           <label class="field" for="shell-device">
-            <span class="field-label">Device</span>
+            <span class="field-label">{t("connection.shell.device")}</span>
             <select id="shell-device" value={form.device === "" ? "auto" : form.device} onChange={(event) => change("device", event.currentTarget.value)}>
-              <option value="auto">Automatic{info !== null ? ` (${info.auto_device} on this computer)` : ""}</option>
+              <option value="auto">{info !== null ? t("connection.shell.automaticOn", { device: info.auto_device }) : t("connection.shell.automatic")}</option>
               <option value="mps">Apple GPU (mps)</option>
               <option value="cuda">NVIDIA GPU (cuda)</option>
               <option value="cpu">CPU</option>
             </select>
-            <span class="help">The default for new runs; each run can choose another.</span>
+            <span class="help">{t("connection.shell.deviceHelp")}</span>
           </label>
           )}
           {"tool" in group && (
             <div class="tool-check">
               <button type="button" class="button" disabled={checks[group.tool] === "busy"} onClick={() => void check(group.tool)}>
-                {checks[group.tool] === "busy" ? "Checking..." : "Check"}
+                {checks[group.tool] === "busy" ? t("connection.shell.checking") : t("connection.shell.check")}
                 <span class="visually-hidden"> {group.legend}</span>
               </button>
               {(() => {
@@ -439,10 +436,10 @@ export function ShellSettingsScreen({
                 if (result === undefined || result === "busy") return null;
                 return (
                   <div class={`tool-result ${result.ok ? "ok" : "bad"}`} role="status">
-                    <strong>{result.ok ? "Works." : "Does not work."}</strong> {result.summary}
+                    <strong>{result.ok ? t("connection.shell.works") : t("connection.shell.doesNotWork")}</strong> {result.summary}
                     {result.detail !== "" && (
                       <details class="raw">
-                        <summary>What was run</summary>
+                        <summary>{t("connection.shell.whatWasRun")}</summary>
                         <pre class="error-text" tabIndex={0}>
                           {result.detail}
                         </pre>
@@ -463,14 +460,14 @@ export function ShellSettingsScreen({
         )}
         <div class="actions">
           <button type="submit" class="button primary" disabled={busy}>
-            {mode === "python" ? (dirty ? "Save and restart the engine" : "Restart the engine") : "Save"}
+            {mode === "python" ? (dirty ? t("connection.shell.saveRestart") : t("connection.shell.restart")) : t("connection.shell.save")}
           </button>
           <a class="button" href="#/engine">
-            Runs
+            {t("connection.shell.runs")}
           </a>
         </div>
         <p class="help">
-          Saved in <span class="mono wrap">{settings.file}</span>.
+          {tParts("connection.shell.savedIn", { file: <span class="mono wrap">{settings.file}</span> })}
         </p>
       </form>
     </section>

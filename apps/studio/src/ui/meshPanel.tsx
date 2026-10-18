@@ -9,6 +9,12 @@ import type { UpAxis, Viewer } from "../viewer/viewer";
 import { canDownload, canShareFiles, downloadFile, shareFile } from "./download";
 import { Icon } from "./icons";
 import { loadPrefs, savePrefs } from "./prefs";
+import { language, t, tParts } from "../i18n";
+
+/** "1 234 triangles", with the thin grouping of formatCount and the plural of the language. */
+function triangles(count: number): string {
+  return t("run.mesh.triangles", { count, n: formatCount(count) });
+}
 
 interface Props {
   source: RunSource;
@@ -57,7 +63,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
       .then((module) => {
         if (cancelled || canvas.current === null || host.current === null) return;
         if (!module.webglAvailable()) {
-          setUnsupported("This browser cannot show 3D (WebGL is not available). Everything else still works.");
+          setUnsupported(t("run.mesh.noWebgl"));
           return;
         }
         viewer.current = new module.Viewer(canvas.current, host.current);
@@ -66,7 +72,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
         setReady(true);
       })
       .catch((problem) => {
-        if (!cancelled) setUnsupported(`The 3D view could not be started: ${describe(problem)}`);
+        if (!cancelled) setUnsupported(t("run.mesh.viewFailed", { error: describe(problem) }));
       });
     return () => {
       cancelled = true;
@@ -182,13 +188,13 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
   return (
     <section class="panel mesh-panel" aria-labelledby="mesh-heading">
       <div class="panel-head">
-        <h2 id="mesh-heading">Surface</h2>
+        <h2 id="mesh-heading">{t("run.mesh.heading")}</h2>
         <span class="sub" aria-live="polite">
           {shownStep !== undefined && shown !== null
-            ? `${shownStep.label} · ${formatCount(shown.triangles)} triangles`
+            ? t("run.mesh.labelTriangles", { label: shownStep.label, triangles: triangles(shown.triangles) })
             : meshes.length === 0
               ? ""
-              : "No surface loaded"}
+              : t("run.mesh.noneLoaded")}
         </span>
       </div>
 
@@ -199,8 +205,8 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
           role="img"
           aria-label={
             shownStep !== undefined
-              ? `3D view: ${shownStep.label}. Drag or use the arrow keys to turn, scroll, pinch or press plus and minus to zoom, right-drag or two fingers to move, 0 to reset.`
-              : "3D view, empty"
+              ? t("run.mesh.viewLabel", { label: shownStep.label })
+              : t("run.mesh.viewEmpty")
           }
           onKeyDown={(event) => {
             const view = viewer.current;
@@ -220,30 +226,30 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
         {shownStep !== undefined && shown !== null && (
           // Always on the picture: which surface this is, so nobody mistakes a preview for the result.
           <p class={`viewer-label${shownStep.kind === "final_mesh" ? " final" : ""}`} aria-hidden="true">
-            {shownStep.label} · {formatCount(shown.triangles)} triangles
-            {shownStep.kind !== "final_mesh" && selected?.kind === "final_mesh" && " (the final surface is not loaded yet)"}
+            {t("run.mesh.labelTriangles", { label: shownStep.label, triangles: triangles(shown.triangles) })}
+            {shownStep.kind !== "final_mesh" && selected?.kind === "final_mesh" && t("run.mesh.finalNotLoaded")}
           </p>
         )}
         {unsupported !== "" && <p class="viewer-message">{unsupported}</p>}
         {unsupported === "" && meshes.length === 0 && (
           <p class="viewer-message">
             {runStatus === "running" || runStatus === "waiting"
-              ? "The first surface appears here once the silhouette hull is built."
-              : "This run produced no surface."}
+              ? t("run.mesh.firstSoon")
+              : t("run.mesh.noSurface")}
           </p>
         )}
         {awaitingConsent && selected !== undefined && loading === null && (
           <div class="viewer-overlay">
             <p>
-              <strong>{selected.label}</strong> is ready
-              {selected.triangles !== undefined && <> · {formatCount(selected.triangles)} triangles</>}
+              {tParts("run.mesh.ready", { label: <strong>{selected.label}</strong> })}
+              {selected.triangles !== undefined && <> · {triangles(selected.triangles)}</>}
             </p>
             <button
               type="button"
               class="button primary"
               onClick={() => setApproved((current) => new Set(current).add(selected.path))}
             >
-              Load {selected.label.charAt(0).toLowerCase() + selected.label.slice(1)}
+              {t("run.mesh.load", { label: language() === "en" ? selected.label.charAt(0).toLowerCase() + selected.label.slice(1) : selected.label })}
               {consentBytes !== undefined && ` (${formatBytes(consentBytes)})`}
             </button>
           </div>
@@ -251,23 +257,25 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
         {loading !== null && (
           <div class="viewer-status" role="status">
             {loading.progress.phase === "parse"
-              ? `Preparing ${loadingStep?.label ?? "surface"}...`
-              : `Loading ${loadingStep?.label ?? "surface"}${
-                  loading.progress.received !== undefined
-                    ? ` · ${formatBytes(loading.progress.received)}${
-                        loading.progress.total !== undefined ? ` of ${formatBytes(loading.progress.total)}` : ""
-                      }`
-                    : "..."
-                }`}
+              ? t("run.mesh.preparing", { label: loadingStep?.label ?? t("run.mesh.surface") })
+              : loading.progress.received === undefined
+                ? t("run.mesh.loadingPlain", { label: loadingStep?.label ?? t("run.mesh.surface") })
+                : loading.progress.total === undefined
+                  ? t("run.mesh.loadingBytes", { label: loadingStep?.label ?? t("run.mesh.surface"), received: formatBytes(loading.progress.received) })
+                  : t("run.mesh.loadingBytesOf", {
+                      label: loadingStep?.label ?? t("run.mesh.surface"),
+                      received: formatBytes(loading.progress.received),
+                      total: formatBytes(loading.progress.total),
+                    })}
           </div>
         )}
         {error !== null && (
           <div class="viewer-overlay" role="alert">
             <p>
-              <strong>The surface could not be loaded.</strong> {error.message}
+              <strong>{t("run.mesh.loadFailed")}</strong> {error.message}
             </p>
             <button type="button" class="button" onClick={() => setRetry((count) => count + 1)}>
-              Try again
+              {t("run.mesh.tryAgain")}
             </button>
           </div>
         )}
@@ -279,11 +287,11 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
           class="button icon-only"
           onClick={() => select(selectedIndex - 1)}
           disabled={selectedIndex <= 0}
-          aria-label="Earlier surface"
+          aria-label={t("run.mesh.earlier")}
         >
           <Icon name="prev" />
         </button>
-        <div class="step-strip" ref={strip} role="group" aria-label="Surfaces, oldest first">
+        <div class="step-strip" ref={strip} role="group" aria-label={t("run.mesh.strip")}>
           {meshes.map((step, index) => (
             <button
               key={step.path}
@@ -294,17 +302,17 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
             >
               <span class="step-index">{index + 1}</span>
               <span class="step-label">{step.label}</span>
-              {step.triangles !== undefined && <span class="step-meta">{formatCount(step.triangles)} triangles</span>}
+              {step.triangles !== undefined && <span class="step-meta">{triangles(step.triangles)}</span>}
             </button>
           ))}
-          {meshes.length === 0 && <span class="sub step-empty">No surfaces yet</span>}
+          {meshes.length === 0 && <span class="sub step-empty">{t("run.mesh.noneYet")}</span>}
         </div>
         <button
           type="button"
           class="button icon-only"
           onClick={() => select(selectedIndex + 1)}
           disabled={selectedIndex < 0 || selectedIndex >= meshes.length - 1}
-          aria-label="Later surface"
+          aria-label={t("run.mesh.later")}
         >
           <Icon name="next" />
         </button>
@@ -313,9 +321,9 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
       <div class="viewer-tools">
         <label class="check">
           <input type="checkbox" checked={following} onChange={(event) => setChosen(event.currentTarget.checked ? null : (selected?.path ?? null))} />
-          <span>Follow newest</span>
+          <span>{t("run.mesh.follow")}</span>
         </label>
-        <div class="segmented" role="group" aria-label="Shading">
+        <div class="segmented" role="group" aria-label={t("run.mesh.shading")}>
           <button
             type="button"
             aria-pressed={!flat}
@@ -324,7 +332,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
               savePrefs({ flat: false });
             }}
           >
-            Smooth
+            {t("run.mesh.smooth")}
           </button>
           <button
             type="button"
@@ -334,11 +342,11 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
               savePrefs({ flat: true });
             }}
           >
-            Flat
+            {t("run.mesh.flat")}
           </button>
         </div>
         <label class="inline-field">
-          <span>Up</span>
+          <span>{t("run.mesh.up")}</span>
           <select
             value={up}
             onChange={(event) => {
@@ -346,7 +354,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
               setUp(axis);
               savePrefs({ up: axis });
             }}
-            aria-label="Up direction of the model"
+            aria-label={t("run.mesh.upLabel")}
           >
             {UP_CHOICES.map((axis) => (
               <option key={axis} value={axis}>
@@ -367,7 +375,11 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
                 .finally(() => setSaving(false));
             }}
           >
-            {saving ? "Saving..." : `Download STL${stlBytes(shownStep.triangles) !== undefined ? ` (${formatBytes(stlBytes(shownStep.triangles))})` : ""}`}
+            {saving
+              ? t("run.mesh.saving")
+              : stlBytes(shownStep.triangles) !== undefined
+                ? t("run.mesh.downloadStlSize", { size: formatBytes(stlBytes(shownStep.triangles)) })
+                : t("run.mesh.downloadStl")}
           </button>
         )}
         {!canDownload(source) && shownStep !== undefined && canShareFiles() && (
@@ -382,14 +394,14 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
                 .finally(() => setSaving(false));
             }}
           >
-            {saving ? "Preparing..." : "Share STL"}
+            {saving ? t("run.mesh.preparingShare") : t("run.mesh.shareStl")}
           </button>
         )}
         <button type="button" class="button" onClick={() => viewer.current?.resetView()} disabled={shown === null}>
-          <Icon name="fit" size={16} /> Reset view
+          <Icon name="fit" size={16} /> {t("run.mesh.resetView")}
         </button>
       </div>
-      <p class="help viewer-note">The model has no physical scale and no fixed up direction; choose the axis that looks upright.</p>
+      <p class="help viewer-note">{t("run.mesh.note")}</p>
     </section>
   );
 }

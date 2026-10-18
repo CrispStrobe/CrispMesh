@@ -8,6 +8,8 @@
  * leaves them out, and one that came through anyway is dropped here.
  */
 
+import { t } from "../i18n";
+
 export type OptionKind = "text" | "integer" | "number" | "choice" | "switch";
 
 export interface OptionSpec {
@@ -96,11 +98,11 @@ export function isChanged(spec: OptionSpec, raw: string | boolean | undefined): 
 export function optionError(spec: OptionSpec, raw: string | boolean | undefined): string | undefined {
   const value = normalValue(spec, raw);
   if (same(spec, value) || spec.kind === "switch") return undefined;
-  if (value === "") return spec.repeated ? undefined : "Needs a value.";
-  if (spec.kind === "integer" && !/^[+-]?\d+$/.test(value)) return "Needs a whole number.";
-  if (spec.kind === "number" && !Number.isFinite(Number(value))) return "Needs a number.";
-  if (spec.kind === "choice" && !spec.choices.includes(value)) return `Must be one of: ${spec.choices.join(", ")}.`;
-  if (!spec.repeated && value.startsWith("--")) return "A value cannot start with two dashes.";
+  if (value === "") return spec.repeated ? undefined : t("inputs.option.needsValue");
+  if (spec.kind === "integer" && !/^[+-]?\d+$/.test(value)) return t("inputs.option.needsWhole");
+  if (spec.kind === "number" && !Number.isFinite(Number(value))) return t("inputs.option.needsNumber");
+  if (spec.kind === "choice" && !spec.choices.includes(value)) return t("inputs.option.oneOf", { choices: spec.choices.join(", ") });
+  if (!spec.repeated && value.startsWith("--")) return t("inputs.option.dashes");
   return undefined;
 }
 

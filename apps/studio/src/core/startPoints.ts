@@ -7,6 +7,7 @@
 
 import { optionErrors, optionTokens, parseOptionSpecs, parsePathInputs, type OptionSpec, type OptionValues, type PathInput } from "./providerOptions";
 import type { SettingValue } from "./settings";
+import { t, type MessageKey } from "../i18n";
 
 export interface StartField {
   /** Key in the start request (`inputs`, `scene`, `prepared`, `raw_masks`, later `photos`, ...). */
@@ -65,39 +66,51 @@ export interface StartPoint {
   optionGroups: OptionGroup[];
 }
 
+/** A start field whose label and help are read in the active language each time they are shown. */
+function field(key: string, kind: StartField["kind"], label: MessageKey, help: MessageKey): StartField {
+  return {
+    key,
+    kind,
+    required: true,
+    get label() {
+      return t(label);
+    },
+    get help() {
+      return t(help);
+    },
+  };
+}
+
+/** A start point of the contract, its texts in the active language. */
+function contractPoint(id: string, label: MessageKey, meaning: MessageKey, fields: StartField[]): StartPoint {
+  return {
+    id,
+    get label() {
+      return t(label);
+    },
+    get meaning() {
+      return t(meaning);
+    },
+    fields,
+    providers: [],
+    optionGroups: [],
+  };
+}
+
 /** What every engine of docs/ENGINE-CONTRACT.md accepts: an inputs folder, or scene + prepared + raw masks. */
 export const CONTRACT_START_POINTS: StartPoint[] = [
-  {
-    id: "inputs",
-    label: "Inputs folder",
-    meaning: "A folder with cameras.json, the undistorted photos and their masks.",
-    fields: [{ key: "inputs", label: "Inputs folder", kind: "inputs", required: true, help: "A folder with cameras.json, the photos and their masks." }],
-    providers: [],
-    optionGroups: [],
-  },
-  {
-    id: "scene",
-    label: "Camera solution, images and masks",
-    meaning: "An AliceVision solution with its prepared images and one raw mask per photo.",
-    fields: [
-      { key: "scene", label: "Camera solution (.sfm)", kind: "file", required: true, help: "AliceVision SfM file with poses and one radialk3 lens." },
-      { key: "prepared", label: "Prepared images", kind: "folder", required: true, help: "Undistorted images named <viewId>.png." },
-      { key: "raw_masks", label: "Raw masks", kind: "folder", required: true, help: "One 0/255 mask per source photo, named like the photo." },
-    ],
-    providers: [],
-    optionGroups: [],
-  },
-  {
-    id: "photos",
-    label: "Turntable photos",
-    meaning: "A folder of photos of an object on a turntable and the calibration of the lens; the engine makes masks and cameras first, with the tools installed on its computer.",
-    fields: [
-      { key: "photos", label: "Photos", kind: "folder", required: true, help: "One photo per turntable position, named in capture order." },
-      { key: "calibration", label: "Lens calibration (.json)", kind: "file", required: true, help: "Focal length, principal point and radial distortion of the lens." },
-    ],
-    providers: [],
-    optionGroups: [],
-  },
+  contractPoint("inputs", "inputs.start.inputs.label", "inputs.start.inputs.meaning", [
+    field("inputs", "inputs", "inputs.start.inputs.field", "inputs.start.inputs.help"),
+  ]),
+  contractPoint("scene", "inputs.start.scene.label", "inputs.start.scene.meaning", [
+    field("scene", "file", "inputs.start.scene.scene", "inputs.start.scene.sceneHelp"),
+    field("prepared", "folder", "inputs.start.scene.prepared", "inputs.start.scene.preparedHelp"),
+    field("raw_masks", "folder", "inputs.start.scene.masks", "inputs.start.scene.masksHelp"),
+  ]),
+  contractPoint("photos", "inputs.start.photos.label", "inputs.start.photos.meaning", [
+    field("photos", "folder", "inputs.start.photos.photos", "inputs.start.photos.photosHelp"),
+    field("calibration", "file", "inputs.start.photos.calibration", "inputs.start.photos.calibrationHelp"),
+  ]),
 ];
 
 function text(value: unknown): string | undefined {
@@ -143,7 +156,7 @@ export function parseStartPoints(json: unknown): StartPoint[] {
             option.inputs !== undefined
               ? parsePathInputs(option.inputs)
               : optionId === "import" && module !== undefined
-                ? [{ key: `${module}_import`, label: `Existing ${module}`, kind: module === "masks" ? "folder" : "file" }]
+                ? [{ key: `${module}_import`, label: t("inputs.provider.existing", { module }), kind: module === "masks" ? "folder" : "file" }]
                 : [],
         });
       }

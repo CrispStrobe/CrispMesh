@@ -16,7 +16,8 @@ export type ToWorker =
 export type FromWorker =
   /** `described`: the package's describe() (start points, providers, their options), or null from an older package. */
   | { type: "loaded"; ok: true; settings: unknown; adapter: string | null; described?: unknown; threads?: number }
-  | { type: "loaded"; ok: false; message: string }
+  /** `reason`: a known failure the page words in its own language; `message` otherwise (English). */
+  | { type: "loaded"; ok: false; message: string; reason?: "no-webgpu" | "no-adapter" }
   | { type: "event"; id: string; event: unknown; wasmBytes: number }
   | { type: "finished"; id: string; ok: boolean; message?: string; seconds: number; peakWasmBytes: number }
   | { type: "file"; request: number; bytes: ArrayBuffer | null };

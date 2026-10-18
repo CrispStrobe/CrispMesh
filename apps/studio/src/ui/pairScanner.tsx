@@ -1,6 +1,7 @@
 import jsQR from "jsqr";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { parsePairing, type Pairing } from "../core/pairing";
+import { t } from "../i18n";
 
 interface Props {
   onFound(pairing: Pairing): void;
@@ -21,7 +22,7 @@ export function PairScanner({ onFound, onCancel }: Props) {
     let alive = true;
     const media = typeof navigator === "undefined" ? undefined : navigator.mediaDevices;
     if (media?.getUserMedia === undefined) {
-      setProblem("This app or browser cannot use a camera here. Type the address and token instead.");
+      setProblem(t("connection.scan.noCamera"));
       return;
     }
     const canvas = document.createElement("canvas");
@@ -57,7 +58,7 @@ export function PairScanner({ onFound, onCancel }: Props) {
           onFound(pairing);
         }, 200);
       })
-      .catch(() => alive && setProblem("The camera could not be started. Type the address and token instead."));
+      .catch(() => alive && setProblem(t("connection.scan.cameraFailed")));
     return () => {
       alive = false;
       if (timer !== undefined) clearInterval(timer);
@@ -66,12 +67,12 @@ export function PairScanner({ onFound, onCancel }: Props) {
   }, []);
 
   return (
-    <dialog ref={dialog} class="lightbox capture" aria-label="Scan the computer's code" onClose={onCancel}>
+    <dialog ref={dialog} class="lightbox capture" aria-label={t("connection.scan.label")} onClose={onCancel}>
       <div class="lightbox-bar">
-        <p class="lightbox-title">Scan the code shown on the computer</p>
+        <p class="lightbox-title">{t("connection.scan.title")}</p>
         <div class="lightbox-tools">
           <button type="button" class="button" onClick={() => dialog.current?.close()}>
-            Cancel
+            {t("connection.scan.cancel")}
           </button>
         </div>
       </div>
@@ -86,8 +87,8 @@ export function PairScanner({ onFound, onCancel }: Props) {
       <div class="capture-controls">
         <p class="capture-status" role="status">
           {seen
-            ? "That code is not a CrispMesh pairing code."
-            : "On the computer: Connection, This computer, Let other devices use this computer. Hold the phone over its code."}
+            ? t("connection.scan.notPairing")
+            : t("connection.scan.hint")}
         </p>
       </div>
     </dialog>

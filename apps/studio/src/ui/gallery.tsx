@@ -3,6 +3,7 @@ import { groupSheets, type RunState, type Sheet } from "../core/reducer";
 import type { RunSource } from "../sources/types";
 import { Lightbox } from "./lightbox";
 import { stageTitle } from "./stages";
+import { t } from "../i18n";
 
 interface Props {
   source: RunSource;
@@ -31,12 +32,12 @@ function SheetCard({ source, sheet, onOpen }: { source: RunSource; sheet: Sheet;
   const [broken, setBroken] = useState(false);
   return (
     <li class="sheet">
-      <button type="button" class="sheet-button" onClick={onOpen} aria-label={`Open: ${sheet.label}`}>
+      <button type="button" class="sheet-button" onClick={onOpen} aria-label={t("run.gallery.open", { label: sheet.label })}>
         <span class="sheet-frame">
           {url !== undefined && !broken && !failed ? (
             <img src={url} alt={sheet.label} loading="lazy" decoding="async" onError={() => setBroken(true)} />
           ) : (
-            <span class="sheet-placeholder">{failed || broken ? "Image not available" : "Loading..."}</span>
+            <span class="sheet-placeholder">{failed || broken ? t("run.image.unavailable") : t("run.image.loading")}</span>
           )}
         </span>
         <span class="sheet-label">{sheet.label}</span>
@@ -54,16 +55,16 @@ export function Gallery({ source, run }: Props) {
   return (
     <section class="panel gallery" aria-labelledby="gallery-heading">
       <div class="panel-head">
-        <h2 id="gallery-heading">Diagnostics</h2>
+        <h2 id="gallery-heading">{t("run.gallery.heading")}</h2>
         <span class="sub" aria-live="polite">
-          {ordered.length === 0 ? "" : `${ordered.length} ${ordered.length === 1 ? "sheet" : "sheets"}`}
+          {ordered.length === 0 ? "" : t("run.gallery.sheets", { count: ordered.length })}
         </span>
       </div>
       {ordered.length === 0 && (
         <p class="sub">
           {run.status === "running" || run.status === "waiting"
-            ? "Sheets appear here as each step finishes: photos with mask outlines first."
-            : "This run produced no sheets."}
+            ? t("run.gallery.soon")
+            : t("run.gallery.none")}
         </p>
       )}
       {groups.map((group) => (

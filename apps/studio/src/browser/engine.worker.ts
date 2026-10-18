@@ -68,9 +68,15 @@ const runs = new Map<string, EngineRun>();
 async function load(module: string): Promise<void> {
   try {
     const gpu = scope.navigator.gpu;
-    if (gpu === undefined) throw new Error("This browser has no WebGPU, which the engine computes with.");
+    if (gpu === undefined) {
+      scope.postMessage({ type: "loaded", ok: false, reason: "no-webgpu", message: "This browser has no WebGPU, which the engine computes with." });
+      return;
+    }
     const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
-    if (adapter === null) throw new Error("WebGPU is there, but the browser found no graphics adapter it can use.");
+    if (adapter === null) {
+      scope.postMessage({ type: "loaded", ok: false, reason: "no-adapter", message: "WebGPU is there, but the browser found no graphics adapter it can use." });
+      return;
+    }
     engine = (await import(/* @vite-ignore */ module)) as EnginePackage;
     const settings = await engine.settingsSchema();
     const info = adapter.info ?? {};

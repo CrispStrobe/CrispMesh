@@ -3,6 +3,7 @@ import { AUTOMATIC_LENS, checkCalibration, photoFiles, type BrowserEngine, type 
 import { describe } from "../sources/transport";
 import { CaptureScreen } from "./capture";
 import { importFolderName } from "./deviceImport";
+import { t, tParts } from "../i18n";
 
 interface Props {
   engine: BrowserEngine;
@@ -29,7 +30,7 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount
   const accept = (list: File[], name: string) => {
     const photos = photoFiles(list.map((file) => ({ name: file.name, file })));
     if (photos.length < 3) {
-      setProblem(photos.length === 0 ? "No PNG or JPEG photos among the chosen files." : "At least three photos are needed: one per turntable position.");
+      setProblem(photos.length === 0 ? t("inputs.photos.noPhotos") : t("inputs.photos.tooFew"));
       engine.setPhotos(null);
       setPicked(null);
       onPicked("");
@@ -48,17 +49,17 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount
   return (
     <div class="field">
       <span class="field-label" id="f-photos-label">
-        Photos
+        {t("inputs.photos.label")}
       </span>
       <div class="path-row">
         <button type="button" class="button" onClick={() => files.current?.click()}>
-          Choose photos
+          {t("inputs.photos.choose")}
         </button>
         <button type="button" class="button" onClick={() => folder.current?.click()}>
-          Choose a folder
+          {t("inputs.photos.chooseFolder")}
         </button>
         <button type="button" class="button" onClick={() => setCapturing(true)}>
-          Take photos
+          {t("inputs.photos.take")}
         </button>
         <input
           ref={files}
@@ -93,7 +94,7 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount
         />
       </div>
       <span class="help">
-        One photo per turntable position, one turn, in capture order by name (PNG or JPEG). They are read here; nothing is uploaded.
+        {t("inputs.photos.help")}
       </span>
       {capturing && (
         <CaptureScreen
@@ -112,8 +113,13 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount
       {picked !== null && (
         <>
           <span class="picked" role="status">
-            <strong>{picked.name}</strong>: {picked.files.length} photos, {Math.round(megabytes)} MB, from {picked.files[0]![0]} to{" "}
-            {picked.files[picked.files.length - 1]![0]}.
+            <strong>{picked.name}</strong>:{" "}
+            {t("inputs.photos.picked", {
+              count: picked.files.length,
+              megabytes: Math.round(megabytes),
+              first: picked.files[0]![0],
+              last: picked.files[picked.files.length - 1]![0],
+            })}
           </span>
           <label class="check" for="f-photo-previews">
             <input
@@ -125,9 +131,9 @@ export function PhotosPicker({ engine, error, onPicked, onAutomaticLens, onCount
                 engine.setPhotos(picked, event.currentTarget.checked);
               }}
             />
-            <span>Show intermediate surfaces while computing</span>
+            <span>{t("inputs.photos.previews")}</span>
           </label>
-          <span class="help">Off by default for photos: they need about a third more memory, and a browser gives the engine at most 4 GiB.</span>
+          <span class="help">{t("inputs.photos.previewsHelp")}</span>
         </>
       )}
       {(problem !== "" || error !== undefined) && (
@@ -169,11 +175,11 @@ export function CalibrationPicker({ engine, error, onPicked, value }: Props) {
   return (
     <div class="field">
       <span class="field-label" id="f-calibration-label">
-        Lens calibration
+        {t("inputs.lens.label")}
       </span>
       <div class="path-row">
         <button type="button" class="button" onClick={() => input.current?.click()}>
-          Choose a calibration file
+          {t("inputs.lens.chooseFile")}
         </button>
         <input
           ref={input}
@@ -198,8 +204,8 @@ export function CalibrationPicker({ engine, error, onPicked, value }: Props) {
         />
       </div>
       {shipped.length > 0 && (
-        <div class="calibrations" role="group" aria-label="Calibrations that come with the app">
-          <span class="help">Included:</span>
+        <div class="calibrations" role="group" aria-label={t("inputs.lens.includedLabel")}>
+          <span class="help">{t("inputs.lens.included")}</span>
           {shipped.map((calibration) => {
             const name = calibration.path.split("/").pop() ?? calibration.path;
             return (
@@ -216,8 +222,8 @@ export function CalibrationPicker({ engine, error, onPicked, value }: Props) {
           })}
         </div>
       )}
-      <div class="calibrations" role="group" aria-label="Without a calibration file">
-        <span class="help">No file?</span>
+      <div class="calibrations" role="group" aria-label={t("inputs.lens.withoutLabel")}>
+        <span class="help">{t("inputs.lens.noFile")}</span>
         <button
           type="button"
           class="button small"
@@ -227,16 +233,15 @@ export function CalibrationPicker({ engine, error, onPicked, value }: Props) {
             done(AUTOMATIC_LENS);
           }}
         >
-          Automatic
+          {t("inputs.lens.automatic")}
         </button>
       </div>
       <span class="help">
-        Focal length, principal point and radial distortion of the camera's lens. Automatic finds the focal length from the
-        turn itself (centred lens, distortion left out): good for phone cameras and webcams.
+        {t("inputs.lens.help")}
       </span>
       {current !== "" && (
         <span class="picked" role="status">
-          Calibration: <strong>{current}</strong>
+          {tParts("inputs.lens.picked", { name: <strong>{current === AUTOMATIC_LENS ? t("inputs.lens.automaticLabel") : current}</strong> })}
         </span>
       )}
       {(problem !== "" || error !== undefined) && (

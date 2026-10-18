@@ -3,6 +3,8 @@
  * defaults, and where a server-side validation message belongs. No DOM.
  */
 
+import { t } from "../i18n";
+
 export type SettingValue = boolean | number | number[] | string;
 
 export interface SettingSpec {
@@ -89,7 +91,7 @@ export function parseFormValue(spec: SettingSpec, raw: string | boolean): Parsed
     case "number": {
       const value = parseNumber(textValue, spec.kind === "integer");
       if (value === null) {
-        return { ok: false, error: spec.kind === "integer" ? "Needs a whole number." : "Needs a number." };
+        return { ok: false, error: spec.kind === "integer" ? t("inputs.option.needsWhole") : t("inputs.option.needsNumber") };
       }
       return { ok: true, value };
     }
@@ -97,14 +99,14 @@ export function parseFormValue(spec: SettingSpec, raw: string | boolean): Parsed
     case "number_list": {
       const integer = spec.kind === "integer_list";
       const parts = textValue.split(/[,\s]+/).filter((part) => part !== "");
-      if (parts.length === 0) return { ok: false, error: "Needs at least one value." };
+      if (parts.length === 0) return { ok: false, error: t("inputs.setting.needsOne") };
       const values: number[] = [];
       for (const part of parts) {
         const value = parseNumber(part, integer);
         if (value === null) {
           return {
             ok: false,
-            error: `"${part}" is not a ${integer ? "whole number" : "number"}. Separate values with commas.`,
+            error: t(integer ? "inputs.setting.notWhole" : "inputs.setting.notNumber", { part }),
           };
         }
         values.push(value);
@@ -115,7 +117,7 @@ export function parseFormValue(spec: SettingSpec, raw: string | boolean): Parsed
       try {
         return { ok: true, value: JSON.parse(textValue) as SettingValue };
       } catch {
-        return { ok: false, error: "Needs valid JSON." };
+        return { ok: false, error: t("inputs.setting.needsJson") };
       }
   }
 }

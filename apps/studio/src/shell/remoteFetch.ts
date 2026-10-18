@@ -1,5 +1,6 @@
 import { browserFetch, type FetchLike } from "../sources/transport";
 import type { Shell } from "./shell";
+import { t } from "../i18n";
 
 /**
  * In the apps: requests to an engine at a plain `http://` address go through the app (`remote_fetch`, the app's
@@ -10,7 +11,7 @@ export function remoteFetcher(shell: Pick<Shell, "bridge">): FetchLike {
   return async (input, init) => {
     if (!input.startsWith("http://")) return browserFetch(input, init);
     const signal = init?.signal ?? undefined;
-    const aborted = () => new DOMException("The request was aborted.", "AbortError");
+    const aborted = () => new DOMException(t("connection.remoteFetch.aborted"), "AbortError");
     if (signal?.aborted) throw aborted();
     const method = (init?.method ?? "GET").toUpperCase();
     const headers: Record<string, string> = {};
@@ -22,7 +23,7 @@ export function remoteFetcher(shell: Pick<Shell, "bridge">): FetchLike {
     else if (raw instanceof Blob) body = new Uint8Array(await raw.arrayBuffer());
     else if (raw instanceof ArrayBuffer) body = new Uint8Array(raw);
     else if (ArrayBuffer.isView(raw)) body = new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength);
-    else throw new TypeError("This kind of request body is not sent through the app.");
+    else throw new TypeError(t("connection.remoteFetch.body"));
     const framed = await shell.bridge<ArrayBuffer | Uint8Array | number[]>("remote_fetch", body, {
       headers: {
         "x-url": encodeURIComponent(input),
