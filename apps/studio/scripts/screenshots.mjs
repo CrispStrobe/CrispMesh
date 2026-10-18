@@ -52,6 +52,7 @@ const expected = [];
 
 async function page(browser, viewport, { theme = "light", prefs = {}, mobile = false } = {}) {
   const context = await browser.newContext({
+    locale: "en-US",
     viewport,
     deviceScaleFactor: 1,
     colorScheme: theme,

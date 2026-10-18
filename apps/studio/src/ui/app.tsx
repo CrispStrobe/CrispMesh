@@ -11,6 +11,7 @@ import { Connection } from "./connection";
 import { Icon } from "./icons";
 import { NewRun } from "./newRun";
 import { applyTheme, loadPrefs, savePrefs, speedFromPref, type ThemeChoice } from "./prefs";
+import { resolveLanguage, setLanguage, t, type LanguageChoice, type MessageKey } from "../i18n";
 import { Examples } from "./examples";
 import { Notices } from "./notices";
 import { Runs } from "./runs";
@@ -64,18 +65,33 @@ export function navigate(hash: string): void {
 }
 
 const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = { system: "light", light: "dark", dark: "system" };
-const THEME_LABEL: Record<ThemeChoice, string> = { system: "Auto", light: "Light", dark: "Dark" };
+const THEME_LABEL: Record<ThemeChoice, MessageKey> = { system: "app.theme.system", light: "app.theme.light", dark: "app.theme.dark" };
+const LANGUAGE_CHOICES: { value: LanguageChoice; label: MessageKey }[] = [
+  { value: "system", label: "app.language.system" },
+  { value: "en", label: "app.language.en" },
+  { value: "de", label: "app.language.de" },
+];
 const THEME_ICON = { system: "auto", light: "sun", dark: "moon" } as const;
 
 /** The demo recording ships next to index.html. */
 const DEMO_BUNDLE = "demo/";
 
 /** License line, and the way to the licenses of everything in the app (shown inside the app). */
-function Footer() {
+function Footer({ language, onLanguage }: { language: LanguageChoice; onLanguage(choice: LanguageChoice): void }) {
   return (
     <footer class="footer">
-      <span>CrispMesh is free software under AGPL-3.0-only.</span>
-      <a href="#/notices">Licenses and third-party notices</a>
+      <span>{t("app.footer.license")}</span>
+      <a href="#/notices">{t("app.footer.notices")}</a>
+      <label class="language-choice">
+        <span>{t("app.language.label")}</span>
+        <select value={language} onChange={(event) => onLanguage(event.currentTarget.value as LanguageChoice)}>
+          {LANGUAGE_CHOICES.map((choice) => (
+            <option key={choice.value} value={choice.value} lang={choice.value === "system" ? undefined : choice.value}>
+              {t(choice.label)}
+            </option>
+          ))}
+        </select>
+      </label>
     </footer>
   );
 }
@@ -84,6 +100,15 @@ export function App() {
   const [route, setRoute] = useState<Route>(() => parseRoute(location.hash));
   const [prefs, setPrefs] = useState(loadPrefs);
   const [themeTick, setThemeTick] = useState(0);
+  // The language is set before anything renders, so every component below reads it.
+  const [, setLanguageTick] = useState(0);
+  setLanguage(resolveLanguage(prefs.language));
+  useEffect(() => {
+    // "System" follows a change of the browser's or system's language while the app is open.
+    const onChange = () => setLanguageTick((tick) => tick + 1);
+    addEventListener("languagechange", onChange);
+    return () => removeEventListener("languagechange", onChange);
+  }, []);
   // Inside the desktop app the shell runs an engine of its own. In a browser `shell` is null.
   const shell = useMemo(getShell, []);
   const [shellInfo, setShellInfo] = useState<ShellInfo | null>(null);
@@ -154,9 +179,9 @@ export function App() {
   const engine = useMemo<Engine | null>(() => {
     try {
       if (mode === "browser") return browserEngine;
-      if (mode === "native" && shell !== null) return new LocalEngine(shell.bridge, { label: "this computer" });
+      if (mode === "native" && shell !== null) return new LocalEngine(shell.bridge, { label: t("app.engineLabel.thisComputer") });
       if (mode === "python") {
-        return localUrl !== null ? new HttpEngine(localUrl, { token: localToken ?? undefined, label: "this computer" }) : null;
+        return localUrl !== null ? new HttpEngine(localUrl, { token: localToken ?? undefined, label: t("app.engineLabel.thisComputer") }) : null;
       }
       // In the apps, plain-http engines are reached through the app itself (shell/remoteFetch.ts).
       return prefs.engineUrl !== ""
@@ -181,40 +206,40 @@ export function App() {
   const needsEngine = route.screen === "runs" || route.screen === "new" || route.screen === "run" || route.screen === "examples";
   const showRuns = useLocal || mode === "browser" || prefs.engineUrl !== "";
 
-  let title = "Studio";
-  if (route.screen === "replay") title = route.bundle === null ? "Demo recording" : "Recording";
-  else if (route.screen === "runs") title = "Runs";
-  else if (route.screen === "new") title = "New run";
+  let title: string | null = null;
+  if (route.screen === "replay") title = t(route.bundle === null ? "app.title.demoRecording" : "app.title.recording");
+  else if (route.screen === "runs") title = t("app.title.runs");
+  else if (route.screen === "new") title = t("app.title.newRun");
   else if (route.screen === "run") title = route.id;
-  else if (route.screen === "shell") title = "Engine settings";
-  else if (route.screen === "notices") title = "Licenses";
-  else if (route.screen === "examples") title = "Example objects";
+  else if (route.screen === "shell") title = t("app.title.engineSettings");
+  else if (route.screen === "notices") title = t("app.title.licenses");
+  else if (route.screen === "examples") title = t("app.title.examples");
   useEffect(() => {
-    document.title = title === "Studio" ? "CrispMesh" : `${title} - CrispMesh`;
+    document.title = title === null ? "CrispMesh" : `${title} - CrispMesh`;
   }, [title]);
 
   return (
     <div class="app">
       <a class="skip-link" href="#main">
-        Skip to content
+        {t("app.skipToContent")}
       </a>
       <header class="topbar">
-        <a class="brand" href="#/" aria-label="CrispMesh, connection">
+        <a class="brand" href="#/" aria-label={t("app.brandLabel")}>
           <img class="brand-mark" src={brandMark} alt="" width={22} height={22} />
           <span>
             Crisp<strong>Mesh</strong>
           </span>
         </a>
-        <nav class="topnav" aria-label="Main">
+        <nav class="topnav" aria-label={t("app.navLabel")}>
           <a href="#/" aria-current={route.screen === "connection" ? "page" : undefined}>
-            Connection
+            {t("app.nav.connection")}
           </a>
           <a href="#/replay" aria-current={route.screen === "replay" && route.bundle === null ? "page" : undefined}>
-            Demo
+            {t("app.nav.demo")}
           </a>
           {showRuns && (
             <a href="#/engine" aria-current={needsEngine ? "page" : undefined}>
-              Runs
+              {t("app.nav.runs")}
             </a>
           )}
         </nav>
@@ -222,11 +247,11 @@ export function App() {
           type="button"
           class="button quiet theme-toggle"
           onClick={() => update({ theme: THEME_NEXT[prefs.theme] })}
-          aria-label={`Theme: ${THEME_LABEL[prefs.theme]}. Switch to ${THEME_LABEL[THEME_NEXT[prefs.theme]]}.`}
-          title="Switch theme"
+          aria-label={t("app.theme.label", { current: t(THEME_LABEL[prefs.theme]), next: t(THEME_LABEL[THEME_NEXT[prefs.theme]]) })}
+          title={t("app.theme.switch")}
         >
           <Icon name={THEME_ICON[prefs.theme]} />
-          <span class="theme-label">{THEME_LABEL[prefs.theme]}</span>
+          <span class="theme-label">{t(THEME_LABEL[prefs.theme])}</span>
         </button>
       </header>
       <main id="main" tabIndex={-1}>
@@ -242,9 +267,9 @@ export function App() {
           ) : (
             <section class="page narrow">
               <div class="notice" role="note">
-                <p>These settings exist only in the desktop app, which runs an engine itself.</p>
+                <p>{t("app.shellOnly")}</p>
                 <a class="button" href="#/">
-                  Connection
+                  {t("app.connectionButton")}
                 </a>
               </div>
             </section>
@@ -255,9 +280,9 @@ export function App() {
         {needsEngine && engine === null && mode !== "python" && (
           <section class="page narrow">
             <div class="notice bad" role="alert">
-              <p>No engine is connected.</p>
+              <p>{t("app.noEngine")}</p>
               <a class="button primary" href="#/">
-                Choose a connection
+                {t("app.chooseConnection")}
               </a>
             </div>
           </section>
@@ -270,11 +295,11 @@ export function App() {
             source={runSource}
             themeTick={themeTick}
             backHref={route.screen === "run" ? "#/engine" : "#/"}
-            heading={route.screen === "run" ? route.id : route.bundle === null ? "Demo: synthetic sphere" : "Recorded run"}
+            heading={route.screen === "run" ? route.id : route.bundle === null ? t("app.heading.demo") : t("app.heading.recorded")}
           />
         )}
       </main>
-      <Footer />
+      <Footer language={prefs.language} onLanguage={(choice) => update({ language: choice })} />
     </div>
   );
 }

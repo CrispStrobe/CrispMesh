@@ -13,7 +13,7 @@ const out = process.argv[2] ?? "";
 const browser = await chromium.launch();
 const results = [];
 for (const [speed, stored] of [["1×", 1], ["4×", 4], ["16×", 16], ["Instant", 0]]) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const page = await browser.newPage({ locale: "en-US", viewport: { width: 1280, height: 900 } });
   // The replay starts at the remembered speed: set it before the page loads, so the whole
   // run is played at that speed from its first event.
   await page.addInitScript((value) => localStorage.setItem("crispmesh.studio.v1", JSON.stringify({ replaySpeed: value })), stored);

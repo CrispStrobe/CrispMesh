@@ -1641,10 +1641,25 @@ fieldset.panel > legend {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
+  align-items: center;
   justify-content: center;
   padding: 0 16px 20px;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.footer .language-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer .language-choice select {
+  width: auto;
+  min-height: 32px;
+  padding: 2px 8px;
+  /* 16px keeps iOS from zooming the page when the list is focused. */
+  font-size: 16px;
 }
 
 .app:has(.replay-bar) .footer {

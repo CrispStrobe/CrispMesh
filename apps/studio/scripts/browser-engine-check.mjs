@@ -36,7 +36,7 @@ const launch = ["--enable-unsafe-webgpu", "--enable-features=WebGPU"];
 if (process.platform === "darwin") launch.push("--use-angle=metal");
 else launch.push("--enable-features=Vulkan", "--use-angle=vulkan");
 const browser = await chromium.launch({ channel: process.env.STUDIO_CHANNEL ?? "chromium", headless: true, args: launch });
-const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+const context = await browser.newContext({ locale: "en-US", viewport: { width: 1440, height: 900 }, acceptDownloads: true });
 const page = await context.newPage();
 const problems = [];
 // Fetching a revoked object URL logs an error by design; that check switches this off.

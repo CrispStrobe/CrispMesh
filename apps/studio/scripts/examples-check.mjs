@@ -12,7 +12,7 @@ const object = process.env.STUDIO_OBJECT ?? "Dragon";
 const launch = ["--enable-unsafe-webgpu", "--enable-features=WebGPU"];
 if (process.platform === "darwin") launch.push("--use-angle=metal");
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: launch });
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const page = await browser.newPage({ locale: "en-US", viewport: { width: 1280, height: 900 } });
 const problems = [];
 page.on("pageerror", (error) => problems.push(`page error: ${error.message}`));
 page.on("console", (message) => message.type() === "error" && problems.push(`console: ${message.text()}`));

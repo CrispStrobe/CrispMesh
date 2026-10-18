@@ -40,7 +40,7 @@ const launch = [
 ];
 if (process.platform === "darwin") launch.push("--use-angle=metal");
 const browser = await chromium.launch({ channel: process.env.STUDIO_CHANNEL ?? "chrome", headless: true, args: launch });
-const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ["camera"] });
+const context = await browser.newContext({ locale: "en-US", viewport: { width: 1280, height: 900 }, permissions: ["camera"] });
 const page = await context.newPage();
 const problems = [];
 page.on("pageerror", (error) => problems.push(`page error: ${error.message}`));

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
+import { t, tParts } from "../i18n";
 
 /** The file that `npm run build:release` writes next to index.html. */
 export const NOTICES_FILE = "THIRD-PARTY-NOTICES.txt";
@@ -26,22 +27,16 @@ export function Notices() {
     <div class="page narrow">
       <div class="page-head">
         <div>
-          <h1>Licenses</h1>
-          <p class="sub">
-            CrispMesh is free software under the GNU Affero General Public License, version 3 only, with an additional permission for the builds its author publishes in app stores (shown first below). Its source code is at{" "}
-            <span class="mono wrap">https://github.com/CrispStrobe/CrispMesh</span>.
-          </p>
+          <h1>{t("app.notices.title")}</h1>
+          <p class="sub">{tParts("app.notices.intro", { url: <span class="mono wrap">https://github.com/CrispStrobe/CrispMesh</span> })}</p>
         </div>
       </div>
       <section class="card" aria-labelledby="n-third">
-        <h2 id="n-third">License, store permission and third-party software</h2>
+        <h2 id="n-third">{t("app.notices.heading")}</h2>
         {missing ? (
-          <p>
-            This build does not carry the collected notices (they are written into release builds). The list of what the app
-            contains, with each license, is in the source: <span class="mono wrap">apps/studio/docs/THIRD-PARTY-LICENSES.md</span>.
-          </p>
+          <p>{tParts("app.notices.missing", { path: <span class="mono wrap">apps/studio/docs/THIRD-PARTY-LICENSES.md</span> })}</p>
         ) : text === null ? (
-          <p role="status">Loading...</p>
+          <p role="status">{t("app.notices.loading")}</p>
         ) : (
           <pre class="notices" tabIndex={0}>
             {text}

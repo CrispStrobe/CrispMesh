@@ -22,7 +22,7 @@ const files = readdirSync(photos).filter((name) => /\.(png|jpe?g)$/i.test(name))
 const launch = ["--enable-unsafe-webgpu", "--enable-features=WebGPU"];
 if (process.platform === "darwin") launch.push("--use-angle=metal");
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: launch });
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+const page = await browser.newPage({ locale: "en-US", viewport: { width: 1440, height: 900 }, acceptDownloads: true });
 const problems = [];
 page.on("pageerror", (error) => problems.push(`page error: ${error.message}`));
 page.on("console", (message) => message.type() === "error" && problems.push(`console: ${message.text()}`));

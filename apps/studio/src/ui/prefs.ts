@@ -1,11 +1,14 @@
 /** Remembered choices (localStorage). Everything is optional and failure to store is harmless. */
 
 import type { ReplaySpeed } from "../core/replay";
+import type { LanguageChoice } from "../i18n";
 
 export type ThemeChoice = "system" | "light" | "dark";
 
 export interface Prefs {
   theme: ThemeChoice;
+  /** "system" follows the system or browser language (German for de-*, else English). */
+  language: LanguageChoice;
   engineUrl: string;
   /** Bearer token of the engine. Stored on this device only; never logged or put in a URL. */
   engineToken: string;
@@ -26,6 +29,7 @@ const KEY = "crispmesh.studio.v1";
 
 const DEFAULTS: Prefs = {
   theme: "system",
+  language: "system",
   engineUrl: "",
   engineToken: "",
   bundleUrl: "",

@@ -16,7 +16,7 @@ const out = process.env.STUDIO_OUT ?? "";
 // STUDIO_GL=metal (macOS) or another ANGLE backend uses the real GPU; the default is software rendering, which works everywhere.
 const gl = process.env.STUDIO_GL ?? "swiftshader";
 const browser = await chromium.launch({ args: [`--use-angle=${gl}`, "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--enable-gpu"] });
-const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const context = await browser.newContext({ locale: "en-US", viewport: { width: 1440, height: 900 } });
 await context.addInitScript(() => {
   localStorage.setItem("crispmesh.studio.v1", JSON.stringify({ replaySpeed: 0 }));
   // Longest gap between 10 ms ticks = longest time the main thread could not respond.
@@ -112,7 +112,7 @@ if (out !== "") {
 console.log("reports:", (await page.locator(".report h3").allInnerTexts()).join(", "), "| warnings shown:", await page.locator(".report .notice.warn").count());
 
 // The same bundle at phone width: layout, the final-mesh button, the gallery.
-const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const phone = await browser.newContext({ locale: "en-US", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 await phone.addInitScript(() => localStorage.setItem("crispmesh.studio.v1", JSON.stringify({ replaySpeed: 0 })));
 const small = await phone.newPage();
 small.on("pageerror", (error) => failures.push("phone: " + error.message));

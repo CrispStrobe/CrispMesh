@@ -8,7 +8,7 @@ import { chromium } from "playwright";
 const base = process.env.STUDIO_URL ?? "http://127.0.0.1:1431/";
 const object = process.env.STUDIO_OBJECT ?? "Lucy";
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--enable-unsafe-webgpu", "--enable-features=WebGPU", "--use-angle=metal"] });
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const page = await browser.newPage({ locale: "en-US", viewport: { width: 1280, height: 900 } });
 const problems = [];
 page.on("pageerror", (error) => problems.push(`page error: ${error.message}`));
 try {
