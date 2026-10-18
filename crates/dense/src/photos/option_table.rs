@@ -595,6 +595,17 @@ pub const OPTIONS: &[OptionSpec] = &[
         meaning: "The photos are this many complete turns of equal length, one after the other (cameras at several heights)",
     },
     OptionSpec {
+        flag: "turntable-turn-sizes",
+        scope: "cameras:turntable",
+        kind: "text",
+        default: None,
+        choices: &[],
+        variable: None,
+        repeated: false,
+        meaning: "Turns of unequal length (cameras at several heights, some photos deleted): the photos of each turn in \
+                  order, separated by commas, e.g. 36,35,36; sets the number of turns",
+    },
+    OptionSpec {
         flag: "turntable-matches",
         scope: "cameras:turntable",
         kind: "path",

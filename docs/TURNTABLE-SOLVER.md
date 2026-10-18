@@ -182,9 +182,10 @@ and their backdrop is dark.
 
 ## Limits and open points
 
-- **Turns of equal length.** `--turntable-rings` needs every turn complete and
-  with the same number of photos; a turn's photos must not be shuffled with
-  another's.
+- **Complete turns in order.** `--turntable-rings` needs every turn complete and
+  with the same number of photos; `--turntable-turn-sizes 36,35,36` lists turns
+  of unequal length (photos deleted after the capture). A turn's photos must not
+  be shuffled with another's.
 - **Turntables only.** A camera walking around an object at rest does not
   repeat one motion; that needs registration photo by photo, which is not
   written.
@@ -225,6 +226,11 @@ touched: cameras and scene are byte-identical to the previous binary on a
 **Several turns.** `--turntable-rings N`: the photos are N complete turns of
 equal length, one after the other, for example the same turntable seen by
 cameras at several heights. The photo limit becomes 96 per turn.
+`--turntable-turn-sizes 36,35,36` gives turns of unequal length instead (8 to
+96 photos each, adding up to all photos; the number of turns follows); without
+it every step below is unchanged. Across turns of unequal length a photo is
+paired with the photo of the next turn at the same share of the turn, shifted
+by the phase found.
 
 1. Every turn is matched within itself as before. Across neighbouring turns only
    features that turn with the object are matched (inside the mask, or matched

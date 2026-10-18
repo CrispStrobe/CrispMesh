@@ -142,17 +142,22 @@ impl CameraProvider for Turntable {
         let (options, out) = (run.options, run.out);
         let (count, threads, timeouts) = (options.photo_count, options.threads, &options.timeouts);
         let rings = options.turntable.rings;
-        if rings > 1 && (count % rings != 0 || count / rings < 8) {
+        if options.turntable.turn_sizes.is_none() && rings > 1 && (count % rings != 0 || count / rings < 8) {
             bail!("--turntable-rings {rings}: {count} photos do not make {rings} turns of equal length with at least 8 photos each");
         }
-        let per = count / rings;
+        // Photos starts[r]..starts[r + 1] are turn r; equal turns unless --turntable-turn-sizes lists them.
+        let starts = options.turntable.turn_starts(count);
+        if starts.last() != Some(&count) || starts.windows(2).any(|w| rings > 1 && w[1] - w[0] < 8) {
+            bail!("--turntable-turn-sizes: the turns must add up to the {count} photos, with at least 8 photos each");
+        }
+        let length = |r: usize| starts[r + 1] - starts[r];
         // Features are found and the cameras solved at a working resolution, the same for every
         // capture whatever its pixel count: the solver's pixel bounds then mean the same everywhere.
         let working = working_lens(&lens, options.turntable.working_size);
         let (sx, sy) = (working.width as f64 / lens.width as f64, working.height as f64 / lens.height as f64);
         let shrink = |p: [f64; 2]| [(p[0] + 0.5) * sx - 0.5, (p[1] + 0.5) * sy - 0.5];
         let names: Vec<String> = (0..count).map(capture_name).collect();
-        let ring_of = |photo: usize| photo / per;
+        let ring_of = |photo: usize| starts.partition_point(|&start| start <= photo) - 1;
         // Per photo and feature: inside the object's mask (only known for features found here).
         let mut object_side: Option<Vec<Vec<bool>>> = None;
         let mut matches = match &options.turntable.matches {
@@ -208,7 +213,8 @@ impl CameraProvider for Turntable {
                 let span = options.turntable.span;
                 let mut pairs: Vec<(usize, usize)> = Vec::new();
                 for r in 0..rings {
-                    pairs.extend(matching::ring_pairs(per, span, options.open_turn).into_iter().map(|(i, j)| (r * per + i, r * per + j)));
+                    let first = starts[r];
+                    pairs.extend(matching::ring_pairs(length(r), span, options.open_turn).into_iter().map(|(i, j)| (first + i, first + j)));
                 }
                 let match_list = |pairs: &[(usize, usize)],
                                   moving: Option<&Vec<Vec<bool>>>,
@@ -249,11 +255,12 @@ impl CameraProvider for Turntable {
                     // Neighbouring turns: the photo of the next turn at the same turntable angle is the one
                     // that shares the most with it. Probe two photos half a turn apart against every
                     // photo of the next turn, then match each photo with that one and its two neighbours.
+                    // Turns of unequal length are compared at the same share of the turn.
                     let mut probes = Vec::new();
                     for r in 0..rings - 1 {
-                        for j in 0..per {
-                            probes.push((r * per, (r + 1) * per + j));
-                            probes.push((r * per + per / 2, (r + 1) * per + j));
+                        for j in 0..length(r + 1) {
+                            probes.push((starts[r], starts[r + 1] + j));
+                            probes.push((starts[r] + length(r) / 2, starts[r + 1] + j));
                         }
                     }
                     let counts = match_list(
@@ -267,15 +274,20 @@ impl CameraProvider for Turntable {
                     )?;
                     let mut phases = Vec::new();
                     let mut across = Vec::new();
+                    let mut block_start = 0;
                     for r in 0..rings - 1 {
-                        let block = &counts[r * 2 * per..(r + 1) * 2 * per];
-                        let phase = (0..per)
-                            .max_by_key(|&shift| block[2 * shift].len() + block[2 * ((shift + per / 2) % per) + 1].len())
+                        let (own, next) = (length(r), length(r + 1));
+                        let block = &counts[block_start..block_start + 2 * next];
+                        block_start += 2 * next;
+                        let phase = (0..next)
+                            .max_by_key(|&shift| block[2 * shift].len() + block[2 * ((shift + next / 2) % next) + 1].len())
                             .unwrap_or(0);
                         phases.push(phase);
-                        for k in 0..per {
-                            for d in [per - 1, 0, 1] {
-                                across.push((r * per + k, (r + 1) * per + (k + phase + d) % per));
+                        for k in 0..own {
+                            // The photo of the next turn at the same share of the turn (k itself for equal turns).
+                            let same = (k * next + own / 2) / own;
+                            for d in [next - 1, 0, 1] {
+                                across.push((starts[r] + k, starts[r + 1] + (same + phase + d) % next));
                             }
                         }
                     }
@@ -299,12 +311,12 @@ impl CameraProvider for Turntable {
         }
         // One turn's matches with photos numbered from 0.
         let ring_matches = |r: usize, matches: &Matches| Matches {
-            keypoints: matches.keypoints[r * per..(r + 1) * per].to_vec(),
+            keypoints: matches.keypoints[starts[r]..starts[r + 1]].to_vec(),
             pairs: matches
                 .pairs
                 .iter()
                 .filter(|(i, j, _)| ring_of(*i) == r && ring_of(*j) == r)
-                .map(|(i, j, list)| (i - r * per, j - r * per, list.clone()))
+                .map(|(i, j, list)| (i - starts[r], j - starts[r], list.clone()))
                 .collect(),
         };
         // With --calibration auto the focal length is found here. The steps the solver finds from image motion scale
@@ -329,7 +341,7 @@ impl CameraProvider for Turntable {
             for r in 0..rings {
                 let own = if rings == 1 { std::mem::take(&mut matches) } else { ring_matches(r, &matches) };
                 let counted: Vec<(usize, usize, usize)> = own.pairs.iter().map(|p| (p.0, p.1, p.2.len())).collect();
-                let by_distance = matching::matches_by_distance(per, &counted);
+                let by_distance = matching::matches_by_distance(length(r), &counted);
                 run.note(
                     if rings == 1 { "turntable_order".to_string() } else { format!("turntable_order_ring_{}", r + 1) }.as_str(),
                     json!({"median_matches_by_distance": by_distance}),
@@ -342,7 +354,7 @@ impl CameraProvider for Turntable {
                     }
                 })?;
                 let planar = if options.turntable.surface {
-                    let inside = &object_side.as_ref().expect("photo features")[r * per..(r + 1) * per];
+                    let inside = &object_side.as_ref().expect("photo features")[starts[r]..starts[r + 1]];
                     match super::planar::estimate(&own, inside, &camera) {
                         Ok(seed) => Some(seed),
                         Err(e) if rings == 1 => return Err(e),
@@ -393,7 +405,7 @@ impl CameraProvider for Turntable {
                         if pass == 0 {
                             run.warn(format!("turn {}: {e}; its photos are registered against the other turns instead", r + 1));
                         }
-                        solver::Solved::unsolved(per, &e.to_string())
+                        solver::Solved::unsolved(length(r), &e.to_string())
                     }
                 };
                 if rings == 1 {

@@ -145,13 +145,14 @@ fn judge(options: &Options, out: &Path, solution: &Solution, declared: Option<&L
     let rings = if options.cameras == super::options::CameraChoice::Turntable { options.turntable.rings } else { 1 };
     let (ring, passed, reasons) = if rings > 1 {
         // Several turns: every turn is one ring of its own, judged as a capture of that many photos.
-        let per = options.photo_count / rings;
+        let starts = options.turntable.turn_starts(options.photo_count);
         let (mut all, mut passed, mut reasons) = (Vec::new(), true, Vec::new());
         for r in 0..rings {
+            let (first, per) = (starts[r], starts[r + 1] - starts[r]);
             let own: Vec<_> = cameras
                 .iter()
-                .filter(|c| c.index / per == r)
-                .map(|c| super::ring::SceneCamera { index: c.index - r * per, ..c.clone() })
+                .filter(|c| (first..first + per).contains(&c.index))
+                .map(|c| super::ring::SceneCamera { index: c.index - first, ..c.clone() })
                 .collect();
             let mut statistics = ring_statistics(&own, gates.duplicate_step_deg);
             // Turns at several heights include steep ones, whose ring radius is small: there the optical
@@ -159,7 +160,7 @@ fn judge(options: &Options, out: &Path, solution: &Solution, declared: Option<&L
             if let Some(scaled) = statistics.get("optical_axis_miss_of_distance_percent").cloned() {
                 statistics["optical_axis_miss_percent"] = scaled;
             }
-            let mut audit = turn_audit(&audit, &names[r * per..(r + 1) * per]);
+            let mut audit = turn_audit(&audit, &names[first..first + per]);
             audit["input_images"] = json!(per);
             audit["registered_cameras"] = json!(own.len());
             audit["coverage"] = json!(own.len() as f64 / per as f64);

@@ -86,8 +86,8 @@ fn prompt_json(prompt: &Prompt) -> Value {
 }
 
 /// Segments every photo of `photos` whose coarse mask is `<coarse>/<photo name>.png`. The photos are
-/// `turns` equal runs of one turntable turn each (cameras at different heights); the common prompt box
-/// is that of each turn. `watch(done)` is called after every photo and may stop the run.
+/// runs of one turntable turn each, `turns` photos long in order (cameras at different heights; empty:
+/// one turn); the common prompt box is that of each turn. `watch(done)` is called after every photo and may stop the run.
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     photos: &Path,
@@ -97,7 +97,7 @@ pub fn run(
     backend_options: &BackendOptions,
     settings: Settings,
     automatic_cues: bool,
-    turns: usize,
+    turns: &[usize],
     watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Value> {
     if output.stored() {
@@ -115,9 +115,10 @@ pub fn run(
     if !(1..=MOST_PHOTOS).contains(&paths.len()) {
         bail!("segmentation input must contain 1..{MOST_PHOTOS} photos");
     }
-    let turns = turns.max(1);
-    if !paths.len().is_multiple_of(turns) {
-        bail!("{} photos do not make {turns} turns of equal length", paths.len());
+    let one = [paths.len()];
+    let turns = if turns.is_empty() { &one[..] } else { turns };
+    if turns.iter().sum::<usize>() != paths.len() || turns.contains(&0) {
+        bail!("{} photos do not make {} turns of {turns:?} photos", paths.len(), turns.len());
     }
     // Prompts need every coarse mask first: the box is common to all photos.
     let threads = backend_options.threads.max(1);
@@ -136,8 +137,12 @@ pub fn run(
         bail!("common prompt box requires equal image dimensions");
     }
     let supports: Vec<_> = supports.into_iter().map(|s| s.0).collect();
-    let prompts: Vec<Prompt> =
-        supports.chunks(supports.len() / turns).flat_map(|turn| frozen_prompts(turn, width, height, automatic_cues)).collect();
+    let mut prompts: Vec<Prompt> = Vec::with_capacity(supports.len());
+    let mut first = 0;
+    for &length in turns {
+        prompts.extend(frozen_prompts(&supports[first..first + length], width, height, automatic_cues));
+        first += length;
+    }
     verify_files(model)?;
     let loading = Instant::now();
     let mut network = backend::open(model, backend_options)?;
@@ -219,8 +224,12 @@ impl MaskProvider for NativeSam {
         let settings = Settings { multimask: options.sam.several_candidates, preserve_holes: options.sam.preserve_holes };
         let report =
             run.internal("masks", "sam", options.timeouts.sam, low, high, "Segmenting with SAM 2.1", options.photo_count, |watch| {
-                let turns = if options.cameras == crate::photos::options::CameraChoice::Turntable { options.turntable.rings } else { 1 };
-                run_into(&work, &target, &model, &backend_options(options), settings, options.sam.automatic_cues, turns, watch)
+                let turns = if options.cameras == crate::photos::options::CameraChoice::Turntable {
+                    options.turntable.turn_lengths(options.photo_count)
+                } else {
+                    Vec::new()
+                };
+                run_into(&work, &target, &model, &backend_options(options), settings, options.sam.automatic_cues, &turns, watch)
             })?;
         run.note(
             "sam",
@@ -266,7 +275,7 @@ fn run_into(
     backend_options: &BackendOptions,
     settings: Settings,
     automatic_cues: bool,
-    turns: usize,
+    turns: &[usize],
     watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Value> {
     run(&work.join("photos"), &work.join("coarse-masks"), target, model, backend_options, settings, automatic_cues, turns, watch)

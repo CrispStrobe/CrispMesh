@@ -180,12 +180,56 @@ pub struct TurntableOptions {
     pub surface: bool,
     /// Longest side, in pixels, of the photos the cameras are solved on (0: the photo resolution).
     pub working_size: usize,
-    /// The photos are this many complete turns of equal length, one after the other (camera heights).
+    /// The photos are this many complete turns, one after the other (camera heights).
     pub rings: usize,
+    /// `--turntable-turn-sizes`: the photos of each turn, in order (turns of unequal length, e.g. after photos were
+    /// deleted); `None`: `rings` turns of equal length.
+    pub turn_sizes: Option<Vec<usize>>,
     /// `--calibration auto`: no lens file; the solver finds the focal length from the closed turn.
     pub auto_lens: bool,
     /// First guess of the field of view across the longer side, in degrees, when the photos carry no EXIF focal length.
     pub field_of_view: f64,
+}
+
+impl TurntableOptions {
+    /// Where every turn starts in the photo order, and `count` at the end (`rings + 1` entries). Without
+    /// `turn_sizes` the turns have equal length, `count / rings` (the provider refuses a remainder).
+    pub fn turn_starts(&self, count: usize) -> Vec<usize> {
+        match &self.turn_sizes {
+            Some(sizes) => std::iter::once(0)
+                .chain(sizes.iter().scan(0, |sum, n| {
+                    *sum += n;
+                    Some(*sum)
+                }))
+                .collect(),
+            None => (0..=self.rings).map(|r| r * (count / self.rings)).collect(),
+        }
+    }
+
+    /// The number of photos of every turn (see [`TurntableOptions::turn_starts`]).
+    pub fn turn_lengths(&self, count: usize) -> Vec<usize> {
+        self.turn_starts(count).windows(2).map(|w| w[1] - w[0]).collect()
+    }
+}
+
+/// Parses `--turntable-turn-sizes 36,35,36`: 1 to 16 turns of 8 to 96 photos each that add up to `photo_count`.
+fn turn_sizes(text: &str, photo_count: usize) -> anyhow::Result<Vec<usize>> {
+    let sizes: Vec<usize> = text
+        .split(',')
+        .map(|part| part.trim().parse::<usize>())
+        .collect::<Result<_, _>>()
+        .map_err(|_| anyhow!("--turntable-turn-sizes {text:?}: expected photo counts separated by commas, e.g. 36,35,36"))?;
+    if !(1..=16).contains(&sizes.len()) {
+        bail!("--turntable-turn-sizes {text:?}: 1 to 16 turns");
+    }
+    if let Some(bad) = sizes.iter().find(|n| !(8..=96).contains(*n)) {
+        bail!("--turntable-turn-sizes {text:?}: a turn of {bad} photos; every turn needs 8 to 96");
+    }
+    let sum: usize = sizes.iter().sum();
+    if sum != photo_count {
+        bail!("--turntable-turn-sizes {text:?} adds up to {sum} photos, the folder holds {photo_count}");
+    }
+    Ok(sizes)
 }
 
 /// Options of the `markers` camera provider.
@@ -342,6 +386,8 @@ cameras, turntable provider (our own solver for ordered turntable photos; docs/T
                                   the cameras are scaled back to the photos (0: the photo resolution)
   --turntable-rings N (1)         the photos are N complete turns of equal length one after the other (cameras at
                                   several heights): every turn is solved, then all are joined and adjusted together
+  --turntable-turn-sizes N,N,...  the same for turns of unequal length (e.g. after deleting photos): the photos of
+                                  each turn in order, 8 to 96 each, adding up to all photos; sets the number of turns
 cameras, markers provider (a printed mat under the object; docs/MARKER-MAT.md):
   --markers-mat FILE              description of the printed mat, as `crispmesh-dense mat` writes it [CRISPMESH_MARKERS_MAT]
   --markers-minimum N (5)         a photo with fewer decoded markers gets no pose
@@ -465,8 +511,12 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         bail!("--photos must be a directory");
     }
     let photo_count = list_photos(&photos)?.len();
-    // Up to 96 photos per turn (several turns with --turntable-rings).
-    let turns = integer("turntable-rings")?.clamp(1, 16) as usize;
+    // Up to 96 photos per turn (several turns with --turntable-rings or --turntable-turn-sizes).
+    let sizes_text = text("turntable-turn-sizes").filter(|v| !v.trim().is_empty());
+    let turns = match &sizes_text {
+        Some(sizes) => sizes.split(',').count().clamp(1, 16),
+        None => integer("turntable-rings")?.clamp(1, 16) as usize,
+    };
     if !(3..=96 * turns).contains(&photo_count) {
         let most = 96 * turns;
         bail!("found {photo_count} photos ({}); the camera audit supports 3 to {most}", PHOTO_SUFFIXES.join(", "));
@@ -573,10 +623,22 @@ pub fn resolve(arguments: &[String], environment: &dyn Fn(&str) -> Option<String
         surface: word("turntable-region") == "surface",
         working_size: integer("turntable-working-size")?.clamp(0, 100_000) as usize,
         rings: integer("turntable-rings")?.clamp(1, 16) as usize,
+        turn_sizes: sizes_text.as_deref().map(|sizes| turn_sizes(sizes, photo_count)).transpose()?,
         auto_lens,
         field_of_view: number("lens-field-of-view")?,
     };
-    let few_photos = photo_count / turntable.rings < FEW_PHOTOS;
+    let mut turntable = turntable;
+    if let Some(sizes) = &turntable.turn_sizes {
+        if text("turntable-rings").is_some() && turntable.rings != sizes.len() {
+            bail!("--turntable-rings {} and --turntable-turn-sizes ({} turns) disagree; give one of them", turntable.rings, sizes.len());
+        }
+        turntable.rings = sizes.len();
+    }
+    // Per turn: the shortest turn counts.
+    let few_photos = match &turntable.turn_sizes {
+        Some(sizes) => sizes.iter().min().is_some_and(|&n| n < FEW_PHOTOS),
+        None => photo_count / turntable.rings < FEW_PHOTOS,
+    };
     if !(10.0..=150.0).contains(&turntable.field_of_view) {
         bail!("--lens-field-of-view {}: expected 10 to 150 degrees", turntable.field_of_view);
     }
@@ -769,6 +831,10 @@ impl Options {
         if let (Some(record), Value::Object(more)) = (record.as_object_mut(), more) {
             record.extend(more);
         }
+        // Only when given: a record without it stays as it was.
+        if let Some(sizes) = &self.turntable.turn_sizes {
+            record["turntable"]["turn_sizes"] = json!(sizes);
+        }
         record
     }
 }
@@ -956,6 +1022,39 @@ pub(crate) mod tests {
         assert!(with(&["--photos", &folder.join("two").to_string_lossy()]).unwrap_err().to_string().contains("found 2 photos"));
         let no_lens: Vec<String> = arguments(&folder, &[]).into_iter().filter(|w| w != "--calibration" && *w != example()).collect();
         assert_eq!(resolve(&no_lens, &none).unwrap_err().to_string(), "--calibration is required");
+        crate::photos::fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn turns_of_unequal_length() {
+        let folder = scratch("turn-sizes");
+        for n in 4..=40 {
+            crate::photos::fs::write(folder.join(format!("photos/capture_{n:04}.png")), b"").unwrap();
+        }
+        let with = |more: &[&str]| resolve(&arguments(&folder, more), &none);
+        // Not given: equal turns from --turntable-rings, and the record has no turn_sizes.
+        let equal = with(&["--turntable-rings", "2"]).unwrap();
+        assert_eq!((equal.turntable.rings, equal.turntable.turn_sizes.as_ref()), (2, None));
+        assert_eq!(equal.turntable.turn_starts(40), [0, 20, 40]);
+        assert!(equal.to_json()["turntable"].get("turn_sizes").is_none());
+        // Given: the turns as listed, their number sets the rings and the deadlines, the shortest turn the landmark gate.
+        let sizes = with(&["--turntable-turn-sizes", "12, 9,19"]).unwrap();
+        assert_eq!((sizes.turntable.rings, sizes.turntable.turn_sizes.clone()), (3, Some(vec![12, 9, 19])));
+        assert_eq!(sizes.turntable.turn_starts(40), [0, 12, 21, 40]);
+        assert_eq!(sizes.turntable.turn_lengths(40), [12, 9, 19]);
+        assert_eq!(sizes.to_json()["turntable"]["turn_sizes"], json!([12, 9, 19]));
+        assert_eq!(sizes.timeouts.sfm, 3 * 900);
+        assert_eq!(sizes.gates.minimum_observations_per_view, FEW_PHOTOS_OBSERVATIONS);
+        assert!(with(&["--turntable-turn-sizes", "20,20", "--turntable-rings", "2"]).is_ok());
+        for (more, expected) in [
+            (&["--turntable-turn-sizes", "20,19"][..], "adds up to 39 photos, the folder holds 40"),
+            (&["--turntable-turn-sizes", "33,7"][..], "a turn of 7 photos"),
+            (&["--turntable-turn-sizes", "20,x"][..], "separated by commas"),
+            (&["--turntable-turn-sizes", "20,20", "--turntable-rings", "3"][..], "disagree"),
+        ] {
+            let error = with(more).unwrap_err().to_string();
+            assert!(error.contains(expected), "{more:?}: {error}");
+        }
         crate::photos::fs::remove_dir_all(&folder).unwrap();
     }
 }

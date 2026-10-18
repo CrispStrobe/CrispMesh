@@ -654,24 +654,31 @@ fn resect(seen: &[(P2, V3)], starts: &[(M3, V3)], focal: f64, random: &mut super
 }
 
 /// Several turns of one turntable at different camera heights, each solved on its own
-/// (`rings[r]` holds the photos `r * per ..(r + 1) * per` of `matches`, with their own frames), joined
+/// (`rings[r]` holds the next `rings[r].rotations.len()` photos of `matches` in order, with their own frames), joined
 /// into one frame and adjusted together. A turn whose own solution is a plausible ring is placed by a
 /// similarity fitted with RANSAC to the points of its own solution that matches across rings link to points
 /// already placed (the first such turn sets the frame). The photos of the other turns are then registered
 /// one by one from their matches to the tracks of the placed photos. Last, all matches, those across turns
 /// included, are made into tracks and adjusted with every pose free.
 pub fn join(matches: &Matches, camera: &Camera, rings: &[Solved]) -> anyhow::Result<Solved> {
-    let per = rings.first().map(|r| r.rotations.len()).unwrap_or(0);
-    let count = per * rings.len();
-    if rings.len() < 2 || matches.keypoints.len() != count || rings.iter().any(|r| r.rotations.len() != per) {
-        bail!("rings of unequal length or the wrong number of photos");
+    // Photos starts[r]..starts[r + 1] are ring r (turns may differ in length).
+    let starts: Vec<usize> = std::iter::once(0)
+        .chain(rings.iter().scan(0, |sum, ring| {
+            *sum += ring.rotations.len();
+            Some(*sum)
+        }))
+        .collect();
+    let count = starts[rings.len()];
+    if rings.len() < 2 || matches.keypoints.len() != count || rings.iter().any(|r| r.rotations.is_empty()) {
+        bail!("empty rings or the wrong number of photos");
     }
+    let ring_of = |photo: usize| starts.partition_point(|&start| start <= photo) - 1;
     let focal = (camera.fx + camera.fy) / 2.0;
     // (photo, feature) -> (ring, point of that ring's solution)
     let mut point_of: HashMap<(usize, u32), (usize, usize)> = HashMap::new();
     for (r, ring) in rings.iter().enumerate() {
         for &(view, point, feature) in &ring.observations {
-            point_of.insert((r * per + view, feature), (r, point));
+            point_of.insert((starts[r] + view, feature), (r, point));
         }
     }
     let mut rotations = vec![[[0.0; 3]; 3]; count];
@@ -679,11 +686,11 @@ pub fn join(matches: &Matches, camera: &Camera, rings: &[Solved]) -> anyhow::Res
     let mut world: Vec<Option<Vec<V3>>> = vec![None; rings.len()];
     let place = |r: usize, s: f64, rotation: &M3, t: V3, rotations: &mut [M3], translations: &mut [V3], world: &mut [Option<Vec<V3>>]| {
         let back = transpose(rotation);
-        for v in 0..per {
+        for v in 0..rings[r].rotations.len() {
             let (rc, tc) = (rings[r].rotations[v], rings[r].translations[v]);
             let turned = mul(&rc, &back);
-            rotations[r * per + v] = turned;
-            translations[r * per + v] = sub(scale(tc, s), apply(&turned, t));
+            rotations[starts[r] + v] = turned;
+            translations[starts[r] + v] = sub(scale(tc, s), apply(&turned, t));
         }
         world[r] = Some(rings[r].points.iter().map(|p| add(scale(apply(rotation, *p), s), t)).collect());
     };
@@ -765,7 +772,7 @@ pub fn join(matches: &Matches, camera: &Camera, rings: &[Solved]) -> anyhow::Res
     let mut resected = Vec::new();
     // Photos with a pose in the joined frame; the others are registered in rounds, each against the tracks
     // of all photos registered so far (so also against neighbours of their own turn registered before).
-    let mut known: Vec<bool> = (0..count).map(|v| world[v / per].is_some()).collect();
+    let mut known: Vec<bool> = (0..count).map(|v| world[ring_of(v)].is_some()).collect();
     let mut round = 0;
     while known.iter().any(|k| !k) {
         round += 1;
@@ -831,8 +838,8 @@ pub fn join(matches: &Matches, camera: &Camera, rings: &[Solved]) -> anyhow::Res
             let (u, links) = failed[0];
             bail!(
                 "turn {}: photo {} (and {} more) could not be registered against the other turns ({links} linked points)",
-                u / per + 1,
-                u % per + 1,
+                ring_of(u) + 1,
+                u - starts[ring_of(u)] + 1,
                 failed.len() - 1
             );
         }
@@ -851,11 +858,12 @@ pub fn join(matches: &Matches, camera: &Camera, rings: &[Solved]) -> anyhow::Res
     let mut turned = Vec::new();
     let placed: Vec<usize> = (0..rings.len()).filter(|&r| sound[r]).collect();
     if resected.iter().any(|r| r["registered"].as_u64().unwrap_or(0) > 0) && sound[0] {
-        if let Some((axis, through)) = shared_axis(&placed, per, &rotations, &translations) {
+        if let Some((axis, through)) = shared_axis(&placed, &starts, &rotations, &translations) {
             for r in (0..rings.len()).filter(|&r| !sound[r]) {
-                let (rs, ts) = (&mut rotations[r * per..(r + 1) * per], &mut translations[r * per..(r + 1) * per]);
+                let own = starts[r]..starts[r + 1];
+                let (rs, ts) = (&mut rotations[own.clone()], &mut translations[own.clone()]);
                 if let Some((mut model, off)) = onto_turntable(axis, through, rs, ts) {
-                    model.cameras = (r * per..(r + 1) * per).collect();
+                    model.cameras = own.collect();
                     models.push(model);
                     turned.push(json!({"ring": r + 1, "photos_off_the_turntable_motion": off}));
                 }
@@ -884,13 +892,14 @@ fn angle_about(axis: V3, turn: &M3) -> f64 {
 
 /// The turntable axis in the joined frame (direction, a point on it), from the placed turns: the
 /// object turns about it between any two photos of one turn, and their camera centres circle it.
-fn shared_axis(placed: &[usize], per: usize, rotations: &[M3], translations: &[V3]) -> Option<(V3, V3)> {
+/// Turn `r` holds the photos `starts[r]..starts[r + 1]`.
+fn shared_axis(placed: &[usize], starts: &[usize], rotations: &[M3], translations: &[V3]) -> Option<(V3, V3)> {
     let mut sum = [0.0; 3];
     for &r in placed {
-        let first = &rotations[r * per];
-        for k in 1..per {
+        let first = &rotations[starts[r]];
+        for k in starts[r] + 1..starts[r + 1] {
             // World to camera: R_k = R_fixed Turn_k, so first^T R_k turns about the axis.
-            let w = super::geometry::rotation_vector(&mul(&transpose(first), &rotations[r * per + k]));
+            let w = super::geometry::rotation_vector(&mul(&transpose(first), &rotations[k]));
             if norm(w) < 20f64.to_radians() || norm(w) > 160f64.to_radians() {
                 continue;
             }
@@ -908,10 +917,13 @@ fn shared_axis(placed: &[usize], per: usize, rotations: &[M3], translations: &[V
     let centre = |v: usize| scale(apply(&transpose(&rotations[v]), translations[v]), -1.0);
     let (mut normal, mut right) = (vec![vec![0.0; 3]; 3], vec![0.0; 3]);
     let mut mean = [0.0; 3];
+    let photos: usize = placed.iter().map(|&r| starts[r + 1] - starts[r]).sum();
+    // The pin's weight: the photos of a placed turn (on average, for turns of unequal length).
+    let per = photos as f64 / placed.len() as f64;
     for &r in placed {
-        let (j, first) = (r * per, &rotations[r * per]);
-        for k in r * per..(r + 1) * per {
-            mean = add(mean, scale(centre(k), 1.0 / (placed.len() * per) as f64));
+        let (j, first) = (starts[r], &rotations[starts[r]]);
+        for k in starts[r]..starts[r + 1] {
+            mean = add(mean, scale(centre(k), 1.0 / photos as f64));
             let q = mul(&transpose(&rotations[k]), first);
             let rows: [V3; 3] = std::array::from_fn(|a| std::array::from_fn(|b| if a == b { 1.0 } else { 0.0 } - q[a][b]));
             let value = sub(centre(k), apply(&q, centre(j)));
@@ -923,10 +935,10 @@ fn shared_axis(placed: &[usize], per: usize, rotations: &[M3], translations: &[V
             }
         }
     }
-    let along = dot(axis, mean) * per as f64;
+    let along = dot(axis, mean) * per;
     for a in 0..3 {
         for b in 0..3 {
-            normal[a][b] += per as f64 * axis[a] * axis[b];
+            normal[a][b] += per * axis[a] * axis[b];
         }
         right[a] += along * axis[a];
     }
@@ -1142,7 +1154,7 @@ mod tests {
     fn a_turn_is_put_back_onto_the_turntable_motion() {
         let (_, _, rotations, translations) = capture_tilt(24, 1.0, 20.0);
         let centre = |r: &M3, t: V3| scale(apply(&transpose(r), t), -1.0);
-        let (axis, through) = shared_axis(&[0], 24, &rotations, &translations).unwrap();
+        let (axis, through) = shared_axis(&[0], &[0, 24], &rotations, &translations).unwrap();
         // True cameras stay where they are.
         let (mut r, mut t) = (rotations.clone(), translations.clone());
         assert_eq!(onto_turntable(axis, through, &mut r, &mut t).map(|m| m.1), Some(0));
@@ -1166,8 +1178,9 @@ mod tests {
         }
     }
 
-    #[test]
-    fn two_turns_at_different_heights_are_joined_into_one_frame() {
+    /// Two turns of 24 photos at camera heights 25 degrees apart, matched within each turn and across them
+    /// (one wrong match in ten), and the true cameras of all 48 photos.
+    fn two_turns() -> (Matches, Camera, Vec<M3>, Vec<V3>) {
         // Ring B: the same turntable seen by a second camera raised by 25 degrees about the object.
         let (a, camera, rotations, translations) = capture_tilt(24, 1.0, 20.0);
         let raise = rodrigues([25f64.to_radians(), 0.0, 0.0]);
@@ -1195,6 +1208,14 @@ mod tests {
             }
         }
         let all = Matches { keypoints, pairs };
+        let truth_r: Vec<M3> = rotations.iter().chain(&rb).copied().collect();
+        let truth_t: Vec<V3> = translations.iter().chain(&tb).copied().collect();
+        (all, camera, truth_r, truth_t)
+    }
+
+    #[test]
+    fn two_turns_at_different_heights_are_joined_into_one_frame() {
+        let (all, camera, truth_r, truth_t) = two_turns();
         let settings = Settings { open_turn: false, wide_axis: true, planar: None, closing: CLOSING_TURNS };
         let ring = |r: usize| Matches {
             keypoints: all.keypoints[r * 24..(r + 1) * 24].to_vec(),
@@ -1209,8 +1230,6 @@ mod tests {
         let joined = join(&all, &camera, &solved).unwrap();
         assert!(joined.report["reprojection_px"]["median"].as_f64().unwrap() < 0.01, "{}", joined.report);
         // Every camera relative to the first, against the truth; translations up to the free scale.
-        let truth_r: Vec<M3> = rotations.iter().chain(&rb).copied().collect();
-        let truth_t: Vec<V3> = translations.iter().chain(&tb).copied().collect();
         let relative = |r: &[M3], t: &[V3], v: usize| {
             let turn = mul(&r[v], &transpose(&r[0]));
             (turn, sub(t[v], apply(&turn, t[0])))
@@ -1260,6 +1279,62 @@ mod tests {
         let mut alone = all.clone();
         alone.pairs.retain(|(i, j, _)| i / 24 == j / 24);
         assert!(join(&alone, &camera, &solved).is_err());
+    }
+
+    #[test]
+    fn turns_of_unequal_length_are_joined() {
+        // Two photos of the upper turn deleted: turns of 24 and 22 photos, the remaining photos renumbered in order.
+        let (all, camera, truth_r, truth_t) = two_turns();
+        let kept: Vec<usize> = (0..48).filter(|&v| v != 31 && v != 40).collect();
+        let mut index = vec![usize::MAX; 48];
+        for (k, &v) in kept.iter().enumerate() {
+            index[v] = k;
+        }
+        let fewer = Matches {
+            keypoints: kept.iter().map(|&v| all.keypoints[v].clone()).collect(),
+            pairs: all
+                .pairs
+                .iter()
+                .filter(|(i, j, _)| index[*i] != usize::MAX && index[*j] != usize::MAX)
+                .map(|(i, j, l)| (index[*i], index[*j], l.clone()))
+                .collect(),
+        };
+        let starts = [0, 24, 46];
+        let ring = |r: usize| Matches {
+            keypoints: fewer.keypoints[starts[r]..starts[r + 1]].to_vec(),
+            pairs: fewer
+                .pairs
+                .iter()
+                .filter(|(i, j, _)| (starts[r]..starts[r + 1]).contains(i) && (starts[r]..starts[r + 1]).contains(j))
+                .map(|(i, j, l)| (i - starts[r], j - starts[r], l.clone()))
+                .collect(),
+        };
+        let settings = Settings { open_turn: false, wide_axis: true, planar: None, closing: CLOSING_TURNS };
+        let solved: Vec<Solved> = (0..2).map(|r| solve(&ring(r), &camera, &settings).unwrap()).collect();
+        assert_eq!((solved[0].rotations.len(), solved[1].rotations.len()), (24, 22));
+        let truth_r: Vec<M3> = kept.iter().map(|&v| truth_r[v]).collect();
+        let truth_t: Vec<V3> = kept.iter().map(|&v| truth_t[v]).collect();
+        let check = |joined: &Solved| {
+            let relative = |r: &[M3], t: &[V3], v: usize| {
+                let turn = mul(&r[v], &transpose(&r[0]));
+                (turn, sub(t[v], apply(&turn, t[0])))
+            };
+            let size = |r: &[M3], t: &[V3]| (0..46).map(|v| norm(relative(r, t, v).1)).sum::<f64>();
+            let factor = size(&truth_r, &truth_t) / size(&joined.rotations, &joined.translations);
+            for v in 0..46 {
+                let (r_true, t_true) = relative(&truth_r, &truth_t, v);
+                let (r_found, t_found) = relative(&joined.rotations, &joined.translations, v);
+                assert!(rotation_angle_deg(&r_found, &r_true) < 0.01, "view {v}");
+                assert!(norm(sub(scale(t_found, factor), t_true)) < 1e-3, "view {v}");
+            }
+        };
+        check(&join(&fewer, &camera, &solved).unwrap());
+        // The shorter turn without a solution of its own is registered photo by photo and put onto the turntable.
+        let rescued = join(&fewer, &camera, &[solved[0].clone_parts(), Solved::unsolved(22, "no points")]).unwrap();
+        check(&rescued);
+        assert_eq!(rescued.report["turned_onto_axis"][0]["ring"], 2, "{}", rescued.report);
+        // Turns that do not add up to the photos are refused.
+        assert!(join(&fewer, &camera, &[solved[0].clone_parts(), Solved::unsolved(21, "no points")]).is_err());
     }
 
     /// What `--calibration auto` rests on: the raw steps scale with the focal length the solver is given, so a closed

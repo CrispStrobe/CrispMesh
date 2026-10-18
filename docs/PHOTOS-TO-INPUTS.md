@@ -186,7 +186,10 @@ cameras" in [`OTHER-IMAGE-SETS.md`](OTHER-IMAGE-SETS.md)), in order of effect:
    openings (genus 26 to 18, F1 0.69 to 0.72). Photograph each height as a
    complete turn with the same number of photos (at least 8; 60 per turn
    worked), keep the turns one after the other in file order, keep the lens
-   and focus, and pass `--turntable-rings N`. A camera looking almost straight
+   and focus, and pass `--turntable-rings N`. Turns of unequal length (photos
+   deleted after the capture) are listed instead: `--turntable-turn-sizes
+   36,35,36` gives the photos of each turn in file order (8 to 96 each, adding
+   up to all photos) and sets the number of turns. A camera looking almost straight
    down is fine: its photos are registered one by one against the other turns
    when its own turn does not form a clean ring.
    This needs features: on the plain yellow mustard bottle the top-down turn
@@ -418,8 +421,9 @@ on. Exit code 1 means a step failed (tool error, deadline, disk, cancel).
 - One turn of a turntable (or of the camera around the object), photographed
   by **one camera with a fixed lens and fixed focus**, 3 to 96 photos, all the
   same size. The file order (natural order: `x_2` before `x_10`) is the capture
-  order. (The native step also takes several turns of equal length, up to 96
-  photos each: `--turntable-rings`.)
+  order. (The native step also takes several turns, up to 96 photos each:
+  `--turntable-rings` for turns of equal length, `--turntable-turn-sizes` for
+  turns of unequal length.)
 - A **dark object on a light backdrop**. The coarse masks are a grey-level
   threshold and the hole cleanup only fills dark holes; a light object on a
   dark backdrop is not supported. If threshold masks cover more than 90% of
