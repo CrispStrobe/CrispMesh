@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { fieldOfViewOf } from "../core/captureLens";
 import { fewPhotos, surfaceAutomatically } from "../core/fewPhotos";
 import { humanise } from "../core/format";
 import {
@@ -298,11 +299,13 @@ export function NewRun({ engine, prefs, onChange }: Props) {
               {field.key === "photos" && point.fields.some((other) => other.automatic === true) && (
                 <CaptureButton
                   engine={engine}
-                  onSaved={(folder, count) => {
+                  onSaved={(folder, count, calibration) => {
                     setField("photos", folder);
                     setPhotoCount(count);
-                    // Photos from this device's camera have no lens file: the focal length is found from the turn.
-                    if ((values.calibration ?? "").trim() === "") setField("calibration", "auto");
+                    // Photos from this device's camera have no lens file: the camera's field of view where the app
+                    // knows it (fov:DEG), else the focal length is found from the turn (auto). A file chosen is kept.
+                    const current = (values.calibration ?? "").trim();
+                    if (current === "" || current === "auto" || fieldOfViewOf(current) !== null) setField("calibration", calibration);
                   }}
                 />
               )}
@@ -314,6 +317,11 @@ export function NewRun({ engine, prefs, onChange }: Props) {
                     Automatic
                   </button>
                   <span class="help">The focal length is found from the turn (centred lens, distortion left out): for phone cameras and webcams.</span>
+                  {fieldOfViewOf(values[field.key] ?? "") !== null && (
+                    <span class="help" data-lens="field-of-view">
+                      Lens: this device's camera, {fieldOfViewOf(values[field.key] ?? "")!.toFixed(1)}° across the photo (centred lens, distortion left out).
+                    </span>
+                  )}
                 </div>
               )}
             </PathField>

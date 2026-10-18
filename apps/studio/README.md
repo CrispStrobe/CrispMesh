@@ -418,8 +418,10 @@ undistorted photos and masks") and then runs the dense stages.
   stood still for 0.6 s (`core/autoCapture.ts`); a target of 24 to 72 photos
   for the turn, *Delete last*, *Use N photos* (at least 8). In a browser the
   photos go straight into the run; in the apps they are saved into a new
-  `capture-<time>` folder of the data folder. The lens then defaults to
-  Automatic. The apps declare the camera (`NSCameraUsageDescription`; the Mac
+  `capture-<time>` folder of the data folder. The lens then defaults to the
+  camera's field of view when the app can ask the system for it
+  (`camera_field_of_view`, AVFoundation; `fov:DEG`, shown under the lens
+  field; the iOS app with the default camera), else to Automatic. The apps declare the camera (`NSCameraUsageDescription`; the Mac
   App Store variant also `com.apple.security.device.camera`).
   `scripts/capture-check.mjs` checks the whole path in headless Chrome with a
   video file as the camera.

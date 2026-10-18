@@ -27,6 +27,11 @@ anyhow = { version = "1", optional = true }
 tauri-plugin-dialog = "2"
 getrandom = { version = "0.3", optional = true }
 
+# The camera's field of view for photos taken in the app (camera.rs): AVFoundation through the
+# objc2 runtime crate the windowing stack already links, no further bindings.
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+objc2 = "0.6"
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 

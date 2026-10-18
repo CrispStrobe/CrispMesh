@@ -1,18 +1,32 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { AUTO_CAPTURE_DEFAULTS, AutoCapture, captureName, greyThumbnail } from "../core/autoCapture";
+import { captureCalibration, type CaptureFrame } from "../core/captureLens";
+import { cameraFieldOfView } from "../shell/shell";
 import type { Engine } from "../sources/types";
 import { describe } from "../sources/transport";
 import { importFolderName } from "./deviceImport";
 
 interface Props {
-  /** The photos taken, in capture order, named capture_0001.jpg and on. */
-  onDone(files: File[]): void;
+  /**
+   * The photos taken, in capture order, named capture_0001.jpg and on, and their frame size when every one is a frame
+   * of the default camera's live picture (null otherwise: the system camera, or another camera chosen).
+   */
+  onDone(files: File[], frame: CaptureFrame | null): void;
   onCancel(): void;
 }
 
 interface Taken {
   file: File;
   url: string;
+  /** Frame size of the default camera's live picture; null for the system camera or a camera chosen in the list. */
+  frame: CaptureFrame | null;
+}
+
+/** The common frame of all photos, when there is one (see Props.onDone). */
+export function commonFrame(photos: { frame: CaptureFrame | null }[]): CaptureFrame | null {
+  const first = photos[0]?.frame ?? null;
+  if (first === null) return null;
+  return photos.every((photo) => photo.frame !== null && photo.frame.width === first.width && photo.frame.height === first.height) ? first : null;
 }
 
 /** Photos per turn offered. 20 (18-degree steps) works with the neural surface; the ordinary mesh wants 36. */
@@ -122,7 +136,8 @@ export function CaptureScreen({ onDone, onCancel }: Props) {
       const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", 0.92));
       if (blob === null) throw new Error("the frame could not be encoded");
       const file = new File([blob], captureName(photosRef.current.length), { type: "image/jpeg" });
-      setPhotos((current) => [...current, { file, url: URL.createObjectURL(blob) }]);
+      const frame = deviceId === "" ? { width: canvas.width, height: canvas.height } : null;
+      setPhotos((current) => [...current, { file, url: URL.createObjectURL(blob), frame }]);
       if (lastFrame.current !== null) detector.current.taken(lastFrame.current);
       setFlash(true);
       setTimeout(() => setFlash(false), 150);
@@ -238,7 +253,7 @@ export function CaptureScreen({ onDone, onCancel }: Props) {
                   ...current,
                   ...picked.map((file, index) => {
                     const named = new File([file], captureName(current.length + index), { type: file.type || "image/jpeg" });
-                    return { file: named, url: URL.createObjectURL(named) };
+                    return { file: named, url: URL.createObjectURL(named), frame: null };
                   }),
                 ]);
               }}
@@ -268,7 +283,7 @@ export function CaptureScreen({ onDone, onCancel }: Props) {
           <button type="button" class="button" onClick={removeLast} disabled={photos.length === 0}>
             Delete last
           </button>
-          <button type="button" class="button primary" onClick={() => onDone(photos.map((photo) => photo.file))} disabled={photos.length < 8}>
+          <button type="button" class="button primary" onClick={() => onDone(photos.map((photo) => photo.file), commonFrame(photos))} disabled={photos.length < 8}>
             Use {photos.length} photos
           </button>
         </div>
@@ -288,7 +303,7 @@ export function CaptureScreen({ onDone, onCancel }: Props) {
  * "Take photos" for an engine that keeps its data in a folder (the apps): the photos are saved into a new folder of
  * the data folder, which then becomes the run's photos.
  */
-export function CaptureButton({ engine, onSaved }: { engine: Engine; onSaved(folder: string, count: number): void }) {
+export function CaptureButton({ engine, onSaved }: { engine: Engine; onSaved(folder: string, count: number, calibration: string): void }) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<{ message: string; bad: boolean }>({ message: "", bad: false });
   const save = engine.saveCapture?.bind(engine);
@@ -301,14 +316,16 @@ export function CaptureButton({ engine, onSaved }: { engine: Engine; onSaved(fol
       {open && (
         <CaptureScreen
           onCancel={() => setOpen(false)}
-          onDone={(files) => {
+          onDone={(files, frame) => {
             setOpen(false);
+            // The lens: the camera's field of view where this device knows it (the iOS app), else found from the turn.
+            const calibration = captureCalibration(frame, cameraFieldOfView);
             const folder = importFolderName(new Date()).replace("photos-", "capture-");
             setState({ message: `Saving ${files.length} photos...`, bad: false });
             save(folder, files, (done, total) => setState({ message: `Saving ${done} of ${total}...`, bad: false })).then(
-              () => {
+              async () => {
                 setState({ message: `${files.length} photos saved in ${folder}.`, bad: false });
-                onSaved(folder, files.length);
+                onSaved(folder, files.length, await calibration);
               },
               (problem) => setState({ message: describe(problem), bad: true }),
             );

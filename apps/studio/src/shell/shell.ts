@@ -118,6 +118,16 @@ export function getShell(): Shell | null {
   return isTauri() ? tauriShell : null;
 }
 
+/**
+ * The horizontal field of view, in degrees across the frame's width, of the camera *Take photos* uses, for frames of
+ * this size: from the app (AVFoundation on iOS). Null in a browser, without a camera, or when the system does not say.
+ */
+export async function cameraFieldOfView(width: number, height: number): Promise<number | null> {
+  if (!isTauri()) return null;
+  const degrees = await invoke<number | null>("camera_field_of_view", { width: Math.round(width), height: Math.round(height) }).catch(() => null);
+  return typeof degrees === "number" && Number.isFinite(degrees) ? degrees : null;
+}
+
 /** How a setting's origin is worded next to its field. */
 export function sourceText(source: ValueSource, field: ConfigField): string {
   if (source === "environment") {

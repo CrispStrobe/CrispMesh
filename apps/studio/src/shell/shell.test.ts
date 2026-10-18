@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseRoute } from "../ui/app";
-import { getShell, sameConfig, sourceText, type ShellConfig } from "./shell";
+import { cameraFieldOfView, getShell, sameConfig, sourceText, type ShellConfig } from "./shell";
 
 const config: ShellConfig = {
   repo: "/r",
@@ -20,6 +20,10 @@ const config: ShellConfig = {
 describe("the native shell, seen from the web side", () => {
   it("is absent in a browser (and in these tests)", () => {
     expect(getShell()).toBeNull();
+  });
+
+  it("knows no camera field of view in a browser", async () => {
+    expect(await cameraFieldOfView(1920, 1080)).toBeNull();
   });
 
   it("words where a value comes from", () => {

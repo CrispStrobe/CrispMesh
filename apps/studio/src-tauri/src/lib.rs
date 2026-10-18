@@ -15,6 +15,7 @@
 //! can name is relative to the runs or the data folder and checked to stay inside.
 
 mod bonjour;
+mod camera;
 mod config;
 mod remote;
 #[cfg(local_engine)]
@@ -108,6 +109,13 @@ fn configure_native(app: &AppHandle) -> Result<(), String> {
     #[cfg(not(native_engine))]
     let _ = app;
     Ok(())
+}
+
+/// The horizontal field of view, in degrees across the frame's width, of the camera *Take photos*
+/// most likely uses, for frames of `width` x `height`; null where the system does not say (see `camera`).
+#[tauri::command]
+fn camera_field_of_view(width: u32, height: u32) -> Option<f64> {
+    camera::field_of_view_for(width, height, &camera::camera_formats())
 }
 
 #[tauri::command]
@@ -691,6 +699,7 @@ pub fn run() {
         find_engines,
         native_delete_example,
         native_free_space,
+        camera_field_of_view,
         check_tool,
         autopilot_log,
         autopilot_await,
@@ -723,6 +732,7 @@ pub fn run() {
         find_engines,
         native_delete_example,
         native_free_space,
+        camera_field_of_view,
         check_tool
     ]);
 

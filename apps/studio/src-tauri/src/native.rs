@@ -369,7 +369,12 @@ impl Native {
         let given = |text: &Option<String>| text.as_deref().map(str::trim).filter(|text| !text.is_empty()).map(str::to_string);
         let calibration = given(&body.calibration).ok_or("calibration: a lens calibration file, or auto, is needed to start from photos")?;
         // `auto`: no lens file; the turntable solver finds the focal length from the closed turn.
+        // `fov:DEG`: no lens file; a pinhole lens of the camera's field of view (photos taken in the app).
+        let field_of_view = crispmesh_dense::photos::calibration::parse_field_of_view(&calibration);
         let calibration = if calibration == "auto" {
+            calibration
+        } else if let Some(degrees) = field_of_view {
+            degrees.map_err(|problem| format!("calibration: {problem}"))?;
             calibration
         } else {
             let path = self.resolve_source("calibration", &calibration)?;
@@ -1223,6 +1228,10 @@ mod tests {
         let mut automatic = body(json!({}));
         automatic.calibration = Some("auto".into());
         assert_eq!(engine.options(&automatic, "id").unwrap().photo_options[..2], ["--calibration", "auto"]);
+        automatic.calibration = Some("fov:64.5".into());
+        assert_eq!(engine.options(&automatic, "id").unwrap().photo_options[..2], ["--calibration", "fov:64.5"]);
+        automatic.calibration = Some("fov:wide".into());
+        assert!(engine.options(&automatic, "id").unwrap_err().contains("between 1 and 179"));
         automatic.calibration = Some("auto.json".into());
         assert!(engine.options(&automatic, "id").is_err());
         // Nothing chosen: the app's defaults, which need nothing external.
