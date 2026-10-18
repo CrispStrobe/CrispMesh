@@ -170,3 +170,22 @@ this check does not isolate the backend implementation cause or validate a full
 model. PyTorch is an optional research environment dependency, not added to the
 app. See `tests/evidence/point-tracking-camera-review.json` for full-model parity
 and the rejected real-photo geometry controls.
+
+Object-only camera consistency can also be checked without reference geometry:
+
+```sh
+python scripts/photo_regression/sparse_silhouettes.py --model <colmap-model> \
+  --masks <own-foreground-masks> --output <report.json> \
+  --minimum-median-support .95
+```
+
+The optional caller-selected threshold returns exit status 2 on rejection; without it
+this is a report only. Every recovered landmark stays in the denominator,
+including behind-camera and off-frame points. Mask dimensions must match each
+camera. `--pixel-scale 4` is only for a deliberately quarter-scaled diagnostic
+model; it does not alter bearings or resample source images. By default a
+deterministic sample of at most 20,000 object landmarks bounds projection memory.
+Do not include background/support landmarks. Low support identifies inconsistency;
+high support alone does not prove good poses or shape. Different landmark/view
+sets are not paired accuracy scores. Four analytic tests check raster coordinates,
+scale, excluded/behind/off-frame support, nonfinite inputs and dimension validation.

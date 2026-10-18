@@ -608,3 +608,10 @@ multiplier; default1 preserves prior gates. It changes correspondence tolerances
 while retaining original photo coordinates and calibration. No automatic
 uncertainty estimator is claimed. Final validation: 140 photo release tests,
 strict library/test clippy and wasm32 release library checks pass.
+
+A reusable object-only sparse-camera silhouette audit now reproduces these
+checks from a COLMAP model and own masks, with dimension/convention validation
+and bounded deterministic point sampling. Four analytic tests pass. An optional
+caller-selected .95 median gate rejects the11-view SIFT,39-view temporal and
+49-view hybrid controls. High support would still not prove accurate geometry.
+See [runner instructions](../scripts/photo_regression/README.md).

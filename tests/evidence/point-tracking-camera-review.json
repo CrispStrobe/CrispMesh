@@ -300,5 +300,42 @@
     "wasm32_release_library": "passed; no browser-execution claim",
     "sampling_reproducer": "fresh contiguous process passes, fresh strided process reproduces numerical failure; no model download",
     "default_changes": false
+  },
+  "reusable_silhouette_audit": {
+    "script": "scripts/photo_regression/sparse_silhouettes.py",
+    "analytic_tests": 4,
+    "own_points_and_masks_only": true,
+    "default_gate": "none; report only",
+    "example_requested_median_threshold": 0.95,
+    "real_controls": [
+      {
+        "case": "SIFTlocal",
+        "registered": 11,
+        "median": 0.8955938697318008,
+        "worst": 0.8706896551724138,
+        "exit_status": 2
+      },
+      {
+        "case": "temporal",
+        "registered": 39,
+        "median": 0.7161016949152542,
+        "worst": 0.5805084745762712,
+        "exit_status": 2
+      },
+      {
+        "case": "hybrid",
+        "registered": 49,
+        "median": 0.9034188034188034,
+        "worst": 0.811965811965812,
+        "exit_status": 2
+      }
+    ],
+    "checks": [
+      "Mask and declared camera dimensions must agree",
+      "COLMAP corner-to-mask pixel-centre convention",
+      "Nonfinite, behind-camera and off-frame samples never add support",
+      "Deterministic bounded point sample, per-view mask hashes"
+    ],
+    "limits": "Not shape ground truth or an accuracy guarantee. Object-only landmarks required; different landmark/view sets are not paired accuracy scores. No production default or global threshold adopted."
   }
 }
