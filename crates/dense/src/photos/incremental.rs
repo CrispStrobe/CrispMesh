@@ -184,7 +184,7 @@ fn refresh(
     let mut rotations: Vec<_> = placed.iter().map(|&v| poses[v].unwrap().0).collect();
     let mut translations: Vec<_> = placed.iter().map(|&v| poses[v].unwrap().1).collect();
     let focal = (camera.fx + camera.fy) / 2.;
-    let mut tracks = solver::build_min(&own, &normalised, &rotations, &translations, focal, 2., 2);
+    let mut tracks = solver::build_robust(&own, &normalised, &rotations, &translations, focal, 2., 2);
     prune(&mut tracks, &normalised, &rotations);
     if tracks.points.len() < 20 {
         bail!("incremental cameras: fewer than 20 triangulated tracks with one degree of parallax");
@@ -201,7 +201,7 @@ fn refresh(
         for (i, &v) in placed.iter().enumerate() {
             poses[v] = Some((rotations[i], translations[i]));
         }
-        tracks = solver::build_min(&own, &normalised, &rotations, &translations, focal, 2., 2);
+        tracks = solver::build_robust(&own, &normalised, &rotations, &translations, focal, 2., 2);
         prune(&mut tracks, &normalised, &rotations);
     }
     Ok((own, tracks))

@@ -122,6 +122,34 @@ pub(crate) fn build_min(
     bound: f64,
     minimum: usize,
 ) -> Tracks {
+    build_internal(matches, normalised, rotations, translations, focal, bound, minimum, false)
+}
+
+/// Experimental general SfM: salvage a consistent part of a track when a pairwise
+/// epipolar-compatible mismatch would otherwise discard the entire component.
+pub(crate) fn build_robust(
+    matches: &Matches,
+    normalised: &[Vec<P2>],
+    rotations: &[M3],
+    translations: &[V3],
+    focal: f64,
+    bound: f64,
+    minimum: usize,
+) -> Tracks {
+    build_internal(matches, normalised, rotations, translations, focal, bound, minimum, true)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn build_internal(
+    matches: &Matches,
+    normalised: &[Vec<P2>],
+    rotations: &[M3],
+    translations: &[V3],
+    focal: f64,
+    bound: f64,
+    minimum: usize,
+    robust: bool,
+) -> Tracks {
     let mut ids: HashMap<(usize, u32), usize> = HashMap::new();
     let mut parent: Vec<usize> = Vec::new();
     let mut nodes: Vec<(usize, u32)> = Vec::new();
@@ -169,6 +197,13 @@ pub(crate) fn build_min(
     tracks.sort_unstable();
     let (mut points, mut observations) = (Vec::new(), Vec::new());
     for track in tracks {
+        if robust {
+            if let Some((x, kept)) = robust_track(&track, normalised, rotations, translations, focal, bound * 2., minimum) {
+                observations.extend(kept.iter().map(|&(v, f)| (v, points.len(), f)));
+                points.push(x);
+            }
+            continue;
+        }
         let distinct = track.windows(2).all(|w| w[0].0 != w[1].0);
         if track.len() < minimum || !distinct {
             continue;
@@ -188,6 +223,106 @@ pub(crate) fn build_min(
         }
     }
     Tracks { points, observations, verified }
+}
+
+type FeatureTrack = Vec<(usize, u32)>;
+
+#[allow(clippy::too_many_arguments)]
+fn robust_track(
+    track: &[(usize, u32)],
+    normalised: &[Vec<P2>],
+    rotations: &[M3],
+    translations: &[V3],
+    focal: f64,
+    bound: f64,
+    minimum: usize,
+) -> Option<(V3, FeatureTrack)> {
+    if track.len() < minimum {
+        return None;
+    }
+    let ray = |&(v, f): &(usize, u32)| (rotations[v], translations[v], normalised[v][f as usize]);
+    let select = |x: V3| {
+        let mut kept: Vec<(usize, u32)> = Vec::new();
+        let mut errors: Vec<f64> = Vec::new();
+        for &(v, f) in track {
+            let q = add(apply(&rotations[v], x), translations[v]);
+            if q[2] <= 0. {
+                continue;
+            }
+            let p = normalised[v][f as usize];
+            let error = (q[0] / q[2] - p[0]).hypot(q[1] / q[2] - p[1]) * focal;
+            if error >= bound || !error.is_finite() {
+                continue;
+            }
+            if kept.last().is_some_and(|&(old, _)| old == v) {
+                let last = errors.len() - 1;
+                if error < errors[last] {
+                    kept[last] = (v, f);
+                    errors[last] = error;
+                }
+            } else {
+                kept.push((v, f));
+                errors.push(error);
+            }
+        }
+        (kept, errors.iter().sum::<f64>())
+    };
+    let all = triangulate(&track.iter().map(ray).collect::<Vec<_>>());
+    if let Some(x) = all {
+        let (kept, _) = select(x);
+        if kept.len() == track.len() {
+            return Some((x, kept));
+        }
+    }
+    let mut best: Option<(V3, FeatureTrack, f64)> = None;
+    let mut consider = |x| {
+        let (kept, error) = select(x);
+        if kept.len() >= minimum && best.as_ref().is_none_or(|old| kept.len() > old.1.len() || kept.len() == old.1.len() && error < old.2) {
+            best = Some((x, kept, error));
+        }
+    };
+    if let Some(x) = all {
+        consider(x);
+    }
+    // Exhaust small tracks, deterministically sample long components. Bound work
+    // even if erroneous links merge many features into one component.
+    let pairs = track.len() * (track.len() - 1) / 2;
+    let mut random = super::geometry::Random(19491);
+    if pairs <= 64 {
+        for a in 0..track.len() {
+            for b in a + 1..track.len() {
+                if track[a].0 != track[b].0 {
+                    if let Some(x) = triangulate(&[ray(&track[a]), ray(&track[b])]) {
+                        consider(x);
+                    }
+                }
+            }
+        }
+    } else {
+        for _ in 0..64 {
+            let a = random.below(track.len());
+            let b = random.below(track.len());
+            if a != b && track[a].0 != track[b].0 {
+                if let Some(x) = triangulate(&[ray(&track[a]), ray(&track[b])]) {
+                    consider(x);
+                }
+            }
+        }
+    }
+    let (mut x, mut kept, _) = best?;
+    for _ in 0..3 {
+        let candidate = triangulate(&kept.iter().map(ray).collect::<Vec<_>>())?;
+        let (next, _) = select(candidate);
+        if next.len() < minimum {
+            break;
+        }
+        x = candidate;
+        if next == kept {
+            break;
+        }
+        kept = next;
+    }
+    Some((x, kept))
 }
 
 /// What the solver found, with the numbers for the report.
@@ -1050,6 +1185,34 @@ pub fn solution(lens: &Lens, names: &[String], matches: &Matches, solved: &Solve
 mod tests {
     use super::*;
     use crate::photos::markers::linalg::rotation_angle_deg;
+
+    #[test]
+    fn robust_track_keeps_geometry_when_one_epipolar_compatible_observation_is_wrong() {
+        let identity = [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
+        let rotations = vec![identity; 5];
+        let translations: Vec<_> = (0..5).map(|v| [-0.2 * v as f64, 0., 0.]).collect();
+        let mut normalised: Vec<_> = (0..5).map(|v| vec![[-0.05 * v as f64, 0.]]).collect();
+        // Moving along the epipolar line passes pair verification but is not
+        // the same 3D point. The other four rays intersect at (0,0,4).
+        normalised[2][0] = [0.4, 0.];
+        let matches = Matches { keypoints: normalised.clone(), pairs: (1..5).map(|v| (0, v, vec![(0, 0)])).collect() };
+        assert!(build_min(&matches, &normalised, &rotations, &translations, 1000., 2., 2).points.is_empty());
+        let recovered = build_robust(&matches, &normalised, &rotations, &translations, 1000., 2., 2);
+        assert_eq!(recovered.points.len(), 1);
+        assert!(norm(sub(recovered.points[0], [0., 0., 4.])) < 1e-6);
+        assert_eq!(recovered.observations.len(), 4);
+        assert!(recovered.observations.iter().all(|&(v, _, _)| v != 2));
+        // A conflicting feature in the same photo must not poison the whole
+        // component or produce two observations of one point in one view.
+        normalised[2].push([-0.1, 0.]);
+        let mut conflicting = matches;
+        conflicting.pairs.push((0, 2, vec![(0, 1)]));
+        let recovered = build_robust(&conflicting, &normalised, &rotations, &translations, 1000., 2., 2);
+        assert_eq!(recovered.points.len(), 1);
+        assert_eq!(recovered.observations.len(), 5);
+        assert!(recovered.observations.contains(&(2, 0, 1)));
+        assert!(norm(sub(recovered.points[0], [0., 0., 4.])) < 1e-6);
+    }
 
     #[test]
     fn malformed_match_indices_are_refused_before_indexing() {

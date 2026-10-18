@@ -152,16 +152,17 @@ README.
   Saved-photo differences cannot establish physical
   step angles or distinguish motor timing from shutter timing. No uniform-spacing claim.
   An experimental angle-independent Rust library solver recovers only 21 of 117 accepted
-  iPad photos; it is not exposed as a provider. Synthetic rotation and shape tests pass,
+  iPad photos before robust track filtering, 28 afterward; the same filter raises native
+  iPhone recovery from 8/78 to 11/78. It is not exposed as a provider. Synthetic rotation and shape tests pass,
   but this real-batch coverage fails. Fixed-lens iPhone controls improve from at most 18 cameras with 382 selected pairs
   to 61 of 78 with exhaustive matching (3,003 pairs); coverage still fails, and the
   secondary component does not align consistently. Joint sparse-feature/silhouette fitting
   improves fitted mask support but a dense diagnostic on that 61-photo subset remains
   distorted and open (119,133 triangles, genus 14). No suitable STL yet.
-  Reviewing all78 masks found a table selection on photo66 that the earlier sampled
+  Reviewing all 78 masks found a table selection on photo 66 that the earlier sampled
   review missed. A new batch check retries isolated oversized masks inside neighbouring
   object regions; native replay selects the figure, with some shadow still included.
-  Unresolved originals are retained for review. Radial-lens controls reach63/78 cameras,
+  Unresolved originals are retained for review. Radial-lens controls reach 63/78 cameras,
   but silhouette agreement remains poor. A free-angle shared-axis diagnostic also fails
   feature accuracy; it is not adopted.
   Evidence: [real-user-capture-review.json](../tests/evidence/real-user-capture-review.json).

@@ -65,6 +65,19 @@
       "result": "FAILED coverage; sparse sheets inspected, no STL and no provider availability advertised",
       "large_batch_limit": "dense global bundle adjustment bounded at128 views; sparse/local adjustment still needed",
       "synthetic_tests": "four pass, including shuffled irregular multilevel viewpoints, duplicate views, outliers, occluded cube faces and0.25px noise; proper-similarity surface accuracy checked with correct tracks for alignment and all recovered tracks for median error; not proof of real-batch quality"
+    },
+    "native_robust_track_control": {
+      "registered": 28,
+      "input": 117,
+      "points": 2925,
+      "previous_registered_same_matches_lens": 21,
+      "seconds": 143.049,
+      "previous_seconds": 130.219,
+      "seed_attempts": 32,
+      "method": "Same bounded robust track filter as iPhone control; same own raw pixel correspondences and recovered lens, no imported camera poses.",
+      "control_binary_sha256": "76d0fbf1823fe787e6212057878e6b5edeb704707b2a0e725ea6bcbf51d8ecee",
+      "result": "FAILED coverage; sparse sheet inspected, no STL or production provider.",
+      "validation": "122 final-source photo-stage tests passed; release Clippy library/tests -Dwarnings, rustfmt check, wasm32 release library check passed."
     }
   },
   "iphone": {
@@ -278,6 +291,52 @@
         "feature_error_median_px": 21.29682473441873,
         "feature_error_p95_px": 114.66431695599711,
         "result": "Rejected; constrained fit does not explain own feature tracks accurately. Diagnostic only, no default/provider adoption."
+      },
+      "clearer_height_group_control": {
+        "selection": "Visual diagnostic subset37-65 only; not automatic filtering or a full78-photo success.",
+        "registered": 29,
+        "input_subset": 29,
+        "full_input_batch": 78,
+        "points": 1733,
+        "mean_reprojection_px": 1.1413436770337488,
+        "same_own_matches_and_fixed_focal_pixels": 3000,
+        "hull_controls": [
+          {
+            "hull_allowed": 2,
+            "closed": true,
+            "components": 5,
+            "triangles": 112856,
+            "genus": 5,
+            "mesh_sha256": "153f438b734232c748299d686b5e71e2790a7d39ff04e2cc3981a44150873573"
+          },
+          {
+            "hull_allowed": 4,
+            "closed": true,
+            "components": 8,
+            "triangles": 137808,
+            "genus": 5,
+            "mesh_sha256": "ffe3be0558ca5cdd12997fa95ebf73cdffc704f282f552fa5b6258810085beb4"
+          }
+        ],
+        "settings": {
+          "grid": 192,
+          "silhouette_first": 0,
+          "repair_masks": false,
+          "crop_padding": 0.15
+        },
+        "visual_result": "Both paired photo/mesh sheets inspected. Head/body approximations but merged or distorted arms/legs; allowing more mask disagreement adds bulk and components, does not restore structure. Neither suitable. No defaults changed."
+      },
+      "native_robust_track_control": {
+        "registered": 11,
+        "input": 78,
+        "points": 1044,
+        "previous_registered_same_matches_lens": 8,
+        "seconds": 258.347,
+        "previous_seconds": 134.855,
+        "seed_attempts": 32,
+        "method": "Bounded pair-hypothesis triangulation; retain consistent observations and at most one feature per view instead of discarding a contaminated track component. Existing ordinary turntable track path unchanged.",
+        "control_binary_sha256": "76d0fbf1823fe787e6212057878e6b5edeb704707b2a0e725ea6bcbf51d8ecee",
+        "result": "FAILED coverage; sparse sheet inspected and still flattened. No STL; no production provider or dense default change."
       }
     },
     "foreground_recovery": {
@@ -291,15 +350,21 @@
       "recovered_bbox": [
         1619,
         2890,
-        1933,
+        1934,
         3483
       ],
-      "recovered_pixels": 94594,
-      "mask_sha256": "c14a0beba29b929a91260f301babd85bab77dafcfc23dfc5c69bf3dbc88011d1",
+      "recovered_pixels": 94795,
+      "mask_sha256": "303c34c7bd751291782a000403e689b0650d771496c655b00a70da12849c482b",
       "method": "Generic postpass detects isolated >4x bbox area AND >2x width and height versus both mutually scale-compatible neighbours. Retries strictly in next, then previous neighbour search region; no full-scene fallback. Sustained scale changes and width-only rotations untouched. Unresolved photo originals retained for review.",
       "actual_native_test": "macOS Vision, original photo66, next-neighbour normalized region; no manually drawn mask or reference geometry",
       "visual_result": "Table removed; figure retained with some cast shadow. Not a perfect silhouette or camera/mesh quality fix.",
-      "validation": "209 Studio tests and production build passed, including real bbox regression and unresolved/sustained-scale/flat-object cases."
+      "validation": "209 Studio tests and production build passed, including real bbox regression and unresolved/sustained-scale/flat-object cases. Browser integration passes both reviewed-cache/unmatched-original and full-batch spike/restricted-retry scenarios.",
+      "region": [
+        0.4308862433862434,
+        0.6252480158730159,
+        0.7628968253968254,
+        0.921875
+      ]
     }
   },
   "apple_foreground_runtime_probe": {
