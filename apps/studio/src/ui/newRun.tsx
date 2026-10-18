@@ -468,11 +468,15 @@ export function NewRun({ engine, prefs, onChange }: Props) {
                       <summary>{t("newRun.methodSettings", { method: engineText(method.label) })}</summary>
                       {method.settings.map((setting) => {
                         const key = `${method.id}.${setting.name}`;
+                        const labels = { crop: "newRun.method.crop", mesh: "newRun.method.mesh", steps: "newRun.method.steps", seed: "newRun.method.seed" } as const;
+                        const labelKey = labels[setting.name as keyof typeof labels];
+                        const label = labelKey ? t(labelKey) : engineText(setting.name);
                         const error = showErrors ? methodErrors[key] : undefined;
                         return (
                           <label class="field" key={key}>
-                            <span class="field-label">{engineText(setting.name)}</span>
+                            <span class="field-label">{label}</span>
                             <input
+                              type="text"
                               inputMode="numeric"
                               placeholder={t("newRun.levelValue")}
                               aria-invalid={error !== undefined}

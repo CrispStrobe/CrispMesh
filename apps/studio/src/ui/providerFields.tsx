@@ -168,7 +168,7 @@ export function ProviderChoices({ engine, point, providers, onProvider, options,
               />
             ))}
             {current.settings.length > 0 && <OptionGrid specs={current.settings} options={options} onOption={onOption} error={error} />}
-            <More title={t("inputs.provider.more", { module: language() === "en" ? choice.label.toLowerCase() : choice.label })} specs={choice.settings.filter((spec) => !current.settings.some((own) => own.name === spec.name))} options={options} onOption={onOption} error={error} />
+            <More title={t("inputs.provider.more", { module: language() === "en" ? choice.label.toLowerCase() : engineText(choice.label) })} specs={choice.settings.filter((spec) => !current.settings.some((own) => own.name === spec.name))} options={options} onOption={onOption} error={error} />
           </fieldset>
         );
       })}
