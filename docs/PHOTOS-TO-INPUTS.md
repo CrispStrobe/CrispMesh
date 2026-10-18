@@ -67,6 +67,17 @@ photos work for objects with enough texture, 36 for all. More features do not re
 times lower contrast threshold found four times the features on the 19 Bunny photos (4 495 against 1 118 per
 photo) but only 1.8 times the matches; the descriptors do not recognise the points across that much rotation.
 
+A warning while taking photos ("these photos are too far apart for this object") was tried and not shipped:
+no cheap measure between two consecutive photos predicts which objects pass at 20 degrees
+(`scripts/capture_spacing/`). Over all 73 pairs of each turn, SIFT inliers on the object at full size (median at
+10 / 20 degrees): Bunny 12 / 10, Armadillo 39 / 17, Dragon 40 / 16, Lucy 30 / 17, Thai statue 59 / 20, Happy
+Buddha 31 / 18; ORB inliers at 640 pixels rank them the same way (Bunny 68 / 32, Dragon 179 / 70). The Bunny has
+the fewest matches and passes at 20 degrees; the Dragon, Lucy and Happy Buddha have more and fail. The solver's
+own observation counts at 19 photos agree (Bunny 456 and Armadillo 499 pass, Dragon 415 and Lucy 547 are refused):
+the failures are in the geometry of the whole turn, not a shortage of matches between neighbours. An apparent turn
+from the matches' horizontal motion reads 3 to 10 degrees for a true 20 degree step. The photo count chosen in
+*Take photos* (36 for every object, 20 with the neural surface) stays the guidance.
+
 **With the app's camera.** *Take photos* (photos start, every platform: browser, Mac, iPhone, iPad) uses
 the device's camera. The camera stands still on a stand, the object turns. With *Auto* on, a photo is
 taken each time the picture has changed enough from the last photo (the object turned) and then stood
