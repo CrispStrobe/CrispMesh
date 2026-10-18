@@ -1,7 +1,7 @@
 import jsQR from "jsqr";
 import qrcode from "qrcode-generator";
 import { describe, expect, it } from "vitest";
-import { pairingText, parsePairing } from "./pairing";
+import { pairingText, pairWithCode, parsePairing } from "./pairing";
 
 describe("pairing a phone with a computer", () => {
   it("reads back what the computer shows", () => {
@@ -37,5 +37,21 @@ describe("pairing a phone with a computer", () => {
     const found = jsQR(rgba, size, size);
     expect(found).not.toBeNull();
     expect(parsePairing(found!.data)).toEqual(pairing);
+  });
+});
+
+describe("pairing with the code shown on the computer", () => {
+  it("sends the six digits and answers the token; a wrong code gives the computer's message", async () => {
+    const sent: { url: string; body: string }[] = [];
+    const fetcher = async (url: string, init?: RequestInit) => {
+      sent.push({ url, body: String(init?.body) });
+      const right = JSON.parse(String(init?.body)).code === "042137";
+      return new Response(JSON.stringify(right ? { token: "ab".repeat(16) } : { error: "wrong pairing code" }), { status: right ? 200 : 403 });
+    };
+    expect(await pairWithCode(fetcher, "http://192.168.1.20:8766/", " 042 137")).toEqual({ url: "http://192.168.1.20:8766", token: "ab".repeat(16) });
+    expect(sent[0]).toEqual({ url: "http://192.168.1.20:8766/api/pair", body: '{"code":"042137"}' });
+    await expect(pairWithCode(fetcher, "http://192.168.1.20:8766", "111111")).rejects.toThrow("wrong pairing code");
+    await expect(pairWithCode(fetcher, "http://192.168.1.20:8766", "12345")).rejects.toThrow("six digits");
+    expect(sent).toHaveLength(2);
   });
 });

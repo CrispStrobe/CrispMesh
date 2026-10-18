@@ -9,6 +9,10 @@ interface Sharing {
   port?: number;
   token?: string;
   addresses?: string[];
+  /** Six digits for a phone that found this computer on the network (replaced after five wrong tries). */
+  code?: string;
+  /** Announced on the network (Bonjour), so phones can find it. */
+  announced?: boolean;
 }
 
 /**
@@ -28,6 +32,15 @@ export function ShareEngine() {
     void shell.info().then((info) => setMobile(info.os === "ios" || info.os === "android"));
     void shell.bridge<Sharing>("share_engine", {}).then(setSharing, () => setSharing({ running: false }));
   }, []);
+
+  // While sharing: read the state again now and then (the pairing code changes after wrong tries).
+  useEffect(() => {
+    if (shell === null || sharing?.running !== true) return;
+    const timer = setInterval(() => {
+      void shell.bridge<Sharing>("share_engine", {}).then(setSharing, () => undefined);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [sharing?.running]);
 
   // The pairing code for the phone: the first address and the token.
   const code = useMemo(() => {
@@ -58,8 +71,8 @@ export function ShareEngine() {
       </label>
       <span class="help">
         A phone or tablet takes the photos and sends them here; the run is computed on this computer and followed on the
-        phone. On the phone: Connection, Another engine, with this address and token. Local network only, no encryption:
-        use it on a network you trust.
+        phone. On the phone: Connection, Another engine, then scan this computer's code, or find this computer on the
+        network and type its pairing code. Local network only, no encryption: use it on a network you trust.
       </span>
       {code !== "" && (
         <figure class="share-code">
@@ -69,6 +82,19 @@ export function ShareEngine() {
       )}
       {sharing.running && (
         <dl class="share-details">
+          {sharing.code !== undefined && sharing.code !== "" && (
+            <>
+              <dt>Pairing code</dt>
+              <dd>
+                <span class="mono pairing-code">{sharing.code}</span>
+                <span class="help">
+                  {sharing.announced === true
+                    ? " For a phone that found this computer on the network."
+                    : " This computer could not announce itself on the network: scan the code instead."}
+                </span>
+              </dd>
+            </>
+          )}
           <dt>Address</dt>
           <dd>
             {(sharing.addresses ?? []).length === 0 ? (

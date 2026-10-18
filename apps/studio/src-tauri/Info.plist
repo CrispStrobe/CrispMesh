@@ -14,7 +14,12 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>CrispMesh connects to the CrispMesh engine you name, which may run on a computer on your local network.</string>
+	<string>CrispMesh connects to the CrispMesh engine you name or find on your local network, such as your own computer sharing its engine.</string>
+	<!-- Computers sharing their engine announce this service (bonjour.rs); the app lists them under Another engine. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_crispmesh._tcp</string>
+	</array>
 	<!-- The camera takes the photos of a capture inside the app (Take photos); nothing leaves the device. -->
 	<key>NSCameraUsageDescription</key>
 	<string>CrispMesh takes the photos of an object on a turntable with the camera; they stay on this device.</string>

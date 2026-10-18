@@ -27,3 +27,28 @@ export function parsePairing(text: string): Pairing | null {
   if (!/^[0-9a-f]{16,128}$/i.test(record.token)) return null;
   return { url: record.crispmesh_engine, token: record.token };
 }
+
+/**
+ * Pairing with the six-digit code shown on the computer (for a computer found on the network instead of scanned):
+ * `POST /api/pair` answers the token for the right code. `fetcher`: how requests reach the computer (in the apps,
+ * through the app). Throws with the engine's message for a wrong code.
+ */
+export async function pairWithCode(
+  fetcher: (input: string, init?: RequestInit) => Promise<Response>,
+  url: string,
+  code: string,
+): Promise<Pairing> {
+  const digits = code.replace(/\s+/g, "");
+  if (!/^\d{6}$/.test(digits)) throw new Error("The pairing code has six digits (shown on the computer).");
+  const address = url.replace(/\/+$/, "");
+  const response = await fetcher(`${address}/api/pair`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: digits }),
+  });
+  const answer = (await response.json().catch(() => ({}))) as { token?: unknown; error?: unknown };
+  if (!response.ok || typeof answer.token !== "string") {
+    throw new Error(typeof answer.error === "string" ? answer.error : `The computer answered ${response.status}.`);
+  }
+  return { url: address, token: answer.token };
+}

@@ -14,6 +14,7 @@
 //! The web view gets no Tauri permissions beyond calling the commands below. Every path it
 //! can name is relative to the runs or the data folder and checked to stay inside.
 
+mod bonjour;
 mod config;
 mod remote;
 #[cfg(local_engine)]
@@ -460,6 +461,13 @@ async fn native_calibrations(app: AppHandle) -> Result<Value, String> {
 
 // ---------------------------------------------------------------------------------------------
 
+/// Computers on the local network that share their engine (bonjour.rs): `[{name, url}]`, after about two seconds
+/// of listening. Empty where nothing is found or the platform cannot look (not macOS or iOS).
+#[tauri::command]
+async fn find_engines() -> Result<Vec<bonjour::Found>, String> {
+    tauri::async_runtime::spawn_blocking(|| bonjour::find(std::time::Duration::from_secs(2))).await.map_err(|error| error.to_string())
+}
+
 /// A request to an engine at a plain `http://` address, made by the app instead of the web view (see remote.rs).
 /// The request: headers `x-url`, `x-method`, `x-headers` (percent-encoded JSON object), the body raw. The answer:
 /// `remote::frame` of status, headers and body.
@@ -680,6 +688,7 @@ pub fn run() {
         native_import,
         share_engine,
         remote_fetch,
+        find_engines,
         native_delete_example,
         native_free_space,
         check_tool,
@@ -711,6 +720,7 @@ pub fn run() {
         native_import,
         share_engine,
         remote_fetch,
+        find_engines,
         native_delete_example,
         native_free_space,
         check_tool

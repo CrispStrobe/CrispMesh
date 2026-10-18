@@ -3,7 +3,9 @@
 //! are saved into this computer's data folder, then a run starts here and the phone follows it).
 //!
 //! Every request needs `Authorization: Bearer <token>`; the token is random per start and shown
-//! only in this app. Plain HTTP on the local network, no TLS: for a trusted network. One thread per
+//! only in this app (in its QR code). A phone that found the computer by its network announcement
+//! (bonjour.rs) gets the token with `POST /api/pair {"code"}`: the six-digit code shown in the app,
+//! replaced after five wrong tries. Plain HTTP on the local network, no TLS: for a trusted network. One thread per
 //! request, `Connection: close`; uploads are one file per request and limited in size.
 
 use std::io::{BufRead, BufReader, Read, Write};
@@ -26,6 +28,24 @@ pub struct Sharing {
     pub port: u16,
     pub token: String,
     stop: Arc<AtomicBool>,
+    pairing: Arc<Mutex<Pairing>>,
+    advert: Mutex<Option<crate::bonjour::Advert>>,
+}
+
+/// Wrong pairing codes accepted before the code is replaced.
+const PAIRING_TRIES: u32 = 5;
+
+/// The current pairing code and the wrong tries against it.
+struct Pairing {
+    code: String,
+    wrong: u32,
+}
+
+/// Six random digits.
+fn new_code() -> Result<String, String> {
+    let mut bytes = [0u8; 8];
+    getrandom::fill(&mut bytes).map_err(|error| format!("No random numbers from the system: {error}"))?;
+    Ok(format!("{:06}", u64::from_le_bytes(bytes) % 1_000_000))
 }
 
 impl Sharing {
@@ -35,30 +55,39 @@ impl Sharing {
         let port = listener.local_addr().map_err(|error| error.to_string())?.port();
         listener.set_nonblocking(true).map_err(|error| error.to_string())?;
         let stop = Arc::new(AtomicBool::new(false));
-        let (flag, secret) = (stop.clone(), token.clone());
+        let pairing = Arc::new(Mutex::new(Pairing { code: new_code()?, wrong: 0 }));
+        let (flag, secret, codes) = (stop.clone(), token.clone(), pairing.clone());
         std::thread::spawn(move || {
             while !flag.load(Ordering::Relaxed) {
                 match listener.accept() {
                     Ok((stream, _)) => {
-                        let (engine, secret) = (engine.clone(), secret.clone());
-                        std::thread::spawn(move || serve(stream, &engine, &secret));
+                        let (engine, secret, codes) = (engine.clone(), secret.clone(), codes.clone());
+                        std::thread::spawn(move || serve(stream, &engine, &secret, &codes));
                     }
                     Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => std::thread::sleep(Duration::from_millis(50)),
                     Err(_) => std::thread::sleep(Duration::from_millis(200)),
                 }
             }
         });
-        Ok(Sharing { port, token, stop })
+        // Found by phones on the network without typing the address; without it the QR code still works.
+        let address = local_address().map(|ip| ip.to_string());
+        let advert = crate::bonjour::announce(port, &crate::bonjour::txt_record(address.as_deref())).ok();
+        Ok(Sharing { port, token, stop, pairing, advert: Mutex::new(advert) })
     }
 
     pub fn stop(&self) {
         self.stop.store(true, Ordering::Relaxed);
+        if let Ok(mut advert) = self.advert.lock() {
+            advert.take();
+        }
     }
 
     /// What the app shows: addresses another device can type, and the token.
     pub fn describe(&self) -> Value {
         let addresses: Vec<String> = local_address().into_iter().map(|ip| format!("http://{ip}:{}", self.port)).collect();
-        json!({"running": true, "port": self.port, "token": self.token, "addresses": addresses})
+        let code = self.pairing.lock().map(|pairing| pairing.code.clone()).unwrap_or_default();
+        let announced = self.advert.lock().is_ok_and(|advert| advert.is_some());
+        json!({"running": true, "port": self.port, "token": self.token, "addresses": addresses, "code": code, "announced": announced})
     }
 }
 
@@ -218,7 +247,7 @@ fn content_type(path: &str) -> &'static str {
     }
 }
 
-fn serve(mut stream: TcpStream, engine: &Arc<Native>, token: &str) {
+fn serve(mut stream: TcpStream, engine: &Arc<Native>, token: &str, pairing: &Mutex<Pairing>) {
     // On macOS and the BSDs an accepted socket inherits the listener's non-blocking mode: a large answer (a 50 MB
     // mesh) or upload would then stop at the first full buffer.
     let _ = stream.set_nonblocking(false);
@@ -231,6 +260,10 @@ fn serve(mut stream: TcpStream, engine: &Arc<Native>, token: &str) {
     if request.method == "OPTIONS" {
         return respond(&mut stream, 204, "text/plain", b"", false);
     }
+    if request.method == "POST" && request.path == "/api/pair" {
+        let (status, answer) = pair(&request.body, token, pairing);
+        return json_answer(&mut stream, status, &answer);
+    }
     let given = request.header("authorization").and_then(|value| value.strip_prefix("Bearer ")).unwrap_or_default();
     if !same(given.trim(), token) {
         return json_answer(&mut stream, 401, &json!({"error": "this engine needs its token (shown on the computer)"}));
@@ -238,6 +271,26 @@ fn serve(mut stream: TcpStream, engine: &Arc<Native>, token: &str) {
     let (status, answer) = route(&request, engine, &mut stream);
     if let Some(value) = answer {
         json_answer(&mut stream, status, &value);
+    }
+}
+
+/// `POST /api/pair {"code": "123456"}`: the token for the right code; a wrong one counts, and after
+/// [`PAIRING_TRIES`] the code is replaced (the app shows the new one).
+fn pair(body: &[u8], token: &str, pairing: &Mutex<Pairing>) -> (u16, Value) {
+    let given = serde_json::from_slice::<Value>(body).ok().and_then(|value| value["code"].as_str().map(|code| code.trim().to_string()));
+    let Ok(mut current) = pairing.lock() else { return (500, json!({"error": "pairing is not available"})) };
+    match given {
+        Some(code) if same(&code, &current.code) => (200, json!({"token": token})),
+        Some(_) => {
+            current.wrong += 1;
+            if current.wrong >= PAIRING_TRIES {
+                if let Ok(code) = new_code() {
+                    *current = Pairing { code, wrong: 0 };
+                }
+            }
+            (403, json!({"error": "wrong pairing code (see the computer's \"Let other devices use this computer\")"}))
+        }
+        None => (400, json!({"error": "JSON body with the pairing code required"})),
     }
 }
 
@@ -335,6 +388,23 @@ mod tests {
         assert_eq!(call(port, b"GET /api/health HTTP/1.1\r\nHost: x\r\n\r\n").0, 401);
         assert_eq!(call(port, b"GET /api/health HTTP/1.1\r\nAuthorization: Bearer secret-tokeN\r\n\r\n").0, 401);
         assert_eq!(call(port, b"OPTIONS /api/uploads HTTP/1.1\r\n\r\n").0, 204);
+
+        // Pairing: the right code gives the token; five wrong ones replace the code.
+        let code = sharing.describe()["code"].as_str().unwrap().to_string();
+        assert_eq!(code.len(), 6);
+        let pair = |code: &str| {
+            let body = format!("{{\"code\":\"{code}\"}}");
+            call(port, format!("POST /api/pair HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}", body.len()).as_bytes())
+        };
+        let (status, body) = pair(&code);
+        assert_eq!(status, 200);
+        assert_eq!(serde_json::from_str::<Value>(&body).unwrap()["token"], "secret-token");
+        let wrong = if code == "000000" { "000001" } else { "000000" };
+        for _ in 0..PAIRING_TRIES {
+            assert_eq!(pair(wrong).0, 403);
+        }
+        assert_ne!(sharing.describe()["code"].as_str().unwrap(), code, "replaced after {PAIRING_TRIES} wrong codes");
+        assert_eq!(pair(&code).0, 403);
 
         let (status, body) = call(port, format!("GET /api/health HTTP/1.1\r\n{auth}\r\n").as_bytes());
         assert_eq!(status, 200);

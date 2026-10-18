@@ -10,6 +10,7 @@ import type { BrowserMode, EngineMode } from "./app";
 import { servedByEngine } from "./served";
 import { ShareEngine } from "./shareEngine";
 import { PairScanner } from "./pairScanner";
+import { FindComputers } from "./findComputers";
 
 interface Props {
   prefs: Prefs;
@@ -265,6 +266,17 @@ export function Connection({ prefs, onChange, localEngine, browser }: Props) {
               )}
             </div>
           </form>
+          {getShell() !== null && (
+            <FindComputers
+              shell={getShell()!}
+              disabled={busy}
+              onPaired={(pairing) => {
+                setUrl(pairing.url);
+                setToken(pairing.token);
+                void connect(null, pairing);
+              }}
+            />
+          )}
           {scanning && (
             <PairScanner
               onCancel={() => setScanning(false)}
