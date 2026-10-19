@@ -716,8 +716,14 @@ inconsistent silhouettes raises median mask IoU from .825 to .862 against all
 geometry. Filtering matches recovers 116/117 cameras, yet its all-view and
 selected-106 stereo meshes are worse visually; their all-116 mask IoUs are
 .756 and .775. Keep these paths selectable, with no automatic promotion by count
-or fitting error. The new iPad Gaussian control was stopped by the disk reserve
-before completion; it provides no additional quality evidence.
+or fitting error. The first iPad Gaussian attempt stopped at the disk reserve;
+a guarded retry completed after space recovered. With the same selected 106
+cameras, 3,000 steps / crop320 / mesh192 produce 99,556 triangles: less false torso
+relief and fuller arms than stereo, but merged legs and lost real detail. Its
+all-116-view mask IoU is .867 (stereo .775); held-out RGB in-mask PSNR is 22.78 dB.
+These measure photo agreement and appearance, not shape accuracy. Cameras stay
+fixed. Training takes327 s and evaluation/extraction another318 s on the shared
+M1; budgets differ from stereo and this is not the full10,000-step fast preset.
 
 All 272 native release library tests, the camera-export example test, strict
 clippy, wasm32 library check and 53 photo-regression Python tests pass. These changes

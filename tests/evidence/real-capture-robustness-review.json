@@ -211,15 +211,29 @@
     }
   },
   "gaussian_control": {
-    "status": "incomplete_free_space_reserve_breached",
+    "status": "completed_guarded_retry_after_free_space_recovered",
+    "first_attempt": "stopped at8.8GiB disk reserve; incomplete output not used as quality evidence",
     "selected_views": 106,
-    "planned_steps": 3000,
+    "heldout_rgb_views": 11,
+    "steps": 3000,
     "crop": 320,
     "mesh_grid": 192,
     "poses_fixed": true,
     "prior": "Own photo/mask silhouette hull, no reference mesh",
-    "quality_claim": false,
-    "previous_completed_control": "See learned-feature-camera-review.json and STATUS: iPhone3000-step Gaussian is coarse, not a faithful detailed surface."
+    "splats": 136159,
+    "triangles": 99556,
+    "train_seconds": 327.240890167,
+    "total_model_seconds": 645.508941958,
+    "heldout_psnr_in_mask_median": 22.777092980740655,
+    "all116_mask_iou": {
+      "maximum": 0.9362328850607402,
+      "median": 0.8672483488963055,
+      "minimum": 0.6352142169463552,
+      "worst_view": "view_99"
+    },
+    "visual_review": "Same106 cameras: less false torso relief and fuller arms than stereo, but merged legs and weak/lost real hair/body detail. A coarse alternative, not accepted faithful STL. Held-out RGB render is smoother and blurred. Appearance PSNR is not geometry accuracy.",
+    "comparison_limits": "Stereo grid256 vs Gaussian192/crop320/3000steps; not an equal-budget comparison or full10000-step fast preset. Own camera rig and mask hull estimated from the full batch, including held-out view masks. Training holds out RGB only; poses not jointly optimized. Extraction/evaluation adds~318seconds in shared machine conditions; no controlled speed benchmark.",
+    "quality_accepted": false
   },
   "validation": {
     "native_release_library_tests": 272,

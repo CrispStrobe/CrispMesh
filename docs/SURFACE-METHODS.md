@@ -3,6 +3,9 @@
 Latest real-user finding: mask boundaries can recover the leg opening, while
 relaxing silhouette consistency can close it again despite higher mask IoU.
 Recovering more cameras also did not improve the latest iPad stereo surface.
+A completed same-camera Gaussian control reduces false relief and retains more
+of the arms, while merging the legs and losing fine detail. It remains a coarse
+alternative with fixed camera poses.
 The native stereo, Gaussian/SDF and learned-depth alternatives remain distinct;
 none has yet produced an accepted detailed STL from these two phone/tablet
 batches. See the [2026-10-19 status](STATUS.md#real-capture-robustness-follow-up-2026-10-19)
