@@ -226,11 +226,100 @@ fn each_view<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync + Send) -
     return items.iter().map(f).collect();
 }
 
+struct PhotoWindow {
+    image: Vec<u8>,
+    mask: Vec<bool>,
+    origin: [usize; 2],
+    scale: [f64; 2],
+    area_divisor: Option<usize>,
+}
+
+impl PhotoWindow {
+    fn intrinsics(&self, k: [f64; 4]) -> [f64; 4] {
+        let [x, y] = self.origin.map(|x| x as f64);
+        if let Some(div) = self.area_divisor {
+            let d = div as f64;
+            [k[0] / d, k[1] / d, (k[2] - x) / d, (k[3] - y) / d]
+        } else {
+            let [sx, sy] = self.scale;
+            [k[0] * sx, k[1] * sy, (k[2] - x) * sx, (k[3] - y) * sy]
+        }
+    }
+}
+
+/// Fit each observed crop to the common training canvas without inventing
+/// background outside the photo. Existing integer-area reduction is unchanged
+/// when the common source window fits; smaller crops use their valid extent.
+fn photo_window(rgb: image::RgbImage, mask: image::GrayImage, bounds: [usize; 4], cw: usize, ch: usize, div: usize) -> PhotoWindow {
+    let (w, h) = (mask.width() as usize, mask.height() as usize);
+    let (sw, sh) = (cw.min(w), ch.min(h));
+    let x0 = (((bounds[0] + bounds[2]) / 2) as i64 - (sw / 2) as i64).clamp(0, (w - sw) as i64) as usize;
+    let y0 = (((bounds[1] + bounds[3]) / 2) as i64 - (sh / 2) as i64).clamp(0, (h - sh) as i64) as usize;
+    let (width, height) = (cw / div, ch / div);
+    let mut image = vec![0u8; width * height * 3];
+    let mut inside = vec![false; width * height];
+    if sw == cw && sh == ch {
+        // Preserve the established area-average pixels and mask threshold.
+        let (rgb, mask) = (rgb.into_raw(), mask.into_raw());
+        let block = (div * div) as f64;
+        for y in 0..height {
+            for x in 0..width {
+                let mut sum = [0f64; 4];
+                for dy in 0..div {
+                    for dx in 0..div {
+                        let pixel = (y0 + y * div + dy) * w + x0 + x * div + dx;
+                        for k in 0..3 {
+                            sum[k] += rgb[pixel * 3 + k] as f64;
+                        }
+                        sum[3] += mask[pixel] as f64;
+                    }
+                }
+                let m = sum[3] / block >= 127.5;
+                inside[y * width + x] = m;
+                for k in 0..3 {
+                    image[(y * width + x) * 3 + k] = if m { (sum[k] / block).round() as u8 } else { 0 };
+                }
+            }
+        }
+    } else {
+        // Resize only existing pixels. Padding would incorrectly supervise
+        // unknown pixels beyond a clipped photo as empty background.
+        use image::imageops::{crop_imm, resize, FilterType};
+        let rgb = resize(
+            &crop_imm(&rgb, x0 as u32, y0 as u32, sw as u32, sh as u32).to_image(),
+            width as u32,
+            height as u32,
+            FilterType::Triangle,
+        );
+        let mask = resize(
+            &crop_imm(&mask, x0 as u32, y0 as u32, sw as u32, sh as u32).to_image(),
+            width as u32,
+            height as u32,
+            FilterType::Triangle,
+        );
+        for (i, (color, mask)) in rgb.pixels().zip(mask.pixels()).enumerate() {
+            inside[i] = mask[0] >= 128;
+            if inside[i] {
+                image[i * 3..i * 3 + 3].copy_from_slice(&color.0);
+            }
+        }
+    }
+    PhotoWindow {
+        image,
+        mask: inside,
+        origin: [x0, y0],
+        scale: [width as f64 / sw as f64, height as f64 / sh as f64],
+        area_divisor: (sw == cw && sh == ch).then_some(div),
+    }
+}
+
 /// A scene straight from an inputs directory (cameras.json with each view's original photo `texture_image`, else
 /// `image`, and `mask`; `photos` and `masks` replace their folders; `div` 0: chosen from `crop`), as `pack_scene.py` packs it: every view cropped to one
 /// common window around its mask (48 pixels of margin, a multiple of 16 times `div`), reduced by `div` (block
 /// means, as OpenCV's area resize for a whole factor; masks kept where the mean is at least 128), with the crop's
-/// intrinsics; 100 000 area-weighted samples of the hull mesh with their triangles' normals.
+/// intrinsics. A smaller input crop is resampled over its valid extent onto the
+/// common canvas, with separate horizontal/vertical camera scales. No unknown
+/// pixels beyond the photo become background. There are 100 000 area-weighted samples of the hull mesh with their triangles' normals.
 pub fn scene_from_inputs(
     inputs: &Path,
     photos: Option<&Path>,
@@ -320,33 +409,7 @@ pub fn scene_from_inputs(
         let rgb = crate::storage::open_image(&photo).with_context(|| photo.display().to_string())?.to_rgb8();
         let mask = read_mask(view)?;
         ensure!(rgb.dimensions() == mask.dimensions(), "photo and mask sizes differ for {}", view["name"]);
-        let (w, h) = (mask.width() as usize, mask.height() as usize);
-        ensure!(w >= cw && h >= ch, "the common window {cw} x {ch} is larger than the photo {w} x {h}");
-        let x0 = (((b[0] + b[2]) / 2) as i64 - (cw / 2) as i64).clamp(0, (w - cw) as i64) as usize;
-        let y0 = (((b[1] + b[3]) / 2) as i64 - (ch / 2) as i64).clamp(0, (h - ch) as i64) as usize;
-        let (rgb, mask) = (rgb.into_raw(), mask.into_raw());
-        let mut image = vec![0u8; width * height * 3];
-        let mut inside = vec![false; width * height];
-        let block = (div * div) as f64;
-        for y in 0..height {
-            for x in 0..width {
-                let mut sum = [0f64; 4];
-                for dy in 0..div {
-                    for dx in 0..div {
-                        let pixel = (y0 + y * div + dy) * w + x0 + x * div + dx;
-                        for k in 0..3 {
-                            sum[k] += rgb[pixel * 3 + k] as f64;
-                        }
-                        sum[3] += mask[pixel] as f64;
-                    }
-                }
-                let m = sum[3] / block >= 127.5;
-                inside[y * width + x] = m;
-                for k in 0..3 {
-                    image[(y * width + x) * 3 + k] = if m { (sum[k] / block).round() as u8 } else { 0 };
-                }
-            }
-        }
+        let window = photo_window(rgb, mask, *b, cw, ch, div);
         let k = view["k"].as_array().ok_or_else(|| anyhow!("view without k"))?;
         let k: Vec<f64> = k.iter().map(|v| v.as_f64().unwrap_or(f64::NAN)).collect();
         ensure!(k.len() == 4, "k must be fx, fy, cx, cy");
@@ -355,16 +418,8 @@ pub fn scene_from_inputs(
         let rotation = [vec3(&rows[0])?, vec3(&rows[1])?, vec3(&rows[2])?];
         let t = vec3(&view["translation"])?;
         let origin = std::array::from_fn(|i| (-(0..3).map(|j| rotation[j][i] * t[j]).sum::<f64>() - centre[i]) * unit_scale);
-        let d = div as f64;
-        Ok(View {
-            width,
-            height,
-            image,
-            mask: inside,
-            intrinsics: [k[0] / d, k[1] / d, (k[2] - x0 as f64) / d, (k[3] - y0 as f64) / d],
-            rotation,
-            origin,
-        })
+        let intrinsics = window.intrinsics([k[0], k[1], k[2], k[3]]);
+        Ok(View { width, height, image: window.image, mask: window.mask, intrinsics, rotation, origin })
     })
     .into_iter()
     .collect::<Result<Vec<_>>>()?;
@@ -962,4 +1017,52 @@ masks), div (photo reduction; default from crop) and crop (target width of the w
     let scene = from.scene(&source, s.seed)?;
     let gpu = Gpu::new()?;
     crate::gpu::block_on(train(&gpu, &scene, &out, &s))
+}
+
+#[cfg(test)]
+mod crop_window_tests {
+    use super::*;
+    use image::{GrayImage, Luma, Rgb, RgbImage};
+
+    #[test]
+    fn existing_integer_area_pixels_and_camera_are_exactly_preserved() {
+        let rgb = RgbImage::from_fn(4, 4, |x, y| Rgb([(x + 4 * y) as u8; 3]));
+        let mask = GrayImage::from_fn(4, 4, |x, _| Luma([if x < 2 { 255 } else { 0 }]));
+        let window = photo_window(rgb, mask, [0, 0, 4, 4], 4, 4, 2);
+        assert_eq!(window.origin, [0, 0]);
+        assert_eq!(window.image, vec![3, 3, 3, 0, 0, 0, 11, 11, 11, 0, 0, 0]);
+        assert_eq!(window.mask, vec![true, false, true, false]);
+        assert_eq!(window.intrinsics([80., 90., 1.7, 2.3]), [40., 45., 1.7 / 2., 2.3 / 2.]);
+    }
+
+    #[test]
+    fn small_valid_crop_resizes_without_fabricating_background() {
+        let rgb = RgbImage::from_pixel(4, 6, Rgb([19, 73, 111]));
+        let mask = GrayImage::from_pixel(4, 6, Luma([255]));
+        let window = photo_window(rgb, mask, [0, 0, 4, 6], 8, 8, 2);
+        assert_eq!(window.origin, [0, 0]);
+        assert_eq!(window.scale, [1., 2. / 3.]);
+        assert_eq!(window.mask.len(), 16);
+        assert!(window.mask.iter().all(|&x| x));
+        assert_eq!(window.image, [19, 73, 111].repeat(16));
+        assert_eq!(window.intrinsics([80., 90., 2., 3.]), [80., 60., 2., 2.]);
+    }
+
+    #[test]
+    fn resize_camera_preserves_offcentre_rays_in_both_axes() {
+        let rgb = RgbImage::from_pixel(100, 160, Rgb([81, 92, 103]));
+        let mask = GrayImage::from_pixel(100, 160, Luma([255]));
+        let window = photo_window(rgb, mask, [10, 40, 90, 112], 128, 128, 4);
+        assert_eq!(window.origin, [0, 12]);
+        let original = [113., 127., 13.5, 61.5];
+        let prepared = window.intrinsics(original);
+        for xy in [[0.5, 12.5], [99.5, 139.5], [31.1, 75.3]] {
+            for axis in 0..2 {
+                let resized = (xy[axis] - window.origin[axis] as f64) * window.scale[axis];
+                let before = (xy[axis] - original[axis + 2]) / original[axis];
+                let after = (resized - prepared[axis + 2]) / prepared[axis];
+                assert!((before - after).abs() < 1e-14);
+            }
+        }
+    }
 }

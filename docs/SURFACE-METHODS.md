@@ -265,3 +265,37 @@ inspected point cloud remains poor/flattened. These use different point/view
 sets, so support fractions are not paired accuracy scores. No learned tracker
 is shipped in the app and no camera default changes. See
 [point tracking evidence](../tests/evidence/point-tracking-camera-review.json).
+
+Foreground ALIKED/LightGlue plus native eight-point/P3P/diverse recovery now
+registers 76/78 iPhone photos at explicit uncertainty scale 4; strict localization
+registers 21/78. Original-resolution SIFT triangulation/joint adjustment improves
+its fitting residual from 1.388 to 1.182 px with 76 views, but both corrected surface
+controls remain open and visibly inaccurate. An independent COLMAP mapper also
+registers 76 with worse silhouette consistency. Camera count and low fitting error
+are insufficient. Gaussian/SDF trainers still hold poses fixed; no joint Gaussian
+camera optimizer or successful splat-derived STL is claimed. Existing camera,
+matching, neural-surface and splat paths remain available. The new learned feature
+runner and native recovery example are optional offline tools, with pinned
+permissive source/weights and no new app dependency. See
+[runner instructions](../scripts/photo_regression/README.md).
+
+The shared Gaussian/neural-surface loader now accepts individual foreground crops
+smaller than the common training window. Each such view resamples its valid
+window onto the common canvas and scales its horizontal/vertical intrinsics
+consistently; it does not pad unknown off-frame pixels as background. The earlier
+integer-area path remains exact for views that already fit. This fixes an actual
+pre-training failure on the real 76-view iPhone inputs. Three analytic tests cover
+legacy pixels/cameras, small valid crops and off-centre ray preservation. Shape
+quality still requires a separate training and mesh review.
+
+The bounded iPhone Gaussian control now finishes: 3,000 steps, 320-pixel crop,
+192-cell mesh grid, 201 s training / 252 s including evaluation and meshing.
+Its 91,384-triangle STL has one component and no boundary/nonmanifold edges.
+Inspected grey renders reduce the stereo torso's false grooves, but lose real
+relief and leg separation; it remains a coarse alternative. The 20.82 dB median
+held-out in-mask PSNR measures appearance, not shape or camera accuracy. Poses
+stay fixed. This is not the full 10,000-step fast preset or an equal-budget
+comparison. The complete 111-view iPad native pipeline also finishes, but its
+closed mesh lacks much of the body/legs (median mask IoU .349) and is rejected.
+A stricter camera-tolerance control recovers only 11/117, so simply widening or
+shrinking one global gate does not solve the batch. No geometry default changes.

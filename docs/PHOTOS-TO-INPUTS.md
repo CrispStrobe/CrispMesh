@@ -742,3 +742,16 @@ use it for experiments whose feature localization uncertainty differs, such as
 resized learned tracking. It is one global multiplier, not per-feature covariance
 or automatic noise estimation. Wider gates can admit wrong geometry: the measured
 coverage gain on real photos does not establish acceptable cameras.
+
+A later foreground ALIKED/LightGlue experiment recovers **76/78 iPhone views**
+with eight-point/P3P/diverse initialization and explicit uncertainty scale 4.
+These are new correspondences; the earlier 9–11-view SIFT controls above remain
+valid historical comparisons. Original-resolution SIFT refinement lowers its
+own fitting residual, but the corrected untextured meshes still contain false
+grooves and missing detail. No suitable STL or camera-default adoption follows.
+Offline, hash-pinned learned matching, a switchable Rust recovery example and a
+COLMAP-to-input adapter are now reproducible through the
+[photo regression instructions](../scripts/photo_regression/README.md).
+The input adapter's half-centred coordinate round trip is tested. An earlier
+**private experimental adapter** incorrectly subtracted half a pixel; its old
+surface trials are superseded. The production scene writer was already correct.

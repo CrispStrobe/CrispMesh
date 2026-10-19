@@ -1,0 +1,367 @@
+{
+  "date": "2026-10-19",
+  "status": "Additive learned-feature camera recovery; no accepted detailed STL",
+  "source_inventory": "camera-recovery-source-review.json",
+  "reference_inputs_used": false,
+  "inputs": {
+    "iphone": "78 original AUTO-shutter LEGO turntable photos; actual step angles unknown; own corrected Vision masks. Own 3000px pinhole hypothesis, not measured calibration.",
+    "ipad": "117 accepted MANUAL-trigger photos from119; own Vision masks and own photo-derived lens estimate."
+  },
+  "iphone_learned_matching": {
+    "photos": 78,
+    "keypoints": [
+      364,
+      343,
+      396,
+      420,
+      224,
+      299,
+      396,
+      373,
+      314,
+      283,
+      382,
+      458,
+      305,
+      369,
+      305,
+      439,
+      398,
+      475,
+      336,
+      362,
+      421,
+      349,
+      437,
+      489,
+      383,
+      366,
+      296,
+      440,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      512,
+      289,
+      299,
+      361,
+      495,
+      479,
+      412,
+      512,
+      292,
+      481,
+      493,
+      350,
+      512,
+      443
+    ],
+    "pairs": 441,
+    "seconds": 200.00727009773254,
+    "extractor_device": "CPU F32",
+    "matcher_device": "cpu F32, firstpair CPU/MPS parity checked",
+    "pair_policy": "retrieval",
+    "candidate_pairs": 493,
+    "maximum_match_keypoints": 512,
+    "resolution": 768,
+    "reference_inputs_used": false,
+    "feature_cache_reused": true,
+    "first_extraction_seconds": 280.2,
+    "first_extraction_time_source": "aliked-002-job/child.log; all78feature caches complete before all-pairs attempt cancelled"
+  },
+  "iphone_native_recovery": {
+    "strict_registered": 21,
+    "wider_uncertainty_registered": 76,
+    "input": 78,
+    "points": 2479,
+    "uncertainty_scale": 4,
+    "initializer": "EightPoint",
+    "resection": "P3p",
+    "seed_selection": "Diverse",
+    "seed_budget": 8,
+    "first_seed": [
+      40,
+      45
+    ],
+    "actual_original_pixel_API_verified": true,
+    "fixed_angles": false,
+    "missing_photo_indices": [
+      66,
+      67
+    ],
+    "limits": "Wider gates admit uncertainty and wrong geometry; no accurate-calibration or quality claim. Original Lens and pixels retained."
+  },
+  "fine_original_resolution_refinement": {
+    "reference_inputs_used": false,
+    "method": "Own ALIKED coarse poses -> original-resolution own masked SIFT/LightGlue tracks -> fixed-lens triangulation and joint camera/point adjustment",
+    "registered_cameras": 76,
+    "fine_points": 3896,
+    "images_with_fine_landmarks": 76,
+    "verified_pairs": 1030,
+    "pairs_with15inliers": 841,
+    "before_mean_reprojection_original_px": 1.387824820255774,
+    "after_mean_reprojection_original_px": 1.1819420378152932,
+    "seconds_including_verification_and_report_failure": 43.449,
+    "minimum_triangulation_angle_degrees": 3,
+    "intrinsics": "Own3000px hypothesis, fixed; not measured",
+    "loss": "SOFT_L1 1originalpx",
+    "artifact_note": "Numerical stages completed and models saved before report used a property as a method. Reporting bug fixed; report reconstructed from saved before/after models and database, no recomputation or accepted-quality claim.",
+    "pycolmap_version": "3.11.1"
+  },
+  "silhouette_consistency": {
+    "native_learned": {
+      "registered_views": 76,
+      "model_points": 2479,
+      "median_inside_fraction": 0.8592174263816055,
+      "worst_inside_fraction": 0.7991125453812021
+    },
+    "fine_sift": {
+      "registered_views": 76,
+      "model_points": 3896,
+      "median_inside_fraction": 0.8852669404517455,
+      "worst_inside_fraction": 0.7692505133470225
+    },
+    "independent_colmap": {
+      "registered_views": 76,
+      "model_points": 3855,
+      "median_inside_fraction": 0.8249027237354085,
+      "worst_inside_fraction": 0.6526588845654994
+    },
+    "ipad_native": {
+      "registered_views": 111,
+      "model_points": 3942,
+      "median_inside_fraction": 0.7288178589548453,
+      "worst_inside_fraction": 0.3820395738203957
+    }
+  },
+  "silhouette_limits": "Own object landmark/mask consistency only; caller .95 median gate fails. Different point/view sets are not paired accuracy scores. High support alone would not prove accurate cameras.",
+  "corrected_surface_controls": {
+    "native": {
+      "closed": false,
+      "genus": 4,
+      "triangles": 251965,
+      "boundary_edges": 215,
+      "nonmanifold_edges": 0,
+      "wall_seconds": 27.089,
+      "render_review": "Inspected photo/grey comparison sheet: false grooves, inaccurate shape and missing detail; rejected as suitable STL."
+    },
+    "fine": {
+      "closed": false,
+      "genus": 4,
+      "triangles": 252630,
+      "boundary_edges": 226,
+      "nonmanifold_edges": 0,
+      "wall_seconds": 26.765,
+      "render_review": "Inspected photo/grey comparison sheet: false grooves, inaccurate shape and missing detail; rejected as suitable STL."
+    }
+  },
+  "surface_config": {
+    "grid": 256,
+    "sizes": [
+      256,
+      512,
+      1024
+    ],
+    "native_level": false,
+    "silhouette_first": 0,
+    "repair_masks": false,
+    "mask_grow": false,
+    "photo_refine": 0
+  },
+  "coordinate_correction": {
+    "scope": "Earlier private experimental COLMAP input adapter; production SceneWriter already correct.",
+    "old_error": "Subtracted .5 from already raster-corner COLMAP K before crop.",
+    "correct_rule": "Scale corner K, then subtract integer crop offset only; engine inputs also use half-centred pixels.",
+    "old_surface_trials": "Superseded; not final comparisons. Camera recovery/counts and COLMAP sparse audits unaffected.",
+    "masks": "Original Vision masks binary0/255; corrected exporter retains foreground pixels.",
+    "tests": "Five adapter tests plus Rust export/import round trip."
+  },
+  "routing_control": "Explicit silhouette_first=0 prevents auto several-heights routing from overriding mask_grow and cross_check in this comparison.",
+  "other_controls": {
+    "point_conditioning": "At3views/3deg,4views/5deg,6views/10deg, median supports.877/.895/.905; still fail.95, changed subsets not paired accuracy.",
+    "bundle_adjustment": "Existing PyCOLMAP fixed/focal/radial controls lower fit error slightly; raw median support.863/.864/.865; no accepted geometry.",
+    "mask_controls": "Full-frame background mask and six-photo CPU SAM2.1 candidate sheets inspected; no convincing replacement for existing Vision masks.",
+    "sam_backend": "Same-model CPU->MPS sequence parity fails, best candidate mask IoU.843; no MPS mask adoption. Backend cause not isolated; not a native ONNX/ggml/Metal failure claim."
+  },
+  "reproducible_paths": {
+    "learned_features": "scripts/photo_regression/learned_matches.py",
+    "native_recovery": "crates/dense/examples/recover_cameras.rs",
+    "native_inputs": "scripts/photo_regression/colmap_inputs.py",
+    "source": "Pinned external ALIKED BSD3 / LightGlue Apache2 selected code+weights, hash checked; no automatic downloads or app dependency.",
+    "bounded_graph": "New runner can cold-start without exhaustive SIFT overlap; original iPhone result reused preexisting SIFT overlap and is not a cold-start scalability benchmark."
+  },
+  "validation": {
+    "photo_release_tests": 140,
+    "strict_library_test_clippy": true,
+    "wasm_release_library_check": true,
+    "new_python_analytic_tests": 15,
+    "rust_colmap_roundtrip_tests": 1,
+    "browser_runtime_benchmark": false,
+    "new_testflight_upload": false,
+    "dense_defaults_changed": false,
+    "larger_device_benchmark": false,
+    "release_library_tests": 268,
+    "source_window_tests": 3,
+    "strict_library_test_example_clippy": true,
+    "pair_cache_resume_identical_output": true
+  },
+  "remaining": [
+    "Fine geometry on both real captures; iPhone has a closed coarse Gaussian alternative, iPad111 native dense is rejected",
+    "Joint camera and Gaussian optimization is not implemented; current splat/SDF trainers hold recovered poses fixed",
+    "All-user-string i18n audit and device validation remain open",
+    "Input bound1536 is not a1536-view runtime/memory benchmark; native global BA still skips over128 cameras"
+  ],
+  "ipad_learned_matching": {
+    "photos": 117,
+    "candidate_pairs": 472,
+    "matched_pairs": 470,
+    "cache_hits": 0,
+    "extraction_seconds": 143.85608287493233,
+    "matching_seconds": 76.75740170804784,
+    "device": "CPU F32",
+    "resolution": 768,
+    "maximum_match_keypoints": 512,
+    "neighbors": 6,
+    "temporal_radius": 2,
+    "reuse_overlap": false,
+    "pairing_limits": "Pooled similarity is quadratic, costly learned pair matching is bounded by N times candidate budget. Reused overlap preprocessing cost excluded.",
+    "weight_hashes": {
+      "extractor": "ddf3abbf38e86f6a74540d214e1a9712c54b2d8551abc864542199f2347d7332",
+      "matcher": "d975e965b105311a6143194852297dff4f02aea5cc2e10cecfed966ca0e22503"
+    },
+    "code_hashes": {
+      "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "aliked.py": "60b24397c52e8a08d838828967cd03f5d6066c1f7c3c433805bf11dcb0d5228e",
+      "lightglue.py": "dcb75b9cad1985c5e7a537c512d4318d47fbcc99df75b39a513de60e027c039f",
+      "utils.py": "c6d9260656a24d826128b68c95d0b7798106d04f4244a77f3b1856573f58e690"
+    },
+    "reference_inputs_used": false
+  },
+  "ipad_native_recovery": {
+    "registered": 111,
+    "input": 117,
+    "points": 3942,
+    "measurement_error_scale": 4.0,
+    "initializer": "eight_point",
+    "resection": "p3p",
+    "seed_selection": "diverse",
+    "seed_budget": 8,
+    "seed": [
+      11,
+      12
+    ],
+    "fixed_angles": false,
+    "global_bundle_adjustment": true,
+    "wall_seconds": 24.844
+  },
+  "surface_window_fix": {
+    "trigger": "Real per-view foreground crops smaller than common shared training window; prior Gaussian/SDF loading failed before training.",
+    "behavior": "Resize only valid per-view photo extent to common training canvas, applying matching horizontal/vertical focal and principal-point scales. No fabricated off-frame background.",
+    "legacy": "Existing integer-area pixels, mask threshold and camera division preserved when common source window fits.",
+    "tests": "Integer-area pixel/camera regression, constant small valid crop, off-centre ray preservation.",
+    "defaults": "No geometry/matching/fusion defaults changed; no new source dependencies.",
+    "runtime": "All76 own iPhone views now finish bounded Gaussian training, held-out rendering and STL extraction."
+  },
+  "binaries": {
+    "crispmesh-dense": "2ccf97cb24b8fc3a56122a8546e4fe40ebf99b88ef11c903203aa5dd0392be60",
+    "recover_cameras": "e26a9687a3c622a0fd37c3ca4d6a00b9eebe98c2c1746fb534bf3c21ac408ff7"
+  },
+  "corrected_coarse_hull": {
+    "closed": true,
+    "genus": 0,
+    "triangles": 150980,
+    "mesh_open_unseen": false,
+    "interpretation": "Inspected coarse diagnostic; unseen completion inferred, legs fused and fine relief absent. No detailed quality acceptance."
+  },
+  "gaussian_control": {
+    "steps": 3000,
+    "views": 76,
+    "held_out": 8,
+    "splats": 135334,
+    "train_seconds": 200.955031583,
+    "seconds": 251.788160916,
+    "triangles": 91384,
+    "heldout_psnr_in_mask_median": 20.824666776141264,
+    "crop": 320,
+    "mesh_grid": 192,
+    "pose_optimization": false,
+    "quality_preset_overridden": "3000 steps, not full10000-step fast preset",
+    "topology": {
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "vertex_connected_components": 1,
+      "largest_component_face_fraction": 1.0,
+      "euler_v_minus_e_plus_f": 0,
+      "referenced_vertices": 45692,
+      "unique_edges": 137076,
+      "triangles": 91384,
+      "closed_edge_manifold": true
+    },
+    "photo_agreement": {
+      "maximum": 0.9541602556515564,
+      "median": 0.8160893883837217,
+      "minimum": 0.6369262322974218,
+      "worst_view": "view_0007"
+    },
+    "review": "Held-out photo pair and grey mesh inspected: fewer false torso grooves than ordinary stereo, but genuine hair/body relief and leg separation remain weak. Coarse alternative, not accepted detailed STL; no equal-budget algorithm benchmark. Held-out photo appearance is not camera/shape accuracy."
+  },
+  "ipad_full_native_scene_and_dense": {
+    "closed": true,
+    "genus": 10,
+    "triangles": 122296,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "production_scene_writer": true,
+    "views": 111,
+    "own_lens": "2720.6659px, k1-.047656, own previously recovered lens; RGB/masks undistorted consistently by production writer",
+    "recovery_and_scene_seconds": 35.974,
+    "dense_wall_seconds": 27.903,
+    "photo_agreement": {
+      "maximum": 0.42986486925714656,
+      "median": 0.34875273097214043,
+      "minimum": 0.1807756545248376,
+      "worst_view": "view_70"
+    },
+    "review": "Grey/photo sheet inspected: badly incomplete body/legs and false surface detail. Rejected despite closed topology. Counts/closure do not establish usable reconstruction."
+  },
+  "ipad_strict_control": {
+    "registered": 11,
+    "input": 117,
+    "points": 756,
+    "measurement_error_scale": 1.0,
+    "seed_budget": 8
+  }
+}

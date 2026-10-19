@@ -189,3 +189,76 @@ Do not include background/support landmarks. Low support identifies inconsistenc
 high support alone does not prove good poses or shape. Different landmark/view
 sets are not paired accuracy scores. Four analytic tests check raster coordinates,
 scale, excluded/behind/off-frame support, nonfinite inputs and dimension validation.
+
+## Optional foreground learned features and general cameras
+
+`learned_matches.py` runs CPU F32 ALIKED-n16rot (BSD-3-Clause) and LightGlue
+(Apache-2.0) from separately supplied pinned code/weights. It downloads nothing.
+The source/weight revisions and license evidence are recorded in
+[`camera-recovery-source-review.json`](../../tests/evidence/camera-recovery-source-review.json).
+Prepare a small external `lightglue/` package containing only the pinned
+`aliked.py`, `lightglue.py`, `utils.py`, and an empty `__init__.py`; the script
+checks their hashes and both checkpoint hashes. Retain their upstream notices.
+No SuperPoint or other feature model is needed. Torch, Torchvision, Kornia,
+NumPy and Pillow belong to the optional research environment, not the app.
+
+The template supplies only `names` and `lens` from your **own** photo match-cache
+schema (`crispmesh_turntable_matches_v1`). Calibration must match these oriented
+photos, including any previous crop. Lens principal points and output keypoints
+use integer pixel centres. Supply masks as `<photo-name>.png`, in photo dimensions.
+Foreground crops keep aspect ratio and use white padding outside the frame;
+resize inversion preserves pixel centres. Mask/RGB/model hashes fingerprint
+per-photo feature caches. Completed pair matches are cached separately, with
+index/one-to-one validation and atomic writes. A pooled-descriptor graph chooses six neighbours plus
+two nearby image indices in each direction, without assuming equal angular
+steps. Similarity construction remains quadratic; costly learned matching has a
+bounded candidate budget. Optional `--reuse-overlap` also selects up to four
+neighbours from template matches, whose preprocessing cost must be disclosed.
+
+```sh
+python scripts/photo_regression/learned_matches.py \
+  --source /path/to/pinned-selected-package \
+  --extractor /path/to/aliked-n16rot.pth \
+  --matcher /path/to/aliked_lightglue.pth \
+  --template own-photo-matches.json --photos own/photos --masks own/masks \
+  --output learned-features
+
+cargo run --manifest-path crates/dense/Cargo.toml --release \
+  --example recover_cameras -- \
+  --matches learned-features/matches.json --output new-own-colmap-model \
+  --resection p3p --seeds diverse --seed-budget 8 --measurement-error-scale 4
+```
+
+To prepare dense inputs directly, append `--photos own/photos --masks own/masks
+--inputs new-native-inputs` to the recovery command. This uses the production
+scene writer for consistent radial-lens undistortion and per-view foreground
+cropping. Masks may use the source filename or `<source-filename>.png`.
+The model and inputs paths must be fresh. This is the preferred route for the
+nonzero radial lens in the iPad experiment; its RGB/masks must stay in the same
+original distorted frame as its declared lens.
+
+The recovery example exposes the independent library choices (`--help` lists
+all). Defaults retain the library's earlier algorithms/tolerances. The multiplier
+4 is an explicit localization experiment, not inferred camera calibration or
+recommended universal setting. The exported model retains the actual lens and
+original pixels. Check coverage, sparse silhouette consistency and untextured
+surface renders separately. All these paths are experimental offline tools;
+they are not selectable app providers or a successful shape-quality guarantee.
+
+Export your own undistorted COLMAP result with `colmap_inputs.py`:
+
+```sh
+python scripts/photo_regression/colmap_inputs.py --model new-own-colmap-model \
+  --photos own/photos --masks own/masks --output new-native-inputs \
+  --normalize-world
+```
+
+This adapter requires optional PyCOLMAP and refuses nonzero distortion; undistort
+RGB/masks consistently first if needed. Both COLMAP and engine input K use
+**half-centred raster coordinates**, so this conversion does **not** subtract
+`.5`; it subtracts only integer crop offsets. A diagnostic scaled model can
+explicitly use `--model-pixel-scale`. The production `SceneWriter` already handles
+its different integer-centred `Lens` correctly. Optional world normalization is
+one consistent similarity of cameras/points and preserves projections. Physical
+scale remains unknown. Source hashes/crops and coordinate convention are retained
+in `provenance.json`. Never use supplied dataset poses/masks as pipeline inputs.

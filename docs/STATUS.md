@@ -615,3 +615,37 @@ and bounded deterministic point sampling. Four analytic tests pass. An optional
 caller-selected .95 median gate rejects the11-view SIFT,39-view temporal and
 49-view hybrid controls. High support would still not prove accurate geometry.
 See [runner instructions](../scripts/photo_regression/README.md).
+
+
+Foreground ALIKED/LightGlue and native general recovery now register **76/78
+iPhone** and **111/117 iPad** views without fixed angle steps. The reproducible
+CPU runner uses pinned permissive code/weights; its iPad run matches 472 candidate
+pairs (470 retained) without the earlier exhaustive SIFT overlap graph. Feature
+extraction takes 143.9 s and matching 76.8 s; camera recovery takes 24.8 s. This
+is a desktop research run above 96 photos, not a large-device benchmark or app
+provider. Camera silhouette consistency still fails: median .859 iPhone / .729
+iPad, on different landmark/view sets. Original-resolution SIFT refinement lowers
+its own fitting residual to 1.182 px but does not repair the corrected iPhone
+surfaces; both remain open with false grooves. Earlier surface trials made with
+a private half-pixel input-conversion mistake are superseded. The production
+scene writer was already correct. See
+[learned-feature evidence](../tests/evidence/learned-feature-camera-review.json).
+
+A concrete Gaussian/neural-surface loader failure is fixed: individually cropped
+photos smaller than the shared training window are resampled from their observed
+extent, with matching intrinsics. Existing integer-area sampling is preserved for
+views that already fit; no unknown off-frame background is fabricated. Three
+analytic crop/camera tests and all 268 release library tests pass. This removes an
+execution blocker, not the need for accurate poses or a shape-quality result.
+
+The bounded iPhone Gaussian control now finishes: 3,000 steps, 320-pixel crop,
+192-cell mesh grid, 201 s training / 252 s including evaluation and meshing.
+Its 91,384-triangle STL has one component and no boundary/nonmanifold edges.
+Inspected grey renders reduce the stereo torso's false grooves, but lose real
+relief and leg separation; it remains a coarse alternative. The 20.82 dB median
+held-out in-mask PSNR measures appearance, not shape or camera accuracy. Poses
+stay fixed. This is not the full 10,000-step fast preset or an equal-budget
+comparison. The complete 111-view iPad native pipeline also finishes, but its
+closed mesh lacks much of the body/legs (median mask IoU .349) and is rejected.
+A stricter camera-tolerance control recovers only 11/117, so simply widening or
+shrinking one global gate does not solve the batch. No geometry default changes.
