@@ -216,7 +216,7 @@
       finalButton.click();
     }
     try {
-      await until("the final surface", () => (document.querySelector("#mesh-heading + .sub")?.textContent ?? "").includes("Final surface"), 180000);
+      await until("the final surface", () => /^(Final|Silhouette|Stereo) surface\b/.test(document.querySelector("#mesh-heading + .sub")?.textContent ?? ""), 180000);
     } catch (problem) {
       // Say what the panel shows instead, so a failure can be understood from the log alone.
       const panel = document.querySelector(".mesh-panel");

@@ -190,17 +190,22 @@ class Engine:
                 if path is None or not path.is_file(): raise ValueError('calibration must be a file under the data directory')
                 command += ['--calibration',str(path)]
         else:
-            command=[tools['native'],'run','--inputs',str(source),'--output',str(output),'--base-surface',base,'--threads','2','--minimum-free-gib','8.8']
+            command=[self.python,'-m','scripts.photo_regression.prepared_capture','--inputs',str(source),
+                '--output',str(output),'--tools',str(self.capture_tools),'--base-surface',base]
+            if body.get('validation_inputs'):
+                validation=inside(self.data,self.data/str(body['validation_inputs']))
+                if validation is None or not (validation/'cameras.json').is_file():raise ValueError('validation_inputs must be a folder under the data directory')
+                command+=['--validation-inputs',str(validation)]
         if body.get('surface'): raise ValueError('this capture engine offers silhouette and Gaussian surfaces; use the native engine for the neural surface')
         splats=body.get('splats')
         if splats is not None:
             if not isinstance(splats,dict): raise ValueError('invalid Gaussian settings')
             quality=splats.get('quality','capture'); settings=splats.get('settings',[])
             if quality not in {'capture','fast','standard','best'} or not isinstance(settings,list): raise ValueError('invalid Gaussian quality')
-            command += ['--gaussian','--gaussian-quality',quality] if key=='photos' else ['--splats',quality]
+            command += ['--gaussian','--gaussian-quality',quality]
             for item in settings:
                 if not isinstance(item,str) or not re.fullmatch(r'(steps|crop|mesh|seed)=\d+',item): raise ValueError('invalid Gaussian override')
-                command += ['--gaussian-set' if key=='photos' else '--splats-set',item]
+                command += ['--gaussian-set',item]
         if body.get('texture'): command+=['--texture']
         if body.get('settings'):
             if key=='photos': raise ValueError('capture preparation uses its fixed default recipe; use prepared inputs for dense overrides')
@@ -208,7 +213,9 @@ class Engine:
             build(None,overrides)
             for item in overrides:command+=['--set',item]
         if key=='inputs':
-            (self.runs/(run_id+'.recovered-scene.json')).write_text(json.dumps({'inputs':str(source.relative_to(self.data)),'sha256':inventory(source,['.'])})+'\n')
+            record={'inputs':str(source.relative_to(self.data)),'sha256':inventory(source,['.'])}
+            if body.get('validation_inputs'):record.update(validation_inputs=str(validation.relative_to(self.data)),validation_sha256=inventory(validation,['.']))
+            (self.runs/(run_id+'.recovered-scene.json')).write_text(json.dumps(record)+'\n')
         with (self.runs/(run_id+'.driver.log')).open('w') as log:
             self.capture_child=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,cwd=REPOSITORY,env={**os.environ,'PYTHONPATH':str(REPOSITORY),'RAYON_NUM_THREADS':'2'},start_new_session=True)
         deadline=time.monotonic()+10
@@ -232,8 +239,14 @@ class Engine:
         pipeline=folder/'pipeline.json'
         base=json.loads(pipeline.read_text()).get('base_surface','silhouette') if pipeline.is_file() else 'silhouette'
         if base not in {'silhouette','stereo'}:raise ValueError('invalid saved base surface')
-        return self.start_run({'name':run_id[-30:]+'-gaussian','inputs':str(inputs.relative_to(self.data)),
-                              'base_surface':base,'splats':{'quality':'capture'}})
+        body={'name':run_id[-30:]+'-gaussian','inputs':str(inputs.relative_to(self.data)),
+              'base_surface':base,'splats':{'quality':'capture'}}
+        if recovered.get('validation_inputs'):
+            validation=inside(self.data,self.data/recovered['validation_inputs'])
+            if validation is None or not (validation/'cameras.json').is_file():raise ValueError('recovered scene is unavailable')
+            if inventory(validation,['.'])!=recovered.get('validation_sha256'):raise ValueError('recovered scene changed; start from the original photos again')
+            body['validation_inputs']=str(validation.relative_to(self.data))
+        return self.start_run(body)
 
     def start_run(self, body):
         if not isinstance(body, dict):

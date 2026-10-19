@@ -47,7 +47,7 @@ try {
   console.log("stages:", (await page.locator(".stage").allInnerTexts()).map((text) => text.replace(/\s+/g, " ")).join(" | "));
   const load = page.getByRole("button", { name: /^Load final/ });
   if ((await load.count()) > 0) await load.click();
-  await page.locator("#mesh-heading + .sub", { hasText: "Final surface" }).waitFor({ timeout: 300000 });
+  await page.locator("#mesh-heading + .sub", { hasText: /^(Final|Silhouette|Stereo) surface\b/ }).waitFor({ timeout: 300000 });
   console.log("surface:", await page.locator("#mesh-heading + .sub").innerText());
   console.log("numbers:", (await page.locator(".metrics > div").allInnerTexts()).map((row) => row.replace(/\s+/g, " ")).filter((row) => /Registered|Input photos|Reprojection median|Silhouette iou/i.test(row)).join(" | "));
   await page.locator("details.attribution summary").click();

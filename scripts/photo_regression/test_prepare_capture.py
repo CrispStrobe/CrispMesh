@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from scripts.photo_regression.prepare_capture import choose_instance, common_crop, initial_lens
-from scripts.photo_regression.capture_pipeline import selected_count, camera_acceptable, camera_search_order, geometry_acceptable
+from scripts.photo_regression.capture_pipeline import selected_count, camera_acceptable, camera_search_order, geometry_acceptable, choose_capture_surface
 
 class CapturePreparation(unittest.TestCase):
     def test_camera_preference_retains_all_alternative_paths(self):
@@ -22,6 +22,13 @@ class CapturePreparation(unittest.TestCase):
         self.assertTrue(geometry_acceptable(.897456))
         for value in [None,False,float('nan'),float('inf'),-.1,1.1]:
             self.assertFalse(geometry_acceptable(value))
+
+    def test_optional_gaussian_keeps_a_valid_base_without_lowering_the_gate(self):
+        self.assertEqual(choose_capture_surface(True,.799701324966,.824438019),'silhouette')
+        self.assertEqual(choose_capture_surface(True,.887537,.890523),'gaussian')
+        self.assertEqual(choose_capture_surface(False,None,.824438019),'silhouette')
+        self.assertIsNone(choose_capture_surface(True,.7997,.7998))
+        self.assertEqual(choose_capture_surface(True,.7997,.8244,'stereo'),'stereo')
 
     def test_broad_support_is_not_selected_over_a_bounded_object(self):
         paper=np.ones((100,100),np.uint8)*255

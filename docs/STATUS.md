@@ -50,8 +50,30 @@ all-recovered-view median mask IoU is 0.8875; Gaussian takes 273.4 seconds
 (252.0 training, 20.8 meshing). Successful stage times total 1,674.1 seconds,
 including fallback camera work; unchanged preprocessing was operator-adopted
 and feature caches were warm, so this is not a cold benchmark. German app
-result rendering and all 275 native tests pass. Fresh iPhone and experimental
-silhouette-guided second-camera-pass mesh validation are pending.
+result rendering and all 275 native tests pass.
+
+The 78 original Auto iPhone photos recover 68 cameras through the wider path.
+Its silhouette has 143,738 triangles and median mask IoU 0.82444; optional
+Gaussian has 88,634 triangles and IoU 0.79970. The capture host keeps the passing
+base as main result when optional refinement misses the unchanged 0.8 check.
+Both meshes remain selectable, with an English/German explanation; Gaussian
+can look smoother despite lower outline agreement. Successful stages total
+1,803.1 seconds including three camera paths; Gaussian takes 238.9 seconds
+(225.0 training, 13.8 meshing). Final-choice validation reused content-verified
+unchanged stages after its fix, so these are not cold uninterrupted timings.
+Actual final base STL has closed edges and one connected component; shape
+detail remains coarse. Cached refinement uses the same full-view selector.
+Both native CI builds and sphere reconstructions completed, but their old
+final-surface label checks timed out. Selectors now accept the silhouette/stereo
+labels; a fresh device CI run is required.
+
+A separate camera-only second pass was tested with 84 fitting views and
+22 reserved views excluded from both hulls and Gaussian training. Reserved
+mask IoU changed 0.87519 → 0.87609, with no clear visual improvement; nine of
+11 paired reserved RGB predictions became slightly worse. It stays optional.
+Lens parameters and sparse structure were fixed; jointly refining them is a
+next hypothesis. See the [camera control](../scripts/camera_refinement/README.md)
+and [capture evidence](../tests/evidence/capture-app-defaults-review.json).
 
 State of CrispMesh (engine and app) on 2026-10-19. The plan of record is
 [ARCHITECTURE.md](ARCHITECTURE.md); measurements and settings are in the
@@ -302,10 +324,11 @@ README.
    missed steps, duplicate photos, zoom, deletion and the foreground crop preview.
    Both Apple uploads and internal-group assignments completed; device results are pending.
 2. Recover arbitrary handheld paths and irregular or repeated turntable angles in-process.
-   The experimental library solver is not yet an app/CLI provider; precise angles or a
-   motor program must not be required from users.
-3. Produce a visually suitable auto-cropped mesh/STL from the supplied manual iPad and
-   Auto iPhone batches. Current reconstructions do not meet that requirement.
+   The configured desktop host now offers learned recovery to the app without angle
+   inputs. The experimental in-process library solver is not yet an app/CLI provider.
+3. Improve camera alignment and fine geometry beyond the automatically cropped coarse
+   iPad/iPhone results above. The earlier Gaussian result is reproducible; the first
+   silhouette-guided camera-only pass gave no clear improvement on reserved views.
 4. Translate all remaining engine-provided user-facing descriptions, events and errors
    into German. Capture, dense settings and surface-method controls are translated.
 5. Validate substantially larger batches on devices and in browsers, including scalable

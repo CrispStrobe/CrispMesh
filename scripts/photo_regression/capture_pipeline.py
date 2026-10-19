@@ -46,10 +46,101 @@ def geometry_acceptable(score):
     return isinstance(score,(int,float)) and not isinstance(score,bool) and math.isfinite(score) and .8<=score<=1.
 
 
+
+def choose_capture_surface(gaussian, gaussian_iou, base_iou, base_surface='silhouette'):
+    """An optional refinement cannot invalidate an independently checked base."""
+    if gaussian and geometry_acceptable(gaussian_iou):return 'gaussian'
+    if geometry_acceptable(base_iou):return base_surface
+    return None
+
+
 def camera_search_order(preferred):
     orders={'hybrid':('hybrid','tight','wide'),'tight':('tight','wide','hybrid'),'wide':('wide','hybrid','tight')}
     if preferred not in orders:raise ValueError('unknown camera search path')
     return orders[preferred]
+
+
+def relay_native_events(path, offset, events):
+    if not path.exists(): return offset
+    with path.open() as stream:
+        stream.seek(offset)
+        while True:
+            position = stream.tell(); line = stream.readline()
+            if not line.endswith('\n'): return position
+            row = json.loads(line)
+            kind = row.pop('type'); row.pop('time', None)
+            if kind in ['run_started','run_finished']: continue
+            if kind == 'artifact':
+                source = Path(row.get('path',''))
+                if source.is_absolute() or '..' in source.parts: continue
+                row['path'] = 'reconstruction/'+str(source)
+            events.emit(kind, **row)
+
+def select_capture_surface(args,native,inputs,check_inputs,count,assessment,execute,events):
+    primary=args.output/'reconstruction'/('splats/mesh.stl' if args.gaussian else 'mesh/mesh.stl')
+    execute('all-view-check',[native,'check','--inputs',check_inputs,'--mesh',primary,'--output',args.output/'all-view-check','--check-views',str(count)],stage='check')
+    events.artifact('report',args.output/'all-view-check/result.json','Photo agreement')
+    measured=json.loads((args.output/'all-view-check/result.json').read_text())['silhouette_iou_input_masks']['median']
+    gaussian_iou=measured if args.gaussian else None
+    base_iou=measured if not args.gaussian else None
+    base_mesh=args.output/'reconstruction/mesh/mesh.stl'
+    if args.gaussian and sha(base_mesh)==assessment.get('base_mesh_sha256'):
+        base_iou=assessment['base_mask_iou']
+    if args.gaussian and not geometry_acceptable(gaussian_iou):
+        execute('base-all-view-check',[native,'check','--inputs',check_inputs,'--mesh',base_mesh,
+            '--output',args.output/'base-all-view-check','--check-views',str(count)],stage='check')
+        base_iou=json.loads((args.output/'base-all-view-check/result.json').read_text())['silhouette_iou_input_masks']['median']
+    selected_surface=choose_capture_surface(args.gaussian,gaussian_iou,base_iou,args.base_surface)
+    if selected_surface is None:
+        raise ValueError('The mesh is inconsistent with the object masks. Review the retained mesh and photo check.')
+    if args.gaussian and selected_surface!= 'gaussian':
+        primary=base_mesh
+        base_report=json.loads((args.output/'reconstruction/mesh/result.json').read_text())
+        events.artifact('final_mesh',primary,'Silhouette surface' if args.base_surface=='silhouette' else 'Stereo surface',
+            triangles=base_report['triangles'],stage='mesh')
+        events.artifact('report',args.output/'reconstruction/mesh/result.json','Main surface')
+        events.artifact('report',args.output/'base-all-view-check/result.json','Base photo agreement')
+        if args.texture:
+            execute('base-texture',[native,'texture','--inputs',inputs,'--mesh',primary,'--output',args.output/'base-texture'],stage='texture')
+            # Relabel the retained Gaussian GLB so existing app ordering shows the base GLB first.
+            old_glb=args.output/'reconstruction/texture/mesh.glb'
+            if old_glb.exists():
+                events.emit('artifact',kind='textured_mesh',path=str(old_glb.relative_to(args.output)),label='Textured mesh (GLB)',stage='splats')
+            events.emit('artifact',kind='textured_mesh',path='base-texture/mesh.glb',label='Textured mesh (GLB)',stage='texture')
+    selection={'schema':'capture_surface_selection_v1','gaussian_requested':args.gaussian,
+        'gaussian_selected':selected_surface=='gaussian','primary_surface':selected_surface,
+        'base_mask_iou':base_iou,'gaussian_mask_iou':gaussian_iou,'minimum_mask_iou':.8,
+        'reason':'gaussian_below_mask_agreement' if args.gaussian and selected_surface!='gaussian' else None}
+    (args.output/'surface-choice.json').write_text(json.dumps(selection,indent=2)+'\n')
+    events.artifact('report',args.output/'surface-choice.json','Surface choice')
+    events.metric('silhouette_iou_median',gaussian_iou if selected_surface=='gaussian' else base_iou)
+    return primary,selection
+
+
+def retain_recovered_scene(inputs,validation_inputs,data_root,fingerprint):
+    data_root.mkdir(parents=True,exist_ok=True)
+    record={'input_fingerprint':fingerprint}
+    def copy_input(source,target):
+        if Path(source).suffix.lower() in {'.png','.jpg','.jpeg'}:return os.link(source,target)
+        return shutil.copy2(source,target)
+    for field,source,label,hash_field in [
+            ('inputs',inputs,'recovered-','sha256'),
+            ('validation_inputs',validation_inputs,'recovered-validation-','validation_sha256')]:
+        if field=='validation_inputs' and source.resolve()==inputs.resolve():
+            record[field]=record['inputs'];record[hash_field]=record['sha256'];continue
+        if source.stat().st_dev!=data_root.stat().st_dev:
+            raise ValueError('reusable capture scenes require data and runs on the same filesystem')
+        target=data_root/(label+fingerprint[:16])
+        if not target.exists():
+            pending=target.with_name(target.name+'.pending')
+            if pending.exists():shutil.rmtree(pending)
+            shutil.copytree(source,pending,copy_function=copy_input)
+            pending.rename(target)
+        hashes=inventory(source,['.'])
+        if inventory(target,['.'])!=hashes:
+            raise ValueError('recovered scene changed; keeping both copies for inspection')
+        record[field]=str(target.relative_to(data_root));record[hash_field]=hashes
+    return record
 
 
 def run(args):
@@ -79,21 +170,7 @@ def run(args):
     old_timings=json.loads((args.output/'timings.json').read_text()) if args.resume and (args.output/'timings.json').exists() else []
     events = EventLog(args.output/'events.jsonl'); start = time.monotonic(); timings = old_timings.copy()
     events.emit('run_started', schema=SCHEMA, device='Mac', configuration={'base_surface': args.base_surface, 'gaussian': args.gaussian, 'gaussian_quality':args.gaussian_quality, 'gaussian_overrides':args.gaussian_set,'camera_search':args.camera_search, 'foreground_margin_pixels':3, 'excluded_view_fraction':.08}, inputs=args.photos.name)
-    def relay(path, offset):
-        if not path.exists(): return offset
-        with path.open() as stream:
-            stream.seek(offset)
-            while True:
-                position = stream.tell(); line = stream.readline()
-                if not line.endswith('\n'): return position
-                row = json.loads(line)
-                kind = row.pop('type'); row.pop('time', None)
-                if kind in ['run_started','run_finished']: continue
-                if kind == 'artifact':
-                    source = Path(row.get('path',''))
-                    if source.is_absolute() or '..' in source.parts: continue
-                    row['path'] = 'reconstruction/'+str(source)
-                events.emit(kind, **row)
+    def relay(path, offset): return relay_native_events(path,offset,events)
     declared={
         'vision-build':['foreground-instances'],'vision':['instances'],'prepare':['prepared'],
         'features':['features/matches.json','features/report.json'],'refine-masks':['refined-masks'],
@@ -105,7 +182,8 @@ def run(args):
         'sift-overlap':['sift-overlap.json','sift-overlap.report.json'],
         'features-hybrid':['features-hybrid/matches.json','features-hybrid/report.json'],
         'filter-hybrid':['filtered-hybrid-matches.json'],'recover-hybrid':['cameras-hybrid'],'audit-hybrid':['sparse-support-hybrid.json'],
-        'select-views':['selected-inputs'],'reconstruction':['reconstruction'],'all-view-check':['all-view-check']}
+        'select-views':['selected-inputs'],'reconstruction':['reconstruction'],'all-view-check':['all-view-check'],
+        'base-all-view-check':['base-all-view-check'],'base-texture':['base-texture']}
     used_stages=set()
     def execute(name, command, stage=None, native=False, timeout=None):
         used_stages.add(name)
@@ -263,35 +341,25 @@ def run(args):
         events.artifact('mask_sheet',frontend/'mask-contact-sheet.png','Object masks')
         exported=None
         if args.data_root:
-            args.data_root.mkdir(parents=True,exist_ok=True)
-            export=args.data_root/('recovered-'+fingerprint[:16])
-            if not export.exists():
-                if inputs.stat().st_dev != args.data_root.stat().st_dev:
-                    raise ValueError('reusable capture scenes require data and runs on the same filesystem')
-                pending=export.with_name(export.name+'.pending')
-                if pending.exists():shutil.rmtree(pending)
-                shutil.copytree(inputs,pending,copy_function=os.link)
-                pending.rename(export)
-            source_hashes=inventory(inputs,['.'])
-            if inventory(export,['.'])!=source_hashes:raise ValueError('recovered scene changed; keeping both copies for inspection')
-            exported=str(export.relative_to(args.data_root))
-            (args.output/'recovered-scene.json').write_text(json.dumps({'inputs':exported,'input_fingerprint':fingerprint,'sha256':source_hashes})+'\n')
+            record=retain_recovered_scene(inputs,frontend/'inputs',args.data_root,fingerprint)
+            exported=record['inputs']
+            (args.output/'recovered-scene.json').write_text(json.dumps(record)+'\n')
         command=[native,'run','--inputs',inputs,'--output',args.output/'reconstruction','--base-surface',args.base_surface,'--threads','2','--minimum-free-gib',str(args.minimum_free_gib),'--no-live-previews']
         if args.gaussian:
             command+=['--splats',args.gaussian_quality]
         for item in args.gaussian_set: command+=['--splats-set',item]
         if args.texture: command+=['--texture']
         execute('reconstruction',command,native=True)
-        primary=args.output/'reconstruction'/('splats/mesh.stl' if args.gaussian else 'mesh/mesh.stl')
-        execute('all-view-check',[native,'check','--inputs',frontend/'inputs','--mesh',primary,'--output',args.output/'all-view-check','--check-views',str(count)],stage='check')
-        events.artifact('report',args.output/'all-view-check/result.json','Photo agreement')
-        if json.loads((args.output/'all-view-check/result.json').read_text())['silhouette_iou_input_masks']['median']<.8:
-            raise ValueError('The mesh is inconsistent with the object masks. Review the retained mesh and photo check.')
+        primary,selection=select_capture_surface(args,native,inputs,frontend/'inputs',count,assessment,execute,events)
+        selected_surface=selection['primary_surface']
         timings[:]=[row for row in timings if row['stage'] in used_stages]
         report={'status':'complete','seconds':time.monotonic()-start,'stages':timings,'input_photos':len(list(originals.iterdir())),'registered_views':count,'reconstruction_views':len(json.loads((inputs/'cameras.json').read_text())['views']),'base_surface':args.base_surface,'gaussian':args.gaussian,'mesh':str(primary),'reference_used':False,'manual_pixel_or_pose_tweaks':False,'resumed':args.resume,'adopted_predecessor':args.adopt_completed,'recovered_inputs':exported,'sum_successful_stage_seconds':sum(row['seconds'] for row in timings),'model_sources_bundled':False}
         report['adopted_predecessor']=any(row.get('adopted_local_predecessor',False) for row in cache.entries.values())
         report['camera_path']=json.loads((args.output/'camera-path.json').read_text())
         report['mask_agreement_gate_passed']=True
+        report['gaussian_selected']=selected_surface=='gaussian'
+        report['primary_surface']=selected_surface
+        report['surface_choice']=selection
         report['imported_masks']=args.masks is not None
         report['capture_groups']=args.capture_groups
         (args.output/'pipeline.json').write_text(json.dumps(report,indent=2)+'\n')

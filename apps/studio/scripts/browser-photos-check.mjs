@@ -69,7 +69,7 @@ try {
   console.log("stages:", (await page.locator(".stage").allInnerTexts()).map((text) => text.replace(/\s+/g, " ")).join(" | "));
   const load = page.getByRole("button", { name: /^Load final/ });
   if ((await load.count()) > 0) await load.click();
-  await page.locator("#mesh-heading + .sub", { hasText: "Final surface" }).waitFor({ timeout: 300000 });
+  await page.locator("#mesh-heading + .sub", { hasText: /^(Final|Silhouette|Stereo) surface\b/ }).waitFor({ timeout: 300000 });
   console.log("surface:", await page.locator("#mesh-heading + .sub").innerText());
   console.log("sheets:", (await page.locator(".sheet-label").allInnerTexts()).join(" | "));
   await shot("photos-done.jpg");

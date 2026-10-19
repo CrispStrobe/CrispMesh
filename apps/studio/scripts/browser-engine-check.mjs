@@ -111,7 +111,7 @@ try {
     if (status !== "Complete") throw new Error("the run did not complete: " + (await page.locator(".notice.bad").first().innerText().catch(() => "")));
     // Each finished surface through its step and, when large, its "Load" button: the chosen methods' first (the
     // viewer follows the newest, the splats), the run's own final surface last.
-    const labels = [...(("surface" in methods) ? ["Neural surface"] : []), ...(("splats" in methods) ? ["2D splats"] : []), "Final surface"];
+    const labels = [...(("surface" in methods) ? ["Neural surface"] : []), ...(("splats" in methods) ? ["2D splats"] : []), "(?:Final|Silhouette|Stereo) surface\\b"];
     for (const label of labels) {
       if (Object.keys(methods).length > 0) await page.locator(".step-strip .step", { has: page.locator(".step-label", { hasText: new RegExp(`^${label}`) }) }).click();
       const load = page.locator(".viewer-overlay button", { hasText: /^Load / });

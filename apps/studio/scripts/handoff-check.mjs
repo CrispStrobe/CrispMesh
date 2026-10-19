@@ -97,7 +97,7 @@ try {
   if (status !== "Complete") throw new Error("the run did not complete");
   const load = page.locator(".viewer-overlay button", { hasText: /^Load / });
   if (await load.isVisible().catch(() => false)) await load.click();
-  await page.locator("#mesh-heading + .sub", { hasText: "Final surface" }).waitFor({ timeout: 300_000 });
+  await page.locator("#mesh-heading + .sub", { hasText: /^(Final|Silhouette|Stereo) surface\b/ }).waitFor({ timeout: 300_000 });
   console.log("surface:", await page.locator("#mesh-heading + .sub").innerText());
   console.log("numbers:", (await page.locator(".metrics > div").allInnerTexts()).map((row) => row.replace(/\s+/g, " ")).filter((row) => /Registered|Input photos|Reprojection/i.test(row)).join(" | "));
   await shot("capture-run.jpg");

@@ -8,6 +8,26 @@ const rows = (summary: ReturnType<typeof summariseReport>) =>
   Object.fromEntries(summary.sections.flatMap((section) => section.rows.map((row) => [`${section.title ?? ""}|${row.label}`, row.value])));
 
 describe("summariseReport", () => {
+  it("explains a rejected optional Gaussian without marking a valid base as failed", () => {
+    const value = { schema: "capture_surface_selection_v1", primary_surface: "silhouette",
+      gaussian_requested: true, gaussian_selected: false, base_mask_iou: .824438,
+      gaussian_mask_iou: .799701, minimum_mask_iou: .8, reason: "gaussian_below_mask_agreement" };
+    const summary = summariseReport(value);
+    expect(summary.kind).toBe("surface_choice");
+    expect(summary.sections[0]!.rows[0]!.tone).toBe("good");
+    expect(summary.sections[0]!.rows[2]!.tone).toBe("bad");
+    expect(summary.notes[0]).toContain("Both meshes");
+    setLanguage("de");
+    try {
+      const german = summariseReport(value);
+      expect(german.sections[0]!.rows[0]!.label).toBe("Hauptergebnis");
+      expect(german.notes[0]).toContain("Gauß-Verfeinerung");
+      expect(german.sections[0]!.rows[2]!.value).toContain("79,97");
+    } finally { setLanguage("en"); }
+    expect(summariseReport({ ...value, base_mask_iou: .7 }).kind).toBe("unknown");
+    expect(summariseReport({ ...value, primary_surface: ["silhouette"] }).kind).toBe("unknown");
+  });
+
   const cameras = {
     selected: "cameras-hybrid", minimum_registered_fraction: .8, minimum_sparse_mask_support: .85,
     candidates: [

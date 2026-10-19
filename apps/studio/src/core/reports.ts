@@ -21,7 +21,7 @@ export interface ReportSection {
 }
 
 export interface ReportSummary {
-  kind: "mesh" | "photo_check" | "camera_recovery" | "scan" | "unknown";
+  kind: "mesh" | "photo_check" | "camera_recovery" | "surface_choice" | "scan" | "unknown";
   sections: ReportSection[];
   warnings: string[];
   notes: string[];
@@ -46,6 +46,7 @@ export function summariseReport(json: unknown): ReportSummary {
   const empty: ReportSummary = { kind: "unknown", sections: [], warnings: [], notes: [] };
   if (root === undefined) return empty;
   try {
+    if (root.schema === "capture_surface_selection_v1") return surfaceChoice(root) ?? empty;
     if (root.schema === "scan_evaluate_v1" || record(record(root.metrics)?.all)?.thresholds !== undefined) {
       return scan(root);
     }
@@ -57,6 +58,28 @@ export function summariseReport(json: unknown): ReportSummary {
     // fall through to the raw view
   }
   return { ...empty, warnings: strings(root.warnings) };
+}
+
+
+function surfaceChoice(root: Json): ReportSummary | undefined {
+  const primary = root.primary_surface, minimum = num(root.minimum_mask_iou);
+  const base = num(root.base_mask_iou), gaussian = num(root.gaussian_mask_iou);
+  if (typeof primary !== "string" || !["gaussian", "silhouette", "stereo"].includes(primary) || minimum === undefined || minimum < 0 || minimum > 1 ||
+      typeof root.gaussian_requested !== "boolean" || typeof root.gaussian_selected !== "boolean" ||
+      root.gaussian_selected !== (primary === "gaussian") || (root.gaussian_selected && !root.gaussian_requested) ||
+      (base !== undefined && (base < 0 || base > 1)) || (gaussian !== undefined && (gaussian < 0 || gaussian > 1)) ||
+      (root.gaussian_requested && gaussian === undefined) ||
+      (primary === "gaussian" ? gaussian === undefined || gaussian < minimum : base === undefined || base < minimum)) return undefined;
+  const rows: ReportRow[] = [
+    { label: t("run.report.primarySurface"), value: primary === "gaussian" ? t("run.stage.splats.title") :
+      primary === "silhouette" ? t("newRun.baseSilhouette") : t("newRun.baseStereo"), tone: "good" },
+    { label: t("run.report.baseAgreement"), value: base === undefined ? "—" : formatPercent(base, 2) },
+  ];
+  if (root.gaussian_requested) rows.push(
+    { label: t("run.report.gaussianAgreement"), value: formatPercent(gaussian!, 2), tone: gaussian! >= minimum ? "good" : "bad" },
+    { label: t("run.report.minimumAgreement"), value: formatPercent(minimum, 2) });
+  return { kind: "surface_choice", sections: [{ rows }], warnings: [],
+    notes: root.gaussian_requested && !root.gaussian_selected ? [t("run.report.gaussianFallback")] : [] };
 }
 
 function cameraRecovery(root: Json): ReportSummary | undefined {

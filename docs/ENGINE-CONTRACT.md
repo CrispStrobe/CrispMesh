@@ -11,7 +11,15 @@ The desktop Python host can opt into original-capture preparation with
 `refine_runs: true`; `POST /api/runs/<id>/refine` starts a new Gaussian Capture
 run from that run's recovered scene, with content checks before reuse. This
 capability requires host-installed tools and is separate from the embedded
-native engine. Stage `hull` replaces `stereo` for silhouette-only runs.
+native engine. Raw and cached capture runs check all saved validation views.
+When optional Gaussian misses the 0.8 mask-agreement check but the actual base
+passes, the run completes with the base as main result and preserves both.
+A capture_surface_selection_v1 report explains the choice. The base artifact
+is re-emitted so following viewers select it; manual mesh choices still work.
+When requested, its GLB uses that same selected base. gaussian_selected and
+primary_surface distinguish a requested refinement from the main result.
+Saved scenes include hashes for training and full validation inputs; changed
+snapshots are refused before refinement. Stage `hull` replaces `stereo` for silhouette-only runs.
 
 One front end serves macOS, Windows, Linux, iOS, Android and the web. The
 embedded native/browser engine runs the stages and providers available on that

@@ -25,6 +25,15 @@ describe("which surface the view shows", () => {
     expect(chooseMesh([level, hull], null, small).target).toBe(level);
   });
 
+  it("follows a valid base selected after a rejected optional Gaussian and retains manual choice", () => {
+    let state = reduce(initialState(), event("artifact", { kind: "final_mesh", path: "mesh/mesh.stl", label: "Silhouette", triangles: 143738 }, 1));
+    state = reduce(state, event("artifact", { kind: "splats", path: "splats/mesh.stl", label: "Gaussian", triangles: 88634 }, 2));
+    state = reduce(state, event("artifact", { kind: "final_mesh", path: "mesh/mesh.stl", label: "Silhouette", triangles: 143738 }, 3));
+    expect(chooseMesh(state.meshes, null, small).target?.path).toBe("mesh/mesh.stl");
+    expect(chooseMesh(state.meshes, "splats/mesh.stl", small).target?.path).toBe("splats/mesh.stl");
+    expect(state.meshes).toHaveLength(2);
+  });
+
   it("keeps the newest preview up while a big final surface waits to be asked for", () => {
     const big = (s: MeshStep) => s.kind === "final_mesh";
     const choice = chooseMesh([hull, final, level], null, big);

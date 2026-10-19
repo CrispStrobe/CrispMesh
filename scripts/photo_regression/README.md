@@ -74,8 +74,12 @@ export using the native minimum (20, or eight for fewer than 25 accepted photos)
 including any cascading loss of tracks. This consumes the same 8% view-selection
 budget; native input validation is unchanged. Candidates, removed views and the
 selected path remain in `camera-path.json` and the recovery report.
-The final mesh must also reach median mask IoU of 0.8 across recovered views;
-a failed check retains diagnostic outputs rather than reporting success.
+The main result must reach median mask IoU of 0.8 across recovered views.
+If optional Gaussian misses the check, the actual base is checked and kept as
+the main result when it passes. Both meshes remain selectable, with an
+English/German explanation. Neither passing means failure with diagnostics
+retained. The threshold is unchanged. Own-mask agreement is not true shape
+accuracy; a smoother optional result can still be useful.
 These checks detect some failures; they do not establish geometric accuracy.
 Content-checked feature and pair caches can be shared with `--cache-root`.
 
@@ -97,7 +101,11 @@ The operator-only `--adopt-completed` migrates a locally generated predecessor
 without receipts and explicitly records this in the report. Such a run is
 not an uninterrupted cold benchmark. `pipeline.json` separates resumed elapsed
 time from the sum of successful stage times. Reusing a recovered scene avoids
-repeating masks, matching and camera recovery when adding Gaussian later.
+repeating masks, matching and camera recovery when adding Gaussian later. Raw and cached runs use the same
+full-view surface selector. New exports retain content-checked validation
+inputs as well as selected training inputs, so excluded views are still checked
+during cached refinement. The prepared_capture.py runner does this without loading the
+learned preprocessing models.
 
 Run cases serially through masks, recovered turntable cameras, stereo and mesh.
 This historical runner explicitly selects `--base-surface stereo` so changes

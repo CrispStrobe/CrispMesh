@@ -86,7 +86,7 @@ async function shot(tab, name, options = {}) {
 
 /** Waits until the 3D view shows the named surface. */
 async function surface(tab, label, timeout = 60_000) {
-  await tab.locator("#mesh-heading + .sub", { hasText: label }).waitFor({ timeout });
+  await tab.locator("#mesh-heading + .sub", { hasText: label === "Final surface" ? /^(Final|Silhouette|Stereo) surface\b/ : label }).waitFor({ timeout });
 }
 
 async function overflow(tab, where) {

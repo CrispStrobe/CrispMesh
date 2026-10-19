@@ -37,19 +37,35 @@ a small named-view diagnostic, and `--hold-every` changes the camera holdout.
 The report includes the measurement image size and every accepted/rejected step.
 Photos and masks are linked into a separate scene; originals remain intact.
 
-The initial SfM and hull can already contain all photos. Therefore a camera
-held out **from this refinement** is not an entirely unseen reconstruction
-input. Rebuild both the hull and optional Gaussian mesh and compare using the
-original frozen held-out cameras. A lower in-fit silhouette error alone can
-reinforce a wrong hull. No adoption or independent shape-accuracy claim follows
-from it.
+For a controlled comparison, build the initial hull from fitting views only,
+then rebuild both final hulls and Gaussian models using those same fitting views.
+Evaluate through original frozen reserved cameras. This tool cannot verify which
+photos built its supplied hull. Initial SfM/preprocessing still used the full
+batch in the control below: it is stage-level validation, not a wholly unseen
+reconstruction. Lower in-fit silhouette error can reinforce a wrong hull.
 
 Initial iPad diagnostics show the tradeoff: fitting a silhouette more strongly
 reduced a selected view's contour error from 6.22 to 5.14 pixels but increased
 held-out sparse error from 0.63 to 1.82 pixels; that step was rejected. With the
 stronger feature constraint, the full pass accepted 84 small camera updates,
 held 22 cameras fixed and took 65.2 seconds. Median rotation was 0.159 degrees,
-maximum 1.906 degrees. Rebuilt-mesh validation is pending.
+maximum 1.906 degrees. That diagnostic used the all-view hull.
+
+A stricter control reserved 22 of 106 own recovered views. Both hulls and both
+Gaussian runs used only the other 84 views. The pass accepted 83 camera updates
+in 55.3 seconds; median/max rotation was 0.140/2.078 degrees. Gaussian took
+227.2 seconds before and 270.6 after on a shared M1. One baseline attempt was
+restarted after a disk stop; these are successful-stage times.
+
+Reserved-view median mask IoU changed 0.87519 → 0.87609. The meshes remain very
+similar, with the middle-view mismatch still visible. On 11 matching reserved
+RGB photos, two paired PSNR values improved and nine worsened (mean −0.091 dB,
+median −0.135 dB). Aggregate medians increase 22.968 → 23.076 dB because they
+select different views; that does not describe the paired trend. One training
+per path cannot quantify GPU numeric variation. No clear improvement was found.
+
+Jointly refining cameras, lens parameters and 3D structure with image evidence
+is the next hypothesis. This version fixes the latter two and stays optional.
 
 This is original project code using the existing project renderer and permissive
 NumPy/SciPy/OpenCV dependencies. No upstream algorithm implementation was copied.

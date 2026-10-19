@@ -33,7 +33,7 @@ const failures = [];
 page.on("pageerror", (error) => failures.push(error.message));
 
 const shown = () => page.locator("#mesh-heading + .sub").innerText();
-const waitFor = (label, timeout = 180_000) => page.locator("#mesh-heading + .sub", { hasText: label }).waitFor({ timeout });
+const waitFor = (label, timeout = 180_000) => page.locator("#mesh-heading + .sub", { hasText: label === "Final surface" ? /^(Final|Silhouette|Stereo) surface\b/ : label }).waitFor({ timeout });
 const stall = async () => {
   const value = await page.evaluate(() => {
     const worst = window.__stall;

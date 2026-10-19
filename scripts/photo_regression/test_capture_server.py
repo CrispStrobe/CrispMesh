@@ -107,6 +107,31 @@ class CaptureServer(unittest.TestCase):
         (scene/'cameras.json').write_text('{"changed":true}')
         with self.assertRaisesRegex(ValueError,'changed'):self.engine.refine_run(run['id'])
 
+    def test_cached_refinement_uses_full_capture_checks_and_keeps_dense_overrides(self):
+        scene=self.data/'prepared';scene.mkdir();(scene/'cameras.json').write_text('{}')
+        validation=self.data/'validation';validation.mkdir();(validation/'cameras.json').write_text('{}')
+        with patch('scripts.turntable_mesh.engine_server.subprocess.Popen',side_effect=self.fake_child):
+            self.engine.start_run({'inputs':scene.name,'validation_inputs':validation.name,
+                'splats':{'quality':'capture','settings':['steps=2']},'settings':{'grid':192}})
+        self.assertIn('scripts.photo_regression.prepared_capture',self.command)
+        self.assertIn('--gaussian',self.command)
+        self.assertEqual(self.command[self.command.index('--validation-inputs')+1],str(validation.resolve()))
+        self.assertIn('--set',self.command)
+        self.assertIn('grid=192',self.command)
+
+    def test_cached_validation_views_are_content_checked_too(self):
+        scene=self.data/'prepared';scene.mkdir();(scene/'cameras.json').write_text('{}')
+        validation=self.data/'validation';validation.mkdir();(validation/'cameras.json').write_text('{}')
+        run=self.engine.runs/'parent';run.mkdir()
+        (run/'events.jsonl').write_text('{"type":"run_finished","status":"complete"}\n')
+        (run/'recovered-scene.json').write_text(json.dumps({'inputs':scene.name,'sha256':inventory(scene,['.']),
+            'validation_inputs':validation.name,'validation_sha256':inventory(validation,['.'])}))
+        with patch.object(self.engine,'start_run',return_value={'id':'refined'}) as start:
+            self.engine.refine_run('parent')
+            self.assertEqual(start.call_args.args[0]['validation_inputs'],validation.name)
+        (validation/'cameras.json').write_text('changed')
+        with self.assertRaisesRegex(ValueError,'changed'):self.engine.refine_run('parent')
+
     def test_http_upload_is_atomic_and_cannot_write_run_metadata(self):
         server=ThreadingHTTPServer(('127.0.0.1',0),handler_for(self.engine,None,None))
         worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
