@@ -1,0 +1,254 @@
+{
+  "date": "2026-10-19",
+  "scope": "Metadata only; owner photos, masks, poses, weights and rendered sheets remain local.",
+  "inputs": {
+    "iphone": {
+      "views": 78,
+      "capture": "Auto shutter on LEGO turntable; exact step angle unknown"
+    },
+    "ipad": {
+      "source_views": 119,
+      "accepted_photos": 117,
+      "capture": "Manual trigger by real user"
+    }
+  },
+  "reconstruction_inputs": "Own RGB, own coarse/refined masks, own recovered cameras and own sparse tracks only; no scanner mesh or supplied dataset poses/depth/masks.",
+  "bundle_adjustment": {
+    "implementation": "Original matrix-free damped Schur operator, block-Jacobi PCG, max256 iterations, true residual verification and robust LM cost acceptance. Lens fixed.",
+    "switch": "recover_cameras --bundle-solver auto|dense|iterative|off",
+    "auto": "Dense <=128 recovered cameras; iterative above128, replacing silent adjustment skip in experimental general-camera recovery. Ordinary turntable adjust() stays dense.",
+    "synthetic_regression": {
+      "cameras": 180,
+      "landmarks": 48,
+      "irregular_angles_and_heights": true,
+      "final_robust_cost_less_than": 1e-05,
+      "anchor_pose_bit_exact": true,
+      "scope": "Adjustment of perturbed known synthetic cameras; not recovery from180 real photos."
+    },
+    "real_common_start": {
+      "cameras": 110,
+      "observations": 28987,
+      "same_initial_points_and_observations": true,
+      "dense_costs": [
+        2988.562738520112,
+        2988.1565829208907
+      ],
+      "iterative_costs": [
+        2988.562738520112,
+        2988.156582920886
+      ],
+      "rotation_difference_degrees_max": 2.450841144665654e-09,
+      "camera_centre_difference_world_units_max": 2.2024583980831689e-10,
+      "point_difference_world_units_max": 2.3225140626369075e-10,
+      "limits": "Same initial own reconstruction, fixed lens/track objective; numerical consistency, not ground truth shape/camera accuracy."
+    },
+    "full_incremental_controls": {
+      "dense_geometry_exports_byte_identical_to_previous": {
+        "cameras.txt": true,
+        "images.txt": true,
+        "points3D.txt": true
+      },
+      "shared_cameras": 111,
+      "relative_pose_difference_after_similarity": {
+        "scale": 0.9699565902912075,
+        "centre_error_world_unit_median_p95": [
+          0.2661941009128045,
+          0.6323721386219885
+        ],
+        "rotation_difference_degrees_median_p95": [
+          8.581302724315588,
+          13.087769119282266
+        ]
+      },
+      "limits": "Comparison of two own fits, not camera accuracy; no reference geometry/poses."
+    },
+    "limits": "Full incremental trajectories differ despite common-start numerical agreement. No real large-camera accuracy, timing or memory adoption claim."
+  },
+  "jpeg_staging": {
+    "same_input_file_names": true,
+    "compared_prepared_files": 332,
+    "different_prepared_files": [],
+    "upright_jpegs_byte_exact": 117,
+    "staging_mode": "native_import_preserve_upright_source_encoding",
+    "photos_stage_seconds": 95.171,
+    "staged_photo_bytes": 343827049,
+    "contrast_bytes": 343827049,
+    "note": "Same own camera model, source RGB, masks and processing settings. keep_intermediates=true only to measure staging; matching scene compared byte-for-byte."
+  },
+  "mask_refinement": {
+    "source_inventory": "sam21-refinement-source.json",
+    "cpu_f32": true,
+    "threads": 2,
+    "views": 117,
+    "stage_seconds": 505.6339,
+    "peak_rss_bytes": 1316470784,
+    "initial_sam_coarse_fallbacks": 1,
+    "preflight_coarse_fallbacks": 14,
+    "fallback_reasons": {
+      "native_hole_budget": 3,
+      "unsupported_interior_boundary": 12,
+      "overlap": 1
+    },
+    "final_mask_counts": {
+      "views": 117,
+      "changed_from_original_coarse": 102,
+      "coarse_masks_retained": 15
+    },
+    "unchanged_native_cleanup_budget": 0.02,
+    "native_import_succeeded": true,
+    "tqdm_implementation_loaded": false,
+    "scope": "Full run precedes extra invalid-input/logit guards; numerical path unchanged, final unit/prefix checks pass. Gates are heuristics, not accuracy acceptance."
+  },
+  "surface_comparisons": {
+    "same_old_110_camera_model": {
+      "coarse_masks_selected100_evaluated_against_refined110": {
+        "views_checked": 110,
+        "triangles": 243754,
+        "mask_iou": {
+          "maximum": 0.9307039864291773,
+          "median": 0.8529509914415014,
+          "minimum": 0.5732957467333817,
+          "worst_view": "view_105"
+        }
+      },
+      "refined_all110": {
+        "views_checked": 110,
+        "triangles": 225042,
+        "mask_iou": {
+          "maximum": 0.8473586096554964,
+          "median": 0.7768943445306788,
+          "minimum": 0.5712080026979038,
+          "worst_view": "view_105"
+        }
+      },
+      "refined_selected100": {
+        "views_checked": 110,
+        "triangles": 241082,
+        "mask_iou": {
+          "maximum": 0.911255347828635,
+          "median": 0.8246008686733802,
+          "minimum": 0.5642138616885224,
+          "worst_view": "view_105"
+        }
+      },
+      "refined_selected100_allowed6": {
+        "views_checked": 110,
+        "triangles": 249064,
+        "mask_iou": {
+          "maximum": 0.9249590598208265,
+          "median": 0.8624968648869438,
+          "minimum": 0.5817333819708621,
+          "worst_view": "view_105"
+        }
+      },
+      "refined_selected100_peak_margin03": {
+        "views_checked": 110,
+        "triangles": 239270,
+        "mask_iou": {
+          "maximum": 0.90968507744838,
+          "median": 0.8210223901479647,
+          "minimum": 0.5699867238523019,
+          "worst_view": "view_105"
+        }
+      },
+      "refined_selected100_evaluated_against_original_masks": {
+        "views_checked": 110,
+        "triangles": 241082,
+        "mask_iou": {
+          "maximum": 0.8662206911285585,
+          "median": 0.8101666576619649,
+          "minimum": 0.5661210635489345,
+          "worst_view": "view_105"
+        }
+      }
+    },
+    "visual_review": "Same fixed110 model, same selected100: refined masks visibly open leg gap and hand opening. False torso grooves, hair/arm errors remain. allowed6 raises mask IoU but fills leg opening again. No accepted detailed STL.",
+    "settings": "Native stereo grid256, sizes256/512/1024, native_level=false, silhouette_first=0, repair_masks=false, mask_grow=false, photo_refine=0. Consistency controls differ only as named; not a grid400 quality limit.",
+    "selection_limits": "Camera rig and sparse bounds estimated using full batch, retained even when selecting100 views. Original all-view path retained. Evaluation includes excluded views."
+  },
+  "filtered_features": {
+    "original_matches": 71965,
+    "retained_matches": 64114,
+    "original_pairs": 470,
+    "retained_pairs": 465,
+    "margin_source_pixels": 3,
+    "keypoint_coordinates_and_indices_unchanged": true,
+    "camera_model": "Own ALIKED/LightGlue, independent PyCOLMAP focal/radial, largest model. Cached feature graph, not cold-start matching.",
+    "registered": 116,
+    "input_views": 117,
+    "sparse_points": 6833,
+    "mean_fitting_reprojection_pixels": 1.4004079,
+    "raw_sparse_mask_support_median": 0.88043319,
+    "requested_mask_support_gate": 0.95,
+    "gate_passed": false,
+    "all116_stereo": {
+      "views_checked": 116,
+      "triangles": 244786,
+      "mask_iou": {
+        "maximum": 0.8239300550671432,
+        "median": 0.7560761599403027,
+        "minimum": 0.6436499853268657,
+        "worst_view": "view_36"
+      }
+    },
+    "selected106_stereo": {
+      "views_checked": 116,
+      "triangles": 242602,
+      "mask_iou": {
+        "maximum": 0.8365676347757802,
+        "median": 0.7749665157741308,
+        "minimum": 0.649115701363575,
+        "worst_view": "view_36"
+      }
+    },
+    "visual_review": "Worse geometry than earlier110-camera control; extra registration is not accuracy. Different recovered world frame; no unaligned cross-model mesh comparison.",
+    "iphone_control": {
+      "registered": 76,
+      "input": 78,
+      "sparse_points": 3681,
+      "mean_fitting_reprojection_pixels": 1.3577447,
+      "new_mesh_run": false
+    }
+  },
+  "gaussian_control": {
+    "status": "incomplete_free_space_reserve_breached",
+    "selected_views": 106,
+    "planned_steps": 3000,
+    "crop": 320,
+    "mesh_grid": 192,
+    "poses_fixed": true,
+    "prior": "Own photo/mask silhouette hull, no reference mesh",
+    "quality_claim": false,
+    "previous_completed_control": "See learned-feature-camera-review.json and STATUS: iPhone3000-step Gaussian is coarse, not a faithful detailed surface."
+  },
+  "validation": {
+    "native_release_library_tests": 272,
+    "camera_export_example_tests": 1,
+    "python_tests": 53,
+    "strict_clippy": "passed",
+    "wasm32_release_library_check": "passed",
+    "gpu_unit_opt_in": "Not enabled. Actual serial Metal stereo executions and sheets reviewed separately.",
+    "new_app_build": false,
+    "device_runtime_validation": false,
+    "new_browser_execution_validation": false,
+    "python_scope": "Entire scripts/photo_regression test_*.py discovery; earlier targeted subset37 also passed."
+  },
+  "adoption": {
+    "dense_geometry_defaults_changed": false,
+    "new_offline_paths": true,
+    "new_third_party_source_or_weights_bundled": false,
+    "new_restrictive_code_rewrite": false,
+    "patent_clearance_claim": false,
+    "accepted_faithful_real_capture_stl": false
+  },
+  "source_sha256": {
+    "crates/dense/src/photos/turntable/adjust.rs": "07b4aa1343af0591d711f833e61684c9855ff49814c4b406d90a71334a10b2e1",
+    "crates/dense/src/photos/incremental.rs": "a349d29ff93b8652b9e781561579b87ed34d2319189385afe68a8fc3c29e634f",
+    "crates/dense/src/photos/staging.rs": "93f94ec706a39e56a0bf0a06fd9273345ad7cfb5f7cec075ff4c3776e8cd9e7f",
+    "crates/dense/src/photos/run.rs": "ee3b99350c1ad4f9ffd8de5698e8dcd07293fc1fe798a00c7b46acfc009fa284",
+    "scripts/photo_regression/refine_masks.py": "cf709868236d619281f9f42033b6c97b40b30b16f27c5fd0d9fbb82bac6a0d32",
+    "scripts/photo_regression/validate_masks.py": "9be4948a6d76f17dae752db1fabe08e95e8c3a12773ea542dd01d0b91db6e758",
+    "scripts/photo_regression/filter_matches.py": "9b137fdc6fffd4e341f33e8c4c4ce2bde3b85ee59ed6a9f78a48d6b825c3c2bf",
+    "scripts/photo_regression/select_views.py": "65d483891c736d3261fc93086de9ef6c0a64724ff37dc95a2533f4cfccdd4170"
+  }
+}

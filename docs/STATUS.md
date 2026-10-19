@@ -1,6 +1,6 @@
 # Status
 
-State of CrispMesh (engine and app) on 2026-10-18. The plan of record is
+State of CrispMesh (engine and app) on 2026-10-19. The plan of record is
 [ARCHITECTURE.md](ARCHITECTURE.md); measurements and settings are in the
 [crate README](../crates/dense/README.md); the current comparison of surface
 methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md).
@@ -682,3 +682,46 @@ still unresolved on these real captures. All 24 relevant Python tests pass;
 no Rust changed in this follow-up. Recipes and limits are in the
 [runner README](../scripts/photo_regression/README.md); metadata-only results in
 [windowed-depth evidence](../tests/evidence/windowed-learned-depth-review.json).
+
+### Real-capture robustness follow-up, 2026-10-19
+
+The experimental native general-camera path no longer silently skips bundle
+adjustment above 128 recovered cameras. `--bundle-solver auto` retains the dense
+solver for smaller fits and selects a matrix-free Schur/PCG solver above 128;
+`dense`, `iterative` and `off` remain explicit comparison paths. A 180-camera
+irregular, multi-height synthetic adjustment regression passes. On identical
+initial real iPad tracks, both solvers agree numerically; complete incremental
+recoveries can still diverge substantially. Neither test establishes accurate
+recovery from 180 real photos. Intrinsics remain fixed in this native optimizer.
+
+Native imported-camera/imported-mask staging now preserves upright JPEG bytes
+and copies identity contrast, avoiding unnecessary full-resolution PNG expansion.
+EXIF rotation and external-tool staging retain their existing handling. On the
+117-photo iPad batch, all 332 prepared output files match the previous native
+import byte for byte. This is an I/O fix, with no dense geometry default change.
+
+Optional offline tools add SAM2.1 boundary refinement, conservative mask
+preflight, cached foreground-correspondence filtering and coverage-checked view
+selection. The Apache SAM source/checkpoint are content-pinned and external;
+image inference excludes the installed combined-license progress dependency.
+Preflight retains the coarse mask for unsupported new cuts or an exceeded native
+cleanup budget. It changes 102 of 117 original masks and leaves 15 unchanged.
+The normal native import passes its unchanged 2% cleanup gate.
+
+Reviewed grey renders expose an important tradeoff: with the earlier 110-camera
+model and the same selected 100 views, refined masks recover the visible leg gap
+and a hand opening. False torso grooves and weak hair/arms remain. Allowing six
+inconsistent silhouettes raises median mask IoU from .825 to .862 against all
+110 refined input masks, but fills the leg gap again. Higher IoU is not faithful
+geometry. Filtering matches recovers 116/117 cameras, yet its all-view and
+selected-106 stereo meshes are worse visually; their all-116 mask IoUs are
+.756 and .775. Keep these paths selectable, with no automatic promotion by count
+or fitting error. The new iPad Gaussian control was stopped by the disk reserve
+before completion; it provides no additional quality evidence.
+
+All 272 native release library tests, the camera-export example test, strict
+clippy, wasm32 library check and 53 photo-regression Python tests pass. These changes
+have no new app provider, device build or browser execution validation. A faithful
+detailed STL from either real-user batch remains unresolved. See
+[recipes](../scripts/photo_regression/README.md) and
+[metadata-only evidence](../tests/evidence/real-capture-robustness-review.json).

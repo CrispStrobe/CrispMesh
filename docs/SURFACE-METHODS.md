@@ -1,6 +1,15 @@
 # Surface methods: what we measured and where we go
 
-State on 2026-10-13. This page records one round of comparisons on two captures and the plan that
+Latest real-user finding: mask boundaries can recover the leg opening, while
+relaxing silhouette consistency can close it again despite higher mask IoU.
+Recovering more cameras also did not improve the latest iPad stereo surface.
+The native stereo, Gaussian/SDF and learned-depth alternatives remain distinct;
+none has yet produced an accepted detailed STL from these two phone/tablet
+batches. See the [2026-10-19 status](STATUS.md#real-capture-robustness-follow-up-2026-10-19)
+and [robustness evidence](../tests/evidence/real-capture-robustness-review.json).
+
+Original comparison on 2026-10-13, with real-capture follow-ups through 2026-10-19.
+This page records comparisons on two captures and the plan that
 follows from it. Scans are used for scoring only; every mesh has its own similarity fit to the scan,
 so differences of a few hundredths in F1 at 0.5 % are within the fit. Numbers are F1 at 0.5 / 1 / 2 %
 of the scan's diagonal and the mean of accuracy and completeness as a fraction of the diagonal.

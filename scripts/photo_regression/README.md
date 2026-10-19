@@ -337,3 +337,126 @@ this is a desktop execution benchmark, not an app/device or 1536-view benchmark.
 Learned depth can smooth false engraving and also erase real hair, hands and leg
 separation. Inspect grey geometry and mask consistency; keep stereo/Gaussian/
 learned results as alternatives. No automatic best-quality claim or default switch.
+
+
+### Large native camera fits
+
+The experimental native recovery example now exposes
+`--bundle-solver auto|dense|iterative|off`. `auto` retains dense Schur adjustment
+through 128 recovered cameras and uses matrix-free, block-preconditioned conjugate
+gradients above that count. Previously, adjustment was silently skipped above
+128. All camera and landmark variables remain in the same robust least-squares
+objective; this is not an independent per-window camera fit. The iterative path
+stores per-observation/point blocks and camera vectors, without a camera-count
+square matrix. A solve is bounded to 256 PCG iterations, checked against the true
+linear residual, and accepted only when the full robust objective decreases.
+Failed linear solves retry with more LM damping.
+
+Use `--bundle-solver iterative` to compare on smaller real batches. `dense` is
+explicitly capped at 128 input views; `off` provides a no-adjustment control.
+Reports identify the selected solver, whether a final update was accepted and
+its before/after robust cost on the fixed pre-pruning tracks. These are fitting
+diagnostics, not camera/shape accuracy. Lens intrinsics stay fixed. The native
+recovery example remains an offline experimental path, not an app provider.
+This removes an optimization skip; it does not establish large real-capture
+quality, physical scale or a 1536-view runtime/memory bound.
+
+### Mask boundaries and inconsistent views
+
+`refine_masks.py` adds a conservative SAM2.1-tiny boundary path for **own** coarse
+masks, including Vision masks exported by the capture app. It places foreground
+cues across a grid using both coarse interior distance and image contrast.
+Candidates must satisfy those cues and retain at least 85% of the coarse
+foreground, with at most 15% spill and 2% cleanup. Predicted score ranks only
+eligible candidates: a high-scoring torso-only mask cannot win by score alone.
+If none passes, the original coarse mask is retained and explicitly reported.
+These gates constrain changes to an uncertain prior; they do not prove accuracy.
+Tiny islands/pinholes are cleaned, while larger holes and open channels remain.
+The ordinary native import stage still applies its existing dark-hole policy.
+
+```sh
+python scripts/photo_regression/refine_masks.py \
+  --photos own/photos --masks own/coarse-masks \
+  --source /path/to/pinned/sam2-source \
+  --checkpoint /path/to/sam2.1_hiera_tiny.pt --output new-refined-masks
+```
+
+The exact external Apache source files/checkpoint are pinned in
+`tests/evidence/sam21-refinement-source.json`. No source/model is bundled or
+fetched. The original archive did not retain its git revision; the inventory
+therefore pins file content, not a guessed commit. Run in a fresh process.
+Image-only inference excludes the installed combined-license `tqdm` implementation:
+an original import shim implements no progress functionality and raises if any
+video/progress operation is attempted. No restricted implementation is rewritten.
+CPU F32, two workers and an RSS guard are deliberate; MPS is not selected.
+Use `--limit` for a small diagnostic prefix. Outputs are fresh, not resumable;
+`progress.json` distinguishes completed masks and explicit coarse fallbacks.
+Inspect source photos beside refined masks before using them for geometry.
+
+`select_views.py` is an independent optional path when some camera/mask views
+are inconsistent. Rank by an own `sparse_silhouettes.py` report, keeping camera
+poses, original ordering, world coordinates and the **full-batch** sparse bounds.
+An angular coverage guard refuses removing a distinct direction without a nearby
+retained view; it does not require uniform steps or a complete turn.
+
+```sh
+python scripts/photo_regression/select_views.py \
+  --inputs own-frontend/inputs --photo-map own-frontend/photo-map.json \
+  --support-report own-sparse-silhouette-report.json \
+  --keep 100 --output new-selected-inputs
+```
+
+Tie the report to the same own recovery/photos; name matches/hashes alone cannot
+establish that relationship. `--link-inputs` can hardlink immutable prepared data
+on the same filesystem to avoid copies. This is reconstruction with selected
+views using a rig estimated from the full batch, not reconstruction from 100
+photos alone. Compare meshes against **all** original views, including excluded
+ones (`crispmesh-dense check --inputs original-inputs --mesh result.stl
+--output new-all-view-check --check-views 110` for 110 views). Coverage thresholds
+and count are explicit controls, not automatic best-quality guarantees. The
+original all-view path remains available.
+
+Before native import, validate the candidate masks against its unchanged cleanup
+policy and image evidence for new interior cuts:
+
+```sh
+python scripts/photo_regression/validate_masks.py \
+  --photos own/photos --coarse-masks own/coarse-masks \
+  --refined-masks new-refined-masks --output new-validated-masks
+```
+
+This stage keeps the coarse mask when the proposed refinement exceeds the native
+2% dark-hole fill budget, adds unsupported interior boundaries, or is empty.
+The native rule concerns enclosed 4-connected background, at most 2048 pixels,
+whose photo pixels are all at most luminance 128; preflight uses a conservative
+2-level luminance margin for decoder differences. It does not raise the native
+budget. Boundary evidence is a local image-gradient check, not proof of a real
+hole; true low-contrast openings may revert to the prior. Inspect the explicit
+fallback reasons. The raw candidates remain available as a separate path.
+
+Refined masks can also remove cached feature correspondences from background or
+unstable silhouette edges **before** camera recovery:
+
+```sh
+python scripts/photo_regression/filter_matches.py \
+  --matches learned-features/matches.json --masks new-validated-masks \
+  --margin-pixels 3 --output new-foreground-matches.json
+```
+
+Keypoint arrays/indices, calibration and original pixel coordinates are retained;
+only edges are removed. The extractor/candidate graph is reused, so this is not
+a new cold-start matching benchmark. Run camera recovery again on this cache;
+changing only the final hull masks cannot remove background tracks from an
+already recovered camera model. Compare the all-view and selected-view paths.
+The iPad control retains 64,114 of 71,965 matches and 465 of 470 pairs, then registers
+116/117 with the independent focal/radial mapper. Registration does not establish
+correct cameras; sparse silhouette consistency still fails the requested .95 gate.
+
+Native imported-camera + imported-mask runs now preserve upright JPEG bytes
+while staging, rather than expanding every source into a full-resolution PNG.
+Canonical capture aliases are internal IDs and native readers decode by content;
+this shortcut is restricted to the entirely native import route. Identity
+contrast also copies the original bytes. Rotated photos still become upright
+PNGs, external-tool routes keep their existing PNG stages, and final prepared
+scene images remain PNG. JPEG decoded-pixel/codec/orientation tests pass. No
+photometric matching or geometry setting changes as part of this I/O fix.
