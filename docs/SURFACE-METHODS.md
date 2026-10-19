@@ -299,3 +299,34 @@ comparison. The complete 111-view iPad native pipeline also finishes, but its
 closed mesh lacks much of the body/legs (median mask IoU .349) and is rejected.
 A stricter camera-tolerance control recovers only 11/117, so simply widening or
 shrinking one global gate does not solve the batch. No geometry default changes.
+
+### Bounded learned-depth alternative, 2026-10-19
+
+The offline `windowed_depth.py` control adds DA3-BASE depth to the existing native
+fusion path. It does not replace stereo or Gaussian/SDF training. Four-view CPU
+windows use fixed own recovered poses/K, physical optical rotations to centre the
+object, and robust per-view Z scaling against observed own SfM landmarks. Input
+and landmark camera frames must match; a similarly named but different recovery
+is refused. Source/checkpoint pins and upstream notices are recorded in the
+[source inventory](../tests/evidence/camera-recovery-source-review.json).
+No API/evo dependency or noncommercial DA3 variant is used. No model/source is
+bundled or added to the app.
+
+On the iPad, an independent shared focal/radial PyCOLMAP fit first makes the body
+more complete. Its 110-camera learned-depth control is smoother than native
+stereo on identical virtual images/cameras, but loses real relief and leg
+separation. Native stereo preserves more irregular detail and false grooves.
+Both grey sheets were inspected; neither is a faithful printable reconstruction.
+The original 111-camera iPad and 76-camera iPhone controls also complete, with the
+same broad tradeoff. Neural depth does not rescue sufficiently inaccurate poses.
+The sparse scale holdout is not independent shape validation. Gaussian poses also
+remain fixed; no joint camera optimizer has been added.
+
+Inference on 111 views takes 91.4 s with 2.54 GiB peak RSS; this bounds model tensor
+memory with four-view windows, not all pipeline bookkeeping. The tested native
+DA3 CPU port agrees closely on two inputs, while Metal fails the chosen intrinsic
+parity threshold, so the executable recipe uses the official CPU core. Larger
+camera models, runtime/app integration, view selection and camera refinement need
+further work. See [commands](../scripts/photo_regression/README.md) and
+[evidence](../tests/evidence/windowed-learned-depth-review.json). No reconstruction
+or geometry default changed.

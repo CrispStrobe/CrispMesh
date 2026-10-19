@@ -1,0 +1,370 @@
+{
+  "date": "2026-10-19",
+  "scope": "Additive offline camera/depth paths, no geometry default or app provider changes",
+  "source_review": "camera-recovery-source-review.json",
+  "owner_photos_published": false,
+  "reference_inputs_used": false,
+  "learned_depth": {
+    "method": "Pinned Apache DA3-BASE CPU core, four-view camera-conditioned windows; own observed sparse-track robust Z-scale; fixed own cameras; virtual optical rotations preserve physical rays",
+    "iphone76": {
+      "views": 76,
+      "windows": 21,
+      "largest_window": 4,
+      "stage_seconds": 64.00803904200438,
+      "peak_rss_bytes": null,
+      "scaled_views": 76,
+      "own_sparse_scale_holdout_perview_median_relative_z_error_quantiles": [
+        0.011927456433279356,
+        0.04174454746587439
+      ],
+      "api_imported": false,
+      "evo_imported": false,
+      "camera_refinement": false,
+      "quality_accepted": false
+    },
+    "ipad111_native_cameras": {
+      "views": 111,
+      "windows": 31,
+      "largest_window": 4,
+      "stage_seconds": 91.37787758302875,
+      "peak_rss_bytes": 2723119104,
+      "scaled_views": 111,
+      "own_sparse_scale_holdout_perview_median_relative_z_error_quantiles": [
+        0.013935583200568803,
+        0.036807745368248865
+      ],
+      "api_imported": false,
+      "evo_imported": false,
+      "camera_refinement": false,
+      "quality_accepted": false
+    },
+    "ipad110_self_calibrated_cameras": {
+      "views": 110,
+      "windows": 29,
+      "largest_window": 4,
+      "stage_seconds": 86.43841795809567,
+      "peak_rss_bytes": 2746777600,
+      "scaled_views": 110,
+      "own_sparse_scale_holdout_perview_median_relative_z_error_quantiles": [
+        0.005480012722245025,
+        0.027000217904515355
+      ],
+      "api_imported": false,
+      "evo_imported": false,
+      "camera_refinement": false,
+      "quality_accepted": false
+    },
+    "scale_diagnostic_limits": "20% holdout is from per-view scale fit only. Own SfM tracks/cameras remain uncertain; not independent geometry or held-out camera validation. Input bound1536 is not a runtime benchmark.",
+    "native_port_pair_parity": {
+      "cpu": {
+        "backend": "cpu",
+        "reference": "Pinned Apache official core CPU F32 strict shared-alias checkpoint load; prepared same2RGB inputs, no API/evo import",
+        "records": [
+          {
+            "view": 0,
+            "depth_max_abs": 1.5139579772949219e-05,
+            "depth_mean_abs": 1.508723812548851e-07,
+            "depth_max_relative": 1.4509528227790724e-05,
+            "extrinsics_max_abs": 3.5342730333204233e-08,
+            "intrinsics_max_abs": 0.000982031250032378
+          },
+          {
+            "view": 1,
+            "depth_max_abs": 1.4483928680419922e-05,
+            "depth_mean_abs": 1.5524084062690235e-07,
+            "depth_max_relative": 1.5728310245322064e-05,
+            "extrinsics_max_abs": 4.122521972682591e-07,
+            "intrinsics_max_abs": 0.0018529296874021384
+          }
+        ],
+        "tolerance": "depth relative max.005, extrinsics absmax.005, intrinsics absmax.05",
+        "passed": true
+      },
+      "metal": {
+        "backend": "metal",
+        "reference": "Pinned Apache official core CPU F32 strict shared-alias checkpoint load; prepared same2RGB inputs, no API/evo import",
+        "records": [
+          {
+            "view": 0,
+            "depth_max_abs": 0.001562356948852539,
+            "depth_mean_abs": 5.171452721697278e-05,
+            "depth_max_relative": 0.0016434191493317485,
+            "extrinsics_max_abs": 6.307093195593596e-07,
+            "intrinsics_max_abs": 0.037082031250065484
+          },
+          {
+            "view": 1,
+            "depth_max_abs": 0.001778721809387207,
+            "depth_mean_abs": 6.888465577503666e-05,
+            "depth_max_relative": 0.0015918458811938763,
+            "extrinsics_max_abs": 2.917473316191299e-05,
+            "intrinsics_max_abs": 0.08097753906258731
+          }
+        ],
+        "tolerance": "depth relative max.005, extrinsics absmax.005, intrinsics absmax.05",
+        "passed": false
+      },
+      "tests": "9 native math tests pass, preprocessing golden-data test skipped; not whole model/backend parity guarantee",
+      "weights": "279 loaded F32 tensors exactly match pinned official checkpoint; omitted auxiliary/ray/camera-conditioning tensors mean native port is not used for conditioned windows"
+    }
+  },
+  "camera_control": {
+    "method": "Same own ALIKED/LightGlue cache through BSD PyCOLMAP 3.11.1 incremental mapper; explicit shared focal+radial refinement, principal point fixed; no angle-step prior",
+    "public_runner": {
+      "method": "Optional PyCOLMAP incremental mapping from own feature cache",
+      "quality_accepted": false,
+      "reference_inputs_used": false,
+      "calibration_mode": "radial",
+      "models": [
+        {
+          "index": 0,
+          "cameras": 2,
+          "points": 182,
+          "mean_reprojection_original_px": 0.8387806533217339,
+          "intrinsics": {
+            "1": [
+              7295.568001518835,
+              1596.0,
+              1224.0,
+              10.864239768017335
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "cameras": 110,
+          "points": 6988,
+          "mean_reprojection_original_px": 1.4056471840498108,
+          "intrinsics": {
+            "1": [
+              3099.907593983858,
+              1596.0,
+              1224.0,
+              0.08783078518761246
+            ]
+          }
+        }
+      ],
+      "selected_model": "model-1",
+      "candidate_pairs": 470,
+      "geometries_with15inliers": 461,
+      "seconds": 41.98054341599345,
+      "pycolmap": "3.11.1",
+      "matches_sha256": "3812412f4a73000e0a0e382edc6b56f0bfc65fab1e944f8a3d9be6a6e0131a4b",
+      "limits": "Caller must supply own-photo matches. Lens is an estimate; counts/residual do not establish shape accuracy. Inspect silhouettes and grey mesh separately."
+    },
+    "initial_private_run_seconds": 31.603827953338623,
+    "raw_sparse_mask_median": 0.8996136233543217,
+    "raw_sparse_mask_worst": 0.7479965655409273,
+    "requested_support_threshold": 0.95,
+    "passes_requested_threshold": false,
+    "comparison_limits": "Native111 vs COLMAP110 use different camera/point sets, plus ordinary imported-mask cleanup/undistortion; not a paired independent accuracy improvement. Grey renders show more complete body, not adequate fine geometry. Lowest fitting error two-camera model explicitly not selected."
+  },
+  "calibrated_ipad_full_resolution_controls": {
+    "settings": "grid256, sizes256/512/1024, native_level=false, silhouette_first=0, repair_masks=false, mask_grow=false, photo_refine=0",
+    "strict_hull_allowed2": {
+      "closed": true,
+      "genus": 6,
+      "triangles": 216140,
+      "pipeline_seconds": 27.928683792,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "mask_iou": {
+        "maximum": 0.8331320506134549,
+        "median": 0.7809673774932433,
+        "minimum": 0.6528877951242021,
+        "worst_view": "view_35"
+      },
+      "views_checked": 24,
+      "mesh_sha256": "840f58d0fac15ab41cf69516c7df47aae97b2b3e67f33fb5510b2c0534cf5c8f",
+      "quality_accepted": false
+    },
+    "hull_allowed6": {
+      "closed": true,
+      "genus": 9,
+      "triangles": 237062,
+      "pipeline_seconds": 28.032378791,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "mask_iou": {
+        "maximum": 0.8897629192614444,
+        "median": 0.8158426230548881,
+        "minimum": 0.6841223246341748,
+        "worst_view": "view_108"
+      },
+      "views_checked": 24,
+      "mesh_sha256": "57c0966c12a1135211f91a770f674dfb6b2c37dbfcea1e19089eb3adeedcb5e7",
+      "quality_accepted": false
+    },
+    "hull_allowed12": {
+      "closed": true,
+      "genus": 6,
+      "triangles": 264588,
+      "pipeline_seconds": 28.314528958,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "mask_iou": {
+        "maximum": 0.9298434253129078,
+        "median": 0.8802469015824466,
+        "minimum": 0.6637260640521783,
+        "worst_view": "view_108"
+      },
+      "views_checked": 24,
+      "mesh_sha256": "303375c41c18c956535e01317b3c437d0450873239f26e7926df4a57e55e212d",
+      "quality_accepted": false
+    },
+    "coarse_hull12": {
+      "closed": true,
+      "genus": 0,
+      "triangles": 265462,
+      "pipeline_seconds": 28.546187041,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "mask_iou": {
+        "maximum": 0.9536781386842059,
+        "median": 0.8918084733033451,
+        "minimum": 0.6824877881773161,
+        "worst_view": "view_108"
+      },
+      "views_checked": 24,
+      "mesh_sha256": "4d67ff9cfcb4499cbb40eded86ffd670da22d6428e05008436936dbf55ad68d4",
+      "quality_accepted": false
+    },
+    "visual_review": "All grey sheets inspected. Refined cameras retain torso/legs versus older nearly missing body. Higher allowances recover arms/width but distort geometry. False grooves persist in stereo; coarse control loses real detail/leg separation. None accepted as faithful STL. Coarse control sets minimum_weight1000000, overshootfalse, open_unseenfalse."
+  },
+  "matched_virtual_camera_controls": {
+    "iphone76": {
+      "native": {
+        "closed": true,
+        "genus": 5,
+        "triangles": 261180,
+        "pipeline_seconds": 7.073209375,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "mask_iou": {
+          "maximum": 0.9411603828872827,
+          "median": 0.8937019276041511,
+          "minimum": 0.7767820924143526,
+          "worst_view": "view_0003"
+        },
+        "views_checked": 24,
+        "mesh_sha256": "f3f389fbb75ab7bea30fa7cbcc344b9bd03d748faf0818e1f4f6021db311f27f",
+        "quality_accepted": false
+      },
+      "learned": {
+        "closed": true,
+        "genus": 4,
+        "triangles": 241708,
+        "pipeline_seconds": 1.98681,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "mask_iou": {
+          "maximum": 0.9320391898808218,
+          "median": 0.8655517948969988,
+          "minimum": 0.8000733541169999,
+          "worst_view": "view_0003"
+        },
+        "views_checked": 24,
+        "mesh_sha256": "6cb5c4c3b0c41409127cefe93f8a9778b519f65d1350e76860a1465d9f26d83f",
+        "quality_accepted": false
+      },
+      "settings": "same virtual inputs/cameras/masks, grid256 sizes168/336; native_level=false silhouette_first=0 repair_masks=false mask_grow=false photo_refine=0",
+      "sheet_sha256": "06f7eb46a197204af8782c83c7b164ddbfad1c7b1d9f2249fbaf705e41a1bd0c",
+      "review": "Grey sheet inspected; smoother learned output erases real relief/leg separation; no faithful geometry acceptance."
+    },
+    "ipad111_native_cameras": {
+      "native": {
+        "closed": true,
+        "genus": 31,
+        "triangles": 116310,
+        "pipeline_seconds": 8.166675,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "mask_iou": {
+          "maximum": 0.3000907029478458,
+          "median": 0.2317265328713884,
+          "minimum": 0.12066097966629111,
+          "worst_view": "view_70"
+        },
+        "views_checked": 24,
+        "mesh_sha256": "66c9827fafc50fe0c671e119ab2203300e7e1ef5676886d6c3a3fdcada76dfa8",
+        "quality_accepted": false
+      },
+      "learned": {
+        "closed": true,
+        "genus": 1,
+        "triangles": 137950,
+        "pipeline_seconds": 2.185588583,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "mask_iou": {
+          "maximum": 0.5210428626926231,
+          "median": 0.42002519743061817,
+          "minimum": 0.19823673639730816,
+          "worst_view": "view_70"
+        },
+        "views_checked": 24,
+        "mesh_sha256": "1fc9ec8b66d94d0c64d9bf8edaec13329f5df0e190091cfc6dc41b8036c73dfc",
+        "quality_accepted": false
+      },
+      "settings": "same virtual inputs/cameras/masks, grid256 sizes168/336; native_level=false silhouette_first=0 repair_masks=false mask_grow=false photo_refine=0",
+      "sheet_sha256": "3835ed9af9c7ed89bb608d6e832ace6ce775f4ea38803672f3b7ee96640b7f8d",
+      "review": "Grey sheet inspected; smoother learned output erases real relief/leg separation; no faithful geometry acceptance."
+    },
+    "ipad110_self_calibrated_cameras": {
+      "native": {
+        "closed": true,
+        "genus": 55,
+        "triangles": 335046,
+        "pipeline_seconds": 8.945867125,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "mask_iou": {
+          "maximum": 0.8625853154084798,
+          "median": 0.8256566458717827,
+          "minimum": 0.6752685961034288,
+          "worst_view": "view_108"
+        },
+        "views_checked": 24,
+        "mesh_sha256": "add092b28328946b47a569b4af83ba45a315cf21fef49d49640ca1001a47bfe5",
+        "quality_accepted": false
+      },
+      "learned": {
+        "closed": true,
+        "genus": 6,
+        "triangles": 206926,
+        "pipeline_seconds": 2.047669625,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "mask_iou": {
+          "maximum": 0.8947979563399907,
+          "median": 0.8476317670979052,
+          "minimum": 0.6787063889621232,
+          "worst_view": "view_35"
+        },
+        "views_checked": 24,
+        "mesh_sha256": "a6e676d652fc695d6c607519ad7a4919bff0c84cca7bf789f002fe48d5eac101",
+        "quality_accepted": false
+      },
+      "settings": "same virtual inputs/cameras/masks, grid256 sizes168/336; native_level=false silhouette_first=0 repair_masks=false mask_grow=false photo_refine=0",
+      "sheet_sha256": "e6ba55fa8bface4f242b7941c2167dea444d98865e1237d75baa0c5271631201",
+      "review": "Grey sheet inspected; smoother learned output erases real relief/leg separation; no faithful geometry acceptance."
+    }
+  },
+  "validation": {
+    "python_unit_tests": 24,
+    "python_compile": "passed",
+    "public_camera_runner": "110/117,6988points, same lens to numerical precision as private control",
+    "rust_changes_in_this_followup": false,
+    "previous_rust_baseline": "c23016c:268 release library tests, strict clippy and wasm library check passed; no rerun claimed here"
+  },
+  "limitations": [
+    "No app/device integration or new TestFlight build.",
+    "No joint pose optimization in learned depth or Gaussian/SDF paths.",
+    "No six-object dense default-adoption gate; defaults unchanged.",
+    "Global native bundle adjustment still skips models above128 cameras.",
+    "No physical scale established.",
+    "Depth windows bound neural tensor memory, not all bookkeeping or total pipeline cost.",
+    "No source-restricted rewrite, no new model/source bundled, no patent clearance."
+  ]
+}

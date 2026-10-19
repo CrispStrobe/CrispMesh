@@ -262,3 +262,78 @@ its different integer-centred `Lens` correctly. Optional world normalization is
 one consistent similarity of cameras/points and preserves projections. Physical
 scale remains unknown. Source hashes/crops and coordinate convention are retained
 in `provenance.json`. Never use supplied dataset poses/masks as pipeline inputs.
+
+### Independent camera mapping and optional learned depth
+
+`colmap_recover.py` adds an independent BSD PyCOLMAP mapper for the same own
+foreground match cache. Keep native recovery for comparison. The current adapter
+requires equal focal lengths and `k2=k3=0` (SIMPLE_RADIAL); it refuses other lenses
+instead of discarding coefficients. Run with the existing PyCOLMAP environment:
+
+```sh
+python -m scripts.photo_regression.colmap_recover \
+  --matches learned-features/matches.json --photos own/photos \
+  --calibration radial --output own-colmap-recovery
+```
+
+`fixed` (default), `focal`, and `radial` are separate calibration controls.
+Principal point stays fixed. `report.json` names the largest connected model;
+a tiny two-view model with a lower fitting residual is not preferred. Selection
+is not quality acceptance. Import that model with the ordinary `photos` stage,
+its `own-estimated-lens.json`, the original photos and own masks. Keep the
+resulting `photo-map.json` alongside the inputs. Estimates are not measured lens
+calibration. Pixel centres are converted once, in each direction.
+
+`windowed_depth.py` is a separate offline CPU path using the **Apache DA3-BASE**
+checkpoint and pinned official core. No model/source is bundled or downloaded by
+the runner. Obtain the exact revisions/hashes in
+`tests/evidence/camera-recovery-source-review.json`, retaining upstream notices.
+Do not substitute noncommercial DA3 variants. It calls the core directly; the
+upstream API wrapper and its `evo` dependency are not used. Optional dependencies:
+PyTorch, safetensors, OmegaConf, addict, einops, OpenCV, SciPy, NumPy and Pillow.
+
+```sh
+python scripts/photo_regression/windowed_depth.py infer \
+  --inputs own-frontend/inputs --photo-map own-frontend/photo-map.json \
+  --sparse-model own-colmap-recovery/model-1 \
+  --source /path/to/pinned/Depth-Anything-3 \
+  --checkpoint /path/to/DA3-BASE/model.safetensors \
+  --config /path/to/DA3-BASE/config.json --output new-windowed-depth
+
+crispmesh-dense stereo --inputs new-windowed-depth/inputs \
+  --output new-levels --only levels --set sizes=168,336 \
+  --set native_level=false --set silhouette_first=0
+
+python scripts/photo_regression/windowed_depth.py reframe \
+  --inputs new-windowed-depth/inputs --depths new-windowed-depth/depths \
+  --level-report new-levels/result.json --output new-reframed-depths.npz
+
+crispmesh-dense run --inputs new-windowed-depth/inputs --output new-learned-mesh \
+  --reuse-depths new-reframed-depths.npz --set sizes=168,336 \
+  --set native_level=false --set silhouette_first=0
+```
+
+Use the selected model from your report, not necessarily `model-1`. Omit
+`--photo-map` only when camera sources already retain original COLMAP names.
+Mapping is explicit and one-to-one; no positional matching. Every output must be
+fresh. Finish inference before reframing; partial depth files are not a complete
+run. There is no inference-resume option. For controlled comparisons use the
+same geometry settings at preflight and execution (including mask repair/growth,
+`photo_refine`, and `hull_allowed`), and run native stereo on those same virtual
+inputs without `--reuse-depths`.
+
+Physical virtual-camera rotations centre the object without falsely centring an
+off-axis crop. Four-view windows follow recovered directions, without prescribed
+angle steps; camera poses remain fixed. Each view's depth scale is robustly
+anchored to its own observed SfM tracks. The 20% track holdout tests scale fitting
+only, not independent camera/shape accuracy. Missing scale support produces an
+explicit zero plane/report, never invented metric scale. Native fusion needs the
+actual working-crop dimensions/K from preflight; source-sized depth arrays are
+not interchangeable. Reframing preserves camera rays and Z depth.
+
+CPU F32, two workers and a 4 GiB RSS guard are deliberate. The 111-view test used
+four-view windows, 2.54 GiB peak RSS and 91.4 s for model inference/scale export;
+this is a desktop execution benchmark, not an app/device or 1536-view benchmark.
+Learned depth can smooth false engraving and also erase real hair, hands and leg
+separation. Inspect grey geometry and mask consistency; keep stereo/Gaussian/
+learned results as alternatives. No automatic best-quality claim or default switch.

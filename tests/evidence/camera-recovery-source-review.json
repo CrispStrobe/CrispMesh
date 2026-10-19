@@ -138,5 +138,63 @@
       "torchvision": "existing BSD-3-Clause installation; no new code copied",
       "kornia": "existing Apache-2.0 installation; no new code copied"
     }
+  },
+  "windowed_depth_offline_control": {
+    "production_app_dependency": false,
+    "vendored_source_or_weights": false,
+    "official_core": {
+      "repository": "https://github.com/ByteDance-Seed/Depth-Anything-3",
+      "revision": "3d835ec1a5802d64a8b8b15f817a1ab54809bfe4",
+      "license": "Apache-2.0",
+      "license_sha256": "78446e29c48900cda82620a8df183cca61f0a595e05a49d0401a5fd604dd1870"
+    },
+    "weights": {
+      "repository": "https://huggingface.co/depth-anything/DA3-BASE",
+      "revision": "f4a6c9b3c95e41c82048423d3493a81ec3fa810e",
+      "license": "Apache-2.0",
+      "sha256": "e01067dc1659613083d9145a9a2547ccdbe6ccbbf83c4fe7b3e8a4e2bdae78b5",
+      "bytes": 541518028,
+      "config_sha256": "5e34115ebc17bd2d8d43033c5f72e9446ac8833fd61d3fa160b7e67e0bb5b7b5",
+      "model_card_sha256": "5388563071b4361b11d6d811b354d454f26aed2adba634fcf4ee3775c8eda480"
+    },
+    "excluded": "Noncommercial large/giant/nested model variants not downloaded/used. Official API wrapper and GPL evo dependency not imported/installed. No restrictive-source rewrite.",
+    "used_dependencies": {
+      "torch": "BSD-3-Clause",
+      "safetensors": "Apache-2.0",
+      "omegaconf": "BSD-3-Clause",
+      "addict": "MIT",
+      "einops": "MIT",
+      "numpy": "BSD-3-Clause",
+      "scipy": "BSD-3-Clause",
+      "opencv": "Apache-2.0",
+      "pillow": "HPND"
+    },
+    "private_native_parity_control": {
+      "repository": "https://github.com/localai-org/depth-anything.cpp",
+      "revision": "14f7461d1f704761a038ac9f50dbde8fdb7275e2",
+      "license": "MIT",
+      "license_sha256": "33535a72be0de44d490e56ce3d3acf2b1cc2c47be135d5fd9352da216718a5e9",
+      "ggml_revision": "eced84c86f8b012c752c016f7fe789adea168e1e",
+      "ggml_license": "MIT",
+      "ggml_license_sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "stb_license": "MIT alternative retained",
+      "gguf_repository": "https://huggingface.co/mudler/depth-anything.cpp-gguf",
+      "gguf_revision": "c6777c9f402fc5e2b840c0e5ac42ef1286763547",
+      "gguf_sha256": "1b13b166e8a8b4f2c862f42d36edb2f9aab995a18cc527a52b9f160b99c6b8da",
+      "all_loaded_tensors_exactly_equal_official": 279,
+      "parameters_verified": 103022955,
+      "camera_conditioning_supported": false,
+      "cpu_pair_parity_passed": true,
+      "metal_pair_parity_passed": false,
+      "limits": "Parity only on two real inputs; no general backend/geometry guarantee. Public bounded path uses official CPU core, not this GGUF port."
+    },
+    "notes": "Source/weight license inventory, not patent clearance. External code/model must retain upstream notices. Existing project license unchanged; no new source copied into engine."
+  },
+  "colmap_mapper_offline_control": {
+    "package": "pycolmap",
+    "tested_version": "3.11.1",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/colmap/colmap",
+    "scope": "Existing optional environment; mapper called through public API. No upstream source imported, no new app dependency."
   }
 }

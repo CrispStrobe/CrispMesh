@@ -649,3 +649,36 @@ comparison. The complete 111-view iPad native pipeline also finishes, but its
 closed mesh lacks much of the body/legs (median mask IoU .349) and is rejected.
 A stricter camera-tolerance control recovers only 11/117, so simply widening or
 shrinking one global gate does not solve the batch. No geometry default changes.
+
+The independent PyCOLMAP camera path now has a reproducible offline runner with
+separate `fixed` / `focal` / `radial` switches. The iPad's same learned matches
+recover 110/117 views and 6,988 points with focal/radial refinement. A public-runner
+repeat reproduces the private control's lens and counts (42.0 s versus 31.6 s;
+not a controlled timing comparison). Largest connected model selection avoids a
+two-camera overfit with a deceptively low fitting error. Grey renders now retain
+the torso and legs; arms and detail remain wrong. Raw sparse mask support rises
+to median .900, still below the requested .95 check; differing points/views and
+mask cleanup mean this is not a paired accuracy score. The normal import pipeline
+and serial dense runs complete on all 110 recovered views.
+
+A separate bounded learned-depth route uses the pinned Apache DA3-BASE CPU core,
+physical virtual-camera rotations and four-view windows, anchored to observed own
+SfM tracks. It completes 111 views in 91.4 s with 2.54 GiB peak RSS; the improved
+110-camera control takes 86.4 s with 2.56 GiB. These are model-stage desktop
+measurements, not a device/1536-photo benchmark. Standard staging filenames are
+resolved explicitly through `photo-map.json`; depth planes are reframed to the
+native working-crop intrinsics before fusion. The API wrapper and `evo` are not
+used. External model/source are not bundled. The optional native port passes a
+two-image CPU parity check, but its Metal intrinsics miss the predeclared .05 px
+tolerance (.081 px); the public runner therefore stays on the official CPU core.
+
+Matched grey renders show the tradeoff: learned depth reduces false grooves but
+loses real hair and leg separation. Allowing 6 or 12 inconsistent silhouettes
+instead of 2 recovers some missing arms/body width, while also distorting shape.
+These remain explicit `hull_allowed` controls, not a default change. Even a closed
+mesh with higher mask IoU is not an accepted faithful STL. Native stereo,
+Gaussian/SDF and learned-depth paths remain available; camera/shape quality is
+still unresolved on these real captures. All 24 relevant Python tests pass;
+no Rust changed in this follow-up. Recipes and limits are in the
+[runner README](../scripts/photo_regression/README.md); metadata-only results in
+[windowed-depth evidence](../tests/evidence/windowed-learned-depth-review.json).
