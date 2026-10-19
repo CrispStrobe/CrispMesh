@@ -1,6 +1,7 @@
 //! Bundle adjustment of all poses and points with the lens fixed:
 //! Levenberg-Marquardt with Huber weights, the points eliminated by a Schur
-//! complement so that only a `6 * photos` square system is solved. Every pose
+//! complement. The dense path solves a `6 * photos` square system; the optional
+//! iterative path applies that system without forming it. Every pose
 //! has six free parameters; the first is held to fix the frame. Residuals are
 //! in pixels (normalised coordinates times the focal length).
 
@@ -38,6 +39,136 @@ pub fn residuals(rotations: &[M3], translations: &[V3], points: &[V3], observati
     (out, cost)
 }
 
+/// Camera linear-system alternatives for the same Huber/LM objective.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CameraSolver {
+    Dense,
+    /// Matrix-free Schur product, block-Jacobi preconditioning, bounded PCG.
+    Iterative,
+}
+
+/// Cholesky factors of the damped camera blocks. No camera-count-square storage.
+fn camera_factors(u: &[[[f64; 6]; 6]], damping: f64) -> Option<Vec<[[f64; 6]; 6]>> {
+    u.iter()
+        .map(|block| {
+            let mut l = [[0.; 6]; 6];
+            for i in 0..6 {
+                for j in 0..=i {
+                    let mut value = block[i][j] - (0..j).map(|k| l[i][k] * l[j][k]).sum::<f64>();
+                    if i == j {
+                        value += damping * block[i][i] + 1e-9;
+                        if !value.is_finite() || value <= 0. {
+                            return None;
+                        }
+                        l[i][j] = value.sqrt();
+                    } else {
+                        l[i][j] = value / l[j][j];
+                    }
+                }
+            }
+            Some(l)
+        })
+        .collect()
+}
+
+fn precondition(factors: &[[[f64; 6]; 6]], rhs: &[f64]) -> Vec<f64> {
+    let mut result = vec![0.; rhs.len()];
+    for (c, l) in factors.iter().enumerate() {
+        for i in 0..6 {
+            result[6 * c + i] = (rhs[6 * c + i] - (0..i).map(|j| l[i][j] * result[6 * c + j]).sum::<f64>()) / l[i][i];
+        }
+        for i in (0..6).rev() {
+            result[6 * c + i] = (result[6 * c + i] - (i + 1..6).map(|j| l[j][i] * result[6 * c + j]).sum::<f64>()) / l[i][i];
+        }
+    }
+    result
+}
+
+/// The operator is U + damping - W V^-1 W^T. Point work and camera vectors
+/// grow linearly with observations/points/cameras, rather than (6*cameras)^2.
+fn schur_product(u: &[[[f64; 6]; 6]], w: &[[[f64; 3]; 6]], vinv: &[M3], observations: &[Observation], damping: f64, x: &[f64]) -> Vec<f64> {
+    let mut result = vec![0.; x.len()];
+    for (c, block) in u.iter().enumerate() {
+        for i in 0..6 {
+            result[6 * c + i] = (0..6).map(|j| block[i][j] * x[6 * c + j]).sum::<f64>() + (damping * block[i][i] + 1e-9) * x[6 * c + i];
+        }
+    }
+    let mut sums = vec![[0.; 3]; vinv.len()];
+    for (k, o) in observations.iter().enumerate() {
+        for j in 0..3 {
+            sums[o.point][j] += (0..6).map(|i| w[k][i][j] * x[6 * o.camera + i]).sum::<f64>();
+        }
+    }
+    for (sum, inverse) in sums.iter_mut().zip(vinv) {
+        *sum = apply(inverse, *sum);
+    }
+    for (k, o) in observations.iter().enumerate() {
+        for i in 0..6 {
+            result[6 * o.camera + i] -= (0..3).map(|j| w[k][i][j] * sums[o.point][j]).sum::<f64>();
+        }
+    }
+    result
+}
+
+fn iterative_step(
+    u: &[[[f64; 6]; 6]],
+    bc: &[[f64; 6]],
+    w: &[[[f64; 3]; 6]],
+    vinv: &[M3],
+    bp: &[V3],
+    observations: &[Observation],
+    damping: f64,
+) -> Option<Vec<f64>> {
+    let mut rhs: Vec<f64> = bc.iter().flatten().map(|v| -v).collect();
+    let projected: Vec<V3> = vinv.iter().zip(bp).map(|(v, b)| apply(v, *b)).collect();
+    for (k, o) in observations.iter().enumerate() {
+        for i in 0..6 {
+            rhs[6 * o.camera + i] += (0..3).map(|j| w[k][i][j] * projected[o.point][j]).sum::<f64>();
+        }
+    }
+    let dot = |a: &[f64], b: &[f64]| a.iter().zip(b).map(|(x, y)| x * y).sum::<f64>();
+    let first = dot(&rhs, &rhs);
+    if !first.is_finite() {
+        return None;
+    }
+    let mut x = vec![0.; rhs.len()];
+    if first <= 1e-24 {
+        return Some(x);
+    }
+    let factors = camera_factors(u, damping)?;
+    let mut residual = rhs.clone();
+    let mut z = precondition(&factors, &residual);
+    let mut direction = z.clone();
+    let mut rz = dot(&residual, &z);
+    for _ in 0..256 {
+        let product = schur_product(u, w, vinv, observations, damping, &direction);
+        let curvature = dot(&direction, &product);
+        if !curvature.is_finite() || curvature <= 0. || !rz.is_finite() || rz <= 0. {
+            return None;
+        }
+        let alpha = rz / curvature;
+        for i in 0..x.len() {
+            x[i] += alpha * direction[i];
+            residual[i] -= alpha * product[i];
+        }
+        if dot(&residual, &residual) <= first * 1e-12 {
+            // Check the true residual as well; recurrence drift must not approve
+            // an unconverged solve. LM retries failed solves with more damping.
+            let actual = schur_product(u, w, vinv, observations, damping, &x);
+            let error: f64 = actual.iter().zip(&rhs).map(|(a, b)| (a - b).powi(2)).sum();
+            return (error.is_finite() && error <= first * 1e-10).then_some(x);
+        }
+        z = precondition(&factors, &residual);
+        let next = dot(&residual, &z);
+        let beta = next / rz;
+        for i in 0..direction.len() {
+            direction[i] = z[i] + beta * direction[i];
+        }
+        rz = next;
+    }
+    None
+}
+
 /// Adjusts poses and points in place; returns the cost before and after.
 pub fn adjust(
     rotations: &mut Vec<M3>,
@@ -46,6 +177,20 @@ pub fn adjust(
     observations: &[Observation],
     focal: f64,
     iterations: usize,
+) -> (f64, f64) {
+    adjust_with_solver(rotations, translations, points, observations, focal, iterations, CameraSolver::Dense)
+}
+
+/// Same objective and LM acceptance as `adjust`, with an explicit camera linear solver.
+/// Iterative solves stop after 256 PCG steps; nonconvergence retries with more damping.
+pub fn adjust_with_solver(
+    rotations: &mut Vec<M3>,
+    translations: &mut Vec<V3>,
+    points: &mut Vec<V3>,
+    observations: &[Observation],
+    focal: f64,
+    iterations: usize,
+    camera_solver: CameraSolver,
 ) -> (f64, f64) {
     let (n, m) = (rotations.len(), points.len());
     // Observations of every point, for the elimination.
@@ -123,41 +268,46 @@ pub fn adjust(
                 }
                 vinv[p] = inverse(&damped).unwrap_or([[0.0; 3]; 3]);
             }
-            let mut s = vec![vec![0.0f64; 6 * n]; 6 * n];
-            let mut rhs = vec![0.0f64; 6 * n];
-            for c in 0..n {
-                for i in 0..6 {
-                    rhs[6 * c + i] = -bc[c][i];
-                    for j in 0..6 {
-                        s[6 * c + i][6 * c + j] = u[c][i][j];
-                    }
-                    s[6 * c + i][6 * c + i] += damping * u[c][i][i] + 1e-9;
-                }
-            }
-            for (p, list) in of_point.iter().enumerate() {
-                for &k1 in list {
-                    // Y = W_k1 * Vinv, 6 x 3
-                    let mut y = [[0.0f64; 3]; 6];
+            let step = if camera_solver == CameraSolver::Iterative {
+                iterative_step(&u, &bc, &w, &vinv, &bp, observations, damping)
+            } else {
+                let mut s = vec![vec![0.0f64; 6 * n]; 6 * n];
+                let mut rhs = vec![0.0f64; 6 * n];
+                for c in 0..n {
                     for i in 0..6 {
-                        for j in 0..3 {
-                            y[i][j] = (0..3).map(|l| w[k1][i][l] * vinv[p][l][j]).sum();
+                        rhs[6 * c + i] = -bc[c][i];
+                        for j in 0..6 {
+                            s[6 * c + i][6 * c + j] = u[c][i][j];
                         }
+                        s[6 * c + i][6 * c + i] += damping * u[c][i][i] + 1e-9;
                     }
-                    let c1 = observations[k1].camera;
-                    for i in 0..6 {
-                        rhs[6 * c1 + i] += (0..3).map(|j| y[i][j] * bp[p][j]).sum::<f64>();
-                    }
-                    for &k2 in list {
-                        let c2 = observations[k2].camera;
+                }
+                for (p, list) in of_point.iter().enumerate() {
+                    for &k1 in list {
+                        // Y = W_k1 * Vinv, 6 x 3
+                        let mut y = [[0.0f64; 3]; 6];
                         for i in 0..6 {
-                            for j in 0..6 {
-                                s[6 * c1 + i][6 * c2 + j] -= (0..3).map(|l| y[i][l] * w[k2][j][l]).sum::<f64>();
+                            for j in 0..3 {
+                                y[i][j] = (0..3).map(|l| w[k1][i][l] * vinv[p][l][j]).sum();
+                            }
+                        }
+                        let c1 = observations[k1].camera;
+                        for i in 0..6 {
+                            rhs[6 * c1 + i] += (0..3).map(|j| y[i][j] * bp[p][j]).sum::<f64>();
+                        }
+                        for &k2 in list {
+                            let c2 = observations[k2].camera;
+                            for i in 0..6 {
+                                for j in 0..6 {
+                                    s[6 * c1 + i][6 * c2 + j] -= (0..3).map(|l| y[i][l] * w[k2][j][l]).sum::<f64>();
+                                }
                             }
                         }
                     }
                 }
-            }
-            let Some(dc) = solve(s, rhs) else {
+                solve(s, rhs)
+            };
+            let Some(dc) = step else {
                 damping *= 10.0;
                 continue;
             };
@@ -186,7 +336,9 @@ pub fn adjust(
             break;
         }
     }
-    for rotation in rotations.iter_mut() {
+    // Keep the matrix-free anchor exactly fixed, including its rotation. The
+    // dense path retains its historical final orthogonalization unchanged.
+    for rotation in rotations.iter_mut().skip(usize::from(camera_solver == CameraSolver::Iterative)) {
         *rotation = crate::photos::markers::linalg::nearest_rotation(rotation);
     }
     (first, cost)
@@ -497,6 +649,109 @@ mod tests {
     }
 
     #[test]
+    fn matrix_free_step_matches_independent_dense_schur() {
+        let n = 3;
+        let damping = 0.01;
+        let mut u = vec![[[0.; 6]; 6]; n];
+        for (c, block) in u.iter_mut().enumerate() {
+            for (i, row) in block.iter_mut().enumerate() {
+                row[i] = 10. + (c + i) as f64;
+            }
+        }
+        let obs = vec![
+            Observation { camera: 0, point: 0, target: [0.; 2] },
+            Observation { camera: 1, point: 0, target: [0.; 2] },
+            Observation { camera: 1, point: 1, target: [0.; 2] },
+            Observation { camera: 2, point: 1, target: [0.; 2] },
+        ];
+        let w: Vec<[[f64; 3]; 6]> =
+            (0..4).map(|k| std::array::from_fn(|i| std::array::from_fn(|j| ((k + i * 3 + j) as f64).sin() * 0.2))).collect();
+        let vinv = vec![[[0.2, 0., 0.], [0., 0.3, 0.], [0., 0., 0.4]]; 2];
+        let bc = vec![[0.1, -0.2, 0.3, -0.4, 0.5, -0.6]; n];
+        let bp = vec![[0.1, 0.2, -0.1]; 2];
+        let mut matrix = vec![vec![0.; 6 * n]; 6 * n];
+        let mut rhs: Vec<f64> = bc.iter().flatten().map(|v| -v).collect();
+        for c in 0..n {
+            for i in 0..6 {
+                for j in 0..6 {
+                    matrix[6 * c + i][6 * c + j] = u[c][i][j];
+                }
+                matrix[6 * c + i][6 * c + i] += damping * u[c][i][i] + 1e-9;
+            }
+        }
+        for (a, o) in obs.iter().enumerate() {
+            for i in 0..6 {
+                for j in 0..3 {
+                    for k in 0..3 {
+                        rhs[6 * o.camera + i] += w[a][i][j] * vinv[o.point][j][k] * bp[o.point][k];
+                    }
+                }
+                for (b, q) in obs.iter().enumerate().filter(|(_, q)| q.point == o.point) {
+                    for j in 0..6 {
+                        for k in 0..3 {
+                            for l in 0..3 {
+                                matrix[6 * o.camera + i][6 * q.camera + j] -= w[a][i][k] * vinv[o.point][k][l] * w[b][j][l];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let expected = solve(matrix, rhs).unwrap();
+        let actual = iterative_step(&u, &bc, &w, &vinv, &bp, &obs, damping).unwrap();
+        for (a, b) in actual.iter().zip(expected) {
+            assert!((a - b).abs() < 1e-8, "{a} vs {b}");
+        }
+        let mut invalid = u;
+        invalid[0][0][0] = f64::NAN;
+        assert!(iterative_step(&invalid, &bc, &w, &vinv, &bp, &obs, damping).is_none());
+    }
+
+    #[test]
+    fn matrix_free_adjustment_refines_180_irregular_multilevel_cameras() {
+        let cameras = 180;
+        let (mut rotations, mut translations): (Vec<_>, Vec<_>) = (0..cameras)
+            .map(|c| {
+                let a = c as f64;
+                crate::stereo::synthetic::camera(a * 137.508, 10. + 35. * (a * 0.7).sin(), 6.)
+            })
+            .unzip();
+        let truth = rotations.clone();
+        let anchor = (rotations[0], translations[0]);
+        let mut points: Vec<V3> = (0..48)
+            .map(|p| {
+                let a = p as f64;
+                [a.sin(), (a * 1.7).cos(), (a * 2.3).sin()]
+            })
+            .collect();
+        let mut observations = Vec::new();
+        for (p, x) in points.iter().enumerate() {
+            for c in 0..cameras {
+                if (c + p) % 5 == 0 {
+                    continue;
+                }
+                let q = add(apply(&rotations[c], *x), translations[c]);
+                observations.push(Observation { camera: c, point: p, target: [q[0] / q[2], q[1] / q[2]] });
+            }
+        }
+        for c in 1..cameras {
+            let a = c as f64;
+            rotations[c] = mul(&rodrigues([0.005 * a.sin(), -0.004, 0.003 * a.cos()]), &rotations[c]);
+            translations[c] = add(translations[c], [0.02 * a.sin(), -0.01, 0.015 * a.cos()]);
+        }
+        for (p, x) in points.iter_mut().enumerate() {
+            *x = add(*x, [0.01 * (p as f64).sin(), -0.02, 0.01]);
+        }
+        let (before, after) =
+            adjust_with_solver(&mut rotations, &mut translations, &mut points, &observations, 1000., 25, CameraSolver::Iterative);
+        assert!(before > 1000. && after < 1e-5, "{before} -> {after}");
+        assert_eq!((rotations[0], translations[0]), anchor);
+        for (r, t) in rotations.iter().zip(truth) {
+            assert!(rotation_angle_deg(r, &t) < 0.001);
+        }
+    }
+
+    #[test]
     fn perturbed_ring_returns_to_the_truth() {
         let cameras = 8;
         let (mut rotations, mut translations) = (Vec::new(), Vec::new());
@@ -522,6 +777,9 @@ mod tests {
         for (p, x) in points.iter_mut().enumerate() {
             *x = add(*x, [0.02 * (p as f64).sin(), 0.02 * (p as f64).cos(), -0.03]);
         }
+        let (mut ir, mut it, mut ip) = (rotations.clone(), translations.clone(), points.clone());
+        let (_, iterative_cost) = adjust_with_solver(&mut ir, &mut it, &mut ip, &observations, 1000., 50, CameraSolver::Iterative);
+        assert!(iterative_cost < 1e-6, "iterative cost {iterative_cost}");
         let (before, after) = adjust(&mut rotations, &mut translations, &mut points, &observations, 1000.0, 50);
         assert!(before > 1e3 && after < 1e-6, "{before} -> {after}");
         // The first camera is held, so the frame is the true one up to the free scale; the scale stays near 1.

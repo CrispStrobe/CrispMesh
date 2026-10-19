@@ -2,7 +2,7 @@
 //! Not an app provider. No angle/order or supplied-pose prior is consumed.
 use anyhow::{bail, Context, Result};
 use crispmesh_dense::photos::{
-    incremental::{self, Initializer, RecoveryOptions, Resection, SeedSelection, TrackSelection},
+    incremental::{self, BundleSolver, Initializer, RecoveryOptions, Resection, SeedSelection, TrackSelection},
     solution::{colmap_parameters, Lens, Solution},
     turntable::solver::Matches,
 };
@@ -95,7 +95,7 @@ fn main() -> Result<()> {
     let (mut photos, mut masks, mut inputs): (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) = (None, None, None);
     while let Some(key) = args.next() {
         if key == "--help" {
-            println!("recover_cameras --matches CACHE --output NEW_MODEL [--initializer eight|five] [--resection linear|p3p|consensus] [--tracks robust|split] [--seeds score|diverse] [--seed-budget 32] [--measurement-error-scale 1]\nOptional native inputs: --photos DIR --masks DIR --inputs NEW_DIR (production undistortion/crop writer).\nOffline experimental own-photo recovery; no quality guarantee or app integration.");
+            println!("recover_cameras --matches CACHE --output NEW_MODEL [--initializer eight|five] [--resection linear|p3p|consensus] [--tracks robust|split] [--seeds score|diverse] [--seed-budget 32] [--measurement-error-scale 1] [--bundle-solver auto|dense|iterative|off]\nOptional native inputs: --photos DIR --masks DIR --inputs NEW_DIR (production undistortion/crop writer).\nOffline experimental own-photo recovery; no quality guarantee or app integration.");
             return Ok(());
         }
         let value = args.next().context("each option requires a value")?;
@@ -105,6 +105,15 @@ fn main() -> Result<()> {
             "--photos" => photos = Some(value.into()),
             "--masks" => masks = Some(value.into()),
             "--inputs" => inputs = Some(value.into()),
+            "--bundle-solver" => {
+                options.bundle_solver = match value.as_str() {
+                    "auto" => BundleSolver::Auto,
+                    "dense" => BundleSolver::Dense,
+                    "iterative" => BundleSolver::Iterative,
+                    "off" => BundleSolver::Off,
+                    _ => bail!("unknown bundle solver"),
+                }
+            }
             "--initializer" => {
                 options.initializer = match value.as_str() {
                     "eight" => Initializer::EightPoint,

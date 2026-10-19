@@ -12,6 +12,7 @@ use solver::Matches;
 use std::collections::{BTreeMap, HashMap};
 
 type Pose = (M3, V3);
+type Refreshed = (Matches, solver::Tracks, Option<(f64, f64)>);
 const IDENTITY: M3 = [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
 
 /// A connected reconstruction; missing views stay explicitly unregistered.
@@ -53,6 +54,26 @@ pub enum SeedSelection {
     Score,
     Diverse,
 }
+/// Preserve dense adjustment for small fits; avoid silently skipping large fits.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum BundleSolver {
+    #[default]
+    Auto,
+    Dense,
+    Iterative,
+    Off,
+}
+impl BundleSolver {
+    fn resolve(self, cameras: usize) -> Option<adjust::CameraSolver> {
+        match self {
+            Self::Off => None,
+            Self::Dense => Some(adjust::CameraSolver::Dense),
+            Self::Iterative => Some(adjust::CameraSolver::Iterative),
+            Self::Auto if cameras <= 128 => Some(adjust::CameraSolver::Dense),
+            Self::Auto => Some(adjust::CameraSolver::Iterative),
+        }
+    }
+}
 #[derive(Debug, Clone, Copy)]
 pub struct RecoveryOptions {
     pub initializer: Initializer,
@@ -60,6 +81,7 @@ pub struct RecoveryOptions {
     pub seed_selection: SeedSelection,
     pub track_selection: TrackSelection,
     pub maximum_seed_attempts: usize,
+    pub bundle_solver: BundleSolver,
     /// Pixel uncertainty multiplier for correspondence gates; leaves calibration/coordinates intact.
     pub measurement_error_scale: f64,
 }
@@ -71,6 +93,7 @@ impl Default for RecoveryOptions {
             seed_selection: SeedSelection::Score,
             track_selection: TrackSelection::Robust,
             maximum_seed_attempts: 32,
+            bundle_solver: BundleSolver::Auto,
             measurement_error_scale: 1.,
         }
     }
@@ -257,10 +280,10 @@ fn refresh(
     camera: &Camera,
     placed: &[usize],
     poses: &mut [Option<Pose>],
-    bundle: bool,
+    bundle: Option<adjust::CameraSolver>,
     selection: TrackSelection,
     focal: f64,
-) -> anyhow::Result<(Matches, solver::Tracks)> {
+) -> anyhow::Result<Refreshed> {
     let own = subset(matches, placed);
     let normalised: Vec<Vec<_>> = own.keypoints.iter().map(|list| list.iter().map(|p| camera.undistort(*p)).collect()).collect();
     let mut rotations: Vec<_> = placed.iter().map(|&v| poses[v].unwrap().0).collect();
@@ -274,22 +297,21 @@ fn refresh(
     if tracks.points.len() < 20 {
         bail!("incremental cameras: fewer than 20 triangulated tracks with one degree of parallax");
     }
-    // The existing dense Schur solver is deliberately bounded here. Larger experiments
-    // still resect cameras, but need sparse/local adjustment before provider adoption.
-    if bundle && placed.len() <= 128 {
+    let mut bundle_cost = None;
+    if let Some(backend) = bundle {
         let obs: Vec<_> = tracks
             .observations
             .iter()
             .map(|&(v, p, f)| adjust::Observation { camera: v, point: p, target: normalised[v][f as usize] })
             .collect();
-        adjust::adjust(&mut rotations, &mut translations, &mut tracks.points, &obs, focal, 10);
+        bundle_cost = Some(adjust::adjust_with_solver(&mut rotations, &mut translations, &mut tracks.points, &obs, focal, 10, backend));
         for (i, &v) in placed.iter().enumerate() {
             poses[v] = Some((rotations[i], translations[i]));
         }
         tracks = build(&rotations, &translations);
         prune(&mut tracks, &normalised, &rotations);
     }
-    Ok((own, tracks))
+    Ok((own, tracks, bundle_cost))
 }
 
 /// Uses only pixel correspondences and one calibrated lens. File order, regular spacing,
@@ -344,6 +366,9 @@ pub fn recover_with_options(
     let count = matches.keypoints.len();
     if !(3..=super::MOST_PHOTOS).contains(&count) || names.len() != count {
         bail!("incremental cameras: expected 3 to {} named views", super::MOST_PHOTOS);
+    }
+    if options.bundle_solver == BundleSolver::Dense && count > 128 {
+        bail!("incremental cameras: dense bundle solver is limited to 128 input views; use auto or iterative");
     }
     if matches.keypoints.iter().flatten().flatten().any(|x| !x.is_finite())
         || matches.pairs.iter().any(|(a, b, list)| {
@@ -469,9 +494,15 @@ pub fn recover_with_options(
         let mut rounds = Vec::new();
         loop {
             check(placed.len(), count)?;
-            let Ok((_, tracks)) =
-                refresh(matches, &camera, &placed, &mut poses, placed.len() <= 12 || placed.len() % 4 == 0, options.track_selection, focal)
-            else {
+            let Ok((_, tracks, _)) = refresh(
+                matches,
+                &camera,
+                &placed,
+                &mut poses,
+                (placed.len() <= 12 || placed.len() % 4 == 0).then(|| options.bundle_solver.resolve(placed.len())).flatten(),
+                options.track_selection,
+                focal,
+            ) else {
                 attempts.push(json!({"seed":[a,b],"registered":placed.len(),"failed":"insufficient consistent tracks"}));
                 continue 'seeds;
             };
@@ -548,10 +579,18 @@ pub fn recover_with_options(
                         attempts.push(json!({"seed":[a,b],"registered":2,"failed":"no third view"}));
                         continue 'seeds;
                     }
-                    let (own, tracks) = refresh(matches, &camera, &placed, &mut poses, true, options.track_selection, focal)?;
+                    let (own, tracks, bundle_cost) = refresh(
+                        matches,
+                        &camera,
+                        &placed,
+                        &mut poses,
+                        options.bundle_solver.resolve(placed.len()),
+                        options.track_selection,
+                        focal,
+                    )?;
                     let rotations = placed.iter().map(|&v| poses[v].unwrap().0).collect();
                     let translations = placed.iter().map(|&v| poses[v].unwrap().1).collect();
-                    let report = json!({"method":"experimental incremental SfM","measurement_error_scale":options.measurement_error_scale,"track_selection":match options.track_selection {TrackSelection::Robust=>"robust",TrackSelection::Split=>"split"},"seed_selection":match options.seed_selection {SeedSelection::Score=>"score",SeedSelection::Diverse=>"diverse"},"seed_budget":options.maximum_seed_attempts,"seed_candidates":seed_candidates,"initializer":match initializer {Initializer::EightPoint=>"eight_point",Initializer::FivePoint=>"five_point"},"resection":match resection {Resection::Linear=>"linear",Resection::P3p=>"p3p",Resection::P3pConsensus=>"p3p_consensus"},"seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":placed.len()<=128,"fixed_angles":false,"supplied_poses":false});
+                    let report = json!({"method":"experimental incremental SfM","measurement_error_scale":options.measurement_error_scale,"track_selection":match options.track_selection {TrackSelection::Robust=>"robust",TrackSelection::Split=>"split"},"seed_selection":match options.seed_selection {SeedSelection::Score=>"score",SeedSelection::Diverse=>"diverse"},"seed_budget":options.maximum_seed_attempts,"seed_candidates":seed_candidates,"initializer":match initializer {Initializer::EightPoint=>"eight_point",Initializer::FivePoint=>"five_point"},"resection":match resection {Resection::Linear=>"linear",Resection::P3p=>"p3p",Resection::P3pConsensus=>"p3p_consensus"},"seed":[a,b],"seed_points":seed_points,"registered":placed.len(),"input":count,"points":tracks.points.len(),"registration":rounds,"global_bundle_adjustment":options.bundle_solver != BundleSolver::Off,"bundle_solver":options.bundle_solver.resolve(placed.len()).map(|s|match s {adjust::CameraSolver::Dense=>"dense_schur",adjust::CameraSolver::Iterative=>"matrix_free_pcg"}),"bundle_robust_cost_before_after_on_fixed_tracks":bundle_cost,"bundle_adjustment_accepted":bundle_cost.is_some_and(|(before,after)|after<before),"fixed_angles":false,"supplied_poses":false});
                     let solved = solver::Solved {
                         rotations,
                         translations,
@@ -669,6 +708,14 @@ mod tests {
         let names = (0..keypoints.len()).map(|i| format!("photo_{i}.jpg")).collect();
         (Matches { keypoints, pairs }, lens, names, rotations, points)
     }
+    #[test]
+    fn large_camera_adjustment_is_selected_instead_of_skipped() {
+        assert_eq!(BundleSolver::Auto.resolve(128), Some(adjust::CameraSolver::Dense));
+        assert_eq!(BundleSolver::Auto.resolve(129), Some(adjust::CameraSolver::Iterative));
+        assert_eq!(BundleSolver::Auto.resolve(super::super::MOST_PHOTOS), Some(adjust::CameraSolver::Iterative));
+        assert_eq!(BundleSolver::Off.resolve(256), None);
+    }
+
     #[test]
     fn seed_diversity_does_not_spend_the_whole_budget_on_repeated_pairs() {
         let pose = (IDENTITY, [0.; 3]);
