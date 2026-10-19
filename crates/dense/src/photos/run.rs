@@ -367,6 +367,20 @@ impl Run<'_> {
             if background_prompt {
                 return staging::step_coarse_background(out, &photos, &options.envelope, threads, watch);
             }
+            if matches!(&options.cameras, super::options::CameraChoice::Import(_))
+                && matches!(&options.masks, super::options::MaskChoice::Import(_))
+            {
+                return staging::step_coarse_imported(
+                    out,
+                    &photos,
+                    &options.envelope,
+                    options.dark_threshold,
+                    shadow,
+                    threads,
+                    hide.as_deref(),
+                    watch,
+                );
+            }
             staging::step_coarse_shadow(out, &photos, &options.envelope, options.dark_threshold, shadow, threads, hide.as_deref(), watch)
         })?;
         let touching: Vec<&str> = photo_map["photos"]
@@ -453,6 +467,17 @@ impl Run<'_> {
             crate::photos::fs::create_dir_all(&target)?;
             let work = |index: usize| -> anyhow::Result<()> {
                 let name = capture_name(index);
+                if matches!(&options.cameras, super::options::CameraChoice::Import(_))
+                    && matches!(&options.masks, super::options::MaskChoice::Import(_))
+                    && (options.contrast_gamma == 0.0 || options.contrast_gamma == 1.0)
+                    && options.clahe_clip <= 0.0
+                {
+                    crate::photos::fs::copy(out.join("work/photos").join(&name), target.join(&name))?;
+                    if release_staged_photos {
+                        crate::photos::fs::remove_file(out.join("work/photos").join(&name))?;
+                    }
+                    return Ok(());
+                }
                 let photo = open_photo(&out.join("work/photos").join(&name))?;
                 let (width, height) = (photo.width(), photo.height());
                 let mut rgb = photo.rgb.into_raw();

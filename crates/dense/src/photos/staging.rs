@@ -199,7 +199,7 @@ pub fn step_coarse_shadow(
     prepare: Option<&Preparation>,
     watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Value> {
-    step_coarse_mode(out, photos, envelope, threshold, shadow, threads, prepare, false, watch)
+    step_coarse_mode(out, photos, envelope, threshold, shadow, threads, prepare, false, false, watch)
 }
 
 pub fn step_coarse_background(
@@ -209,7 +209,23 @@ pub fn step_coarse_background(
     threads: usize,
     watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Value> {
-    step_coarse_mode(out, photos, envelope, Threshold::Level(70), 0.0, threads, None, true, watch)
+    step_coarse_mode(out, photos, envelope, Threshold::Level(70), 0.0, threads, None, true, false, watch)
+}
+
+/// Native imported cameras/masks only: preserve upright compressed JPEG bytes.
+/// Internal capture aliases are decoded by content; external-tool paths retain PNG.
+#[allow(clippy::too_many_arguments)]
+pub fn step_coarse_imported(
+    out: &Path,
+    photos: &[PathBuf],
+    envelope: &str,
+    threshold: Threshold,
+    shadow: f64,
+    threads: usize,
+    prepare: Option<&Preparation>,
+    watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
+) -> anyhow::Result<Value> {
+    step_coarse_mode(out, photos, envelope, threshold, shadow, threads, prepare, false, true, watch)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -222,6 +238,7 @@ fn step_coarse_mode(
     threads: usize,
     prepare: Option<&Preparation>,
     background: bool,
+    compressed_import: bool,
     watch: &mut dyn FnMut(usize) -> anyhow::Result<()>,
 ) -> anyhow::Result<Value> {
     let (staged, masks) = (out.join("work/photos"), out.join("work/coarse-masks"));
@@ -240,7 +257,9 @@ fn step_coarse_mode(
             let source = &photos[index];
             let name = capture_name(index);
             let photo = decode_photo(source, &bytes)?;
-            let byte_exact = suffix(source) == "png" && photo.upright;
+            let source_format = suffix(source);
+            let byte_exact =
+                photo.upright && (source_format == "png" || (compressed_import && matches!(source_format.as_str(), "jpg" | "jpeg")));
             if byte_exact {
                 crate::photos::fs::write(staged.join(&name), bytes).with_context(|| source.display().to_string())?;
             } else {
@@ -279,10 +298,13 @@ fn step_coarse_mode(
             bail!("{} is ({w}, {h}); all photos must share one size (({width}, {height}))", file_name(source));
         }
     }
-    let report = json!({
+    let mut report = json!({
         "width": width, "height": height, "envelope_xyxy": window,
         "photos": rows.into_iter().map(|row| row.0).collect::<Vec<_>>(),
     });
+    if compressed_import {
+        report["staging_mode"] = json!("native_import_preserve_upright_source_encoding");
+    }
     util::write_json(&out.join("photo-map.json"), &report, 1)?;
     Ok(report)
 }
@@ -290,6 +312,52 @@ fn step_coarse_mode(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_import_preserves_jpeg_pixels_without_expanding_or_ignoring_orientation() {
+        let root = std::env::temp_dir().join(format!("crispmesh-jpeg-staging-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let mut rgb = image::RgbImage::from_pixel(80, 60, image::Rgb([220, 220, 220]));
+        for y in 20..40 {
+            for x in 20..60 {
+                rgb.put_pixel(x, y, image::Rgb([15, 25, 35]));
+            }
+        }
+        let source = root.join("source.jpg");
+        rgb.save(&source).unwrap();
+        let original = open_photo(&source).unwrap();
+        let bytes = std::fs::read(&source).unwrap();
+        let sources = vec![source.clone()];
+        let a = step_coarse_shadow(&root.join("png"), &sources, "auto", Threshold::Level(70), 0., 1, None, &mut |_| Ok(())).unwrap();
+        let b =
+            step_coarse_imported(&root.join("compressed"), &sources, "auto", Threshold::Level(70), 0., 1, None, &mut |_| Ok(())).unwrap();
+        let staged = root.join("compressed/work/photos/capture_0000.png");
+        assert_eq!(std::fs::read(&staged).unwrap(), bytes);
+        assert_eq!(open_photo(&staged).unwrap().rgb, original.rgb);
+        assert_eq!(crate::photos::fs::open_image(&staged).unwrap().to_rgb8(), original.rgb);
+        assert_eq!(a["photos"][0]["bbox_xyxy"], b["photos"][0]["bbox_xyxy"]);
+        assert_eq!(
+            std::fs::read(root.join("png/work/coarse-masks/capture_0000.png.png")).unwrap(),
+            std::fs::read(root.join("compressed/work/coarse-masks/capture_0000.png.png")).unwrap()
+        );
+        assert_eq!(a["photos"][0]["byte_exact_copy"], false);
+        assert_eq!(b["photos"][0]["byte_exact_copy"], true);
+        // Insert EXIF orientation 6 (rotate 90 degrees). It must be rasterized,
+        // rather than copied with an orientation tag that later readers ignore.
+        let payload: [u8; 32] =
+            [b'E', b'x', b'i', b'f', 0, 0, b'I', b'I', 42, 0, 8, 0, 0, 0, 1, 0, 0x12, 1, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0];
+        let mut rotated = vec![0xff, 0xd8, 0xff, 0xe1, 0, 34];
+        rotated.extend(payload);
+        rotated.extend(&bytes[2..]);
+        std::fs::write(&source, rotated).unwrap();
+        let c = step_coarse_imported(&root.join("rotated"), &sources, "auto", Threshold::Level(70), 0., 1, None, &mut |_| Ok(())).unwrap();
+        assert_eq!(c["photos"][0]["byte_exact_copy"], false);
+        let upright = open_photo(&root.join("rotated/work/photos/capture_0000.png")).unwrap();
+        assert_eq!((upright.width(), upright.height()), (60, 80));
+        assert!(upright.upright);
+        std::fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn natural_photo_order() {
