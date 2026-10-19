@@ -1,5 +1,13 @@
 # Status
 
+Internal TestFlight **0.3.0 (16)** is available for iOS/iPadOS and macOS
+(2026-10-19, source `9554d90`); Apple processing and Internal-group assignment
+were verified for both. The validated irregular-angle capture pipeline requires
+the configured Mac capture host, connected through Another engine / pairing QR.
+Learned mask/camera recovery is not bundled in the phone or sandboxed Mac app.
+Silhouette is the default; Capture Gaussian is optional at 3,000 steps.
+
+
 ## Capture defaults, 2026-10-19
 
 New app and native `run` requests start with a silhouette surface. Gaussian

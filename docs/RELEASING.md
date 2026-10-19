@@ -140,6 +140,20 @@ and there is no store listing beyond the name. How the account signs and
 uploads is described in the owner's App Store notes, which are kept outside
 this repository on purpose; nothing from them belongs in here.
 
+### Current internal baseline
+
+Version 0.3.0, build 16 (source `9554d90`) was uploaded for iOS/iPadOS and
+macOS on 2026-10-19; both builds are VALID and assigned to Internal testers.
+The [upload workflow](https://github.com/CrispStrobe/CrispMesh/actions/runs/39273282905)
+completed successfully. No external-group update or store-review submission.
+
+This build defaults to the silhouette surface and offers optional Capture
+Gaussian (3,000 steps, crop 320, mesh 192). The real-capture pipeline validated
+on the owner's iPad/iPhone batches runs on a separately configured Mac capture
+host (`--capture-tools`); pair the phone with that host using Another engine
+and its private QR code. The learned mask/camera tools are not bundled in
+either store app. Native on-device recovery remains a separate path.
+
 ### What a store build is
 
 - **macOS**: the sandboxed variant
