@@ -74,8 +74,8 @@ describe("the engine in this browser", () => {
     const worker = new FakeWorker();
     const { engine } = engineWith(worker);
     engine.setInputs(picked());
-    await engine.startRun({ splats: { quality: "standard", settings: [] } });
-    expect((worker.sent.at(-1) as Extract<ToWorker, { type: "run" }>).options).toMatchObject({ splats: { quality: "standard", settings: [] } });
+    await engine.startRun({ base_surface: "silhouette", splats: { quality: "capture", settings: [] } });
+    expect((worker.sent.at(-1) as Extract<ToWorker, { type: "run" }>).options).toMatchObject({ base_surface: "silhouette", splats: { quality: "capture", settings: [] } });
   });
 
   it("says so plainly when the browser has no WebGPU", async () => {
@@ -407,7 +407,7 @@ describe("the photos start", () => {
     // The app says which; an engine that does not is assumed to import from one path per module.
     expect(importFields(point, providers).map((entry) => entry.spec)).toEqual([
       { key: "masks_import", label: "Masks folder", kind: "folder", help: "One PNG per photo." },
-      { key: "cameras_import", label: "Existing cameras", kind: "file" },
+      { key: "cameras_import", label: "Existing Cameras", kind: "file" },
     ]);
     expect(missingFields(point, { photos: "rgb", calibration: "lens.json" }, providers)).toEqual(["masks_import", "cameras_import"]);
     expect(startBody(point, form({ photos: "rgb", calibration: "lens.json", masks_import: "bunny/masks", cameras_import: "bunny/final.sfm" }, providers), {})).toMatchObject({ masks_import: "bunny/masks", cameras_import: "bunny/final.sfm", providers });

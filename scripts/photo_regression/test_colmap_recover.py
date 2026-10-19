@@ -1,10 +1,26 @@
 import copy
 import unittest
+from types import SimpleNamespace
 import numpy as np
-from scripts.photo_regression.colmap_recover import validate_cache
+from scripts.photo_regression.colmap_recover import validate_cache, prune_support
 
 
 class ColmapCacheTests(unittest.TestCase):
+    def test_support_pruning_rechecks_tracks_after_removing_a_weak_pose(self):
+        class Model:
+            def __init__(self):
+                self.images={i:SimpleNamespace(name=f'photo-{i}.jpg',num_points3D=n,pose=(i,2,3)) for i,n in [(1,16),(2,20),(3,60)]}
+            def reg_image_ids(self):return list(self.images)
+            def deregister_image(self,index):
+                del self.images[index]
+                if index==1:self.images[2].num_points3D-=1
+        model=Model();original_pose=model.images[3].pose
+        removed=prune_support(model,20)
+        self.assertEqual(removed,[{'name':'photo-1.jpg','observations':16},{'name':'photo-2.jpg','observations':19}])
+        self.assertEqual(list(model.images),[3]);self.assertEqual(model.images[3].pose,original_pose)
+        unchanged=Model();self.assertEqual(prune_support(unchanged,0),[]);self.assertEqual(len(unchanged.images),3)
+        with self.assertRaises(ValueError):prune_support(unchanged,-1)
+
     def cache(self):
         return {'names': ['a.jpg', 'b.jpg', 'c.jpg'], 'keypoints': [[[0., 0.], [3., 4.]]] * 3,
                 'lens': {'width': 20, 'height': 10, 'pixels': [30., 30., 9.5, 4.5], 'k': [.01, 0., 0.]},

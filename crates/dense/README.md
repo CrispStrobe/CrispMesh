@@ -8,6 +8,17 @@ stages, in a browser; every stage is also a subcommand. With the default
 providers (threshold masks, our own turntable solver) the whole way from
 photos to the STL starts no other program.
 
+`run` now starts with a silhouette surface; select `--base-surface stereo`
+for the retained stereo pipeline described in the historical benchmarks below.
+`--splats capture` adds optional Gaussian refinement with 3,000 steps, crop 320
+and mesh grid 192. The final photo check and main texture export then use the
+Gaussian mesh. The embedded engine's default camera/mask providers are unchanged.
+Gaussian meshing uses exact subtree-box pruning for its hull-distance queries;
+`--splats-set hull_bounds=false` retains the original search. Real iPhone
+checkpoint re-meshing produced byte-identical STL geometry with both paths.
+For the separate automatic learned-camera desktop route from original handheld
+captures, see [capture setup](../../scripts/photo_regression/README.md#automatic-real-capture-route).
+
 This crate began as a port of `scripts/turntable_mesh` and is now the primary
 implementation. New behaviour is developed here and judged by the scanner
 evaluator on the four test objects. The Python package remains as the

@@ -32,11 +32,18 @@ turntable photos and a lens calibration to a closed STL in one command, with
 no Python and no other program:
 
 ```sh
-cargo build --release -p crispmesh-dense
+cargo build --release --manifest-path crates/dense/Cargo.toml
 crispmesh-dense run --photos data/bunny/rgb \
   --calibration scripts/turntable_mesh/calibrations/3dlf-pro.json \
   --output runs/bunny
 ```
+
+New `run` requests start with a silhouette surface. Add `--splats capture` for
+optional Gaussian refinement (3,000 steps, crop 320, mesh 192), or select
+`--base-surface stereo` for the retained stereo route. Original handheld or
+irregular captures can use the app with the configured
+[desktop capture host](scripts/photo_regression/README.md#automatic-real-capture-route);
+that learned-camera route needs external tools on the Mac.
 
 Masks come from a grey threshold with the contact shadow taken out, cameras
 from our own turntable solver; both are the defaults, and SAM or COLMAP can

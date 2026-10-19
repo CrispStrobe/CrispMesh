@@ -167,6 +167,7 @@ export function reduce(state: RunState, event: RunEvent): RunState {
   };
   switch (event.type) {
     case "run_started": {
+      next.errors = [];
       const schema = text(event.schema);
       next.status = "running";
       next.schema = schema;
@@ -175,6 +176,9 @@ export function reduce(state: RunState, event: RunEvent): RunState {
       next.inputs = text(event.inputs);
       next.startedAt = event.time;
       if (isRecord(event.configuration)) next.configuration = event.configuration;
+      if (event.base_surface === "silhouette" || (isRecord(event.configuration) && event.configuration.base_surface === "silhouette")) {
+        next.stages = state.stages.map((stage) => stage.name === "stereo" ? { ...stage, name: "hull" } : stage);
+      }
       return next;
     }
     case "stage_started":

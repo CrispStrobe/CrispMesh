@@ -1,5 +1,58 @@
 # Status
 
+## Capture defaults, 2026-10-19
+
+New app and native `run` requests start with a silhouette surface. Gaussian
+refinement is optional; its Capture preset is 3,000 steps, a 320-pixel object
+window and a 192-cell mesh grid. Stereo depth remains an explicit alternative
+(`--base-surface stereo`); its dense algorithm settings are unchanged. Earlier
+stereo benchmarks below describe that route, not the new silhouette default.
+
+The optional desktop capture engine automates foreground
+selection, per-view object crops, learned correspondences, focal/radial camera
+recovery and coverage-aware view selection from original photos. It does not
+require fixed turntable angles. It needs host-installed permissive models and
+Python tools; this learned-camera route is not bundled into the iPhone engine.
+The app can submit photos to it over HTTP and later add Gaussian refinement
+using the cached recovered scene. New controls have English and German text.
+See [capture setup](../scripts/photo_regression/README.md#automatic-real-capture-route).
+Automatic foreground includes SAM refinement; importing saved preview masks
+preserves their contours. Native-only masks and shared-frame cropping remain
+separate options. Detection starts independently on each photo, with tracking
+as a fallback and isolated-spike recovery. Camera recovery starts with a hybrid
+RootSIFT overlap graph, with tight and wide alternatives. Coverage and sparse
+mask support must pass. Each eligible camera path builds and checks an actual
+silhouette before Gaussian training; weak agreement tries another path. Final
+mask agreement is checked too.
+
+The earlier good iPad Gaussian result also depended on mask/camera preparation
+and selecting 106 of 116 recovered views. The preset alone did not reproduce
+that preparation. An earlier automated raw iPad profile completed with 119
+originals, 108 recovered cameras and 99 automatically retained views. Its
+103,152-triangle Gaussian mesh was visually inspected and looks broadly
+comparable, with weak fine relief and merged legs still visible. Successful
+stage times total 1,201.9 seconds; reconstruction after recovery takes 332.2
+seconds, including 230.0 seconds of training and 92.0 seconds for the hull
+distance grid. This was an interrupted/resumed run: disk reserve stops required
+retries. These are stage totals on a busy M1, not an uninterrupted cold benchmark
+or a controlled speedup over the earlier result. Saved scenes avoid repeating
+about 14 minutes of masks, matching, camera recovery and input preparation.
+That profile used independent Vision detections, shared cropping and SAM;
+it is evidence for that retained path, not a verification of the subsequent
+app-foreground defaults. The original saved Gaussian parameters reproduce the
+earlier 99,556-triangle STL byte for byte with the current mesher. Fresh training
+on the same own scene and hull gives a visually comparable 99,500-triangle mesh
+in 244.6 seconds (230.7 training, 13.6 meshing). This verifies reproduction after
+preparation. Updated raw iPad defaults then rejected the first camera solution
+(silhouette IoU 0.7735), recovered 108 cameras through the retained tight path
+and produced a 103,864-triangle Gaussian mesh with the hands present. Final
+all-recovered-view median mask IoU is 0.8875; Gaussian takes 273.4 seconds
+(252.0 training, 20.8 meshing). Successful stage times total 1,674.1 seconds,
+including fallback camera work; unchanged preprocessing was operator-adopted
+and feature caches were warm, so this is not a cold benchmark. German app
+result rendering and all 275 native tests pass. Fresh iPhone and experimental
+silhouette-guided second-camera-pass mesh validation are pending.
+
 State of CrispMesh (engine and app) on 2026-10-19. The plan of record is
 [ARCHITECTURE.md](ARCHITECTURE.md); measurements and settings are in the
 [crate README](../crates/dense/README.md); the current comparison of surface
@@ -9,12 +62,12 @@ methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md)
 
 | Area | State |
 | --- | --- |
-| **Photos to STL, one command** | `crispmesh-dense run --photos DIR --calibration JSON --output RUN`: threshold masks, our own turntable camera solver, GPU dense stages, closed STL. No Python, no external program. About 50–100 s per 73-photo object on an Apple M1 |
+| **Photos to STL, one command** | `crispmesh-dense run --photos DIR --calibration JSON --output RUN`: threshold masks, our own turntable camera solver, GPU dense stages, closed STL. No Python, no external program. Historical stereo runs: about 50–100 s per 73-photo object on an Apple M1 |
 | **Native crate** (`crates/dense`, Rust + wgpu) | The primary implementation. Metal, Vulkan, DirectX 12 and WebGPU; library API, C interface, event log contract; Python package kept as the reference it was ported from |
-| **Browser** | The same pipeline as WebAssembly + WebGPU, from photos or from prepared inputs, single-threaded or threaded (cross-origin isolated pages). Default Bunny from 73 photos in Chrome: measured 130–264 s with 4 threads, peak WebAssembly memory about 1.6–2.1 GiB. Live at <https://crispstrobe.github.io/CrispMesh/> |
+| **Browser** | The same pipeline as WebAssembly + WebGPU, from photos or from prepared inputs, single-threaded or threaded (cross-origin isolated pages). Historical stereo Bunny from 73 photos in Chrome: measured 130–264 s with 4 threads, peak WebAssembly memory about 1.6–2.1 GiB. Live at <https://crispstrobe.github.io/CrispMesh/> |
 | **CrispMesh** (app) | Desktop (macOS, Windows, Linux), iOS and Android from one code base (Tauri 2); the engine runs in-process. Start from photos with provider choice, live progress, preview surfaces, diagnostic sheets, per-step inspection sheets, example objects downloaded on request. Prereleases (unsigned desktop builds) on the [releases page](https://github.com/CrispStrobe/CrispMesh/releases); internal TestFlight builds for iOS and macOS |
 | **Taking photos** | Live camera, manual or Auto shutter, 1–4× digital zoom before the first photo, selection/deletion and renumbering, pause/Continue and up to 16 camera heights with unequal photo counts. Capacity raised to 1,536 photos total (resource limits still apply). Auto compares the saved frame, compensates moderate exposure changes, checks settling drift and a minimum interval; tap the object to choose the watched area. English/German phone-layout checks pass; updated real-device Auto validation is pending |
-| **Few photos** | About 20 photos per turn work with the neural surface on textured objects (Bunny 0.839, Armadillo 0.852 at 0.5 % from 19 photos; the ordinary mesh 0.68 / 0.70). Below 25 photos per turn the camera gate is lower and New run switches the neural surface on once. Dragon, Lucy, Happy Buddha are refused at 19, every object at 15. [PHOTOS-TO-INPUTS.md](PHOTOS-TO-INPUTS.md) "About 20 photos" |
+| **Few photos** | Historical neural-surface tests on textured objects: Bunny 0.839, Armadillo 0.852 at 0.5 % from 19 photos; the ordinary stereo mesh 0.68 / 0.70. New runs now retain the silhouette default and leave refinement optional. Limited coverage is explained in the app; sparse-camera recovery can still refuse a set. [PHOTOS-TO-INPUTS.md](PHOTOS-TO-INPUTS.md) "About 20 photos" |
 | **Languages** | Studio-composed texts, including Take photos, Auto, New run and few-photo guidance, have English and German catalogues. Apple permission-prompt resources and all 74 dense setting labels/descriptions include both languages. Other engine-provided descriptions, events and errors still need localization |
 | **No lens file** | `--calibration auto`: the focal length from the closed turn (raw steps scale with it). Five of six 3DLF objects within 3.3 %, F1 within 0.006; the Happy Buddha 28 % off. `--calibration fov:DEG` (a known field of view; *Take photos* in the iOS app asks the system): within 5 % as good as the lens file on Bunny, Dragon, Happy Buddha (Buddha +0.016 F1 over automatic); a field of view that does not close the turn falls back to automatic. [PHOTOS-TO-INPUTS.md](PHOTOS-TO-INPUTS.md) |
 | **Phone to computer** | The desktop app lets other devices use its engine (local network, token, QR pairing, `POST /api/uploads`); the phone sends its photos and follows the run. The desktop app also announces itself (Bonjour `_crispmesh._tcp`, macOS/iOS) and shows a six-digit pairing code, so a phone can find it without the QR code. Checked in Chrome against the app's server and with an mDNS self-test on the Mac; on devices in TestFlight build 13; [ENGINE-CONTRACT.md](ENGINE-CONTRACT.md) |
@@ -22,7 +75,7 @@ methods and the plan that follows is in [SURFACE-METHODS.md](SURFACE-METHODS.md)
 | **Cameras** | `turntable` (default; our own solver, pure Rust, repeatable), `markers` (printed mat, gives scale and handedness; validated on renders only), `colmap`, `alicevision`, `import`; `--capture orbit` for camera paths that are not one ring |
 | **Evaluation** | Scanner F1 against independent scans (3DLF), DTU protocol, Google Scanned Objects rendered by our own renderer (`crispmesh-dense render`), per-step inspection sheets in every run |
 
-## Measured results (default command, from photos)
+## Historical measured results (stereo route, from photos)
 
 F1 at 0.5 % of the scan diagonal, whole surface / above the support; scans used
 for scoring only. Exact numbers per threshold and per commit are in the crate

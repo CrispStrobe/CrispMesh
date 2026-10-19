@@ -90,7 +90,7 @@ def main():
             report['stopped'] = f'only {free:.2f} GiB free'
             break
         folder = args.output/case['id']
-        command = [binary, 'run', '--photos', case['photos'], '--calibration', case['calibration'], '--masks', case.get('masks','threshold'), '--cameras', 'turntable', '--output', str(folder), '--threads', '2', '--photos-option=--threads=2', '--no-live-previews', '--minimum-free-gib', str(args.minimum_free_gib)]
+        command = [binary, 'run', '--base-surface', 'stereo', '--photos', case['photos'], '--calibration', case['calibration'], '--masks', case.get('masks','threshold'), '--cameras', 'turntable', '--output', str(folder), '--threads', '2', '--photos-option=--threads=2', '--no-live-previews', '--minimum-free-gib', str(args.minimum_free_gib)]
         command.extend('--photos-option='+o for o in case.get('photo_options', []))
         started = time.monotonic()
         with (args.output/(case['id']+'.log')).open('w') as log:

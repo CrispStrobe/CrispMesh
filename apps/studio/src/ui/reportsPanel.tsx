@@ -5,7 +5,7 @@ import { formatMetricValue, summariseReport, type ReportSummary } from "../core/
 import { describe, isAbort } from "../sources/transport";
 import type { RunSource } from "../sources/types";
 import { stageTitle } from "./stages";
-import { t } from "../i18n";
+import { engineText, t } from "../i18n";
 
 interface Props {
   source: RunSource;
@@ -45,7 +45,7 @@ function ReportCard({ source, report, optional }: { source: RunSource; report: R
   if (optional && loaded.state !== "ready") return null;
   return (
     <article class="report">
-      <h3>{report.label}</h3>
+      <h3>{engineText(report.label)}</h3>
       {loaded.state === "loading" && <p class="sub">{t("run.reports.loading")}</p>}
       {loaded.state === "failed" && (
         <p class="field-error" role="alert">
@@ -76,7 +76,7 @@ function ReportCard({ source, report, optional }: { source: RunSource; report: R
           {loaded.summary.notes.length > 0 && (
             <ul class="report-notes">
               {loaded.summary.notes.map((note, index) => (
-                <li key={index}>{note}</li>
+                <li key={index}>{engineText(note)}</li>
               ))}
             </ul>
           )}
@@ -119,7 +119,7 @@ export function ReportsPanel({ source, run }: Props) {
           {run.metrics.map((metric) => (
             <div key={metric.name}>
               <dt>
-                {humanise(metric.name)}
+                {engineText(humanise(metric.name))}
                 {metric.stage !== null && <span class="fact-stage">{stageTitle(metric.stage)}</span>}
               </dt>
               <dd class={typeof metric.value === "number" ? "metric-number" : undefined}>{formatMetricValue(metric.value)}</dd>

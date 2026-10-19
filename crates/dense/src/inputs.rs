@@ -342,14 +342,26 @@ impl Inputs {
 
     /// [`Inputs::load`] with the masks read from `masks/<view name>.png` instead of the files the views name.
     pub fn load_with_masks(directory: &Path, config: &DenseConfig, masks: Option<&Path>) -> anyhow::Result<Self> {
+        Self::load_internal(directory, config, masks, true)
+    }
+
+    /// Carving silhouettes needs calibrated views, but no stereo neighbour graph.
+    pub(crate) fn load_hull(directory: &Path, config: &DenseConfig) -> anyhow::Result<Self> {
+        Self::load_internal(directory, config, None, false)
+    }
+
+    fn load_internal(directory: &Path, config: &DenseConfig, masks: Option<&Path>, require_neighbours: bool) -> anyhow::Result<Self> {
         let mut rows = load_views(directory)?;
         if let Some(masks) = masks {
             for row in &mut rows {
                 row.mask = masks.join(format!("{}.png", row.name)).to_string_lossy().to_string();
             }
         }
-        if (rows.len() as i64) < config.neighbours + 1 {
+        if require_neighbours && (rows.len() as i64) < config.neighbours + 1 {
             bail!("fewer views than neighbours + 1");
+        }
+        if !require_neighbours && rows.len() < 3 {
+            bail!("silhouette carving needs at least three views");
         }
         let sparse_array = crate::npz::read_npy(&directory.join("sparse_points.npy"))?;
         if sparse_array.shape.len() != 2 || sparse_array.shape[1] != 3 || sparse_array.shape[0] == 0 {

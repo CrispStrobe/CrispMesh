@@ -43,6 +43,7 @@ impl Settings {
         use super::options::Quality;
         let standard = Settings::default();
         match quality {
+            Quality::Capture => Settings { steps: 3000, hull_steps: 200, mesh: 192, ..standard },
             Quality::Fast => Settings { steps: 6000, hull_steps: 400, mesh: 384, ..standard },
             Quality::Standard => standard,
             Quality::Best => Settings { steps: 30000, rays: 2048, parts: 8, mesh: 768, ..standard },
@@ -535,6 +536,76 @@ impl Tree {
     }
 }
 
+/// The same exact search and traversal order, with tight subtree boxes. Queries
+/// far outside a compact object otherwise visit many plane-bounded regions.
+pub(crate) struct BoundedTree {
+    tree: Tree,
+    bounds: Vec<([f64; 3], [f64; 3])>,
+}
+
+impl BoundedTree {
+    pub(crate) fn new(points: &[[f64; 3]]) -> Self {
+        let tree = Tree::new(points);
+        let mut bounds = vec![([0.; 3], [0.; 3]); points.len()];
+        fn build(tree: &Tree, range: &[u32], bounds: &mut [([f64; 3], [f64; 3])]) -> Option<([f64; 3], [f64; 3])> {
+            if range.is_empty() {
+                return None;
+            }
+            let middle = range.len() / 2;
+            let index = range[middle] as usize;
+            let mut lo = tree.points[index];
+            let mut hi = lo;
+            for child in [&range[..middle], &range[middle + 1..]] {
+                if let Some((a, b)) = build(tree, child, bounds) {
+                    for i in 0..3 {
+                        lo[i] = lo[i].min(a[i]);
+                        hi[i] = hi[i].max(b[i]);
+                    }
+                }
+            }
+            bounds[index] = (lo, hi);
+            Some((lo, hi))
+        }
+        build(&tree, &tree.order, &mut bounds);
+        Self { tree, bounds }
+    }
+
+    pub(crate) fn nearest(&self, q: [f64; 3]) -> (usize, f64) {
+        fn search(tree: &BoundedTree, range: &[u32], depth: usize, q: &[f64; 3], best: &mut (usize, f64)) {
+            if range.is_empty() {
+                return;
+            }
+            let middle = range.len() / 2;
+            let index = range[middle] as usize;
+            let (lo, hi) = tree.bounds[index];
+            let lower = (0..3)
+                .map(|i| {
+                    let d = (lo[i] - q[i]).max(0.).max(q[i] - hi[i]);
+                    d * d
+                })
+                .sum::<f64>();
+            if lower >= best.1 {
+                return;
+            }
+            let p = tree.tree.points[index];
+            let d2 = (0..3).map(|i| (p[i] - q[i]) * (p[i] - q[i])).sum::<f64>();
+            if d2 < best.1 {
+                *best = (index, d2);
+            }
+            let (near, far) = if q[depth % 3] < p[depth % 3] {
+                (&range[..middle], &range[middle + 1..])
+            } else {
+                (&range[middle + 1..], &range[..middle])
+            };
+            search(tree, near, depth + 1, q, best);
+            search(tree, far, depth + 1, q, best);
+        }
+        let mut best = (0, f64::INFINITY);
+        search(self, &self.tree.order, 0, &q, &mut best);
+        best
+    }
+}
+
 /// Signed distance to the hull on a resolution^3 grid over [-1, 1]^3 (index (x r + y) r + z), outside positive:
 /// distance to the nearest hull point, signed by its normal, smoothed with a Gaussian of 0.7 cells.
 pub fn hull_grid(scene: &Scene, resolution: usize) -> Vec<f32> {
@@ -561,8 +632,18 @@ pub fn hull_grid(scene: &Scene, resolution: usize) -> Vec<f32> {
 /// number of the samples (about 1 inside, 0 outside; up to 4 096 samples, each standing for the area its spacing
 /// gives) and turned outside when it is below one half. Near the surface the grid is [`hull_grid`]'s.
 pub fn hull_grid_checked(scene: &Scene, resolution: usize, far: f64) -> Vec<f32> {
+    hull_grid_checked_with(scene, resolution, far, false)
+}
+
+/// Exact subtree-box variant; winding, smoothing and sample order are unchanged.
+pub fn hull_grid_checked_bounded(scene: &Scene, resolution: usize, far: f64) -> Vec<f32> {
+    hull_grid_checked_with(scene, resolution, far, true)
+}
+
+fn hull_grid_checked_with(scene: &Scene, resolution: usize, far: f64, bounded: bool) -> Vec<f32> {
     let points = &scene.hull_points;
     let tree = Tree::new(points);
+    let tight = bounded.then(|| BoundedTree::new(points));
     let probe = (points.len() / 2000).max(1);
     let spacing: Vec<f64> = points.iter().step_by(probe).map(|p| tree.nearest_k(*p, 2).get(1).copied().unwrap_or(0.0).sqrt()).collect();
     let h = spacing.iter().sum::<f64>() / spacing.len().max(1) as f64;
@@ -574,7 +655,7 @@ pub fn hull_grid_checked(scene: &Scene, resolution: usize, far: f64) -> Vec<f32>
         .into_par_iter()
         .map(|n| {
             let q = [axis[n / (resolution * resolution)], axis[n / resolution % resolution], axis[n % resolution]];
-            let (index, d2) = tree.nearest(q);
+            let (index, d2) = tight.as_ref().map_or_else(|| tree.nearest(q), |tree| tree.nearest(q));
             let (p, normal) = (points[index], scene.hull_normals[index]);
             let side = (0..3).map(|i| (q[i] - p[i]) * normal[i]).sum::<f64>();
             let distance = d2.sqrt();

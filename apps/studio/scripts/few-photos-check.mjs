@@ -1,5 +1,5 @@
 // The "New run" form with few photos, in headless Chrome with the browser engine: below 25 photos per turn it says
-// the ordinary mesh will be rough and switches the neural surface on at fast once; set back to Off it stays off
+// coverage may be limited, while optional photo refinement stays off until chosen;
 // (also after other few photos); with 25 or more photos neither happens. Also reads the photo counts "Take photos"
 // offers (a fake camera). Nothing is reconstructed.
 //
@@ -40,7 +40,7 @@ if (process.platform === "darwin") launch.push("--use-angle=metal");
 const browser = await chromium.launch({ channel: process.env.STUDIO_CHANNEL ?? "chrome", headless: true, args: launch });
 const context = await browser.newContext({ locale: "en-US", viewport: { width: 1280, height: 900 }, permissions: ["camera"] });
 const problems = [];
-const HINT = "Fewer than 25 photos per turn: the ordinary mesh will be rough; the neural surface (fast) copes with about 20.";
+const HINT = "Fewer than 25 photos per turn: coverage may be limited. Optional photo refinement stays off until you choose it.";
 const SWITCHED = "It was switched on at fast for these photos";
 
 async function newForm() {
@@ -75,13 +75,15 @@ const expect = (condition, message) => {
 };
 
 try {
-  // 1: 19 photos -> hint, surface switched on at fast.
+  // 1: 19 photos -> hint, silhouette base, refinements stay off.
   let page = await newForm();
   const surfaceSelect = page.locator("#f-method-surface");
   await page.locator("#f-photos-files").setInputFiles(nineteen);
   let seen = await state(page, "19 photos", "1-nineteen.png");
   expect(seen.hint.startsWith(HINT), "19 photos: no hint");
-  expect(/fast/i.test(seen.quality) && seen.switched, "19 photos: the surface was not switched on at fast");
+  expect(/off/i.test(seen.quality) && !seen.switched, "19 photos: refinement was enabled without a choice");
+  expect(await page.locator('#f-method-splats').inputValue() === '', '19 photos: Gaussian was enabled without a choice');
+  expect(await page.locator('#f-base-surface').inputValue() === 'silhouette', '19 photos: silhouette is not the base');
 
   // 2: set Off -> stays off, also after 20 other photos; the hint stays.
   await surfaceSelect.selectOption("");
@@ -100,13 +102,13 @@ try {
   expect(seen.hint === "", "37 photos: a hint is shown");
   expect(/off/i.test(seen.quality), "37 photos: the surface is not off");
 
-  // 4: Take photos offers 20 with the neural surface.
+  // 4: Take photos labels 20 as limited coverage without enabling refinement.
   await page.getByRole("button", { name: "Take photos" }).click();
   const dialog = page.locator("dialog.capture");
   await dialog.waitFor();
   const options = await dialog.getByLabel("Photos for one turn").locator("option").allInnerTexts();
   console.log("Take photos offers:", options.join(" | "));
-  expect(options.includes("20 photos (18° steps), with the neural surface"), "Take photos: no 20-photo choice with the neural surface");
+  expect(options.includes("20 photos (18° steps), limited coverage"), "Take photos: no limited-coverage 20-photo choice");
   if (out !== "") await page.screenshot({ path: resolve(out, "4-capture.png") });
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await page.close();

@@ -1,6 +1,107 @@
 # Photo-only regression checks
 
+## Automatic real-capture route
+
+The app/native run default is now a silhouette surface; Gaussian is optional
+with the Capture preset (3,000 steps, crop 320, mesh 192). Stereo is retained
+with `--base-surface stereo`. Existing stereo experiments below keep their
+original settings.
+
+On a Mac, `capture_pipeline.py` accepts original JPEG/PNG photos and performs
+EXIF orientation, the app's Vision foreground detection and automatic
+mask-spike recovery, ALIKED/LightGlue matches, foreground-edge filtering, PyCOLMAP radial camera
+recovery, sparse support auditing and coverage-aware view selection. No
+per-batch pixel crop, supplied pose or precise motor angle is needed. Mixed
+image dimensions/calibration groups are currently refused. Recognition and
+camera recovery can still fail; this is not a guarantee for arbitrary objects.
+
+Upright originals remain byte-exact. The native stage crops each object view
+automatically with 15% padding. `--shared-crop` retains a separate common-frame
+crop path. Automatic foreground includes SAM 2.1 refinement with a validated
+coarse-mask fallback, matching the preparation of the earlier good Gaussian
+control. `--no-refine-masks` retains the faster native-foreground path.
+`--masks` accepts the app's saved foreground masks and preserves their contours;
+`--refine-imported-masks` also refines those explicitly supplied masks.
+The refined route requires `sam_source` and `sam_checkpoint` in the tools
+configuration. The host selects refined foreground when these are installed;
+native foreground and imported preview masks remain separate choices.
+
+Supply a host-only JSON with absolute paths for `native`, `foreground`, `python_torch`,
+`python_geometry`, `sam_source`, `sam_checkpoint`, `lightglue_source`,
+`extractor` and `matcher`. Model runners verify their existing source/weight
+pins. Sources and weights are not bundled or downloaded by this command.
+Each photo is detected independently before trying the previous search area,
+so arbitrary changes of viewpoint do not silently crop away thin parts. Isolated
+oversized selections are retried inside trusted neighbouring regions. Build
+`foreground` from the same app implementation on macOS 14 or later:
+
+```sh
+cargo build --release --locked --manifest-path tools/foreground-capture/Cargo.toml
+```
+
+```sh
+python scripts/photo_regression/capture_pipeline.py \
+  --photos /data/originals --tools /host/tools.json --output /data/runs/new
+# Add --gaussian for the default 3,000-step refinement.
+# Add --data-root /data to retain a linked scene for later refinement.
+```
+
+Automatic focal initialization is 0.9 times the larger original dimension,
+zero radial distortion, subsequently optimized from correspondences. A
+measured calibration or `--fov DEG` can provide the initial lens instead.
+Up to 8% of recovered views are excluded using sparse support, while guarding
+against direction coverage loss. The final mesh is also checked against all
+recovered views. This differs from manually forcing a fixed view count.
+
+The default camera search starts with a hybrid graph: up to four neighbours
+proposed by masked RootSIFT overlap, plus ALIKED/LightGlue retrieval and temporal
+links with context padding 0.30 shifted inside the image. Image order proposes
+links, never equal motor angles. If a model registers fewer than 80% of accepted
+photos or median sparse-point mask support is below 85%, the runner tries the
+retained tight path (padding 0.15, six retrieval neighbours and two temporal
+neighbours on each side), then the wide path (padding 0.30, twelve and four).
+`--camera-search tight|wide|hybrid` changes this search order. Every path must pass
+the registration and sparse-support gates. Sparse-acceptable candidates also
+build the actual default silhouette and check it against every recovered view.
+Median silhouette IoU below 0.8 rejects the camera path; at least 0.85 ends the
+search early. Otherwise the highest-scoring eligible candidate is selected after
+trying the retained alternatives. This catches camera fits whose sparse points
+look plausible while the silhouette loses thin parts. The score measures agreement
+with the estimated masks, not independent shape accuracy.
+
+Views with too few surviving sparse observations are removed before
+export using the native minimum (20, or eight for fewer than 25 accepted photos),
+including any cascading loss of tracks. This consumes the same 8% view-selection
+budget; native input validation is unchanged. Candidates, removed views and the
+selected path remain in `camera-path.json` and the recovery report.
+The final mesh must also reach median mask IoU of 0.8 across recovered views;
+a failed check retains diagnostic outputs rather than reporting success.
+These checks detect some failures; they do not establish geometric accuracy.
+Content-checked feature and pair caches can be shared with `--cache-root`.
+
+The raw route accepts 8–1,536 photos. Stage deadlines scale with photo count
+(at least 30 minutes per stage), while cancellation, log and disk budgets
+remain active. This is an input limit, not a claim that every capture will
+register or fit in every device's memory. The 119-original iPad verification
+exceeds the former 96-photo limit.
+
+For app use, run `python -m scripts.turntable_mesh.engine_server --runs
+/data/runs --data /data --capture-tools /host/tools.json` and connect the app
+to that host. The phone is an HTTP client for this route, not a Python host.
+Follow the server's existing network/token configuration when sharing it.
+The host serializes heavy jobs and guards an 8.8 GiB free-space reserve.
+
+`--resume` checks the input/recipe fingerprint, command and every cached
+output byte. Incomplete stages are rebuilt; previous successful stages remain.
+The operator-only `--adopt-completed` migrates a locally generated predecessor
+without receipts and explicitly records this in the report. Such a run is
+not an uninterrupted cold benchmark. `pipeline.json` separates resumed elapsed
+time from the sum of successful stage times. Reusing a recovered scene avoids
+repeating masks, matching and camera recovery when adding Gaussian later.
+
 Run cases serially through masks, recovered turntable cameras, stereo and mesh.
+This historical runner explicitly selects `--base-surface stereo` so changes
+to the app default do not silently change the meaning of existing regressions.
 With `--texture`, export GLB from each resulting STL and verify every triangle
 coordinate and winding byte. Reference meshes, supplied poses, dataset masks
 and dataset depths must not be reconstruction inputs. The caller must verify
@@ -460,3 +561,27 @@ contrast also copies the original bytes. Rotated photos still become upright
 PNGs, external-tool routes keep their existing PNG stages, and final prepared
 scene images remain PNG. JPEG decoded-pixel/codec/orientation tests pass. No
 photometric matching or geometry setting changes as part of this I/O fix.
+
+## Optional focus selection control
+
+`focus_views.py` creates a separate subset from an own recovered scene. It
+normalizes object size to 512 pixels, measures contrast-normalized RGB gradient
+energy inside the mask, and compares views within 20 degrees. A photo below
+0.65 of its nearby 75th percentile is a candidate; removing it must retain at
+least eight views and stay within 20 degrees of a retained direction. Texture,
+noise and lighting can affect this estimate. Originals are never deleted.
+
+```sh
+python -m scripts.photo_regression.focus_views \
+  --inputs /data/own-recovered-inputs --output /data/focus-selected-inputs
+```
+
+This is an opt-in diagnostic, outside the app defaults. The iPad control
+removed 23 of 106 training photos, including the owner's out-of-focus example.
+With the same own cameras and hull, Gaussian 3,000 produced no clear visual
+improvement: all-116-view median mask IoU was 0.86779 before and 0.86703 after;
+some surfaces became more faceted. These scores measure agreement with estimated
+masks, not shape accuracy. Removing training images also changes the training
+view sequence and held-out split, so held-out PSNR is not directly comparable.
+This control does not test whether excluding blur before feature matching would
+improve camera recovery. It does not justify automatic deletion in the app.

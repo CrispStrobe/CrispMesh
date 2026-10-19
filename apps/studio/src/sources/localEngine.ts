@@ -92,6 +92,7 @@ export class LocalEngine implements Engine {
       note: typeof body?.note === "string" && body.note !== "" ? body.note : undefined,
       imports: this.imports,
       methods: parseMethods(body?.methods),
+      baseSurfaces: parseBaseSurfaces(body?.base_surfaces),
     };
   }
 
@@ -383,4 +384,10 @@ export function parseMethods(value: unknown): MethodSpec[] | undefined {
     methods.push({ id, label, meaning: text(raw.meaning) ?? "", available: raw.available === true, qualities, settings });
   }
   return methods;
+}
+
+/** Explicit capability: older engines must not silently ignore the selected base surface. */
+export function parseBaseSurfaces(value: unknown): ("silhouette" | "stereo")[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter((item): item is "silhouette" | "stereo" => item === "silhouette" || item === "stereo");
 }

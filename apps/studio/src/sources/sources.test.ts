@@ -36,6 +36,17 @@ describe("normaliseEngineUrl", () => {
 });
 
 describe("HttpEngine", () => {
+  it("offers cached Gaussian refinement only when the host advertises it", async () => {
+    const { fetcher, requests } = fakeFetch((request) => request.url.endsWith("/api/health")
+      ? json({ can_start_runs: true, refine_runs: true, base_surfaces: ["silhouette", "stereo"] })
+      : json({ id: "refined" }, 201));
+    const engine = new HttpEngine("http://e", { fetcher });
+    expect(engine.openRun("parent").refine).toBeUndefined();
+    expect((await engine.health()).baseSurfaces).toEqual(["silhouette", "stereo"]);
+    expect(await engine.openRun("parent").refine!()).toBe("refined");
+    expect(requests.at(-1)).toMatchObject({ method: "POST", url: "http://e/api/runs/parent/refine" });
+  });
+
   it("reads health, settings and runs, tolerating fields it does not know", async () => {
     const { fetcher, requests } = fakeFetch((request) => {
       if (request.url.endsWith("/api/health")) return json({ schema: "crispmesh_dense_events_v1", device: "mps", can_start_runs: true, extra: 1 });

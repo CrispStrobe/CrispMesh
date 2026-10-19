@@ -37,11 +37,14 @@ also takes several turns (`--turntable-rings`, next section).
 
 ### Taking the photos
 
-**How many.** One turn of 36 photos (10 degree steps) is enough for every method; more add little. On the
+**How many.** On the tested 3DLF turntable captures, one evenly spaced turn of 36 photos
+(10-degree steps) worked with every method; this does not establish a minimum for handheld
+photos or other objects. Real captures need overlap and coverage rather than exact angles.
+The optional desktop capture route above recovers uneven camera paths. On the
 3DLF Bunny (F1 at 0.5 % above the support): 73 photos 0.964, 37 photos 0.961, 25 photos 0.926 (cameras still
 found; the Dragon's 25 were refused for too few points per view).
 
-**About 20 photos, with the neural surface.** At 19 photos (every 4th, about 19-degree steps) the depth maps
+**Historical stereo/neural comparison at about 20 photos.** At 19 photos (every 4th, about 19-degree steps) the depth maps
 fail but the cameras are often still right, and the neural surface (`--surface fast`) does not need
 neighbouring photos to match. Bunny, F1 at 0.5 / 1 / 2 % of the diagonal, whole object:
 
@@ -62,8 +65,8 @@ So below 25 photos per turn the landmark gate is lowered by default from 20 to 8
 photos are unchanged). At 19 photos the weakest correct views have only 9 to 12 observations. The ring checks
 still refuse wrong cameras: of six 3DLF objects at 19 photos, Bunny, Armadillo and Thai statue pass; Dragon and
 Lucy are refused (camera centres 7 to 8 % off the ring plane, gaps of 35 degrees), the Happy Buddha's turn is
-not found (182 degrees); the Bunny at 15 photos is refused (9 % off the plane, radius spread 8 %). So about 20
-photos work for objects with enough texture, 36 for all. More features do not rescue the failing cases: a four
+not found (182 degrees); the Bunny at 15 photos is refused (9 % off the plane, radius spread 8 %). In these dataset tests, about 20
+photos worked for sufficiently textured objects and 36 for all tested objects. More features do not rescue the failing cases: a four
 times lower contrast threshold found four times the features on the 19 Bunny photos (4 495 against 1 118 per
 photo) but only 1.8 times the matches; the descriptors do not recognise the points across that much rotation.
 
@@ -76,7 +79,10 @@ the fewest matches and passes at 20 degrees; the Dragon, Lucy and Happy Buddha h
 own observation counts at 19 photos agree (Bunny 456 and Armadillo 499 pass, Dragon 415 and Lucy 547 are refused):
 the failures are in the geometry of the whole turn, not a shortage of matches between neighbours. An apparent turn
 from the matches' horizontal motion reads 3 to 10 degrees for a true 20 degree step. The photo count chosen in
-*Take photos* (36 for every object, 20 with the neural surface) stays the guidance.
+*Take photos* still recommends 36; the 20-photo choice is labelled limited
+coverage. Refinement stays off until explicitly selected, including with few
+photos. The app now defaults to the silhouette route; the measurements above
+describe the retained stereo and neural alternatives.
 
 **With the app's camera.** *Take photos* (photos start, every platform: browser, Mac, iPhone, iPad) uses
 the device's camera. The camera stands still on a stand, the object turns. With *Auto* on, a photo is

@@ -2,7 +2,7 @@ import { engineText } from "../i18n";
 import { t } from "../i18n";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { fieldOfViewOf } from "../core/captureLens";
-import { fewPhotos, surfaceAutomatically } from "../core/fewPhotos";
+import { fewPhotos } from "../core/fewPhotos";
 import { humanise } from "../core/format";
 import {
   defaultFormValue,
@@ -49,15 +49,13 @@ export function NewRun({ engine, prefs, onChange }: Props) {
   const [form, setForm] = useState<FormValues>({});
   const [texture, setTexture] = useState(false);
   // Optional photo-optimised surfaces: quality level per method ("" = off) and single numeric settings.
+  const [baseSurface, setBaseSurface] = useState<"silhouette" | "stereo">("silhouette");
   const [methodQuality, setMethodQuality] = useState<Record<string, string>>({});
   const [methodSettings, setMethodSettings] = useState<Record<string, Record<string, string>>>({});
   // Number of photos chosen, where the form knows it (picked here, taken with the camera, copied in); null for a typed path.
   const [photoCount, setPhotoCount] = useState<number | null>(() =>
     engine.kind === "browser" ? ((engine as BrowserEngine).pickedPhotos()?.files.length ?? null) : null,
   );
-  // The neural surface was switched on because of few photos (once per form; `surfaceDecided` keeps it from happening again).
-  const [surfaceSwitched, setSurfaceSwitched] = useState(false);
-  const surfaceDecided = useRef(false);
   const captureUsedForeground = useRef(false);
   const [name, setName] = useState("");
   const [values, setValues] = useState<Record<string, string>>({ inputs: engine.kind === "browser" ? ((engine as BrowserEngine).inputs()?.name ?? "") : prefs.inputs });
@@ -105,8 +103,9 @@ export function NewRun({ engine, prefs, onChange }: Props) {
       if (value.trim() !== "" && !Number.isFinite(Number(value))) methodErrors[`${method.id}.${settingName}`] = t("newRun.number");
     }
   }
+  const supportsBase = health?.baseSurfaces?.includes("silhouette") && health.baseSurfaces.includes("stereo");
   const methodBody = (): Record<string, unknown> => {
-    const body: Record<string, unknown> = {};
+    const body: Record<string, unknown> = supportsBase ? { base_surface: baseSurface } : {};
     for (const method of methods) {
       const quality = methodQuality[method.id] ?? "";
       if (quality === "") continue;
@@ -117,16 +116,9 @@ export function NewRun({ engine, prefs, onChange }: Props) {
     }
     return body;
   };
-  // Fewer than 25 photos per turn: the ordinary mesh gets rough, the neural surface (fast) copes with about 20.
+  // Warn about sparse coverage while keeping refinement opt-in.
   const few = point.fields.some((field) => field.key === "photos") && fewPhotos(photoCount, providerOptions["turntable-rings"], providerOptions["turntable-turn-sizes"]);
   const surfaceOffered = methods.some((method) => method.id === "surface" && method.qualities.some((level) => level.id === "fast"));
-  useEffect(() => {
-    const choice = surfaceAutomatically({ few, offered: surfaceOffered, quality: methodQuality.surface ?? "", decided: surfaceDecided.current });
-    surfaceDecided.current = choice.decided;
-    if (!choice.switchOn) return;
-    setMethodQuality((current) => ({ ...current, surface: "fast" }));
-    setSurfaceSwitched(true);
-  }, [few, surfaceOffered]);
   const choosesDevice = health?.choosesDevice !== false;
   const scoresReference = health?.scoresReference !== false;
   const capturedTurns = (sizes: number[]) => setProviderOptions((current) => ({
@@ -135,9 +127,9 @@ export function NewRun({ engine, prefs, onChange }: Props) {
   const clearCapturedPhotos = () => {
     capturedTurns([]);
     if (captureUsedForeground.current) {
-      setProviders(current => ({ ...current, masks: "threshold" }));
+      setProviders(current => { const reset = { ...current }; delete reset.masks; return reset; });
       setValues(current => ({ ...current, masks_import: "" }));
-      setProviderOptions(current => ({ ...current, "object-crop-padding": "-1" }));
+      setProviderOptions(current => { const reset = { ...current }; delete reset["object-crop-padding"]; return reset; });
       captureUsedForeground.current = false;
     }
   };
@@ -329,9 +321,9 @@ export function NewRun({ engine, prefs, onChange }: Props) {
                       setField("masks_import",foreground.folder);
                       setProviderOptions(current=>({...current,"object-crop-padding":String(foreground.padding)}));
                     } else if (captureUsedForeground.current) {
-                      setProviders(current=>({...current,masks:"threshold"}));
+                      setProviders(current => { const reset = { ...current }; delete reset.masks; return reset; });
                       setField("masks_import","");
-                      setProviderOptions(current=>({...current,"object-crop-padding":"-1"}));
+                      setProviderOptions(current => { const reset = { ...current }; delete reset["object-crop-padding"]; return reset; });
                     }
                     captureUsedForeground.current = foreground !== undefined;
                     // Photos from this device's camera have no lens file: the camera's field of view where the app
@@ -436,6 +428,15 @@ export function NewRun({ engine, prefs, onChange }: Props) {
           </p>
         )}
 
+        {supportsBase && <div class="field">
+          <label class="field-label" for="f-base-surface">{t("newRun.baseSurface")}</label>
+          <select id="f-base-surface" value={baseSurface} onChange={(event) => setBaseSurface(event.currentTarget.value as "silhouette" | "stereo")}>
+            <option value="silhouette">{t("newRun.baseSilhouette")}</option>
+            <option value="stereo">{t("newRun.baseStereo")}</option>
+          </select>
+          <span class="sub">{t("newRun.baseHelp")}</span>
+        </div>}
+
         {methods.length > 0 && (
           <fieldset class="methods">
             <legend>{t("newRun.surfaces")}</legend>
@@ -443,7 +444,6 @@ export function NewRun({ engine, prefs, onChange }: Props) {
             {few && surfaceOffered && (
               <p class="notice warn" role="status">
                 {t("newRun.fewSurface")}
-                {surfaceSwitched && methodQuality.surface === "fast" && t("newRun.autoSwitched")}
               </p>
             )}
             {methods.map((method) => {
@@ -547,7 +547,7 @@ export function NewRun({ engine, prefs, onChange }: Props) {
         {serverError !== null && (
           <div class="notice bad" role="alert" id="server-error" tabIndex={-1}>
             <p>
-              <strong>{t("newRun.refused")}</strong> {serverError.message}
+              <strong>{t("newRun.refused")}</strong> {engineText(serverError.message)}
             </p>
           </div>
         )}

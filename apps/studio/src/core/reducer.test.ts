@@ -142,6 +142,17 @@ describe("reduce on the recorded sphere run", () => {
 });
 
 describe("reduce on things the contract allows to change", () => {
+  it("clears previous attempt errors when a run resumes", () => {
+    let state = reduce(initialState(), event("run_started", {}));
+    state = reduce(state, event("error", { message: "free-space reserve reached" }, 1));
+    state = reduce(state, event("run_finished", { status: "failed" }, 2));
+    expect(state.errors).toHaveLength(1);
+    state = reduce(state, event("run_started", { configuration: { base_surface: "silhouette" } }, 3));
+    expect(state.errors).toEqual([]);
+    expect(state.status).toBe("running");
+    expect(state.stages.some(stage => stage.name === "hull")).toBe(true);
+  });
+
   it("ignores unknown event types, artifact kinds and fields", () => {
     const started = reduce(initialState(), event("run_started", { schema: "crispmesh_dense_events_v1", brand_new_field: [1, 2] }));
     let state = started;

@@ -24,6 +24,8 @@ pub struct Settings {
     pub weights: Weights,
     /// Fusion grid of the mesh.
     pub mesh: usize,
+    /// Exact subtree-box pruning; false retains the original plane-bound search.
+    pub hull_bounds: bool,
     /// Start from these splats (`splats.npz` of a run) instead of the hull.
     pub init: Option<std::path::PathBuf>,
 }
@@ -35,6 +37,7 @@ impl Settings {
         use crate::surface::options::Quality;
         let standard = Settings::default();
         match quality {
+            Quality::Capture => Settings { steps: 3000, mesh: 192, ..standard },
             Quality::Fast => Settings { steps: 10000, mesh: 384, ..standard },
             Quality::Standard => standard,
             Quality::Best => Settings { mesh: 768, ..standard },
@@ -51,6 +54,7 @@ impl Settings {
             "log" => self.log_every = int()?,
             "seed" => self.seed = int()? as u64,
             "mesh" => self.mesh = int()? as usize,
+            "hull_bounds" => self.hull_bounds = value.parse().map_err(|_| anyhow::anyhow!("hull_bounds must be true or false"))?,
             "sh" => self.sh_degree = int()?.min(3),
             "hold" => self.hold_every = int()? as usize,
             "init" => self.init = Some(std::path::PathBuf::from(value)),
@@ -76,6 +80,7 @@ impl Default for Settings {
             sh_degree: 3,
             weights: Weights::default(),
             mesh: 512,
+            hull_bounds: true,
             init: None,
         }
     }
@@ -316,9 +321,32 @@ pub async fn mesh(
     band: f32,
     path: &Path,
 ) -> Result<usize> {
+    mesh_profiled(gpu, kernels, splats, scene, degree, resolution, band, true, path, &|_| {}).await.map(|(triangles, _)| triangles)
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn mesh_profiled(
+    gpu: &Gpu,
+    kernels: &Kernels,
+    splats: &Splats,
+    scene: &Scene,
+    degree: u32,
+    resolution: usize,
+    band: f32,
+    hull_bounds: bool,
+    path: &Path,
+    say: &impl Fn(&str),
+) -> Result<(usize, serde_json::Value)> {
     use rayon::prelude::*;
+    let start = web_time::Instant::now();
     let hull_resolution = 160;
-    let hull = crate::surface::train::hull_grid_checked(scene, hull_resolution, band as f64);
+    let hull = if hull_bounds {
+        crate::surface::train::hull_grid_checked_bounded(scene, hull_resolution, band as f64)
+    } else {
+        crate::surface::train::hull_grid_checked(scene, hull_resolution, band as f64)
+    };
+    let hull_seconds = start.elapsed().as_secs_f64();
+    say(&format!("mesh: hull distance grid {hull_seconds:.2}s"));
     let size = 2.0 / resolution as f32;
     let centre = |i: usize| (i as f32 + 0.5) * size - 1.0;
     let r = resolution;
@@ -336,7 +364,8 @@ pub async fn mesh(
         })
         .collect();
     let fuse = gpu.kernel("splat_fuse", include_str!("../shaders/splat_fuse.wgsl"), "main").await?;
-    for view in &scene.views {
+    let fuse_start = web_time::Instant::now();
+    for (view_index, view) in scene.views.iter().enumerate() {
         let cam = camera(view);
         let mut frame = Frame::new(gpu, splats.count, &cam);
         render(gpu, kernels, splats, &cam, degree, &mut frame).await?;
@@ -354,12 +383,17 @@ pub async fn mesh(
             let uniform = gpu.uniform("splat fuse", &params);
             gpu.run(&fuse, &[&uniform, list, &frame.pixels, sums], *count as u64).await?;
         }
+        if view_index % 16 == 0 {
+            say(&format!("mesh: fused view {}/{}", view_index + 1, scene.views.len()));
+        }
     }
     let mut sums = Vec::with_capacity(voxels.len() * 3);
     for (count, _, buffer) in &parts {
         sums.extend(gpu.read::<f32>(buffer, *count as usize * 3).await?);
     }
     drop(parts);
+    let fuse_seconds = fuse_start.elapsed().as_secs_f64();
+    let contour_start = web_time::Instant::now();
     let mut field: Vec<f32> = hull_value.iter().map(|h| if *h < 0.0 { -1.0 } else { 1.0 }).collect();
     drop(hull_value);
     for (i, n) in voxels.iter().enumerate() {
@@ -373,8 +407,10 @@ pub async fn mesh(
         };
     }
     let mesh = crate::mesh::cubes::extract(&field, [r; 3], 1);
+    let timings = serde_json::json!({"hull_grid_seconds": hull_seconds, "view_fusion_seconds": fuse_seconds,
+        "contour_seconds": contour_start.elapsed().as_secs_f64(), "total_seconds": start.elapsed().as_secs_f64()});
     if mesh.faces.is_empty() {
-        return Ok(0);
+        return Ok((0, timings));
     }
     let vertices: Vec<[f64; 3]> = mesh
         .vertices
@@ -382,7 +418,7 @@ pub async fn mesh(
         .map(|v| std::array::from_fn(|i| ((v[i] as f64 + 0.5) * size as f64 - 1.0) / scene.unit + scene.centre[i]))
         .collect();
     crate::stl::write_binary(path, "crispmesh 2d splats (webgpu)", &vertices, &mesh.faces)?;
-    Ok(mesh.faces.len())
+    Ok((mesh.faces.len(), timings))
 }
 
 /// Trains splats on a scene and writes `splats.npz`, held-out renders and `summary.json` into `out`. Progress to stdout.
@@ -536,7 +572,9 @@ pub async fn train_with(
         }
     }
     let train_seconds = start.elapsed().as_secs_f64();
+    let evaluation_start = web_time::Instant::now();
     let psnr = evaluate(gpu, &kernels, &splats, scene, &held, settings.sh_degree, Some(out)).await?;
+    let evaluation_seconds = evaluation_start.elapsed().as_secs_f64();
     let mut sorted = psnr.clone();
     sorted.sort_by(f64::total_cmp);
     let median = sorted.get(sorted.len() / 2).copied().unwrap_or(f64::NAN);
@@ -544,10 +582,23 @@ pub async fn train_with(
     let rows: Vec<f32> = gpu.read(&splats.params, splats.count as usize * PARAMS as usize).await?;
     let array = crate::npz::Array::new(&[splats.count as usize, PARAMS as usize], crate::npz::Data::F32(rows));
     crate::npz::write(&out.join("splats.npz"), &[("params", &array)], false)?;
-    let triangles = mesh(gpu, &kernels, &splats, scene, settings.sh_degree, settings.mesh, 0.05, &out.join("mesh.stl")).await?;
+    let (triangles, mesh_timings) = mesh_profiled(
+        gpu,
+        &kernels,
+        &splats,
+        scene,
+        settings.sh_degree,
+        settings.mesh,
+        0.05,
+        settings.hull_bounds,
+        &out.join("mesh.stl"),
+        &|line| log(&start, line),
+    )
+    .await?;
     log(&start, &format!("mesh: {triangles} triangles"));
-    let summary = serde_json::json!({"steps": settings.steps, "views": scene.views.len(), "held_out": held.len(), "splats": splats.count,
-        "train_seconds": train_seconds, "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "heldout_psnr_in_mask_median": median, "heldout_psnr_in_mask": psnr, "adapter": gpu.describe(), "history": history});
+    let summary = serde_json::json!({"steps": settings.steps, "seed": settings.seed, "views": scene.views.len(), "held_out": held.len(), "splats": splats.count,
+        "train_seconds": train_seconds, "evaluation_seconds": evaluation_seconds, "mesh_timings": mesh_timings, "hull_bounds": settings.hull_bounds,
+        "seconds": start.elapsed().as_secs_f64(), "triangles": triangles, "heldout_psnr_in_mask_median": median, "heldout_psnr_in_mask": psnr, "adapter": gpu.describe(), "history": history});
     crate::storage::write(out.join("summary.json"), serde_json::to_string_pretty(&summary)?)?;
     log(&start, &format!("done: {} splats, training {train_seconds:.0}s, held-out PSNR in the mask median {median:.2} dB", splats.count));
     Ok(splats)
@@ -558,9 +609,9 @@ pub async fn train_with(
 pub fn main(arguments: &[String]) -> Result<()> {
     use anyhow::{anyhow, bail};
     const USAGE: &str =
-        "usage: crispmesh-dense splats SOURCE OUT [quality=fast|standard|best] [steps=N stop=N log=N seed=N mesh=N sh=DEGREE \
-hold=N init=SPLATS.npz l1=X ssim=X mask=X normal=X distortion=X] [hull_mesh=STL photos=DIR masks=DIR div=N crop=PIXELS]
-SOURCE as for `crispmesh-dense surface` (crop: 480 fast, 720 standard, 1080 best). The quality level sets the
+        "usage: crispmesh-dense splats SOURCE OUT [quality=capture|fast|standard|best] [steps=N stop=N log=N seed=N mesh=N sh=DEGREE \
+hold=N init=SPLATS.npz hull_bounds=true|false l1=X ssim=X mask=X normal=X distortion=X] [hull_mesh=STL photos=DIR masks=DIR div=N crop=PIXELS]
+SOURCE as for `crispmesh-dense surface` (crop: 320 capture, 480 fast, 720 standard, 1080 best). The quality level sets the
 defaults; single settings after it override them.";
     ensure!(arguments.len() >= 2, "{USAGE}");
     let (source, out) = (std::path::PathBuf::from(&arguments[0]), std::path::PathBuf::from(&arguments[1]));

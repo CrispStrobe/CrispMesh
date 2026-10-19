@@ -13,7 +13,7 @@ import { normaliseEvent, type RunEvent } from "../core/events";
 import { parseSettingsSchema, type SettingSpec } from "../core/settings";
 import { parseStartPoints, type StartPoint } from "../core/startPoints";
 import type { FromWorker, WorkerLike } from "../browser/protocol";
-import { parseMethods } from "./localEngine";
+import { parseMethods, parseBaseSurfaces } from "./localEngine";
 import {
   EngineError,
   type Engine,
@@ -432,6 +432,7 @@ export class BrowserEngine implements Engine {
       startPoints: this.currentStartPoints(),
       choosesDevice: false,
       scoresReference: false,
+      baseSurfaces: parseBaseSurfaces((described as { base_surfaces?: unknown } | null | undefined)?.base_surfaces),
       methods: parseMethods((described as { methods?: unknown } | null | undefined)?.methods),
     };
   }
@@ -539,6 +540,7 @@ export class BrowserEngine implements Engine {
 /** The optional photo-optimised surfaces of a start body (`surface`, `splats`: `{quality, settings}`), as run options. */
 export function methodOptions(body: Record<string, unknown>): Record<string, unknown> {
   const options: Record<string, unknown> = {};
+  if (body.base_surface === "silhouette" || body.base_surface === "stereo") options.base_surface = body.base_surface;
   for (const id of ["surface", "splats"]) {
     const method = body[id] as { quality?: unknown; settings?: unknown } | undefined;
     if (typeof method !== "object" || method === null || typeof method.quality !== "string") continue;

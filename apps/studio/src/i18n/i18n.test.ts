@@ -112,6 +112,15 @@ it("translates known engine captions at render time without changing extension t
   expect(engineText("Cameras")).toBe("Cameras");
 });
 
+it("translates known engine refusals after sentence formatting", () => {
+  const sentence = "A reconstruction is already running on this engine.";
+  setLanguage("de");
+  expect(engineText(sentence)).toBe("Auf dieser Engine läuft bereits eine Rekonstruktion");
+  expect(engineText("Custom engine description.")).toBe("Custom engine description.");
+  setLanguage("en");
+  expect(engineText(sentence)).toBe(sentence);
+});
+
 
 it("translates dense settings without changing their engine identifiers", async () => {
   const { default: schema } = await import("../../../../crates/dense/settings-schema.json");
@@ -126,4 +135,12 @@ it("translates dense settings without changing their engine identifiers", async 
     expect(engineText(spec.name)).toBe(spec.name);
     expect(engineText(spec.meaning)).toBe(spec.meaning);
   }
+});
+
+it("keeps failure log names while translating capture errors", () => {
+  setLanguage("de");
+  expect(engineText("refine-masks failed; see refine-masks.log")).toBe("Die Verarbeitung ist fehlgeschlagen; siehe refine-masks.log.");
+  expect(engineText("recovered scene changed; start from the original photos again")).toBe("Die gespeicherten Eingaben wurden verändert; bitte erneut mit den Originalfotos beginnen");
+  setLanguage("en");
+  expect(engineText("refine-masks failed; see refine-masks.log")).toBe("refine-masks failed; see refine-masks.log");
 });

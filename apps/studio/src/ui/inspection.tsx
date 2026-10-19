@@ -2,7 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Inspection } from "../core/reducer";
 import type { RunSource } from "../sources/types";
 import { useImageUrl } from "./gallery";
-import { t } from "../i18n";
+import { engineText, t } from "../i18n";
 
 interface Props {
   source: RunSource;
@@ -32,7 +32,7 @@ export function InspectionPanel({ source, steps }: Props) {
       <div class="panel-head">
         <h2 id="inspection-heading">{t("run.inspection.heading")}</h2>
         <span class="sub">
-          {t("run.inspection.position", { index: index + 1, total: steps.length, label: current.label })}
+          {t("run.inspection.position", { index: index + 1, total: steps.length, label: engineText(current.label) })}
         </span>
       </div>
       <div class="inspection-steps" role="tablist" aria-label={t("run.inspection.steps")}>
@@ -45,7 +45,7 @@ export function InspectionPanel({ source, steps }: Props) {
             aria-selected={position === index}
             onClick={() => go(position)}
           >
-            {step.label}
+            {engineText(step.label)}
           </button>
         ))}
       </div>
@@ -66,7 +66,7 @@ function InspectionImage({ source, step }: { source: RunSource; step: Inspection
   const { url, failed } = useImageUrl(source, step.path);
   return (
     <div class="inspection-frame">
-      {url !== undefined && !failed ? <img src={url} alt={t("run.inspection.alt", { label: step.label })} /> : <span class="sheet-placeholder">{failed ? t("run.image.unavailable") : t("run.image.loading")}</span>}
+      {url !== undefined && !failed ? <img src={url} alt={t("run.inspection.alt", { label: engineText(step.label) })} /> : <span class="sheet-placeholder">{failed ? t("run.image.unavailable") : t("run.image.loading")}</span>}
     </div>
   );
 }

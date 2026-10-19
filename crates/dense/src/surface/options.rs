@@ -17,6 +17,8 @@ use super::train::{load_pack, scene_from_inputs, Scene};
 /// Speed against detail.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Quality {
+    /// Bounded real-capture preset: 3,000 steps, 320-pixel crops, 192-cell mesh.
+    Capture,
     /// A preview in minutes: fewer steps, photos reduced to about 480 pixels across the object, coarser mesh.
     Fast,
     /// The reference runs' settings (the default).
@@ -29,10 +31,11 @@ impl FromStr for Quality {
     type Err = anyhow::Error;
     fn from_str(text: &str) -> Result<Self> {
         match text {
+            "capture" => Ok(Quality::Capture),
             "fast" => Ok(Quality::Fast),
             "standard" => Ok(Quality::Standard),
             "best" => Ok(Quality::Best),
-            _ => bail!("quality must be fast, standard or best, not {text}"),
+            _ => bail!("quality must be capture, fast, standard or best, not {text}"),
         }
     }
 }
@@ -40,6 +43,7 @@ impl FromStr for Quality {
 impl Quality {
     pub fn name(self) -> &'static str {
         match self {
+            Quality::Capture => "capture",
             Quality::Fast => "fast",
             Quality::Standard => "standard",
             Quality::Best => "best",
@@ -64,6 +68,7 @@ pub struct Source {
 impl Source {
     pub fn for_quality(quality: Quality, best_crop: usize) -> Self {
         let crop = match quality {
+            Quality::Capture => 320,
             Quality::Fast => 480,
             Quality::Standard => 720,
             Quality::Best => best_crop,

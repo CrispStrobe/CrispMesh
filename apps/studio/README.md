@@ -4,6 +4,14 @@ The front end for CrispMesh's photo-to-STL reconstruction. It shows a run as it
 happens: the stages, the surface getting better step by step in a 3D view, the
 diagnostic sheets, and the numbers.
 
+New runs default to a silhouette surface, with stereo depth available as an
+alternative. Gaussian refinement is off initially; its first enabled preset is
+Capture (3,000 steps / crop 320 / mesh 192). Both English and German controls
+are provided. A configured desktop capture host can recover masks and cameras
+from original photos at uneven angles and expose cached-scene refinement to
+the app; see [setup](../../scripts/photo_regression/README.md#automatic-real-capture-route).
+That external learned-camera path is not bundled into the iOS native engine.
+
 It gets its runs in four ways, all behind one interface and all following
 [`docs/ENGINE-CONTRACT.md`](../../docs/ENGINE-CONTRACT.md):
 

@@ -124,6 +124,7 @@ pub struct StartBody {
     pub attribution: Option<String>,
     /// Tuning options of the photos stage, one word per element. Never a place or a program.
     pub photo_options: Vec<String>,
+    pub base_surface: crispmesh_dense::run::BaseSurface,
     pub settings: Map<String, Value>,
     pub texture: bool,
     /// The neural surface and the 2D splats after the mesh (`{"quality": "standard", "settings": ["crop=600"]}`), as
@@ -603,7 +604,7 @@ impl Native {
         }
         let mut options = RunOptions {
             output: self.runs().join(id), settings: body.settings.clone(), texture: body.texture,
-            attribution: body.attribution.clone(), surface: body.surface.clone(), splats: body.splats.clone(), ..RunOptions::default()
+            attribution: body.attribution.clone(), surface: body.surface.clone(), splats: body.splats.clone(), base_surface: body.base_surface, ..RunOptions::default()
         };
         for (name, method) in [("surface", &options.surface), ("splats", &options.splats)] {
             if let Some(method) = method {
@@ -1212,6 +1213,10 @@ mod tests {
         let options = engine.options(&request, "id").unwrap();
         assert_eq!(options.surface.as_ref().map(|m| m.quality.as_str()), Some("fast"));
         assert_eq!(options.splats, None);
+        assert_eq!(options.base_surface, crispmesh_dense::run::BaseSurface::Silhouette);
+        let mut stereo = request.clone();
+        stereo.base_surface = crispmesh_dense::run::BaseSurface::Stereo;
+        assert_eq!(engine.options(&stereo, "stereo").unwrap().base_surface, crispmesh_dense::run::BaseSurface::Stereo);
         // Only numeric single settings: the methods' path settings would reach past the chosen folders.
         let mut bad = request.clone();
         bad.splats = Some(crispmesh_dense::run::Method { quality: "standard".into(), settings: vec!["init=/etc/passwd".into()] });

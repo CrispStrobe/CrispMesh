@@ -10,7 +10,7 @@ import { t } from "../i18n";
 import { normaliseEvent, type RunEvent } from "../core/events";
 import { parseSettingsSchema, type SettingSpec } from "../core/settings";
 import { parseStartPoints } from "../core/startPoints";
-import { parseMethods } from "./localEngine";
+import { parseMethods, parseBaseSurfaces } from "./localEngine";
 import { browserFetch, describe, encodePath, headSize, isAbort, readBytes, request, type FetchLike } from "./transport";
 import {
   EngineError,
@@ -36,6 +36,7 @@ const systemTimer: Timer = {
 };
 
 export interface HttpOptions {
+  refineRuns?: boolean;
   token?: string;
   /** Shown instead of the address (the desktop app's own engine is "This computer"). */
   label?: string;
@@ -96,6 +97,7 @@ export class HttpEngine implements Engine {
    * Photos taken on this device, sent to the engine's data folder one by one (`POST /api/uploads`, an engine that
    * says `uploads` in its health answer, such as a desktop app that lets other devices use it). Set by `health`.
    */
+  private refineRuns = false;
   saveCapture?: (folder: string, files: File[], onProgress?: (done: number, total: number) => void) => Promise<string>;
 
   private async upload(folder: string, files: File[], onProgress?: (done: number, total: number) => void): Promise<string> {
@@ -118,13 +120,17 @@ export class HttpEngine implements Engine {
     if (typeof body !== "object" || body === null || (body.schema === undefined && body.can_start_runs === undefined)) {
       throw new EngineError(t("engine.notCrispMesh"), 0);
     }
+    this.refineRuns = body.refine_runs === true;
     this.saveCapture = body.uploads === true ? (folder, files, onProgress) => this.upload(folder, files, onProgress) : undefined;
     return {
       schema: typeof body.schema === "string" ? body.schema : undefined,
       device: typeof body.device === "string" ? body.device : undefined,
       canStartRuns: body.can_start_runs === true,
+      choosesDevice: body.chooses_device === false ? false : undefined,
+      scoresReference: body.scores_reference === false ? false : undefined,
       // An engine may say how runs can start there; otherwise the contract's three ways apply.
       startPoints: parseStartPoints(body.start_points).length > 0 ? parseStartPoints(body.start_points) : undefined,
+      baseSurfaces: parseBaseSurfaces(body.base_surfaces),
       ...(Array.isArray(body.methods) ? { methods: parseMethods(body.methods) } : {}),
     };
   }
@@ -185,13 +191,14 @@ export class HttpEngine implements Engine {
   }
 
   openRun(id: string): RunSource {
-    return new HttpRunSource(this.base, id, this.options);
+    return new HttpRunSource(this.base, id, { ...this.options, refineRuns: this.refineRuns });
   }
 }
 
 export class HttpRunSource implements RunSource {
   readonly kind = "http" as const;
   readonly title: string;
+  refine?: () => Promise<string>;
   private readonly root: string;
   private readonly fetcher: FetchLike;
   private readonly timer: Timer;
@@ -212,6 +219,12 @@ export class HttpRunSource implements RunSource {
     this.root = `${base}/api/runs/${encodeURIComponent(id)}`;
     this.title = id;
     this.token = options.token || undefined;
+    if (options.refineRuns) this.refine = async () => {
+      const response = await request(this.fetcher, `${this.root}/refine`, { method: "POST", headers: this.headers() });
+      const body = await response.json() as { id?: unknown };
+      if (typeof body.id !== "string") throw new EngineError(t("engine.noRunId"), 0);
+      return body.id;
+    };
     this.fetcher = options.fetcher ?? browserFetch;
     this.timer = options.timer ?? systemTimer;
     this.clock = options.clock ?? (() => Date.now() / 1000);

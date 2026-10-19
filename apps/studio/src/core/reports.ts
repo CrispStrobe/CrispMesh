@@ -21,7 +21,7 @@ export interface ReportSection {
 }
 
 export interface ReportSummary {
-  kind: "mesh" | "photo_check" | "scan" | "unknown";
+  kind: "mesh" | "photo_check" | "camera_recovery" | "scan" | "unknown";
   sections: ReportSection[];
   warnings: string[];
   notes: string[];
@@ -51,10 +51,45 @@ export function summariseReport(json: unknown): ReportSummary {
     }
     if (record(root.silhouette_iou_input_masks) !== undefined) return photoCheck(root);
     if (typeof root.closed === "boolean" && num(root.triangles) !== undefined) return mesh(root);
+    const cameras = cameraRecovery(root);
+    if (cameras) return cameras;
   } catch {
     // fall through to the raw view
   }
   return { ...empty, warnings: strings(root.warnings) };
+}
+
+function cameraRecovery(root: Json): ReportSummary | undefined {
+  const minimumCoverage = num(root.minimum_registered_fraction);
+  const minimumSupport = num(root.minimum_sparse_mask_support);
+  const minimumGeometry = num(root.minimum_base_mask_iou);
+  if (root.minimum_base_mask_iou !== undefined && (minimumGeometry === undefined || minimumGeometry < 0 || minimumGeometry > 1)) return undefined;
+  if (!Array.isArray(root.candidates) || typeof root.selected !== "string" || minimumCoverage === undefined || minimumSupport === undefined ||
+      minimumCoverage < 0 || minimumCoverage > 1 || minimumSupport < 0 || minimumSupport > 1) return undefined;
+  const candidates = root.candidates.map(record).filter((row): row is Json => row !== undefined);
+  if (candidates.length !== root.candidates.length || !candidates.some(row => row.path === root.selected) || candidates.some(row => {
+    const count = num(row.registered), total = num(row.accepted), support = num(row.sparse_mask_support);
+    return typeof row.path !== "string" || count === undefined || total === undefined || !Number.isInteger(count) || !Number.isInteger(total) ||
+      count < 0 || total < 1 || count > total || (row.sparse_mask_support != null && (support === undefined || support < 0 || support > 1));
+  })) return undefined;
+  const label = (path: string) => path === "cameras" ? t("run.report.cameraTight") :
+    path === "cameras-context" ? t("run.report.cameraContext") : path === "cameras-hybrid" ? t("run.report.cameraHybrid") : path;
+  const sections: ReportSection[] = [{ rows: [{ label: t("run.report.cameraSelected"), value: label(root.selected) }] }];
+  for (const row of candidates) {
+    const count = row.registered as number, total = row.accepted as number, support = num(row.sparse_mask_support);
+    const coveragePassed = count >= Math.ceil(total * minimumCoverage), supportPassed = support !== undefined && support >= minimumSupport;
+    const dropped = num(row.removed_weak_views);
+    const geometry = num(row.base_mask_iou);
+    const geometryPassed = minimumGeometry === undefined || (geometry !== undefined && geometry >= minimumGeometry);
+    sections.push({ title: label(row.path as string), rows: [
+      { label: t("run.report.cameraCoverage"), value: t("run.report.viewsOf", { views: formatCount(count), total: formatCount(total) }), tone: coveragePassed ? "good" : "bad" },
+      { label: t("run.report.cameraSupport"), value: support === undefined ? "—" : formatPercent(support, 1), tone: supportPassed ? "good" : "bad" },
+      ...(minimumGeometry !== undefined ? [{ label: t("run.report.cameraGeometry"), value: geometry === undefined ? "—" : formatPercent(geometry, 1), tone: geometryPassed ? "good" as const : "bad" as const }] : []),
+      ...(dropped !== undefined && Number.isInteger(dropped) && dropped > 0 ? [{ label: t("run.report.cameraDropped"), value: formatCount(dropped) }] : []),
+      { label: t("run.report.cameraGate"), value: yesNo(coveragePassed && supportPassed && geometryPassed), tone: coveragePassed && supportPassed && geometryPassed ? "good" : "bad" },
+    ] });
+  }
+  return { kind: "camera_recovery", sections, warnings: [], notes: [t("run.report.cameraNote")] };
 }
 
 function mesh(root: Json): ReportSummary {

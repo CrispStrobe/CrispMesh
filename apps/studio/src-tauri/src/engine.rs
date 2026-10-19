@@ -101,6 +101,9 @@ pub fn arguments(resolved: &Resolved, port: u16, token: Option<&str>) -> Vec<Str
         arguments.push(flag.to_string());
         arguments.push(value);
     }
+    if let Ok(tools) = std::env::var("CRISPMESH_CAPTURE_TOOLS") {
+        if !tools.is_empty() { arguments.extend(["--capture-tools".into(), tools]); }
+    }
     arguments
 }
 

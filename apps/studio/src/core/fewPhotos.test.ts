@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fewPhotos, photosPerTurn, surfaceAutomatically } from "./fewPhotos";
+import { fewPhotos, photosPerTurn } from "./fewPhotos";
 
 describe("photos per turn", () => {
   it("is unknown when the count is, or below three photos", () => {
@@ -28,28 +28,6 @@ describe("photos per turn", () => {
     expect(fewPhotos(36)).toBe(false);
     expect(fewPhotos(120, "5")).toBe(true);
     expect(fewPhotos(125, "5")).toBe(false);
-  });
-});
-
-describe("switching the neural surface on by itself", () => {
-  const start = { few: true, offered: true, quality: "", decided: false };
-
-  it("switches it on once when there are few photos and it is off", () => {
-    expect(surfaceAutomatically(start)).toEqual({ decided: true, switchOn: true });
-  });
-
-  it("does nothing for enough or unknown photos, or when the engine has no neural surface", () => {
-    expect(surfaceAutomatically({ ...start, few: false })).toEqual({ decided: false, switchOn: false });
-    expect(surfaceAutomatically({ ...start, offered: false })).toEqual({ decided: false, switchOn: false });
-  });
-
-  it("leaves a level chosen by hand alone, and then never decides again", () => {
-    expect(surfaceAutomatically({ ...start, quality: "standard" })).toEqual({ decided: true, switchOn: false });
-  });
-
-  it("does not switch it on again after it was switched off by hand", () => {
-    // Switched on automatically, then off by hand, then other few photos chosen.
-    expect(surfaceAutomatically({ ...start, decided: true })).toEqual({ decided: true, switchOn: false });
   });
 });
 

@@ -2,7 +2,7 @@
 //! for the `--inputs` and `--scene`/`--prepared`/`--raw-masks` starting points.
 //!
 //! Stages run in order on the calling thread: `inputs` (only from a scene),
-//! `stereo`, `mesh`, `check`. Preview volumes written while matching runs are
+//! `hull` (or optional `stereo`), `mesh`, optional photo refinement, `check`. Preview volumes written while matching runs are
 //! meshed coarsely on a worker thread. The run directory follows
 //! `docs/ENGINE-CONTRACT.md`: `config.json`, `events.jsonl` (always closed by
 //! `run_finished` once `run_started` was written), `pipeline.json`, a `cancel`
@@ -32,6 +32,15 @@ use crate::render::Rgb;
 use crate::scene::{self, read_gray};
 use crate::stereo;
 
+/// Interchangeable base reconstruction paths. Gaussian/neural refinement is optional.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BaseSurface {
+    #[default]
+    Silhouette,
+    Stereo,
+}
+
 /// What to run. Either `inputs`, or all of `scene`, `prepared` and `raw_masks`.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -54,6 +63,7 @@ pub struct RunOptions {
     /// `--calibration FILE`, `--masks PROVIDER`, `--cameras PROVIDER` and the
     /// providers' own options, one word per element.
     pub photo_options: Vec<String>,
+    pub base_surface: BaseSurface,
     /// JSON with settings (a `config.json` or a previous `result.json`).
     pub config: Option<PathBuf>,
     /// A named set of settings applied before `overrides` (`detail`; see [`PRESETS`]).
@@ -89,13 +99,19 @@ pub struct RunOptions {
     pub splats: Option<Method>,
 }
 
-/// An optional photo-optimised surface of a run: its quality level (`fast`, `standard`, `best`) and single settings
+/// An optional photo-optimised surface of a run: its quality level (`capture`, `fast`, `standard`, `best`) and single settings
 /// (`NAME=VALUE`, as for `crispmesh-dense surface` / `splats`) applied after the level's.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct Method {
     pub quality: String,
     pub settings: Vec<String>,
+}
+
+impl Default for Method {
+    fn default() -> Self {
+        Self { quality: "capture".into(), settings: Vec::new() }
+    }
 }
 
 impl Method {
@@ -123,6 +139,7 @@ impl Default for RunOptions {
             raw_masks: None,
             photos: None,
             photo_options: Vec::new(),
+            base_surface: BaseSurface::default(),
             config: None,
             preset: None,
             overrides: Vec::new(),
@@ -145,15 +162,26 @@ impl Default for RunOptions {
 }
 
 impl RunOptions {
+    fn silhouette_only(&self) -> bool {
+        self.base_surface == BaseSurface::Silhouette
+    }
+
     /// The resolved settings: defaults, `config`, `overrides`, `settings`.
     pub fn configuration(&self) -> anyhow::Result<DenseConfig> {
-        let mut overrides: Vec<String> = match self.preset.as_deref() {
+        let mut overrides: Vec<String> = if self.silhouette_only() {
+            ["grid=192", "repair_masks=false", "mask_grow=false", "silhouette_first=0", "photo_refine=0", "mesh_open_unseen=false"]
+                .map(String::from)
+                .to_vec()
+        } else {
+            Vec::new()
+        };
+        overrides.extend(match self.preset.as_deref() {
             None => Vec::new(),
             Some(name) => match PRESETS.iter().find(|(n, _, _)| *n == name) {
                 Some((_, settings, _)) => settings.iter().map(|s| s.to_string()).collect(),
                 None => anyhow::bail!("unknown preset {name:?}; known: {}", PRESETS.iter().map(|p| p.0).collect::<Vec<_>>().join(", ")),
             },
-        };
+        });
         overrides.extend(self.overrides.iter().cloned());
         for (key, value) in &self.settings {
             let text = match value {
@@ -620,7 +648,7 @@ async fn stages(
     driver.report["device"] = json!(device);
     driver.events.emit(
         "run_started",
-        json!({"schema": SCHEMA, "configuration": serde_json::to_value(config)?, "device": device, "inputs": source_name}),
+        json!({"schema": SCHEMA, "configuration": serde_json::to_value(config)?, "base_surface": options.base_surface, "device": device, "inputs": source_name}),
     )?;
 
     // From plain photos: masks and cameras first. That stage writes its own `masks` and `cameras` stage events.
@@ -699,18 +727,20 @@ async fn stages(
     if input_sheet(&inputs, &output.join("input-sheet.png")).is_ok() {
         driver.events.stage("inputs").artifact("input_sheet", &output.join("input-sheet.png"), "Photos with mask outlines", json!({}))?;
     }
+    driver.report["base_surface"] = serde_json::to_value(options.base_surface)?;
     driver.report["native_stages"] = json!(if from_photos.is_some() {
-        vec!["photos", "stereo", "mesh", "check"]
+        vec!["photos", if options.silhouette_only() { "hull" } else { "stereo" }, "mesh", "check"]
     } else if options.inputs.is_some() {
-        vec!["stereo", "mesh", "check"]
+        vec![if options.silhouette_only() { "hull" } else { "stereo" }, "mesh", "check"]
     } else {
-        vec!["inputs", "stereo", "mesh", "check"]
+        vec!["inputs", if options.silhouette_only() { "hull" } else { "stereo" }, "mesh", "check"]
     });
 
     let gpu = gpu?;
     let arguments = stereo::Arguments {
         inputs: inputs.clone(),
         output: output.join("stereo"),
+        only: options.silhouette_only().then(|| "hull".into()),
         reuse_depths: options.reuse_depths.clone(),
         previews: options.live_previews,
         ..Default::default()
@@ -719,7 +749,11 @@ async fn stages(
     if let Some(depths) = &options.reuse_depths {
         command.extend(["--reuse-depths".to_string(), text(depths)]);
     }
-    let stage = driver.begin("stereo", command, Some(options.stereo_timeout))?;
+    let base_stage = if options.silhouette_only() { "hull" } else { "stereo" };
+    if options.silhouette_only() {
+        command.extend(["--only".into(), "hull".into()]);
+    }
+    let stage = driver.begin(base_stage, command, Some(options.stereo_timeout))?;
     // The fused volume goes to the surface stage in memory; `volume.npz` is written only when it is
     // kept, and `depths.npz` (for --reuse-depths) not in a browser, where no later run could read it.
     let files =
@@ -745,7 +779,20 @@ async fn stages(
     let silhouette_first = fused.as_ref().map_or(config.silhouette_first == 1, |volume| volume.silhouette_first);
     let result = match fused {
         Some(fused) => crate::mesh::run_volume(fused, &output.join("mesh"), config, 1, &stage.events, None, threads, &stage.control),
-        None => crate::mesh::run_with(&volume, &output.join("mesh"), config, 1, &stage.events, None, threads, &stage.control),
+        None => crate::mesh::run_with(
+            &volume,
+            &output.join("mesh"),
+            config,
+            1,
+            &stage.events,
+            options.silhouette_only().then_some(if options.splats.is_some() || options.surface.is_some() {
+                "Silhouette starting surface"
+            } else {
+                "Silhouette surface"
+            }),
+            threads,
+            &stage.control,
+        ),
     };
     // Refinement against the photos, part of the surface stage: inward only from a silhouette hull.
     let result = result.and_then(|report| {
@@ -771,7 +818,12 @@ async fn stages(
     if let Some(inspector) = &inspector {
         let events = driver.events.stage("mesh");
         // A sheet is a picture for people; one that cannot be drawn does not fail the run.
-        let _ = inspector.add("90-final", "Final surface", &output.join("mesh/mesh.stl"), &events);
+        let _ = inspector.add(
+            "90-final",
+            if options.silhouette_only() { "Silhouette surface" } else { "Final surface" },
+            &output.join("mesh/mesh.stl"),
+            &events,
+        );
         let _ = inspector.overview(&events);
     }
 
@@ -785,15 +837,21 @@ async fn stages(
         let stage = driver.begin(name, command, None)?;
         let mut result = optimised_surface(name, &inputs, output, method, &stage.control).await;
         if result.is_ok() {
-            let (kind, label) = if name == "surface" {
-                ("neural_surface", "Neural surface (experimental)")
-            } else {
-                ("splats", "2D splats (experimental)")
-            };
-            stage.events.artifact(kind, &output.join(name).join("mesh.stl"), label, json!({}))?;
+            let (kind, label) =
+                if name == "surface" { ("neural_surface", "Neural surface (experimental)") } else { ("splats", "Gaussian surface") };
+            stage.events.artifact(
+                kind,
+                &output.join(name).join("mesh.stl"),
+                label,
+                json!({"triangles": result.as_ref().ok().map(|r| &r["triangles"])}),
+            )?;
+            if let Some(inspector) = &inspector {
+                let _ = inspector.add(&format!("95-{name}"), label, &output.join(name).join("mesh.stl"), &stage.events);
+                let _ = inspector.overview(&stage.events);
+            }
         }
         // With --texture the method's mesh gets the run's photo texture too, beside it in NAME/texture.
-        if let (true, Ok(report)) = (options.texture, &mut result) {
+        if let (true, Ok(report)) = (options.texture && name != "splats" && !(name == "surface" && options.splats.is_none()), &mut result) {
             let texture_output = output.join(name).join("texture");
             match crate::texture::run_with(&inputs, &output.join(name).join("mesh.stl"), &texture_output, 12, 1024, &stage.control) {
                 Ok(_) => {
@@ -805,8 +863,16 @@ async fn stages(
         }
         driver.report[name] = driver.end(stage, result)?;
     }
+    let gaussian_primary = options.splats.is_some();
+    let primary_mesh = output.join(if gaussian_primary {
+        "splats/mesh.stl"
+    } else if options.surface.is_some() {
+        "surface/mesh.stl"
+    } else {
+        "mesh/mesh.stl"
+    });
     if options.check {
-        let stl = output.join("mesh/mesh.stl");
+        let stl = primary_mesh.clone();
         let repaired = output.join("stereo/masks-repaired");
         let command = ["crispmesh-dense", "check", "--inputs", &text(&inputs), "--mesh", &text(&stl)].map(String::from).to_vec();
         let stage = driver.begin("check", command, Some(900.0))?;
@@ -826,7 +892,7 @@ async fn stages(
     }
     if options.texture {
         let texture_output = output.join("texture");
-        let stl = output.join("mesh/mesh.stl");
+        let stl = primary_mesh.clone();
         let command = ["crispmesh-dense", "texture", "--inputs", &text(&inputs), "--mesh", &text(&stl)].map(String::from).to_vec();
         let stage = driver.begin("texture", command, Some(900.0))?;
         let result = crate::texture::run_with(&inputs, &stl, &texture_output, 12, 1024, &stage.control);
@@ -839,13 +905,24 @@ async fn stages(
     if !options.keep_volume && crate::storage::exists(&volume) {
         crate::storage::remove_file(&volume)?;
     }
-    driver.report["mesh"] = json!(text(&output.join("mesh/mesh.stl")));
-    driver.report["closed"] = json!(mesh.closed);
-    driver.report["triangles"] = json!(mesh.triangles);
-    driver.report["genus"] = json!(mesh.genus);
+    driver.report["mesh"] = json!(text(&primary_mesh));
+    driver.report["closed"] = if options.splats.is_some() || options.surface.is_some() { Value::Null } else { json!(mesh.closed) };
+    driver.report["triangles"] = if gaussian_primary {
+        driver.report["splats"]["triangles"].clone()
+    } else if options.surface.is_some() {
+        driver.report["surface"]["triangles"].clone()
+    } else {
+        json!(mesh.triangles)
+    };
+    driver.report["genus"] = if options.splats.is_some() || options.surface.is_some() { Value::Null } else { json!(mesh.genus) };
     driver.report["reference_used"] = json!(false);
     driver.report["physical_scale_established"] = json!(false);
-    driver.events.stage("mesh").artifact("report", &output.join("mesh/result.json"), "Mesh report", json!({}))?;
+    driver.events.stage("mesh").artifact(
+        "report",
+        &output.join("mesh/result.json"),
+        if options.splats.is_some() || options.surface.is_some() { "Starting surface report" } else { "Mesh report" },
+        json!({}),
+    )?;
     driver.finish("complete")
 }
 
@@ -865,6 +942,18 @@ pub fn methods() -> Value {
         {"name": "steps", "kind": "integer", "meaning": "Optimisation steps (time grows with them)."},
         {"name": "seed", "kind": "integer", "meaning": "Random seed."},
     ]);
+    let mut gaussian_qualities = qualities(
+        "10 000 steps, about 480 px, 384 grid",
+        "30 000 steps, about 720 px, 512 grid (the reference run's)",
+        "30 000 steps, about 1080 px, 768 grid",
+    );
+    gaussian_qualities.as_array_mut().unwrap().insert(
+        0,
+        json!({
+            "id": "capture", "label": "Capture — 3,000 steps",
+            "meaning": "3,000 steps, about 320 px, 192 grid. A bounded starting point for real captures; more steps remain optional."
+        }),
+    );
     json!([
         {
             "id": "surface",
@@ -877,10 +966,10 @@ pub fn methods() -> Value {
         },
         {
             "id": "splats",
-            "label": "2D splats",
+            "label": "Gaussian surface",
             "meaning": "Flat Gaussian disks trained on the photos with surface terms (2DGS), fused into a mesh; also a renderable model. GPU, minutes to hours.",
             "available": true,
-            "qualities": qualities("10 000 steps, about 480 px, 384 grid", "30 000 steps, about 720 px, 512 grid (the reference run's)", "30 000 steps, about 1080 px, 768 grid"),
+            "qualities": gaussian_qualities,
             "settings": common,
             "output": "splats/mesh.stl",
         },
@@ -903,7 +992,8 @@ async fn optimised_surface(name: &str, inputs: &Path, output: &Path, method: &Me
             anyhow::bail!("unknown {name} setting {key}");
         }
     }
-    let scene = source.scene(inputs, 0)?;
+    // Use the same initialization seed as the standalone method, including overrides.
+    let scene = source.scene(inputs, if name == "surface" { surface.seed } else { splats.seed })?;
     control.log(format!("{} quality, {} views {}x{}", quality.name(), scene.views.len(), scene.views[0].width, scene.views[0].height));
     let gpu = Gpu::request().await?;
     let out = output.join(name);
@@ -1019,13 +1109,13 @@ pub fn describe_with(photo_options: &[String]) -> Value {
     }
     let presets: Vec<Value> =
         PRESETS.iter().map(|(name, settings, meaning)| json!({"name": name, "settings": settings, "meaning": meaning})).collect();
-    json!({"schema": "crispmesh_start_points_v1", "platform": table["platform"], "start_points": points, "presets": presets, "methods": methods()})
+    json!({"schema": "crispmesh_start_points_v1", "platform": table["platform"], "start_points": points, "presets": presets, "base_surfaces": ["silhouette", "stereo"], "methods": methods()})
 }
 
 pub const USAGE: &str = "usage: crispmesh-dense run --output DIR (--photos DIR --calibration JSON [--masks PROVIDER] [--cameras PROVIDER] \
 [options of `crispmesh-dense photos`] | --inputs DIR | --scene FILE --prepared DIR --raw-masks DIR) \
 [--config FILE] [--preset detail] [--set KEY=VALUE]... [--threads N] [--stereo-timeout SECONDS] [--minimum-free-gib G] [--reuse-depths FILE] \
-[--texture] [--surface QUALITY] [--surface-set NAME=VALUE]... [--splats QUALITY] [--splats-set NAME=VALUE]... [--no-live-previews] [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]";
+[--base-surface silhouette|stereo] [--texture] [--surface QUALITY] [--surface-set NAME=VALUE]... [--splats QUALITY] [--splats-set NAME=VALUE]... [--no-live-previews] [--preview-step N] [--skip-check] [--no-preview] [--keep-volume]";
 
 /// Options from the command line of `dense_pipeline.py` (the parts this driver covers).
 pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
@@ -1059,6 +1149,11 @@ pub fn parse(arguments: &[String]) -> anyhow::Result<RunOptions> {
             "--texture" => options.texture = true,
             "--surface" => options.surface = Some(Method::parse(&value()?)?),
             "--splats" => options.splats = Some(Method::parse(&value()?)?),
+            "--base-surface" => options.base_surface = match value()?.as_str() {
+                "silhouette" => BaseSurface::Silhouette,
+                "stereo" => BaseSurface::Stereo,
+                _ => bail!("--base-surface expects silhouette or stereo"),
+            },
             "--surface-set" => options.surface.get_or_insert_with(|| Method { quality: "standard".into(), settings: Vec::new() }).settings.push(value()?),
             "--splats-set" => options.splats.get_or_insert_with(|| Method { quality: "standard".into(), settings: Vec::new() }).settings.push(value()?),
             // Accepted for command lines written for the Python driver; they select nothing here.
@@ -1161,6 +1256,27 @@ mod tests {
         let files = crate::storage::memory_files("mem:/run");
         std::fs::write(Path::new(&out).join("memory-files.json"), serde_json::to_string(&files).unwrap()).unwrap();
         assert!(!Path::new("mem:").exists(), "nothing was written to a directory named mem:");
+    }
+
+    #[test]
+    fn silhouette_default_and_gaussian_capture_are_independent_of_stereo() {
+        let default = RunOptions::default();
+        assert_eq!(default.base_surface, BaseSurface::Silhouette);
+        assert!(default.splats.is_none() && default.surface.is_none());
+        let config = default.configuration().unwrap();
+        assert_eq!(config.grid, 192);
+        assert!(!config.repair_masks && !config.mask_grow && !config.mesh_open_unseen);
+        assert_eq!((config.silhouette_first, config.photo_refine), (0, 0));
+        let old = RunOptions { base_surface: BaseSurface::Stereo, ..Default::default() };
+        assert_eq!(serde_json::to_value(old.configuration().unwrap()).unwrap(), serde_json::to_value(DenseConfig::default()).unwrap());
+        let capture: RunOptions = serde_json::from_value(json!({"output":"out", "inputs":"in", "splats":{}})).unwrap();
+        assert_eq!(capture.splats.as_ref().unwrap().quality, "capture");
+        let quality = capture.splats.unwrap().quality.parse().unwrap();
+        let splats = crate::splats::train::Settings::for_quality(quality);
+        let source = crate::surface::options::Source::for_quality(quality, 1080);
+        assert_eq!((splats.steps, source.crop, splats.mesh), (3000, 320, 192));
+        let words = ["--inputs", "in", "--output", "out", "--base-surface", "stereo"].map(String::from);
+        assert_eq!(parse(&words).unwrap().base_surface, BaseSurface::Stereo);
     }
 
     #[test]
@@ -1294,6 +1410,40 @@ mod tests {
         events.iter().filter(|e| e["type"] == "artifact" && e["kind"] == kind).count()
     }
 
+    /// The default base and optional Gaussian must select the same mesh for checking and reporting.
+    #[test]
+    fn gpu_silhouette_and_gaussian_choose_the_requested_final_mesh() {
+        if !crate::gpu::tests_enabled() {
+            return;
+        }
+        let root = crate::stereo::synthetic::temporary("run-silhouette", 4, 64).unwrap();
+        for gaussian in [false, true] {
+            let output = root.join(if gaussian { "gaussian" } else { "silhouette" });
+            let options = RunOptions {
+                output: output.clone(),
+                inputs: Some(root.join("inputs")),
+                overrides: vec!["grid=64".into()],
+                splats: gaussian
+                    .then(|| Method { quality: "capture".into(), settings: vec!["steps=2".into(), "crop=64".into(), "mesh=32".into()] }),
+                ..Default::default()
+            };
+            let report = run(&options, None, None).unwrap();
+            assert_eq!(report["status"], "complete");
+            assert_eq!(report["base_surface"], "silhouette");
+            assert!(output.join("mesh/mesh.stl").is_file());
+            assert!(!output.join("stereo/depths.npz").exists());
+            let final_mesh = output.join(if gaussian { "splats/mesh.stl" } else { "mesh/mesh.stl" });
+            assert_eq!(Path::new(report["mesh"].as_str().unwrap()), crate::storage::canonicalize(final_mesh).unwrap());
+            assert!(report["triangles"].as_u64().unwrap() > 0);
+            assert!(output.join("check/result.json").is_file());
+            if gaussian {
+                assert_eq!(report["triangles"], report["splats"]["triangles"]);
+                assert!(report["closed"].is_null());
+            }
+        }
+        crate::storage::remove_dir_all(&root).unwrap();
+    }
+
     /// The whole pipeline on the analytic sphere, then a cancelled run (CRISPMESH_GPU_TESTS=1).
     #[test]
     fn gpu_run_completes_and_can_be_cancelled() {
@@ -1310,6 +1460,7 @@ mod tests {
             output: root.join("run"),
             inputs: Some(root.join("inputs")),
             overrides: overrides.clone(),
+            base_surface: BaseSurface::Stereo,
             texture: true,
             attribution: Some("Synthetic research capture".into()),
             ..Default::default()
@@ -1384,6 +1535,7 @@ mod tests {
         synthetic::write(&memory.join("inputs"), 24, 128).unwrap();
         let options = RunOptions {
             output: memory.join("run"),
+            base_surface: BaseSurface::Stereo,
             texture: true,
             inputs: Some(memory.join("inputs")),
             overrides: overrides.clone(),
@@ -1413,7 +1565,13 @@ mod tests {
             }
             sink.lock().unwrap().push(event.clone());
         });
-        let options = RunOptions { output: root.join("cancelled"), inputs: Some(root.join("inputs")), overrides, ..Default::default() };
+        let options = RunOptions {
+            base_surface: BaseSurface::Stereo,
+            output: root.join("cancelled"),
+            inputs: Some(root.join("inputs")),
+            overrides,
+            ..Default::default()
+        };
         let error = run(&options, Some(observer), Some(cancel)).unwrap_err();
         assert_eq!(error.downcast_ref::<Stopped>(), Some(&Stopped::Cancelled));
         let events = seen.lock().unwrap().clone();

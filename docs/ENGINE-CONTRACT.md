@@ -1,8 +1,22 @@
 # Engine contract for front ends
 
-One front end is meant to serve macOS, Windows, Linux, iOS, Android and the
-web. Only desktop systems run the reconstruction; phones and browsers are
-clients of a machine that does. This document is what a front end may rely on.
+Native engines advertise `base_surfaces: ["silhouette", "stereo"]`. New run
+bodies accept `base_surface` (default `silhouette`). Gaussian remains opt-in:
+`"splats": {"quality": "capture"}` requests 3,000 steps / crop 320 / mesh 192.
+When enabled, the Gaussian mesh is used by the final photo check and main GLB
+export; the starting silhouette remains available as a separate artifact.
+
+The desktop Python host can opt into original-capture preparation with
+`--capture-tools /host/tools.json`. Its health response advertises
+`refine_runs: true`; `POST /api/runs/<id>/refine` starts a new Gaussian Capture
+run from that run's recovered scene, with content checks before reuse. This
+capability requires host-installed tools and is separate from the embedded
+native engine. Stage `hull` replaces `stereo` for silhouette-only runs.
+
+One front end serves macOS, Windows, Linux, iOS, Android and the web. The
+embedded native/browser engine runs the stages and providers available on that
+platform. External Python/model camera recovery needs a desktop host; phones
+and browsers can use that host as HTTP clients. This document is what a front end may rely on.
 The reference implementation is `scripts/turntable_mesh/` (`dense_events.py`,
 `dense_pipeline.py`, `engine_server.py`, `export_replay.py`).
 
@@ -152,7 +166,9 @@ end on another port can reach it.
 
 - **Discovery elsewhere.** Bonjour announcement and lookup exist on macOS and iOS only (section 3); Windows,
   Linux and Android pair by QR code or typed address and token. The Python engine server neither announces
-  itself nor takes uploads.
+  itself. With `--capture-tools` it accepts atomic photo/mask uploads under its
+  data directory and advertises this through `uploads: true`; without that
+  configuration it retains its previous input-only behavior.
 - **Push transport.** Clients poll. Server-sent events may be added; polling
   will keep working.
 - **Mesh formats.** Only binary STL. A compact preview format (for example GLB

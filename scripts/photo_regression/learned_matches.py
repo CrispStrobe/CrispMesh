@@ -8,6 +8,7 @@ and cached-layout parity need independent validation for each implementation.
 import argparse
 from contextlib import contextmanager
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -41,13 +42,16 @@ def atomic_npz(path, **arrays):
     pending.replace(path)
 
 
-def square_crop(mask, padding=.15):
+def square_crop(mask, padding=.15, fit_context=False):
     ys, xs = np.where(np.asarray(mask) > 127)
     if not len(xs):
         raise ValueError('empty foreground mask')
     side = int(np.ceil(max(xs.max() - xs.min() + 1, ys.max() - ys.min() + 1) * (1 + 2 * padding)))
     left = int(np.floor((xs.min() + xs.max() + 1 - side) / 2))
     top = int(np.floor((ys.min() + ys.max() + 1 - side) / 2))
+    if fit_context and side <= min(mask.shape):
+        left = min(max(left, 0), mask.shape[1]-side)
+        top = min(max(top, 0), mask.shape[0]-side)
     # Padding may extend outside the photo; PIL crop plus white compositing is
     # deliberate. No foreground is clipped to force a square inside the frame.
     return [left, top, left + side, top + side]
@@ -105,7 +109,12 @@ def local_weights(torch, extractor, matcher):
             path = extractor
         else:
             raise ValueError('unexpected model URL; network access refused')
-        return torch.load(path, map_location='cpu', weights_only=True)
+        # Read external storage sequentially once; tensor ZIP decoding otherwise
+        # performs many small seeks and can stall on a busy mounted SSD.
+        blob=path.read_bytes()
+        expected=MATCHER_HASH if path==matcher else EXTRACTOR_HASH
+        if hashlib.sha256(blob).hexdigest()!=expected:raise ValueError('checkpoint changed after validation')
+        return torch.load(io.BytesIO(blob), map_location='cpu', weights_only=True)
     torch.hub.load_state_dict_from_url = load
     try:
         yield
@@ -119,11 +128,14 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--resolution', type=int, default=768)
     parser.add_argument('--maximum-keypoints', type=int, default=512)
+    parser.add_argument('--padding', type=float, default=.15, help='Context around the object mask; independent scale path')
+    parser.add_argument('--fit-context', action='store_true', help='Shift a context square inside the frame when it fits; preserve all foreground')
+    parser.add_argument('--cache-root', type=Path, help='Reuse content-checked extraction/pair caches across search paths')
     parser.add_argument('--neighbors', type=int, default=6)
     parser.add_argument('--temporal-radius', type=int, default=2, help='index neighbours only; no equal-angle assumption')
     parser.add_argument('--reuse-overlap', action='store_true', help='Also use up to four neighbours from template matches; disclose their cost separately')
     args = parser.parse_args()
-    if not 64 <= args.resolution <= 2048 or not 32 <= args.maximum_keypoints <= 4096 or args.neighbors < 0 or args.temporal_radius < 0:
+    if not 64 <= args.resolution <= 2048 or not 32 <= args.maximum_keypoints <= 4096 or args.neighbors < 0 or args.temporal_radius < 0 or not np.isfinite(args.padding) or not 0 <= args.padding <= 1:
         parser.error('invalid resolution, keypoint or pair budget')
     for name, expected in SOURCE_HASHES.items():
         if sha(args.source / 'lightglue' / name) != expected:
@@ -144,15 +156,23 @@ def main():
         with Image.open(photo) as rgb, Image.open(mask) as mk:
             if rgb.size != expected_size or mk.size != expected_size or rgb.getexif().get(274, 1) != 1:
                 parser.error('normalize orientation and lens/photo/mask dimensions first: ' + name)
-            box = square_crop(np.array(mk.convert('L')))
+            box = square_crop(np.array(mk.convert('L')), padding=args.padding, fit_context=args.fit_context)
         ledger.append({'name': name, 'crop': box, 'photo_sha256': sha(photo), 'mask_sha256': sha(mask)})
     config = {'photos': ledger, 'resolution': args.resolution, 'extractor_hash': EXTRACTOR_HASH,
-              'maximum_extracted_keypoints': 1200, 'detection_threshold': .05, 'source_hashes': SOURCE_HASHES}
+              'maximum_extracted_keypoints': 1200, 'detection_threshold': .05, 'source_hashes': SOURCE_HASHES,
+              'runner_sha256':sha(Path(__file__))}
     fingerprint = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
     args.output.mkdir(parents=True, exist_ok=True)
-    cache = args.output / ('features-' + fingerprint[:16]);cache.mkdir(exist_ok=True)
+    cache_root = args.cache_root or args.output
+    cache_root.mkdir(parents=True, exist_ok=True)
+    cache = cache_root / ('features-' + fingerprint[:16]);cache.mkdir(exist_ok=True)
     (cache / 'ledger.json').write_text(json.dumps(config, indent=2) + '\n')
     os.environ.setdefault('OMP_NUM_THREADS', '2')
+    if __package__:
+        from .refine_masks import exclude_progress_dependency
+    else:
+        from refine_masks import exclude_progress_dependency
+    exclude_progress_dependency()
     import torch
     torch.set_num_threads(2)
     torch.set_num_interop_threads(2)
@@ -204,7 +224,7 @@ def main():
                    'matcher_hash': MATCHER_HASH, 'source_hashes': SOURCE_HASHES,
                    'device': 'CPU F32', 'depth_confidence': -1, 'width_confidence': -1}
     pair_fingerprint = hashlib.sha256(json.dumps(pair_config, sort_keys=True).encode()).hexdigest()
-    pair_cache = args.output / ('pairs-' + pair_fingerprint[:16]);pair_cache.mkdir(exist_ok=True)
+    pair_cache = cache_root / ('pairs-' + pair_fingerprint[:16]);pair_cache.mkdir(exist_ok=True)
     (pair_cache / 'ledger.json').write_text(json.dumps(pair_config, indent=2) + '\n')
     pairs = [];match_start = time.monotonic();pair_cache_hits = 0
     for index, (i, j) in enumerate(candidates):
@@ -229,7 +249,7 @@ def main():
         'note': 'Own foreground ALIKED/LightGlue correspondences; original integer pixel-centre coordinates; no supplied poses/depth/geometry or equal-angle assumption.'}) + '\n')
     (args.output / 'report.json').write_text(json.dumps({'photos': len(names), 'candidate_pairs': len(candidates), 'matched_pairs': len(pairs),
         'cache_hits': cache_hits, 'pair_cache_hits': pair_cache_hits, 'extraction_seconds': extraction_seconds, 'matching_seconds': time.monotonic() - match_start,
-        'device': 'CPU F32', 'resolution': args.resolution, 'maximum_match_keypoints': args.maximum_keypoints,
+        'device': 'CPU F32', 'resolution': args.resolution, 'maximum_match_keypoints': args.maximum_keypoints, 'padding':args.padding, 'fit_context':args.fit_context,
         'neighbors': args.neighbors, 'temporal_radius': args.temporal_radius, 'reuse_overlap': args.reuse_overlap,
         'pairing_limits': 'Pooled similarity is quadratic, costly learned pair matching is bounded by N times candidate budget. Reused overlap preprocessing cost excluded.',
         'weight_hashes': {'extractor': EXTRACTOR_HASH, 'matcher': MATCHER_HASH},

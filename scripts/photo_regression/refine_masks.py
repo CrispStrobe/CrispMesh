@@ -120,12 +120,25 @@ def exclude_progress_dependency():
         raise ValueError('run in a fresh process without an already loaded tqdm implementation')
     def unsupported(*args, **kwargs):
         raise RuntimeError('video/progress functionality is excluded from the image-only mask runner')
+    class UnavailableProgress:
+        # Optional Apache dependencies declare subclasses at import time. Permit
+        # declarations, while refusing every actual progress object/operation.
+        def __init__(self, *args, **kwargs):
+            unsupported()
+        write = staticmethod(unsupported)
+        @classmethod
+        def set_lock(cls, lock):
+            # Import metadata only; no iteration, rendering or progress I/O.
+            cls._import_lock = lock
+        @classmethod
+        def get_lock(cls):
+            return cls._import_lock
     for name in ['tqdm', 'tqdm.auto', 'tqdm.std']:
         module = types.ModuleType(name)
         module.__file__ = __file__
         module.__spec__ = importlib.machinery.ModuleSpec(name, loader=None, is_package=name == 'tqdm')
         module.__path__ = []
-        module.tqdm = unsupported
+        module.tqdm = UnavailableProgress
         module.trange = unsupported
         module.__version__ = '0.0.0'
         sys.modules[name] = module

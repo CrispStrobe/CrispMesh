@@ -1,9 +1,37 @@
 import unittest
+import hashlib
+import tempfile
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 import numpy as np
-from scripts.photo_regression.learned_matches import candidate_graph, source_keypoints, square_crop, validated_pair
+from scripts.photo_regression.learned_matches import candidate_graph, source_keypoints, square_crop, validated_pair, local_weights
 
 
 class LearnedMatchTests(unittest.TestCase):
+    def test_checkpoint_loader_checks_bytes_and_restores_network_hook(self):
+        with tempfile.TemporaryDirectory() as folder:
+            file = Path(folder) / 'weights'; file.write_bytes(b'weights')
+            previous = object()
+            fake = SimpleNamespace(hub=SimpleNamespace(load_state_dict_from_url=previous),
+                load=lambda stream, **kw: (stream.read(), kw))
+            with patch('scripts.photo_regression.learned_matches.MATCHER_HASH', hashlib.sha256(b'weights').hexdigest()):
+                with local_weights(fake, file, file):
+                    data, options = fake.hub.load_state_dict_from_url('aliked_lightglue')
+                    self.assertEqual(data, b'weights')
+                    self.assertEqual(options, {'map_location': 'cpu', 'weights_only': True})
+                    file.write_bytes(b'changed')
+                    with self.assertRaises(ValueError): fake.hub.load_state_dict_from_url('aliked_lightglue')
+                    with self.assertRaises(ValueError): fake.hub.load_state_dict_from_url('unexpected')
+            self.assertIs(fake.hub.load_state_dict_from_url, previous)
+
+    def test_fitted_context_shifts_without_clipping_or_changing_scale(self):
+        mask=np.zeros((100,100),'uint8');mask[:40,70:100]=255
+        loose=square_crop(mask,.3);fitted=square_crop(mask,.3,True)
+        self.assertEqual(loose[2]-loose[0],fitted[2]-fitted[0])
+        self.assertEqual(fitted,[36,0,100,64])
+        self.assertLess(loose[1],0)
+
     def test_crop_never_clips_foreground_even_at_frame_edge(self):
         m = np.zeros((9, 7), 'uint8');m[:8, 4:] = 255
         l, t, r, b = square_crop(m)

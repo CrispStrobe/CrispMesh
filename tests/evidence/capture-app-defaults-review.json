@@ -1,0 +1,430 @@
+{
+  "date": "2026-10-19",
+  "status": "Updated iPad defaults validated after automatic silhouette camera-path rejection; fresh raw iPhone and second-pass camera mesh tests running",
+  "reference_inputs_used": false,
+  "source_inventory": "camera-recovery-source-review.json",
+  "default_route": {
+    "base_surface": "silhouette",
+    "gaussian_enabled": false,
+    "gaussian_when_enabled": {
+      "quality": "capture",
+      "steps": 3000,
+      "crop": 320,
+      "mesh": 192
+    },
+    "stereo_retained": true
+  },
+  "automation": [
+    "EXIF orientation with byte-exact upright originals",
+    "Independent-first app foreground, tracking fallback and automatic isolated-spike recovery",
+    "Per-view native object crop; common-frame crop optional",
+    "SAM refinement by default on the configured host; native-only and imported-preview contours retained as alternatives",
+    "ALIKED/LightGlue CPU correspondences",
+    "Foreground edge filtering",
+    "PyCOLMAP radial camera recovery",
+    "Coverage and sparse-mask-support gates",
+    "Hybrid RootSIFT-overlap camera search, with tight and wide fallback paths",
+    "Coverage-aware view selection",
+    "Native silhouette and optional Gaussian",
+    "All-recovered-view mask agreement gate"
+  ],
+  "app_validation": {
+    "request_probe": [
+      "default silhouette, no Gaussian",
+      "explicit Capture Gaussian",
+      "explicit stereo alternative"
+    ],
+    "german_form_verified": true,
+    "cached_refinement_tests": true,
+    "native_app_bridge": "release check --tests passed",
+    "threaded_wasm_build": "passed",
+    "german_result_render": {
+      "triangles": 103152,
+      "foreground_samples": 82,
+      "total_samples": 529,
+      "previous_attempt_errors_cleared": true
+    },
+    "native_app_tests": 18,
+    "studio_tests": 216,
+    "photo_regression_tests": 84,
+    "legacy_server_tests": {
+      "passed": 12,
+      "skipped": 1
+    },
+    "four_view_silhouette_and_gaussian_gpu_test": "passed; silhouette no longer requires stereo neighbours",
+    "foreground_helper": "Normal locked Cargo release build and strict clippy passed; native full-frame-first helper and app use the same fallback order",
+    "capture_request_probe": "German real browser: imported preview masks, crop padding and height counts reach POST /api/runs; no reconstruction started",
+    "native_tests": 275,
+    "foreground_order_tests": "Full photo before tracking, tracked fallback after rejection, strict spike recovery never falls back to the table",
+    "camera_refinement_tests": 2,
+    "updated_ipad_german_result_render": {
+      "id": "ipad-defaults-independent-006",
+      "triangles": 103864,
+      "german_gaussian_caption": true,
+      "german_camera_summary": true,
+      "raw_camera_json_collapsed": true,
+      "render": {
+        "samples": 529,
+        "surface": 113
+      },
+      "no_job_started": true
+    }
+  },
+  "deployment": "No new TestFlight or App Store build uploaded in this change; original-capture learned cameras require the configured external desktop host.",
+  "ipad_independent_sam_profile": {
+    "original_photos": 119,
+    "registered_views": 108,
+    "selected_views": 99,
+    "triangles": 103152,
+    "successful_stage_seconds": 1201.9062882080907,
+    "reconstruction_seconds": 332.2283442079788,
+    "training_seconds": 229.955992458,
+    "mesh_timings": {
+      "contour_seconds": 0.046597042,
+      "hull_grid_seconds": 91.974019459,
+      "total_seconds": 94.548033875,
+      "view_fusion_seconds": 2.383548125
+    },
+    "all_view_mask_iou_median": 0.8975994041938771,
+    "mesh_sha256": "c798731c3d610b7aa882a8ac6dade13794e44a8e4233a42e4a465e830c8abe79",
+    "manual_pixel_or_pose_tweaks": false,
+    "resumed": true,
+    "adopted_predecessor_stages": true,
+    "assessment": "Inspected final sheet: broadly comparable to the earlier owner-selected Gaussian result; fine relief remains weak and the leg gap is merged. Not pixel-identical; independent camera recovery/selection and GPU floating-point nondeterminism differ.",
+    "timing_limits": "Interrupted by free-space guard; successful stage sum excludes failed attempts. Busy M1 with other work and concurrent build validation; not an uninterrupted cold benchmark or controlled speedup.",
+    "metric_limits": "Own mask agreement, not scanner accuracy. Different recovered view/holdout/mask sets prevent direct accuracy comparison with older metrics.",
+    "topology_edge_check": {
+      "triangles": 103152,
+      "vertices": 51596,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "closed_edges": true
+    },
+    "profile": "Retained alternate: independent Vision, shared crop, SAM masks; not the subsequent app-foreground defaults"
+  },
+  "overlap_dependency": {
+    "package": "opencv-python-headless",
+    "version": "4.10.0.84",
+    "metadata_license": "Apache 2.0",
+    "adapter": "Original RootSIFT overlap adapter using existing SIFT/BFMatcher APIs; no algorithm source copied",
+    "license_files_sha256": {
+      "cv2/LICENSE-3RD-PARTY.txt": "4fc3c113d53e95da0f3c433655a67067b7310e53af31eb6d280e94cc6927a363",
+      "cv2/LICENSE.txt": "09d719058e782ac7bc71ba21c944e1136cde2bb957c0e888121f0218d6b5f02c"
+    },
+    "bundled_in_app": false,
+    "scope": "Existing host dependency. OpenCV core Apache-2.0; Python packaging MIT. Full wheel notices retained locally; no patent clearance claim."
+  },
+  "exact_hull_search_optimization": {
+    "original_path_retained": "hull_bounds=false",
+    "default": "hull_bounds=true",
+    "real_iphone_mesh_byte_equal": true,
+    "mesh_sha256": "9d73970322a0433d05c3a28cc16d156b0e13fd8b0d103680a93080a24593050f",
+    "before_mesh_timings": {
+      "contour_seconds": 0.124924542,
+      "hull_grid_seconds": 255.872593792,
+      "total_seconds": 260.135811292,
+      "view_fusion_seconds": 3.879851875
+    },
+    "after_mesh_timings": {
+      "contour_seconds": 0.1071575,
+      "hull_grid_seconds": 20.229679792,
+      "total_seconds": 23.516910208,
+      "view_fusion_seconds": 3.036461167
+    },
+    "control": "Same recovered scene, hull sampling seed 0 and saved trained Gaussian parameters; zero further training. Final STL bytes equal. No scanner inputs.",
+    "timing_limits": "Separate runs on a busy M1; baseline hull stage overlapped build validation. Not a controlled whole-pipeline speedup.",
+    "tests": "Exact nearest index/distance equality against original and brute force, clustered/flat/duplicate points; bitwise checked-grid equality; 275 library tests and four-view GPU run passed."
+  },
+  "iphone_native_fast_profile": {
+    "original_photos": 78,
+    "foreground_accepted": 78,
+    "registered_views": 74,
+    "reconstruction_views": 74,
+    "camera_path": {
+      "selected": "cameras-hybrid",
+      "candidates": [
+        {
+          "path": "cameras",
+          "registered": 40,
+          "accepted": 78,
+          "sparse_mask_support": 0.9122407688416793
+        },
+        {
+          "path": "cameras-context",
+          "registered": 74,
+          "accepted": 78,
+          "sparse_mask_support": 0.8341332580463015
+        },
+        {
+          "path": "cameras-hybrid",
+          "registered": 74,
+          "accepted": 78,
+          "sparse_mask_support": 0.9210225649814339
+        }
+      ],
+      "minimum_registered_fraction": 0.8,
+      "minimum_sparse_mask_support": 0.85,
+      "reference_used": false
+    },
+    "triangles": 96526,
+    "training_seconds": 334.52767975,
+    "mesh_timings_before_bounds_optimization": {
+      "contour_seconds": 0.124924542,
+      "hull_grid_seconds": 255.872593792,
+      "total_seconds": 260.135811292,
+      "view_fusion_seconds": 3.879851875
+    },
+    "gaussian_seconds_before_bounds_optimization": 595.888518375,
+    "sum_successful_stage_seconds_before_bounds_optimization": 1838.1767082487931,
+    "all_view_mask_iou": {
+      "maximum": 0.9622891429865278,
+      "median": 0.830778061534162,
+      "minimum": 0.6365457404760908,
+      "worst_view": "view_22"
+    },
+    "topology": {
+      "mesh_sha256": "9d73970322a0433d05c3a28cc16d156b0e13fd8b0d103680a93080a24593050f",
+      "triangles": 96526,
+      "vertices": 48267,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "components": 2,
+      "largest_component_triangle_fraction": 0.9999171207757496,
+      "closed_edges": true
+    },
+    "manual_pixel_or_pose_tweaks": false,
+    "resumed": true,
+    "adopted_predecessor_stages": true,
+    "assessment": "Grey mesh inspected: body, head and open hands recovered; face/hair relief and leg separation remain limited. One tiny separate component has eight triangles. Own mask agreement is not scanner accuracy.",
+    "profile_limits": "Completed before nearest-search optimization. Foreground/preparation/features adopted after content checks; successful stage sum excludes failures and is not a cold uninterrupted benchmark. Later source edits added progress reporting and corrected standalone helper import paths without changing image/camera/mesh math.",
+    "profile": "Retained native-mask fast profile before SAM became the configured host default; tracking-first foreground, tight-first camera search"
+  },
+  "tracked_sam_failure": {
+    "original_photos": 119,
+    "registered_views": 115,
+    "reconstruction_views": 106,
+    "triangles": 89956,
+    "all_view_mask_iou_median": 0.8186692291803249,
+    "assessment": "Mask-agreement gate passed, but rendered hands were visibly lost. Rejected as a verification of the requested quality. Mask-source review traced lost thin parts to tracking-first foreground; default changed to independent-first in app and host helper. This is not a scanner accuracy measurement."
+  },
+  "reference_image_recipe": {
+    "original_photos": 119,
+    "mask_preparation": "Independent Vision instances, common padded crop, own SAM refinement and mask validation",
+    "camera_preparation": "Own foreground-filtered learned correspondences, radial PyCOLMAP fit, 116 cameras; coverage-aware selection retained 106",
+    "base": "Own silhouette hull, grid192, mask repair and growth off, open unseen off",
+    "gaussian": "Fast preset explicitly overridden to 3000 steps, crop320, mesh192; these values are now the Capture preset",
+    "manual_pixel_or_pose_labels": false,
+    "reference_inputs_used": false,
+    "limits": "The earlier Image1 used extra preprocessing, not only a Gaussian step count. Fresh defaults independently recover their own masks and cameras; exact STL identity is not expected."
+  },
+  "reference_reproduction": {
+    "saved_parameters_replay": {
+      "original_sha256": "25f14107e0db0e42f2f03a1517f95324af48cf13fc60657b777c4cbfafcabd7c",
+      "current_mesher_sha256": "25f14107e0db0e42f2f03a1517f95324af48cf13fc60657b777c4cbfafcabd7c",
+      "byte_identical": true,
+      "triangles": 99556,
+      "seconds": 7.367245666
+    },
+    "fresh_training": {
+      "same_own_recovered_scene": true,
+      "same_own_hull": true,
+      "steps": 3000,
+      "triangles": 99500,
+      "train_seconds": 230.67552525,
+      "seconds": 244.586812541,
+      "mesh_seconds": 13.561246792,
+      "all_116_recovered_view_mask_iou": 0.8677895215888417,
+      "visually_reviewed": true,
+      "result": "Comparable overall shape and hands; weak relief and merged legs remain. Fresh training is not byte-identical.",
+      "limits": "Saved own camera/mask preparation, not a raw-photo defaults verification. Training has GPU numeric variation."
+    }
+  },
+  "camera_geometry_selection": {
+    "reason": "117 registered cameras and sparse mask support .8784 still produced a silhouette missing hands, all-view median IoU .773494.",
+    "minimum_base_mask_iou": 0.8,
+    "preferred_base_mask_iou": 0.85,
+    "tight_control": {
+      "same_original_derived_masks": true,
+      "registered_views": 108,
+      "sparse_mask_support": 0.91278709,
+      "base_mask_iou": 0.8905231896106122,
+      "visually_reviewed": true,
+      "limits": "Hands more present but still defective in the base; full default Gaussian run pending."
+    },
+    "reference_used": false
+  },
+  "focus_control": {
+    "input_views": 106,
+    "kept_views": 83,
+    "excluded_views": 23,
+    "owner_example_excluded": true,
+    "relative_gradient_threshold": 0.65,
+    "maximum_direction_gap_degrees": 20,
+    "minimum_nearby_views": 2,
+    "public_selector_reproduces_selection": true,
+    "fixed_own_cameras_and_base_hull": true,
+    "reference_used": false,
+    "steps": 3000,
+    "before_all_116_view_mask_iou": 0.8677895215888417,
+    "after_all_116_view_mask_iou": 0.8670254526077741,
+    "after_triangles": 101024,
+    "after_seconds": 299.279905625,
+    "visually_reviewed": true,
+    "conclusion": "No clear shape/detail improvement; some areas more faceted. No default filtering or automatic deletion adopted.",
+    "limits": "Exploratory fixed-camera training-photo ablation, not a camera-recovery test. Texture, noise and lighting affect relative gradient. Different held-out split/view sequence means PSNR is not directly comparable."
+  },
+  "gaussian_initialization_fix": {
+    "issue": "App optimized surface initialized source sampling with hardcoded0, standalone Gaussian used configuredseed42.",
+    "change": "App source sampling now uses the selected method seed, including overrides. Gaussian summary records seed.",
+    "validation": "Release build and275 native library tests passed; updated iPad source run completed with seed42."
+  },
+  "updated_defaults_profiles": {
+    "ipad": {
+      "profile": "ipad-defaults-independent-006",
+      "original_photos": 119,
+      "foreground_accepted": 117,
+      "registered_views": 108,
+      "reconstruction_views": 108,
+      "base_surface": "silhouette",
+      "gaussian": true,
+      "steps": 3000,
+      "triangles": 103864,
+      "elapsed_seconds": 814.0182203330332,
+      "sum_successful_stage_seconds": 1674.1097942900378,
+      "stages": [
+        {
+          "stage": "vision",
+          "seconds": 173.9216302500572
+        },
+        {
+          "stage": "prepare",
+          "seconds": 22.91335916693788
+        },
+        {
+          "stage": "refine-masks",
+          "seconds": 423.6715304580284
+        },
+        {
+          "stage": "validate-masks",
+          "seconds": 35.99283187498804
+        },
+        {
+          "stage": "sift-overlap",
+          "seconds": 63.02953900001012
+        },
+        {
+          "stage": "features-hybrid",
+          "seconds": 100.95490445801988
+        },
+        {
+          "stage": "filter-hybrid",
+          "seconds": 5.09725058299955
+        },
+        {
+          "stage": "recover-hybrid",
+          "seconds": 36.459398082923144
+        },
+        {
+          "stage": "audit-hybrid",
+          "seconds": 2.0439943328965455
+        },
+        {
+          "stage": "assess-hybrid",
+          "seconds": 208.98574270808604
+        },
+        {
+          "stage": "features",
+          "seconds": 34.78813704196364
+        },
+        {
+          "stage": "filter-matches",
+          "seconds": 9.604562417021953
+        },
+        {
+          "stage": "recover-cameras",
+          "seconds": 153.9212650830159
+        },
+        {
+          "stage": "audit-primary",
+          "seconds": 3.90699583303649
+        },
+        {
+          "stage": "assess-primary",
+          "seconds": 115.38210845796857
+        },
+        {
+          "stage": "reconstruction",
+          "seconds": 280.1431805830216
+        },
+        {
+          "stage": "all-view-check",
+          "seconds": 3.2933639590628445
+        }
+      ],
+      "training_seconds": 251.970426833,
+      "gaussian_seconds": 273.38389375,
+      "mesh_timings": {
+        "contour_seconds": 0.076720584,
+        "hull_grid_seconds": 18.316955834,
+        "total_seconds": 20.835699584,
+        "view_fusion_seconds": 2.308746625
+      },
+      "all_view_mask_iou": {
+        "maximum": 0.9625737968871131,
+        "median": 0.887537016287208,
+        "minimum": 0.6114965268618658,
+        "worst_view": "view_98"
+      },
+      "resumed": true,
+      "adopted_predecessor": true,
+      "manual_pixel_or_pose_tweaks": false,
+      "reference_used": false,
+      "camera_path": {
+        "selected": "cameras",
+        "quality_accepted": true,
+        "search_order": [
+          "hybrid",
+          "tight",
+          "wide"
+        ],
+        "candidates": [
+          {
+            "path": "cameras-hybrid",
+            "registered": 117,
+            "accepted": 117,
+            "sparse_mask_support": 0.8784143437456227,
+            "removed_weak_views": 0,
+            "base_mask_iou": 0.7734940214208806
+          },
+          {
+            "path": "cameras",
+            "registered": 108,
+            "accepted": 117,
+            "sparse_mask_support": 0.9127870887647425,
+            "removed_weak_views": 0,
+            "base_mask_iou": 0.8905231896106122
+          }
+        ],
+        "minimum_registered_fraction": 0.8,
+        "minimum_sparse_mask_support": 0.85,
+        "minimum_base_mask_iou": 0.8,
+        "preferred_base_mask_iou": 0.85,
+        "reference_used": false
+      },
+      "feature_cache_hits": 117,
+      "pair_cache_hits": 477,
+      "topology": {
+        "mesh_sha256": "c2f6d1203fe1a17408e13efdeeb268ab7ac96bd73d781d557d5d5a76da92ed82",
+        "triangles": 103864,
+        "vertices": 51946,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "components": 9,
+        "largest_component_triangle_fraction": 0.9901409535546484,
+        "closed_edges": true
+      },
+      "visually_reviewed": true,
+      "limits": "Coarse hands retained; fine detail weak, legs merge. Operator-adopted unchanged preprocessing stages and warm feature/pair caches; not an uninterrupted cold timing. Failed predecessor retained separately."
+    }
+  }
+}

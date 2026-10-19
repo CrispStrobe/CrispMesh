@@ -305,7 +305,11 @@ pub async fn run_fused(
         "reuse_depths": arguments.reuse_depths.as_ref().map(|p| p.display().to_string()),
     });
     let t = Instant::now();
-    let mut inputs = Inputs::load(&arguments.inputs, config)?;
+    let mut inputs = if arguments.only.as_deref() == Some("hull") {
+        Inputs::load_hull(&arguments.inputs, config)?
+    } else {
+        Inputs::load(&arguments.inputs, config)?
+    };
     // Silhouette first: asked for, or left to the capture (cameras at several heights).
     let silhouette_first =
         config.silhouette_first == 1 || (config.silhouette_first == 2 && crate::fusion::several_heights(&inputs.cameras));
@@ -364,8 +368,10 @@ pub async fn run_fused(
         report["longest"] = json!(inputs.longest);
         report["repair_loose"] = json!(inputs.repair_loose);
         report["gray_crc32"] = json!(inputs.gray.iter().map(|g| crc32fast::hash(bytemuck::cast_slice(&g.data))).collect::<Vec<_>>());
-        let neighbours: Vec<Vec<usize>> =
-            (0..count).map(|i| inputs.neighbours(i, config.vote_neighbours as usize, config)).collect::<anyhow::Result<_>>()?;
+        // Diagnostic only. Sparse/irregular captures can carve a hull without
+        // the neighbours needed for stereo; retain its stricter gate below.
+        let neighbours: Vec<Option<Vec<usize>>> =
+            (0..count).map(|i| inputs.neighbours(i, config.vote_neighbours as usize, config).ok()).collect();
         report["neighbours"] = json!(neighbours);
         return finish(report, output, started).map(|report| (report, None));
     }

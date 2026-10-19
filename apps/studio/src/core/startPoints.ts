@@ -7,7 +7,7 @@
 
 import { optionErrors, optionTokens, parseOptionSpecs, parsePathInputs, type OptionSpec, type OptionValues, type PathInput } from "./providerOptions";
 import type { SettingValue } from "./settings";
-import { t, type MessageKey } from "../i18n";
+import { engineText, t, type MessageKey } from "../i18n";
 
 export interface StartField {
   /** Key in the start request (`inputs`, `scene`, `prepared`, `raw_masks`, later `photos`, ...). */
@@ -156,7 +156,7 @@ export function parseStartPoints(json: unknown): StartPoint[] {
             option.inputs !== undefined
               ? parsePathInputs(option.inputs)
               : optionId === "import" && module !== undefined
-                ? [{ key: `${module}_import`, label: t("inputs.provider.existing", { module }), kind: module === "masks" ? "folder" : "file" }]
+                ? [{ key: `${module}_import`, label: t("inputs.provider.existing", { module: engineText(text(choice.label) ?? module) }), kind: module === "masks" ? "folder" : "file" }]
                 : [],
         });
       }

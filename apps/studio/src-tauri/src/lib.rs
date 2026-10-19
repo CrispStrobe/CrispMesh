@@ -247,6 +247,7 @@ async fn native_health(app: AppHandle) -> Result<Value, String> {
             "data_dir": data.to_string_lossy(),
             "start_points": built_in(&app).start_points(),
             "methods": crispmesh_dense::run::methods(),
+            "base_surfaces": ["silhouette", "stereo"],
             "sandboxed": tools::contained(),
             // Phones have no folder dialog of the app's own: files come in through the system's picker.
             "imports": cfg!(any(target_os = "ios", target_os = "android")),

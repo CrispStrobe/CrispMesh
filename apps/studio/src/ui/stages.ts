@@ -6,6 +6,7 @@ const STAGE_KEYS: Record<string, { title: MessageKey; what?: MessageKey }> = {
   masks: { title: "run.stage.masks.title", what: "run.stage.masks.what" },
   cameras: { title: "run.stage.cameras.title", what: "run.stage.cameras.what" },
   inputs: { title: "run.stage.inputs.title", what: "run.stage.inputs.what" },
+  hull: { title: "run.stage.hull.title", what: "run.stage.hull.what" },
   stereo: { title: "run.stage.stereo.title", what: "run.stage.stereo.what" },
   mesh: { title: "run.stage.mesh.title", what: "run.stage.mesh.what" },
   texture: { title: "run.stage.texture.title", what: "run.stage.texture.what" },

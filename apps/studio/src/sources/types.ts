@@ -76,6 +76,8 @@ export interface RunSource {
   attribution?(): Promise<string | null>;
   /** Present when the run can be cancelled from here. */
   cancel?(): Promise<void>;
+  /** Start optional Gaussian refinement from this run’s recovered scene. */
+  refine?(): Promise<string>;
   /** Present for recordings. */
   readonly replay?: ReplayControls;
 }
@@ -112,6 +114,7 @@ export interface EngineHealth {
   imports?: boolean;
   /** Optional photo-optimised surfaces this engine knows. */
   methods?: MethodSpec[];
+  baseSurfaces?: ("silhouette" | "stereo")[];
 }
 
 export interface RunSummary {

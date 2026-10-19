@@ -9,7 +9,7 @@ import type { UpAxis, Viewer } from "../viewer/viewer";
 import { canDownload, canShareFiles, downloadFile, shareFile } from "./download";
 import { Icon } from "./icons";
 import { loadPrefs, savePrefs } from "./prefs";
-import { language, t, tParts } from "../i18n";
+import { engineText, language, t, tParts } from "../i18n";
 
 /** "1 234 triangles", with the thin grouping of formatCount and the plural of the language. */
 function triangles(count: number): string {
@@ -191,7 +191,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
         <h2 id="mesh-heading">{t("run.mesh.heading")}</h2>
         <span class="sub" aria-live="polite">
           {shownStep !== undefined && shown !== null
-            ? t("run.mesh.labelTriangles", { label: shownStep.label, triangles: triangles(shown.triangles) })
+            ? t("run.mesh.labelTriangles", { label: engineText(shownStep.label), triangles: triangles(shown.triangles) })
             : meshes.length === 0
               ? ""
               : t("run.mesh.noneLoaded")}
@@ -205,7 +205,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
           role="img"
           aria-label={
             shownStep !== undefined
-              ? t("run.mesh.viewLabel", { label: shownStep.label })
+              ? t("run.mesh.viewLabel", { label: engineText(shownStep.label) })
               : t("run.mesh.viewEmpty")
           }
           onKeyDown={(event) => {
@@ -226,7 +226,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
         {shownStep !== undefined && shown !== null && (
           // Always on the picture: which surface this is, so nobody mistakes a preview for the result.
           <p class={`viewer-label${shownStep.kind === "final_mesh" ? " final" : ""}`} aria-hidden="true">
-            {t("run.mesh.labelTriangles", { label: shownStep.label, triangles: triangles(shown.triangles) })}
+            {t("run.mesh.labelTriangles", { label: engineText(shownStep.label), triangles: triangles(shown.triangles) })}
             {shownStep.kind !== "final_mesh" && selected?.kind === "final_mesh" && t("run.mesh.finalNotLoaded")}
           </p>
         )}
@@ -241,7 +241,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
         {awaitingConsent && selected !== undefined && loading === null && (
           <div class="viewer-overlay">
             <p>
-              {tParts("run.mesh.ready", { label: <strong>{selected.label}</strong> })}
+              {tParts("run.mesh.ready", { label: <strong>{engineText(selected.label)}</strong> })}
               {selected.triangles !== undefined && <> · {triangles(selected.triangles)}</>}
             </p>
             <button
@@ -249,7 +249,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
               class="button primary"
               onClick={() => setApproved((current) => new Set(current).add(selected.path))}
             >
-              {t("run.mesh.load", { label: language() === "en" ? selected.label.charAt(0).toLowerCase() + selected.label.slice(1) : selected.label })}
+              {t("run.mesh.load", { label: language() === "en" ? engineText(selected.label).charAt(0).toLowerCase() + engineText(selected.label).slice(1) : engineText(selected.label) })}
               {consentBytes !== undefined && ` (${formatBytes(consentBytes)})`}
             </button>
           </div>
@@ -257,13 +257,13 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
         {loading !== null && (
           <div class="viewer-status" role="status">
             {loading.progress.phase === "parse"
-              ? t("run.mesh.preparing", { label: loadingStep?.label ?? t("run.mesh.surface") })
+              ? t("run.mesh.preparing", { label: engineText(loadingStep?.label) ?? t("run.mesh.surface") })
               : loading.progress.received === undefined
-                ? t("run.mesh.loadingPlain", { label: loadingStep?.label ?? t("run.mesh.surface") })
+                ? t("run.mesh.loadingPlain", { label: engineText(loadingStep?.label) ?? t("run.mesh.surface") })
                 : loading.progress.total === undefined
-                  ? t("run.mesh.loadingBytes", { label: loadingStep?.label ?? t("run.mesh.surface"), received: formatBytes(loading.progress.received) })
+                  ? t("run.mesh.loadingBytes", { label: engineText(loadingStep?.label) ?? t("run.mesh.surface"), received: formatBytes(loading.progress.received) })
                   : t("run.mesh.loadingBytesOf", {
-                      label: loadingStep?.label ?? t("run.mesh.surface"),
+                      label: engineText(loadingStep?.label) ?? t("run.mesh.surface"),
                       received: formatBytes(loading.progress.received),
                       total: formatBytes(loading.progress.total),
                     })}
@@ -301,7 +301,7 @@ export function MeshPanel({ source, meshes, runStatus, themeTick }: Props) {
               onClick={() => select(index)}
             >
               <span class="step-index">{index + 1}</span>
-              <span class="step-label">{step.label}</span>
+              <span class="step-label">{engineText(step.label)}</span>
               {step.triangles !== undefined && <span class="step-meta">{triangles(step.triangles)}</span>}
             </button>
           ))}

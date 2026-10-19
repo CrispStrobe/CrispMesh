@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { formatDuration, formatPercent } from "../core/format";
-import { language, t, tParts, type MessageKey } from "../i18n";
+import { engineText, language, t, tParts, type MessageKey } from "../i18n";
 import { STAGE_TEXT, stageTitle } from "./stages";
 import { stageElapsed, type RunState, type StageState } from "../core/reducer";
 import { REPLAY_SPEEDS, type ReplaySnapshot } from "../core/replay";
@@ -13,6 +13,7 @@ import { InspectionPanel } from "./inspection";
 import { Icon } from "./icons";
 import { TexturePreview } from "./texturePreview";
 import { MeshPanel } from "./meshPanel";
+import { navigate } from "./app";
 import { savePrefs, speedToPref } from "./prefs";
 import { ReportsPanel } from "./reportsPanel";
 import { ProgressBar, StatusBadge } from "./runs";
@@ -32,6 +33,8 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
   const [snapshot, setSnapshot] = useState<RunSnapshot | null>(null);
   const [now, setNow] = useState(() => source.now());
   const [downloadError, setDownloadError] = useState("");
+  const [refining, setRefining] = useState(false);
+  const [refineError, setRefineError] = useState("");
   const [cancel, setCancel] = useState<{ state: "idle" | "asking" | "sent"; error?: string }>({ state: "idle" });
 
   useEffect(() => {
@@ -95,6 +98,15 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
           </p>
           <Attribution source={source} />
         </div>
+        {source.refine !== undefined && run.status === "complete" && !run.meshes.some(mesh => mesh.stage === "splats") && (
+          <button class="button primary" disabled={refining} onClick={async () => {
+            if (!source.refine) return;
+            setRefining(true); setRefineError("");
+            try { navigate(`#/engine/run/${encodeURIComponent(await source.refine())}`); }
+            catch (problem) { setRefineError(engineText(describe(problem))); }
+            finally { setRefining(false); }
+          }}>{t(refining ? "run.view.refining" : "run.view.refineGaussian")}</button>
+        )}
         {source.cancel !== undefined && running && (
           <button
             type="button"
@@ -110,6 +122,7 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
       </div>
 
       <LinkNotice link={link} />
+      {refineError && <p class="field-error" role="alert">{refineError}</p>}
       {cancel.error !== undefined && (
         <div class="notice bad" role="alert" id="cancel-error">
           <p>
@@ -136,7 +149,7 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
             <details class="raw">
               <summary>{t("run.view.lastOutput")}</summary>
               <pre class="error-text" tabIndex={0}>
-                {error.message}
+                {engineText(error.message)}
               </pre>
             </details>
           </div>
@@ -146,7 +159,7 @@ export function RunView({ source, heading, backHref, themeTick }: Props) {
               <strong>{error.stage !== null ? t("run.view.stageFailed", { stage: stageTitle(error.stage) }) : t("run.view.runFailed")}</strong>
             </p>
             <pre class="error-text" tabIndex={0}>
-              {error.message}
+              {engineText(error.message)}
             </pre>
           </div>
         ),
@@ -269,7 +282,7 @@ function Timeline({ run, now }: { run: RunState; now: number }) {
               active={stage.status === "running"}
             />
             <div class="stage-bottom">
-              <span class="stage-message">{stage.message !== "" ? stage.message : (text?.what ?? "")}</span>
+              <span class="stage-message">{stage.message !== "" ? engineText(stage.message) : (text?.what ?? "")}</span>
               {elapsed !== undefined && <span class="stage-time">{formatDuration(elapsed)}</span>}
             </div>
           </li>

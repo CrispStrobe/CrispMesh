@@ -438,8 +438,35 @@ fn checked_hull_grid_turns_a_wrong_inside_outside() {
     let r = 33;
     let index = |i: usize, j: usize, k: usize| (i * r + j) * r + k;
     let (plain, checked) = (train::hull_grid(&scene, r), train::hull_grid_checked(&scene, r, 0.05));
+    let bounded = train::hull_grid_checked_bounded(&scene, r, 0.05);
+    assert_eq!(checked.iter().map(|x| x.to_bits()).collect::<Vec<_>>(), bounded.iter().map(|x| x.to_bits()).collect::<Vec<_>>());
     // (0, 0, 0.875) lies 0.375 above the top.
     assert!(plain[index(16, 16, 30)] < 0.0, "the wrong normals should mislead the plain grid");
     assert!(checked[index(16, 16, 30)] > 0.0);
     assert!(checked[index(16, 16, 16)] < 0.0 && checked[index(0, 0, 0)] > 0.0 && checked[index(16, 16, 2)] > 0.0);
+}
+
+#[test]
+fn bounded_nearest_preserves_exact_distances_and_tie_order() {
+    let mut random = train::Random::new(91);
+    for shape in 0..3 {
+        let mut points: Vec<[f64; 3]> =
+            (0..2048).map(|_| [random.normal() * 0.03 + 0.2, random.normal() * 0.07, random.normal() * 0.02 - 0.3]).collect();
+        if shape == 1 {
+            points.iter_mut().for_each(|p| p[2] = 0.);
+        }
+        if shape == 2 {
+            points.iter_mut().for_each(|p| *p = [0.; 3]);
+        }
+        let old = train::Tree::new(&points);
+        let bounded = train::BoundedTree::new(&points);
+        for query in (0..1024).map(|_| [random.normal(), random.normal(), random.normal()]).chain(points.iter().copied()) {
+            let first = old.nearest(query);
+            let second = bounded.nearest(query);
+            assert_eq!((first.0, first.1.to_bits()), (second.0, second.1.to_bits()));
+            let brute =
+                points.iter().map(|p| (0..3).map(|i| (p[i] - query[i]) * (p[i] - query[i])).sum::<f64>()).fold(f64::INFINITY, f64::min);
+            assert_eq!(second.1.to_bits(), brute.to_bits());
+        }
+    }
 }

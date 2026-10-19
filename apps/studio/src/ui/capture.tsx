@@ -36,7 +36,7 @@ export function commonFrame(photos: { frame: CaptureFrame | null }[]): CaptureFr
   return photos.every((photo) => photo.frame !== null && photo.frame.width === first.width && photo.frame.height === first.height && photo.frame.sourceWidth === first.sourceWidth && photo.frame.sourceHeight === first.sourceHeight) ? first : null;
 }
 
-/** Photos per turn offered. 20 (18-degree steps) works with the neural surface; the ordinary mesh wants 36. */
+/** Photos per turn offered. 20 is a sparse option; 36 is recommended. */
 const TARGETS = [20, 24, 36, 48, 72, 120, 180, 360];
 /** How often the picture is compared, in milliseconds. */
 const TICK_MS = 100;
@@ -352,7 +352,7 @@ export function CaptureScreen({ onDone, onCancel, foregroundSupported = false }:
           <select aria-label={t("capture.target")} value={String(target)} onChange={(event) => setTarget(Number(event.currentTarget.value))}>
             {TARGETS.map((count) => (
               <option key={count} value={String(count)} disabled={count * heights > MOST_PHOTOS}>
-                {t("capture.steps", { count, degrees: Math.round(360 / count) })}{count < 25 ? t("capture.neural") : ""}
+                {t("capture.steps", { count, degrees: Math.round(360 / count) })}{count < 25 ? t("capture.sparse") : ""}
               </option>
             ))}
           </select>

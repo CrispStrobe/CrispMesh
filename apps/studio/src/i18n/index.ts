@@ -63,8 +63,18 @@ export function engineText(value: string): string;
 export function engineText(value: string | undefined): string | undefined;
 export function engineText(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
+  const failed = /^([a-z][a-z0-9-]*) failed; see ([a-z][a-z0-9-]*\.log)$/.exec(value);
+  if (failed && language() !== "en") return t("metadata.stageFailure", { log: failed[2]! });
   const key = ENGINE_CAPTIONS.get(value);
-  return key ? t(key) : value;
+  if (key) return t(key);
+  // Validation formatting may capitalize the engine's lower-case sentence and
+  // append a full stop. Recognize that known caption without rewriting unknown
+  // extension text or the original English sentence.
+  if (language() !== "en") {
+    const sentenceKey = ENGINE_CAPTIONS.get((value.charAt(0).toLowerCase() + value.slice(1)).replace(/\.$/, ""));
+    if (sentenceKey) return t(sentenceKey);
+  }
+  return value;
 }
 
 /** Like `t`, but placeholders may be elements (a link, a code span); returns children for JSX. */

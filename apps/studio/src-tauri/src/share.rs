@@ -307,6 +307,7 @@ fn route(request: &Request, engine: &Arc<Native>, stream: &mut TcpStream) -> (u1
                 "can_start_runs": true,
                 "start_points": engine.start_points(),
                 "methods": crispmesh_dense::run::methods(),
+                "base_surfaces": ["silhouette", "stereo"],
                 "uploads": true,
                 "label": "Shared computer",
             })),

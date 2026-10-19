@@ -2,11 +2,55 @@ import { describe, expect, it } from "vitest";
 import { fixtureText } from "../testing/fixture";
 import { formatBytes, formatCount, formatDuration, humanise } from "./format";
 import { formatMetricValue, summariseReport } from "./reports";
+import { setLanguage } from "../i18n";
 
 const rows = (summary: ReturnType<typeof summariseReport>) =>
   Object.fromEntries(summary.sections.flatMap((section) => section.rows.map((row) => [`${section.title ?? ""}|${row.label}`, row.value])));
 
 describe("summariseReport", () => {
+  const cameras = {
+    selected: "cameras-hybrid", minimum_registered_fraction: .8, minimum_sparse_mask_support: .85,
+    candidates: [
+      { path: "cameras", registered: 40, accepted: 78, sparse_mask_support: .912 },
+      { path: "cameras-context", registered: 74, accepted: 78, sparse_mask_support: .834 },
+      { path: "cameras-hybrid", registered: 74, accepted: 78, sparse_mask_support: .921, removed_weak_views: 1 },
+    ],
+  };
+
+  it("explains why a high camera count alone does not pass the capture checks", () => {
+    const summary = summariseReport(cameras);
+    expect(summary.kind).toBe("camera_recovery");
+    expect(summary.sections[0]?.rows[0]?.value).toBe("Hybrid feature overlap");
+    expect(summary.sections.slice(1).map(section => section.rows.at(-1)?.value)).toEqual(["no", "no", "yes"]);
+    expect(summary.sections[3]?.rows[0]?.value).toBe("74 of 78");
+    expect(summary.sections[3]?.rows.find(row => row.label === "Automatically excluded weak views")?.value).toBe("1");
+    expect(summary.notes[0]).toContain("do not establish geometric accuracy");
+  });
+
+  it("rejects a camera fit whose actual hull loses foreground despite sparse support", () => {
+    const summary = summariseReport({ ...cameras, minimum_base_mask_iou: .8,
+      candidates: [{ ...cameras.candidates[2], base_mask_iou: .773494 }] });
+    expect(summary.kind).toBe("camera_recovery");
+    expect(summary.sections[1]!.rows.at(-1)!.tone).toBe("bad");
+    expect(summary.sections[1]!.rows.some(row => row.label === "Silhouette agreement")).toBe(true);
+  });
+
+  it("keeps malformed camera counters in the raw report", () => {
+    for (const changes of [{ accepted: 0 }, { registered: 79 }, { sparse_mask_support: NaN }, { sparse_mask_support: 1.1 }]) {
+      expect(summariseReport({ ...cameras, candidates: [{ ...cameras.candidates[2], ...changes }] }).kind).toBe("unknown");
+    }
+  });
+
+  it("shows camera recovery in German", () => {
+    setLanguage("de");
+    try {
+      const summary = summariseReport(cameras);
+      expect(summary.sections[0]?.rows[0]?.label).toBe("Gewählter Kamerapfad");
+      expect(summary.sections[3]?.rows[0]?.value).toBe("74 von 78");
+      expect(summary.sections[3]?.rows.at(-1)?.value).toBe("ja");
+    } finally { setLanguage("en"); }
+  });
+
   it("summarises the fixture's mesh report", () => {
     const summary = summariseReport(JSON.parse(fixtureText("mesh/result.json")));
     expect(summary.kind).toBe("mesh");

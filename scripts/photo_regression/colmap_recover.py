@@ -49,6 +49,24 @@ def validate_cache(data):
     return [fx, cx + .5, cy + .5, radial[0]], keys, pairs
 
 
+def prune_support(model, minimum):
+    """Remove unsupported poses; removing tracks can expose another weak pose.
+
+    Existing camera coordinates stay unchanged. The caller still audits the
+    remaining model; this does not lower any registration/geometry threshold.
+    """
+    if not isinstance(minimum,int) or not 0<=minimum<=100_000:raise ValueError('invalid minimum landmark support')
+    removed=[]
+    while minimum:
+        weak=[image_id for image_id in sorted(model.reg_image_ids()) if model.images[image_id].num_points3D<minimum]
+        if not weak:break
+        for image_id in weak:
+            image=model.images[image_id]
+            removed.append({'name':image.name,'observations':image.num_points3D})
+            model.deregister_image(image_id)
+    return removed
+
+
 def recover(args):
     import pycolmap
     data = json.loads(args.matches.read_text())
@@ -57,7 +75,9 @@ def recover(args):
         raise ValueError('every original photo must exist')
     args.output.mkdir(parents=True, exist_ok=False)
     camera = pycolmap.Camera(model='SIMPLE_RADIAL', width=data['lens']['width'], height=data['lens']['height'], params=params, camera_id=1)
-    camera.has_prior_focal_length = True
+    unknown_focal=getattr(args,'unknown_focal',False)
+    minimum_support=getattr(args,'minimum_observations',0)
+    camera.has_prior_focal_length = not unknown_focal
     database = args.output / 'database.db'
     db = pycolmap.Database();db.open(str(database))
     start = time.monotonic()
@@ -84,14 +104,16 @@ def recover(args):
     models = pycolmap.incremental_mapping(str(database), str(args.photos), str(args.output / 'models'), options=options)
     summaries = []
     for index, model in models.items():
+        before=model.num_reg_images()
+        removed=prune_support(model,minimum_support)
         folder = args.output / f'model-{index}';folder.mkdir()
-        model.write_text(str(folder));model.update_point_3d_errors()
-        summaries.append({'index': index, 'cameras': model.num_reg_images(), 'points': model.num_points3D(),
+        model.update_point_3d_errors();model.write_text(str(folder))
+        summaries.append({'index': index, 'cameras': model.num_reg_images(), 'cameras_before_support_pruning':before,'removed_sparse_views':removed,'points': model.num_points3D(),
                           'mean_reprojection_original_px': model.compute_mean_reprojection_error(),
                           'intrinsics': {str(cid): cam.params.tolist() for cid, cam in model.cameras.items()}})
     # Largest connected reconstruction first: a tiny two-camera overfit can have
     # a deceptively small reprojection residual. Selection is NOT quality approval.
-    best = max(summaries, key=lambda row: (row['cameras'], row['points']), default=None)
+    best = max((row for row in summaries if row['cameras']>0 and row['points']>0), key=lambda row: (row['cameras'], row['points']), default=None)
     if best:
         f, cx, cy, k1 = next(iter(best['intrinsics'].values()))
         lens = {'schema': 'crispmesh_lens_calibration_v1', 'model': 'radialk3',
@@ -100,7 +122,9 @@ def recover(args):
                 'k1': k1, 'k2': 0., 'k3': 0.}
         (args.output / 'own-estimated-lens.json').write_text(json.dumps(lens, indent=2) + '\n')
     report = {'method': 'Optional PyCOLMAP incremental mapping from own feature cache', 'quality_accepted': False,
-              'reference_inputs_used': False, 'calibration_mode': args.calibration, 'models': summaries,
+              'reference_inputs_used': False, 'calibration_mode': args.calibration, 'has_focal_prior':not unknown_focal, 'models': summaries,
+              'minimum_observations_per_view':minimum_support,'cameras_before_support_pruning':best['cameras_before_support_pruning'] if best else 0,
+              'removed_sparse_views':best['removed_sparse_views'] if best else [],
               'selected_model': f"model-{best['index']}" if best else None,
               'pair_error_original_px': args.pair_error, 'threads': args.threads,
               'initial_lens': data['lens'], 'match_pixel_convention': 'integer centres; COLMAP receives +.5',
@@ -121,8 +145,10 @@ def main():
     parser.add_argument('--calibration', choices=['fixed', 'focal', 'radial'], default='fixed')
     parser.add_argument('--threads', type=int, default=2)
     parser.add_argument('--pair-error', type=float, default=3.)
+    parser.add_argument('--unknown-focal',action='store_true',help='Treat the initial focal length as a hypothesis, not measured calibration; retains the calibrated-prior path by default')
+    parser.add_argument('--minimum-observations',type=int,default=0,help='Drop poses with fewer distinct landmarks, iterating after track removal (default: retain the original model)')
     args = parser.parse_args()
-    if not 1 <= args.threads <= 16 or not np.isfinite(args.pair_error) or args.pair_error <= 0:
+    if not 1 <= args.threads <= 16 or not np.isfinite(args.pair_error) or args.pair_error <= 0 or not 0<=args.minimum_observations<=100_000:
         parser.error('invalid threads/pair error')
     recover(args)
 
