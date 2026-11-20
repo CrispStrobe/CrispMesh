@@ -50,10 +50,12 @@ jobs:
   ios:
     name: iOS (${{ inputs.dry_run && 'dry run' || 'upload' }})
     if: inputs.platforms != 'macos'
-    # ITMS-90725: from April 2027 App Store Connect only accepts builds made
-    # with the 27 SDKs (Xcode 27). The standard macOS images only ship Xcode
-    # 26.x, so build on the xcode-27 image and fail early if the SDK is older.
-    runs-on: xcode-27
+    # NOT yet on xcode-27 (ITMS-90725 requires the iOS 27 SDK from April 2027):
+    # there, Tauri's Swift package (swift-rs) is compiled with the macOS SDK and
+    # target appended after the iOS ones, so the Tauri iOS glue is missing and
+    # the link fails (_run_plugin_command, _on_webview_created; dry run
+    # 44795548535). Move this job once Tauri/swift-rs builds with Xcode 27.
+    runs-on: macos-latest
     timeout-minutes: 90
     defaults:
       run:
@@ -68,17 +70,11 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: apps/studio/package-lock.json
-      - name: Select the newest Xcode 27 and require the iOS 27 SDK
+      - name: Newest Xcode (uploads must be built with a current SDK)
         run: |
-          set -euo pipefail
-          XC=$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)
-          sudo xcode-select -s "$XC/Contents/Developer"
+          newest=$(ls -d /Applications/Xcode_*.app | sort -V | tail -n 1)
+          sudo xcode-select -s "$newest"
           xcodebuild -version
-          SDK=$(xcrun --sdk iphoneos --show-sdk-version)
-          echo "iphoneos SDK: $SDK"
-          if [ "${SDK%%.*}" -lt 27 ]; then
-            echo "::error::iOS SDK $SDK < 27 (ITMS-90725)"; exit 1
-          fi
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
         with:
           toolchain: stable
