@@ -25,10 +25,12 @@
     "everything_shipped": "clean with obligations",
     "app_store_platforms": "clean with obligations",
     "not_permissive": [
-      "cssparser@0.36.0: MPL-2.0",
+      "cssparser@0.37.0: MPL-2.0",
+      "cssparser@0.38.0: MPL-2.0",
       "dtoa-short@0.3.5: MPL-2.0",
       "option-ext@0.2.0: MPL-2.0",
-      "selectors@0.36.1: MPL-2.0"
+      "selectors@0.38.0: MPL-2.0",
+      "selectors@0.41.0: MPL-2.0"
     ]
   },
   "counts": {
@@ -37,8 +39,8 @@
       "Apache-2.0": 2
     },
     "rust_linked_macos_or_ios": {
-      "MIT": 194,
-      "Apache-2.0": 31,
+      "MIT": 186,
+      "Apache-2.0": 30,
       "Zlib": 20,
       "Unicode-3.0": 15,
       "BSD-3-Clause": 5,
@@ -53,12 +55,12 @@
       "MIT AND Unicode-3.0": 1
     },
     "rust_linked_any_platform": {
-      "MIT": 280,
-      "Apache-2.0": 37,
+      "MIT": 270,
+      "Apache-2.0": 38,
       "Zlib": 20,
       "Unicode-3.0": 15,
       "BSD-3-Clause": 6,
-      "MPL-2.0": 4,
+      "MPL-2.0": 6,
       "Apache-2.0 WITH LLVM-exception": 2,
       "ISC": 2,
       "0BSD": 1,
@@ -69,8 +71,8 @@
       "MIT AND Unicode-3.0": 1
     },
     "rust_build_only": {
-      "MIT": 76,
-      "Apache-2.0": 9,
+      "MIT": 87,
+      "Apache-2.0": 8,
       "Unicode-3.0": 3,
       "Apache-2.0 WITH LLVM-exception": 1,
       "BSD-2-Clause": 1,
@@ -98,7 +100,7 @@
     "shipped": [
       {
         "name": "@tauri-apps/api",
-        "version": "2.11.1",
+        "version": "2.12.5",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
@@ -282,84 +284,84 @@
       },
       {
         "name": "@tauri-apps/cli",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-darwin-arm64",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-darwin-x64",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-linux-arm-gnueabihf",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-linux-arm64-gnu",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-linux-arm64-musl",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-linux-riscv64-gnu",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-linux-x64-gnu",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-linux-x64-musl",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-win32-arm64-msvc",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-win32-ia32-msvc",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
       },
       {
         "name": "@tauri-apps/cli-win32-x64-msvc",
-        "version": "2.11.5",
+        "version": "2.12.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0"
@@ -915,7 +917,7 @@
       },
       {
         "name": "alloc-no-stdlib",
-        "version": "2.0.4",
+        "version": "3.0.0",
         "license": "BSD-3-Clause",
         "category": "permissive",
         "chosen": "BSD-3-Clause",
@@ -931,7 +933,7 @@
       },
       {
         "name": "alloc-stdlib",
-        "version": "0.2.4",
+        "version": "0.3.0",
         "license": "BSD-3-Clause",
         "category": "permissive",
         "chosen": "BSD-3-Clause",
@@ -1075,23 +1077,6 @@
       },
       {
         "name": "base64",
-        "version": "0.22.1",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/marshallpierce/rust-base64",
-        "linked": [
-          "android"
-        ],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux"
-        ]
-      },
-      {
-        "name": "base64",
         "version": "0.23.1",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
@@ -1125,6 +1110,18 @@
       },
       {
         "name": "bit-set",
+        "version": "0.11.1",
+        "license": "Apache-2.0 OR MIT",
+        "category": "permissive",
+        "chosen": "Apache-2.0",
+        "repository": "https://github.com/contain-rs/bit-vec",
+        "linked": [
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "bit-set",
         "version": "0.8.0",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
@@ -1135,6 +1132,18 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "bit-vec",
+        "version": "0.10.2",
+        "license": "Apache-2.0 OR MIT",
+        "category": "permissive",
+        "chosen": "Apache-2.0",
+        "repository": "https://github.com/contain-rs/bit-vec",
+        "linked": [
           "android"
         ],
         "build": []
@@ -1215,12 +1224,7 @@
         "linked": [
           "android"
         ],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux"
-        ]
+        "build": []
       },
       {
         "name": "block2",
@@ -1237,7 +1241,7 @@
       },
       {
         "name": "brotli",
-        "version": "8.0.4",
+        "version": "9.1.3",
         "license": "BSD-3-Clause AND MIT",
         "category": "permissive",
         "chosen": "BSD-3-Clause AND MIT",
@@ -1253,7 +1257,7 @@
       },
       {
         "name": "brotli-decompressor",
-        "version": "5.0.3",
+        "version": "6.3.2",
         "license": "BSD-3-Clause/MIT",
         "category": "permissive",
         "chosen": "BSD-3-Clause",
@@ -1297,22 +1301,6 @@
           "linux",
           "android",
           "browser"
-        ],
-        "build": []
-      },
-      {
-        "name": "byteorder",
-        "version": "1.5.0",
-        "license": "Unlicense OR MIT",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/BurntSushi/byteorder",
-        "linked": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
         ],
         "build": []
       },
@@ -1435,7 +1423,7 @@
       },
       {
         "name": "cfb",
-        "version": "0.7.3",
+        "version": "0.14.0",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT",
@@ -1598,12 +1586,7 @@
         "linked": [
           "android"
         ],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux"
-        ]
+        "build": []
       },
       {
         "name": "crc32fast",
@@ -1699,16 +1682,11 @@
         "linked": [
           "android"
         ],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux"
-        ]
+        "build": []
       },
       {
         "name": "cssparser",
-        "version": "0.36.0",
+        "version": "0.37.0",
         "license": "MPL-2.0",
         "category": "notice",
         "chosen": "MPL-2.0",
@@ -1723,12 +1701,24 @@
         "build": []
       },
       {
+        "name": "cssparser",
+        "version": "0.38.0",
+        "license": "MPL-2.0",
+        "category": "notice",
+        "chosen": "MPL-2.0",
+        "repository": "https://github.com/servo/rust-cssparser",
+        "linked": [
+          "android"
+        ],
+        "build": []
+      },
+      {
         "name": "ctor",
-        "version": "0.8.0",
+        "version": "1.0.14",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
-        "repository": "https://github.com/mmastrac/rust-ctor",
+        "repository": "https://github.com/mmastrac/linktime",
         "linked": [
           "macos",
           "ios",
@@ -1808,20 +1798,15 @@
         "linked": [
           "android"
         ],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux"
-        ]
+        "build": []
       },
       {
         "name": "dirs",
-        "version": "6.0.0",
+        "version": "7.0.0",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
-        "repository": "https://github.com/soc/dirs-rs",
+        "repository": "https://codeberg.org/dirs/dirs-rs",
         "linked": [
           "macos",
           "ios",
@@ -1874,7 +1859,7 @@
       },
       {
         "name": "dom_query",
-        "version": "0.27.0",
+        "version": "0.28.0",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT",
@@ -1884,6 +1869,18 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "dom_query",
+        "version": "0.29.0",
+        "license": "MIT",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/niklak/dom_query",
+        "linked": [
           "android"
         ],
         "build": []
@@ -1927,22 +1924,6 @@
         "category": "notice",
         "chosen": "MPL-2.0",
         "repository": "https://github.com/upsuper/dtoa-short",
-        "linked": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
-        ],
-        "build": []
-      },
-      {
-        "name": "dtor",
-        "version": "0.3.0",
-        "license": "Apache-2.0 OR MIT",
-        "category": "permissive",
-        "chosen": "Apache-2.0",
-        "repository": "https://github.com/mmastrac/rust-ctor",
         "linked": [
           "macos",
           "ios",
@@ -2389,12 +2370,7 @@
         "linked": [
           "android"
         ],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux"
-        ]
+        "build": []
       },
       {
         "name": "getrandom",
@@ -2644,7 +2620,7 @@
       },
       {
         "name": "html5ever",
-        "version": "0.38.0",
+        "version": "0.39.0",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -2654,6 +2630,18 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "html5ever",
+        "version": "0.40.1",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/servo/html5ever",
+        "linked": [
           "android"
         ],
         "build": []
@@ -2950,7 +2938,7 @@
       },
       {
         "name": "infer",
-        "version": "0.19.0",
+        "version": "0.22.0",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT",
@@ -3124,7 +3112,7 @@
       },
       {
         "name": "json-patch",
-        "version": "3.0.1",
+        "version": "4.2.0",
         "license": "MIT/Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -3140,7 +3128,7 @@
       },
       {
         "name": "jsonptr",
-        "version": "0.6.3",
+        "version": "0.7.1",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -3156,11 +3144,11 @@
       },
       {
         "name": "keyboard-types",
-        "version": "0.7.0",
+        "version": "0.8.3",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
-        "repository": "https://github.com/pyfisch/keyboard-types",
+        "repository": "https://github.com/rust-windowing/keyboard-types",
         "linked": [
           "macos",
           "windows",
@@ -3330,7 +3318,7 @@
       },
       {
         "name": "markup5ever",
-        "version": "0.38.0",
+        "version": "0.39.0",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -3340,6 +3328,18 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "markup5ever",
+        "version": "0.40.0",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/servo/html5ever",
+        "linked": [
           "android"
         ],
         "build": []
@@ -3458,7 +3458,7 @@
       },
       {
         "name": "muda",
-        "version": "0.19.3",
+        "version": "0.20.0",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -3511,6 +3511,18 @@
         "category": "permissive",
         "chosen": "MIT",
         "repository": "https://github.com/rust-mobile/ndk",
+        "linked": [
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "ndk-context",
+        "version": "0.1.1",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/rust-windowing/android-ndk-rs",
         "linked": [
           "android"
         ],
@@ -3956,6 +3968,18 @@
         "build": []
       },
       {
+        "name": "phf",
+        "version": "0.14.0",
+        "license": "MIT",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/rust-phf/rust-phf",
+        "linked": [
+          "android"
+        ],
+        "build": []
+      },
+      {
         "name": "phf_shared",
         "version": "0.13.1",
         "license": "MIT",
@@ -3967,6 +3991,18 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "phf_shared",
+        "version": "0.14.0",
+        "license": "MIT",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/rust-phf/rust-phf",
+        "linked": [
           "android"
         ],
         "build": []
@@ -4501,7 +4537,7 @@
       },
       {
         "name": "selectors",
-        "version": "0.36.1",
+        "version": "0.38.0",
         "license": "MPL-2.0",
         "category": "notice",
         "chosen": "MPL-2.0",
@@ -4511,6 +4547,18 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "selectors",
+        "version": "0.41.0",
+        "license": "MPL-2.0",
+        "category": "notice",
+        "chosen": "MPL-2.0",
+        "repository": "https://github.com/servo/stylo",
+        "linked": [
           "android"
         ],
         "build": []
@@ -4663,6 +4711,18 @@
         "build": []
       },
       {
+        "name": "servo_arc",
+        "version": "0.5.0",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/servo/stylo",
+        "linked": [
+          "android"
+        ],
+        "build": []
+      },
+      {
         "name": "sha2",
         "version": "0.10.9",
         "license": "MIT OR Apache-2.0",
@@ -4672,12 +4732,7 @@
         "linked": [
           "android"
         ],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux"
-        ]
+        "build": []
       },
       {
         "name": "simd-adler32",
@@ -4848,6 +4903,18 @@
       },
       {
         "name": "string_cache",
+        "version": "0.11.0",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/servo/string-cache",
+        "linked": [
+          "android"
+        ],
+        "build": []
+      },
+      {
+        "name": "string_cache",
         "version": "0.9.0",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
@@ -4864,7 +4931,7 @@
       },
       {
         "name": "swift-rs",
-        "version": "1.0.8",
+        "version": "1.0.9",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -4890,7 +4957,7 @@
       },
       {
         "name": "tao",
-        "version": "0.35.3",
+        "version": "0.37.3",
         "license": "Apache-2.0",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -4906,7 +4973,7 @@
       },
       {
         "name": "tauri",
-        "version": "2.11.6",
+        "version": "2.12.7",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -4950,7 +5017,7 @@
       },
       {
         "name": "tauri-runtime",
-        "version": "2.11.3",
+        "version": "2.12.4",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -4966,7 +5033,7 @@
       },
       {
         "name": "tauri-runtime-wry",
-        "version": "2.11.4",
+        "version": "2.12.5",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -4982,7 +5049,7 @@
       },
       {
         "name": "tauri-utils",
-        "version": "2.9.3",
+        "version": "2.10.4",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -5037,9 +5104,6 @@
         "chosen": "MIT",
         "repository": "https://github.com/dtolnay/thiserror",
         "linked": [
-          "macos",
-          "ios",
-          "windows",
           "linux",
           "android"
         ],
@@ -5301,7 +5365,7 @@
       },
       {
         "name": "tray-icon",
-        "version": "0.24.2",
+        "version": "0.25.1",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -5360,86 +5424,6 @@
         ]
       },
       {
-        "name": "unic-char-property",
-        "version": "0.9.0",
-        "license": "MIT/Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/open-i18n/rust-unic/",
-        "linked": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
-        ],
-        "build": []
-      },
-      {
-        "name": "unic-char-range",
-        "version": "0.9.0",
-        "license": "MIT/Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/open-i18n/rust-unic/",
-        "linked": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
-        ],
-        "build": []
-      },
-      {
-        "name": "unic-common",
-        "version": "0.9.0",
-        "license": "MIT/Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/open-i18n/rust-unic/",
-        "linked": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
-        ],
-        "build": []
-      },
-      {
-        "name": "unic-ucd-ident",
-        "version": "0.9.0",
-        "license": "MIT/Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/open-i18n/rust-unic/",
-        "linked": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
-        ],
-        "build": []
-      },
-      {
-        "name": "unic-ucd-version",
-        "version": "0.9.0",
-        "license": "MIT/Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/open-i18n/rust-unic/",
-        "linked": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
-        ],
-        "build": []
-      },
-      {
         "name": "unicode-ident",
         "version": "1.0.26",
         "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
@@ -5464,9 +5448,7 @@
         "chosen": "MIT",
         "repository": "https://github.com/unicode-rs/unicode-segmentation",
         "linked": [
-          "macos",
-          "windows",
-          "linux"
+          "windows"
         ],
         "build": []
       },
@@ -5505,7 +5487,7 @@
       },
       {
         "name": "urlpattern",
-        "version": "0.3.0",
+        "version": "0.6.0",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT",
@@ -5633,6 +5615,18 @@
         "build": []
       },
       {
+        "name": "web_atoms",
+        "version": "0.3.0",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/servo/html5ever",
+        "linked": [
+          "android"
+        ],
+        "build": []
+      },
+      {
         "name": "web-sys",
         "version": "0.3.106",
         "license": "MIT OR Apache-2.0",
@@ -5687,7 +5681,7 @@
       },
       {
         "name": "webview2-com",
-        "version": "0.38.2",
+        "version": "0.39.1",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT",
@@ -5699,7 +5693,7 @@
       },
       {
         "name": "webview2-com-sys",
-        "version": "0.38.2",
+        "version": "0.39.1",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT",
@@ -5835,7 +5829,7 @@
       },
       {
         "name": "window-vibrancy",
-        "version": "0.6.0",
+        "version": "0.8.1",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -5848,31 +5842,7 @@
       },
       {
         "name": "windows",
-        "version": "0.61.3",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows",
         "version": "0.62.2",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows_x86_64_msvc",
-        "version": "0.52.6",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -5896,31 +5866,7 @@
       },
       {
         "name": "windows-collections",
-        "version": "0.2.0",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-collections",
         "version": "0.3.2",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-core",
-        "version": "0.61.2",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -5944,18 +5890,6 @@
       },
       {
         "name": "windows-future",
-        "version": "0.2.1",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-future",
         "version": "0.3.2",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
@@ -5968,31 +5902,7 @@
       },
       {
         "name": "windows-link",
-        "version": "0.1.3",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-link",
         "version": "0.2.1",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-numerics",
-        "version": "0.2.0",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -6016,18 +5926,6 @@
       },
       {
         "name": "windows-result",
-        "version": "0.3.4",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-result",
         "version": "0.4.1",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
@@ -6040,31 +5938,7 @@
       },
       {
         "name": "windows-strings",
-        "version": "0.4.2",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-strings",
         "version": "0.5.1",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-sys",
-        "version": "0.59.0",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -6100,31 +5974,7 @@
       },
       {
         "name": "windows-targets",
-        "version": "0.52.6",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-targets",
         "version": "0.53.5",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/microsoft/windows-rs",
-        "linked": [
-          "windows"
-        ],
-        "build": []
-      },
-      {
-        "name": "windows-threading",
-        "version": "0.1.0",
         "license": "MIT OR Apache-2.0",
         "category": "permissive",
         "chosen": "MIT",
@@ -6192,7 +6042,7 @@
       },
       {
         "name": "wry",
-        "version": "0.55.1",
+        "version": "0.57.3",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -6399,6 +6249,22 @@
         ]
       },
       {
+        "name": "block-buffer",
+        "version": "0.12.1",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/RustCrypto/utils",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
         "name": "bumpalo",
         "version": "3.20.3",
         "license": "MIT OR Apache-2.0",
@@ -6428,8 +6294,24 @@
         ]
       },
       {
+        "name": "byteorder",
+        "version": "1.5.0",
+        "license": "Unlicense OR MIT",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/BurntSushi/byteorder",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
         "name": "cargo_toml",
-        "version": "0.22.3",
+        "version": "1.0.1",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -6489,12 +6371,12 @@
         ]
       },
       {
-        "name": "cssparser-macros",
-        "version": "0.6.1",
-        "license": "MPL-2.0",
-        "category": "notice",
-        "chosen": "MPL-2.0",
-        "repository": "https://github.com/servo/rust-cssparser",
+        "name": "const-oid",
+        "version": "0.10.3",
+        "license": "Apache-2.0 OR MIT",
+        "category": "permissive",
+        "chosen": "Apache-2.0",
+        "repository": "https://github.com/RustCrypto/formats",
         "linked": [],
         "build": [
           "macos",
@@ -6505,12 +6387,44 @@
         ]
       },
       {
-        "name": "ctor-proc-macro",
-        "version": "0.0.7",
-        "license": "Apache-2.0 OR MIT",
+        "name": "cpufeatures",
+        "version": "0.3.1",
+        "license": "MIT OR Apache-2.0",
         "category": "permissive",
-        "chosen": "Apache-2.0",
-        "repository": "https://github.com/mmastrac/rust-ctor",
+        "chosen": "MIT",
+        "repository": "https://github.com/RustCrypto/utils",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
+        "name": "crypto-common",
+        "version": "0.2.2",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/RustCrypto/traits",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
+        "name": "cssparser-macros",
+        "version": "0.7.1",
+        "license": "MPL-2.0",
+        "category": "notice",
+        "chosen": "MPL-2.0",
+        "repository": "https://github.com/servo/rust-cssparser",
         "linked": [],
         "build": [
           "macos",
@@ -6617,6 +6531,22 @@
         ]
       },
       {
+        "name": "digest",
+        "version": "0.11.3",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/RustCrypto/traits",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
         "name": "displaydoc",
         "version": "0.2.7",
         "license": "MIT OR Apache-2.0",
@@ -6659,22 +6589,6 @@
           "linux",
           "android",
           "browser"
-        ]
-      },
-      {
-        "name": "dtor-proc-macro",
-        "version": "0.0.6",
-        "license": "Apache-2.0 OR MIT",
-        "category": "permissive",
-        "chosen": "Apache-2.0",
-        "repository": "https://github.com/mmastrac/rust-ctor",
-        "linked": [],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
         ]
       },
       {
@@ -6788,8 +6702,24 @@
         ]
       },
       {
+        "name": "hybrid-array",
+        "version": "0.4.15",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/RustCrypto/hybrid-array",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
         "name": "ico",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "license": "MIT",
         "category": "permissive",
         "chosen": "MIT",
@@ -6877,6 +6807,18 @@
         ]
       },
       {
+        "name": "phf_codegen",
+        "version": "0.14.0",
+        "license": "MIT",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/rust-phf/rust-phf",
+        "linked": [],
+        "build": [
+          "android"
+        ]
+      },
+      {
         "name": "phf_generator",
         "version": "0.13.1",
         "license": "MIT",
@@ -6889,6 +6831,18 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ]
+      },
+      {
+        "name": "phf_generator",
+        "version": "0.14.0",
+        "license": "MIT",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/rust-phf/rust-phf",
+        "linked": [],
+        "build": [
           "android"
         ]
       },
@@ -6909,6 +6863,18 @@
         ]
       },
       {
+        "name": "phf_macros",
+        "version": "0.14.0",
+        "license": "MIT",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/rust-phf/rust-phf",
+        "linked": [],
+        "build": [
+          "android"
+        ]
+      },
+      {
         "name": "pkg-config",
         "version": "0.3.34",
         "license": "MIT OR Apache-2.0",
@@ -6918,22 +6884,6 @@
         "linked": [],
         "build": [
           "linux"
-        ]
-      },
-      {
-        "name": "png",
-        "version": "0.17.16",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/image-rs/image-png",
-        "linked": [],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
         ]
       },
       {
@@ -7151,6 +7101,22 @@
         ]
       },
       {
+        "name": "sha2",
+        "version": "0.11.1",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/RustCrypto/hashes",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
         "name": "shlex",
         "version": "2.0.1",
         "license": "MIT OR Apache-2.0",
@@ -7163,6 +7129,34 @@
           "ios",
           "windows",
           "linux",
+          "android"
+        ]
+      },
+      {
+        "name": "static_vcruntime",
+        "version": "3.0.0",
+        "license": "MIT OR Apache-2.0 OR Zlib",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/ChrisDenton/static_vcruntime",
+        "linked": [],
+        "build": [
+          "macos",
+          "ios",
+          "windows",
+          "linux",
+          "android"
+        ]
+      },
+      {
+        "name": "string_cache_codegen",
+        "version": "0.11.2",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/servo/string-cache",
+        "linked": [],
+        "build": [
           "android"
         ]
       },
@@ -7298,7 +7292,7 @@
       },
       {
         "name": "tauri-build",
-        "version": "2.6.3",
+        "version": "2.7.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -7314,7 +7308,7 @@
       },
       {
         "name": "tauri-codegen",
-        "version": "2.6.3",
+        "version": "2.7.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -7330,7 +7324,7 @@
       },
       {
         "name": "tauri-macros",
-        "version": "2.6.3",
+        "version": "2.7.6",
         "license": "Apache-2.0 OR MIT",
         "category": "permissive",
         "chosen": "Apache-2.0",
@@ -7383,9 +7377,6 @@
         "repository": "https://github.com/dtolnay/thiserror",
         "linked": [],
         "build": [
-          "macos",
-          "ios",
-          "windows",
           "linux",
           "android"
         ]
@@ -7436,22 +7427,6 @@
         ]
       },
       {
-        "name": "toml",
-        "version": "0.9.12+spec-1.1.0",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/toml-rs/toml",
-        "linked": [],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
-        ]
-      },
-      {
         "name": "toml_datetime",
         "version": "0.6.3",
         "license": "MIT OR Apache-2.0",
@@ -7461,22 +7436,6 @@
         "linked": [],
         "build": [
           "linux"
-        ]
-      },
-      {
-        "name": "toml_datetime",
-        "version": "0.7.5+spec-1.1.0",
-        "license": "MIT OR Apache-2.0",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/toml-rs/toml",
-        "linked": [],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
         ]
       },
       {
@@ -7604,6 +7563,18 @@
         ]
       },
       {
+        "name": "windows_x86_64_msvc",
+        "version": "0.52.6",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/microsoft/windows-rs",
+        "linked": [],
+        "build": [
+          "windows"
+        ]
+      },
+      {
         "name": "windows-implement",
         "version": "0.60.2",
         "license": "MIT OR Apache-2.0",
@@ -7628,6 +7599,30 @@
         ]
       },
       {
+        "name": "windows-sys",
+        "version": "0.59.0",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/microsoft/windows-rs",
+        "linked": [],
+        "build": [
+          "windows"
+        ]
+      },
+      {
+        "name": "windows-targets",
+        "version": "0.52.6",
+        "license": "MIT OR Apache-2.0",
+        "category": "permissive",
+        "chosen": "MIT",
+        "repository": "https://github.com/microsoft/windows-rs",
+        "linked": [],
+        "build": [
+          "windows"
+        ]
+      },
+      {
         "name": "winnow",
         "version": "0.5.40",
         "license": "MIT",
@@ -7637,22 +7632,6 @@
         "linked": [],
         "build": [
           "linux"
-        ]
-      },
-      {
-        "name": "winnow",
-        "version": "0.7.15",
-        "license": "MIT",
-        "category": "permissive",
-        "chosen": "MIT",
-        "repository": "https://github.com/winnow-rs/winnow",
-        "linked": [],
-        "build": [
-          "macos",
-          "ios",
-          "windows",
-          "linux",
-          "android"
         ]
       },
       {

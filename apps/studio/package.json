@@ -16,14 +16,14 @@
     "build:release": "tsc --noEmit && vite build --mode release && node scripts/licenses.mjs --notices dist/THIRD-PARTY-NOTICES.txt"
   },
   "dependencies": {
-    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/api": "2.12.5",
     "jsqr": "1.4.0",
     "preact": "11.0.0",
     "qrcode-generator": "2.0.4",
     "three": "0.186.1"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.11.5",
+    "@tauri-apps/cli": "2.12.6",
     "@types/node": "^22.0.0",
     "@types/three": "0.186.0",
     "playwright": "1.63.0",
