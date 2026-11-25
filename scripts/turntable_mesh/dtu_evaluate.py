@@ -15,7 +15,9 @@ usage: python -m scripts.turntable_mesh.dtu_evaluate --mesh mesh.stl --scan 24 -
        [--align ours/cameras.json dtu-inputs/cameras.json]
 DIR holds Points/stl/stlNNN_total.ply and "SampleSet/MVS Data/ObsMask/{ObsMaskN_10,PlaneN}.mat".
 """
-import argparse, json, pathlib
+import argparse
+import json
+import pathlib
 
 import numpy as np
 from scipy.io import loadmat
@@ -85,14 +87,19 @@ def main():
     if args.align:
         ours = {v["source"]: v for v in json.load(open(args.align[0]))["views"]}
         theirs = {v["source"]: v for v in json.load(open(args.align[1]))["views"]}
-        centre = lambda v: -np.array(v["rotation"]).T @ np.array(v["translation"])
+
+        def centre(v):
+            return -np.array(v["rotation"]).T @ np.array(v["translation"])
+
         names = sorted(set(ours) & set(theirs))
         if names:
             pairs = [(ours[n], theirs[n]) for n in names]
         else:
             # A run from photos names its views by capture (capture_NNNN.png, in the natural order of
             # the photo names); DTU's are the photo names themselves, in the same order.
-            order = lambda table: [table[k] for k in sorted(table)]
+            def order(table):
+                return [table[k] for k in sorted(table)]
+
             if len(ours) != len(theirs):
                 raise SystemExit(f"--align: {len(ours)} views against {len(theirs)} and no common names")
             pairs = list(zip(order(ours), order(theirs)))

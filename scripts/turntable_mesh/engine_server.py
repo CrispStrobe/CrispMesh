@@ -128,8 +128,10 @@ class Engine:
                     point['label'] = 'Object photos'
                     point['meaning'] = 'Original photos of one object; masks and cameras are recovered automatically.'
                     for field in point['fields']:
-                        if field['key'] == 'photos': field['help']='Photos may use uneven angles and several camera heights.'
-                        if field['key'] == 'calibration': field.update(required=False, automatic=True, help='Optional measured lens calibration; otherwise estimate focal length and distortion from the photos.')
+                        if field['key'] == 'photos':
+                            field['help']='Photos may use uneven angles and several camera heights.'
+                        if field['key'] == 'calibration':
+                            field.update(required=False, automatic=True, help='Optional measured lens calibration; otherwise estimate focal length and distortion from the photos.')
             result['device']='Mac'
             result.update(methods=[method for method in described['methods'] if method['id']=='splats'], base_surfaces=['silhouette','stereo'], start_points=points, uploads=True, chooses_device=False, scores_reference=False, refine_runs=True)
         return result
@@ -137,114 +139,153 @@ class Engine:
     def capture_run(self, body):
         if self.capture_child is not None and self.capture_child.poll() is None:
             raise ValueError('a reconstruction is already running on this engine')
-        if shutil.disk_usage(self.runs).free < 8.8*2**30:raise ValueError('not enough free disk space for capture processing (8.8 GiB reserve)')
+        if shutil.disk_usage(self.runs).free < 8.8*2**30:
+            raise ValueError('not enough free disk space for capture processing (8.8 GiB reserve)')
         tools = json.loads(self.capture_tools.read_text())
         name = re.sub(r'[^A-Za-z0-9._-]+','-',str(body.get('name') or 'capture')).strip('-.')[:40] or 'capture'
         run_id = time.strftime('%Y%m%d-%H%M%S')+'-'+name
         output = self.runs/run_id
-        if output.exists(): raise ValueError('run name already exists; retry')
+        if output.exists():
+            raise ValueError('run name already exists; retry')
         base = body.get('base_surface','silhouette')
-        if base not in {'silhouette','stereo'}: raise ValueError('invalid base surface')
+        if base not in {'silhouette','stereo'}:
+            raise ValueError('invalid base surface')
         key = 'photos' if body.get('photos') else 'inputs'
         source = inside(self.data,self.data/str(body.get(key) or ''))
-        if source is None or not source.is_dir(): raise ValueError(key+' must be a folder under the data directory')
+        if source is None or not source.is_dir():
+            raise ValueError(key+' must be a folder under the data directory')
         if key == 'photos':
             command = [self.python,'-m','scripts.photo_regression.capture_pipeline','--photos',str(source),'--output',str(output),'--tools',str(self.capture_tools),'--base-surface',base,'--data-root',str(self.data)]
             foreground=tools.get('foreground_provider','app')
-            if foreground not in {'app','independent'}:raise ValueError('invalid host foreground provider')
+            if foreground not in {'app','independent'}:
+                raise ValueError('invalid host foreground provider')
             command+=['--foreground-provider',foreground]
             camera_search=tools.get('camera_search','hybrid')
-            if camera_search not in {'hybrid','tight','wide'}:raise ValueError('invalid capture camera search path')
+            if camera_search not in {'hybrid','tight','wide'}:
+                raise ValueError('invalid capture camera search path')
             command+=['--camera-search',camera_search]
             providers=body.get('providers',{})
             default_masks='refined' if all(bool(tools.get(key)) and Path(tools[key]).exists() for key in ['sam_source','sam_checkpoint']) else 'automatic'
-            if not isinstance(providers,dict) or set(providers)-{'masks'} or providers.get('masks',default_masks) not in {'automatic','refined','import'}:raise ValueError('invalid capture mask provider')
-            if providers.get('masks',default_masks)=='refined':command+=['--refine-masks']
-            if providers.get('masks',default_masks)=='automatic':command+=['--no-refine-masks']
+            if not isinstance(providers,dict) or set(providers)-{'masks'} or providers.get('masks',default_masks) not in {'automatic','refined','import'}:
+                raise ValueError('invalid capture mask provider')
+            if providers.get('masks',default_masks)=='refined':
+                command+=['--refine-masks']
+            if providers.get('masks',default_masks)=='automatic':
+                command+=['--no-refine-masks']
             if providers.get('masks')=='import':
                 masks=inside(self.data,self.data/str(body.get('masks_import') or ''))
-                if masks is None or not masks.is_dir() or not body.get('masks_import'):raise ValueError('masks_import must be a folder under the data directory')
+                if masks is None or not masks.is_dir() or not body.get('masks_import'):
+                    raise ValueError('masks_import must be a folder under the data directory')
                 command+=['--masks',str(masks)]
-            elif body.get('masks_import'):raise ValueError('choose the import mask provider to use masks_import')
+            elif body.get('masks_import'):
+                raise ValueError('choose the import mask provider to use masks_import')
             options=body.get('photo_options',[])
-            if not isinstance(options,list) or len(options)%2 or len(options)>4 or not all(isinstance(item,str) for item in options):raise ValueError('invalid capture photo options')
+            if not isinstance(options,list) or len(options)%2 or len(options)>4 or not all(isinstance(item,str) for item in options):
+                raise ValueError('invalid capture photo options')
             seen=set()
             for flag,value in zip(options[::2],options[1::2]):
-                if flag in seen:raise ValueError('duplicate capture photo option')
+                if flag in seen:
+                    raise ValueError('duplicate capture photo option')
                 seen.add(flag)
                 if flag=='--object-crop-padding':
                     number=float(value)
-                    if not math.isfinite(number) or not (0<=number<=1 or number==-1):raise ValueError('invalid object crop padding')
+                    if not math.isfinite(number) or not (0<=number<=1 or number==-1):
+                        raise ValueError('invalid object crop padding')
                     command+=['--object-crop-padding',value]
                 elif flag=='--turntable-turn-sizes':
-                    if not re.fullmatch(r'\d+(,\d+)*',value) or len(value.split(','))>16 or any(int(v)<1 for v in value.split(',')):raise ValueError('invalid capture group counts')
+                    if not re.fullmatch(r'\d+(,\d+)*',value) or len(value.split(','))>16 or any(int(v)<1 for v in value.split(',')):
+                        raise ValueError('invalid capture group counts')
                     command+=['--capture-groups',value]
-                else:raise ValueError('unsupported capture photo option')
+                else:
+                    raise ValueError('unsupported capture photo option')
             calibration=body.get('calibration')
             if isinstance(calibration,str) and calibration.startswith('fov:'):
                 value=float(calibration[4:])
-                if not math.isfinite(value) or not 1<value<179: raise ValueError('invalid field of view')
+                if not math.isfinite(value) or not 1<value<179:
+                    raise ValueError('invalid field of view')
                 command+=['--fov',str(value)]
             elif calibration and calibration != 'auto':
                 path=inside(self.data,self.data/str(calibration))
-                if path is None or not path.is_file(): raise ValueError('calibration must be a file under the data directory')
+                if path is None or not path.is_file():
+                    raise ValueError('calibration must be a file under the data directory')
                 command += ['--calibration',str(path)]
         else:
             command=[self.python,'-m','scripts.photo_regression.prepared_capture','--inputs',str(source),
                 '--output',str(output),'--tools',str(self.capture_tools),'--base-surface',base]
             if body.get('validation_inputs'):
                 validation=inside(self.data,self.data/str(body['validation_inputs']))
-                if validation is None or not (validation/'cameras.json').is_file():raise ValueError('validation_inputs must be a folder under the data directory')
+                if validation is None or not (validation/'cameras.json').is_file():
+                    raise ValueError('validation_inputs must be a folder under the data directory')
                 command+=['--validation-inputs',str(validation)]
-        if body.get('surface'): raise ValueError('this capture engine offers silhouette and Gaussian surfaces; use the native engine for the neural surface')
+        if body.get('surface'):
+            raise ValueError('this capture engine offers silhouette and Gaussian surfaces; use the native engine for the neural surface')
         splats=body.get('splats')
         if splats is not None:
-            if not isinstance(splats,dict): raise ValueError('invalid Gaussian settings')
-            quality=splats.get('quality','capture'); settings=splats.get('settings',[])
-            if quality not in {'capture','fast','standard','best'} or not isinstance(settings,list): raise ValueError('invalid Gaussian quality')
+            if not isinstance(splats,dict):
+                raise ValueError('invalid Gaussian settings')
+            quality=splats.get('quality','capture')
+            settings=splats.get('settings',[])
+            if quality not in {'capture','fast','standard','best'} or not isinstance(settings,list):
+                raise ValueError('invalid Gaussian quality')
             command += ['--gaussian','--gaussian-quality',quality]
             for item in settings:
-                if not isinstance(item,str) or not re.fullmatch(r'(steps|crop|mesh|seed)=\d+',item): raise ValueError('invalid Gaussian override')
+                if not isinstance(item,str) or not re.fullmatch(r'(steps|crop|mesh|seed)=\d+',item):
+                    raise ValueError('invalid Gaussian override')
                 command += ['--gaussian-set',item]
-        if body.get('texture'): command+=['--texture']
+        if body.get('texture'):
+            command+=['--texture']
         if body.get('settings'):
-            if key=='photos': raise ValueError('capture preparation uses its fixed default recipe; use prepared inputs for dense overrides')
+            if key=='photos':
+                raise ValueError('capture preparation uses its fixed default recipe; use prepared inputs for dense overrides')
             overrides=[f"{k}={','.join(map(str,v)) if isinstance(v,list) else v}" for k,v in body['settings'].items()]
             build(None,overrides)
-            for item in overrides:command+=['--set',item]
+            for item in overrides:
+                command+=['--set',item]
         if key=='inputs':
             record={'inputs':str(source.relative_to(self.data)),'sha256':inventory(source,['.'])}
-            if body.get('validation_inputs'):record.update(validation_inputs=str(validation.relative_to(self.data)),validation_sha256=inventory(validation,['.']))
+            if body.get('validation_inputs'):
+                record.update(validation_inputs=str(validation.relative_to(self.data)),validation_sha256=inventory(validation,['.']))
             (self.runs/(run_id+'.recovered-scene.json')).write_text(json.dumps(record)+'\n')
         with (self.runs/(run_id+'.driver.log')).open('w') as log:
             self.capture_child=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,cwd=REPOSITORY,env={**os.environ,'PYTHONPATH':str(REPOSITORY),'RAYON_NUM_THREADS':'2'},start_new_session=True)
         deadline=time.monotonic()+10
         while time.monotonic()<deadline and not (output/'events.jsonl').exists():
-            if self.capture_child.poll() is not None:break
+            if self.capture_child.poll() is not None:
+                break
             time.sleep(.05)
-        if not (output/'events.jsonl').exists():raise RuntimeError('capture run did not start; see engine driver log')
+        if not (output/'events.jsonl').exists():
+            raise RuntimeError('capture run did not start; see engine driver log')
         return {'id':run_id}
 
     def refine_run(self,run_id):
-        if not self.capture_tools:raise ValueError('capture refinement is unavailable')
+        if not self.capture_tools:
+            raise ValueError('capture refinement is unavailable')
         folder=self.run_folder(run_id)
-        if folder is None:raise ValueError('unknown run')
+        if folder is None:
+            raise ValueError('unknown run')
         record=folder/'recovered-scene.json'
-        if not record.is_file():record=self.runs/(run_id+'.recovered-scene.json')
-        if not record.is_file():raise ValueError('this run has no recovered scene to refine')
+        if not record.is_file():
+            record=self.runs/(run_id+'.recovered-scene.json')
+        if not record.is_file():
+            raise ValueError('this run has no recovered scene to refine')
         recovered=json.loads(record.read_text())
         inputs=inside(self.data,self.data/recovered['inputs'])
-        if inputs is None or not (inputs/'cameras.json').is_file():raise ValueError('recovered scene is unavailable')
-        if 'sha256' in recovered and inventory(inputs,['.'])!=recovered['sha256']:raise ValueError('recovered scene changed; start from the original photos again')
+        if inputs is None or not (inputs/'cameras.json').is_file():
+            raise ValueError('recovered scene is unavailable')
+        if 'sha256' in recovered and inventory(inputs,['.'])!=recovered['sha256']:
+            raise ValueError('recovered scene changed; start from the original photos again')
         pipeline=folder/'pipeline.json'
         base=json.loads(pipeline.read_text()).get('base_surface','silhouette') if pipeline.is_file() else 'silhouette'
-        if base not in {'silhouette','stereo'}:raise ValueError('invalid saved base surface')
+        if base not in {'silhouette','stereo'}:
+            raise ValueError('invalid saved base surface')
         body={'name':run_id[-30:]+'-gaussian','inputs':str(inputs.relative_to(self.data)),
               'base_surface':base,'splats':{'quality':'capture'}}
         if recovered.get('validation_inputs'):
             validation=inside(self.data,self.data/recovered['validation_inputs'])
-            if validation is None or not (validation/'cameras.json').is_file():raise ValueError('recovered scene is unavailable')
-            if inventory(validation,['.'])!=recovered.get('validation_sha256'):raise ValueError('recovered scene changed; start from the original photos again')
+            if validation is None or not (validation/'cameras.json').is_file():
+                raise ValueError('recovered scene is unavailable')
+            if inventory(validation,['.'])!=recovered.get('validation_sha256'):
+                raise ValueError('recovered scene changed; start from the original photos again')
             body['validation_inputs']=str(validation.relative_to(self.data))
         return self.start_run(body)
 
@@ -339,14 +380,18 @@ def handler_for(engine, static, token):
             if method == "GET" and parts == ["api", "health"]:
                 return self.reply(engine.health())
             if method == "POST" and parts == ["api", "uploads"] and engine.capture_tools:
-                query=parse_qs(url.query); folder=query.get('folder',[''])[0]; name=query.get('name',[''])[0]
+                query=parse_qs(url.query)
+                folder=query.get('folder',[''])[0]
+                name=query.get('name',[''])[0]
                 target=inside(engine.data,engine.data/folder/name)
                 length=int(self.headers.get('Content-Length') or 0)
                 if (target is None or Path(name).name!=name or not re.fullmatch(r'(capture|photos)-[A-Za-z0-9_.-]+',folder) or not name or '..' in Path(folder).parts
                         or target.suffix.lower() not in {'.jpg','.jpeg','.png','.json'} or not 0<length<=64*1024*1024):
                     return self.reply({'error':'invalid upload'},HTTPStatus.BAD_REQUEST)
-                if shutil.disk_usage(engine.data).free < 8.8*2**30+length: return self.reply({'error':'free-space reserve reached'},HTTPStatus.INSUFFICIENT_STORAGE)
-                if target.exists(): return self.reply({'error':'upload already exists'},HTTPStatus.CONFLICT)
+                if shutil.disk_usage(engine.data).free < 8.8*2**30+length:
+                    return self.reply({'error':'free-space reserve reached'},HTTPStatus.INSUFFICIENT_STORAGE)
+                if target.exists():
+                    return self.reply({'error':'upload already exists'},HTTPStatus.CONFLICT)
                 target.parent.mkdir(parents=True,exist_ok=True)
                 pending=target.with_suffix(target.suffix+'.pending')
                 owns_pending=False
@@ -356,11 +401,14 @@ def handler_for(engine, static, token):
                         owns_pending=True
                         while remaining:
                             block=self.rfile.read(min(1<<20,remaining))
-                            if not block: raise ValueError('incomplete upload')
-                            stream.write(block); remaining-=len(block)
+                            if not block:
+                                raise ValueError('incomplete upload')
+                            stream.write(block)
+                            remaining-=len(block)
                     pending.replace(target)
                 except (OSError,ValueError):
-                    if owns_pending:pending.unlink(missing_ok=True)
+                    if owns_pending:
+                        pending.unlink(missing_ok=True)
                     return self.reply({'error':'upload failed'},HTTPStatus.BAD_REQUEST)
                 return self.reply({'path':str(target.relative_to(engine.data))},HTTPStatus.CREATED)
             if method == "GET" and parts == ["api", "data"]:
@@ -392,8 +440,10 @@ def handler_for(engine, static, token):
                     events = read(folder / "events.jsonl", since)
                     return self.reply({"events": events, "next": events[-1]["seq"] + 1 if events else since})
                 if method == "POST" and parts[3] == "refine":
-                    try: return self.reply(engine.refine_run(parts[2]),HTTPStatus.CREATED)
-                    except (ValueError,RuntimeError) as problem:return self.reply({'error':str(problem)},HTTPStatus.BAD_REQUEST)
+                    try:
+                        return self.reply(engine.refine_run(parts[2]),HTTPStatus.CREATED)
+                    except (ValueError,RuntimeError) as problem:
+                        return self.reply({'error':str(problem)},HTTPStatus.BAD_REQUEST)
                 if method == "POST" and parts[3] == "cancel":
                     (folder / "cancel").touch()
                     return self.reply({"id": folder.name, "cancel_requested": True})
